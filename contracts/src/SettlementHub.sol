@@ -29,9 +29,14 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
     /// @dev contextKey => whether settled
     mapping(bytes32 => bool) public settled;
     
+    /// @notice Pending facilitator fees
+    /// @dev facilitator => token => amount
+    mapping(address => mapping(address => uint256)) public pendingFees;
+    
     // ===== Error Definitions =====
     
     error AlreadySettled(bytes32 contextKey);
+    error InvalidCommitment(bytes32 expected, bytes32 actual);
     error TransferFailed(address token, uint256 expected, uint256 actual);
     error HubShouldNotHoldFunds(address token, uint256 balance);
     error HookExecutionFailed(address hook, bytes reason);
@@ -41,15 +46,18 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
     /**
      * @inheritdoc ISettlementHub
      * @dev Execution flow:
-     *   1. Calculate contextKey (idempotency identifier)
-     *   2. Check idempotency (prevent duplicate settlement)
-     *   3. Mark as settled (CEI pattern)
-     *   4. Record balance before transfer
-     *   5. Call token.transferWithAuthorization (funds enter Hub)
-     *   6. Verify balance increment (ensure transfer success)
-     *   7. Approve and call Hook (execute business logic)
-     *   8. Verify balance returns to pre-transfer level (ensure no fund holding)
-     *   9. Emit events
+     *   1. Calculate commitment hash from all parameters
+     *   2. Verify nonce equals commitment (prevents parameter tampering)
+     *   3. Calculate contextKey (idempotency identifier)
+     *   4. Check idempotency (prevent duplicate settlement)
+     *   5. Mark as settled (CEI pattern)
+     *   6. Record balance before transfer
+     *   7. Call token.transferWithAuthorization (funds enter Hub)
+     *   8. Verify balance increment (ensure transfer success)
+     *   9. Accumulate facilitator fee
+     *  10. Approve and call Hook (execute business logic with net amount)
+     *  11. Verify balance returns to pre-transfer level (ensure no fund holding)
+     *  12. Emit events
      */
     function settleAndExecute(
         address token,
@@ -59,24 +67,50 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
         uint256 validBefore,
         bytes32 nonce,
         bytes calldata signature,
+        bytes32 salt,
+        address payTo,
+        uint256 facilitatorFee,
         address hook,
         bytes calldata hookData
     ) external nonReentrant {
-        // 1. Calculate contextKey
+        // 1. Calculate commitment hash from all parameters
+        bytes32 commitment = keccak256(abi.encodePacked(
+            "X402/settle/v1",
+            block.chainid,
+            address(this),
+            token,
+            from,
+            address(this),  // to (always Hub)
+            value,
+            validAfter,
+            validBefore,
+            salt,
+            payTo,
+            facilitatorFee,
+            hook,
+            keccak256(hookData)
+        ));
+        
+        // 2. Verify nonce equals commitment (prevents parameter tampering)
+        if (nonce != commitment) {
+            revert InvalidCommitment(commitment, nonce);
+        }
+        
+        // 3. Calculate contextKey (idempotency identifier)
         bytes32 contextKey = calculateContextKey(from, token, nonce);
         
-        // 2. Idempotency check
+        // 4. Idempotency check (prevent duplicate settlement)
         if (settled[contextKey]) {
             revert AlreadySettled(contextKey);
         }
         
-        // 3. Mark as settled (CEI pattern: modify state first)
+        // 5. Mark as settled (CEI pattern: modify state first)
         settled[contextKey] = true;
         
-        // 4. Record balance before transfer (to handle direct transfers to Hub)
+        // 6. Record balance before transfer (to handle direct transfers to Hub)
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         
-        // 5. Call token.transferWithAuthorization
+        // 7. Call token.transferWithAuthorization
         // Note: signature verification and nonce check are done by token contract
         IERC3009(token).transferWithAuthorization(
             from,
@@ -88,25 +122,36 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
             signature
         );
         
-        // 6. Verify balance increment (ensure transfer success)
+        // 8. Verify balance increment (ensure transfer success)
         uint256 balanceAfter = IERC20(token).balanceOf(address(this));
         uint256 received = balanceAfter - balanceBefore;
         if (received < value) {
             revert TransferFailed(token, value, received);
         }
         
-        // 7. Call Hook (if any)
+        // 9. Accumulate facilitator fee
+        if (facilitatorFee > 0) {
+            pendingFees[msg.sender][token] += facilitatorFee;
+            emit FeeAccumulated(msg.sender, token, facilitatorFee);
+        }
+        
+        // 10. Call Hook (if any) with net amount after fee deduction
+        uint256 hookAmount = value - facilitatorFee;
+        address facilitator = msg.sender;  // Facilitator is the transaction sender
         if (hook != address(0)) {
-            // Approve Hook to use funds
-            IERC20(token).forceApprove(hook, value);
+            // Approve Hook to use funds (net amount after fee)
+            IERC20(token).forceApprove(hook, hookAmount);
             
-            // Execute Hook
+            // Execute Hook with all parameters including facilitator
             bytes memory result;
             try ISettlementHook(hook).execute(
                 contextKey,
                 from,
                 token,
-                value,
+                hookAmount,
+                salt,
+                payTo,
+                facilitator,
                 hookData
             ) returns (bytes memory _result) {
                 result = _result;
@@ -116,15 +161,15 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
             }
         }
         
-        // 8. Ensure Hub holds no funds (balance should return to pre-transfer level)
+        // 11. Ensure Hub holds no funds (balance should return to pre-transfer level)
         // This allows the Hub to work even if someone directly transfers tokens to it
         uint256 balanceFinal = IERC20(token).balanceOf(address(this));
         if (balanceFinal != balanceBefore) {
             revert HubShouldNotHoldFunds(token, balanceFinal - balanceBefore);
         }
         
-        // 9. Emit events
-        emit Settled(contextKey, from, token, value, hook);
+        // 12. Emit events
+        emit Settled(contextKey, from, token, value, hook, salt, payTo, facilitatorFee);
     }
     
     // ===== Query Methods =====
@@ -145,6 +190,35 @@ contract SettlementHub is ISettlementHub, ReentrancyGuard {
         bytes32 nonce
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(from, token, nonce));
+    }
+    
+    // ===== Facilitator Fee Methods =====
+    
+    /**
+     * @inheritdoc ISettlementHub
+     */
+    function getPendingFees(address facilitator, address token) external view returns (uint256) {
+        return pendingFees[facilitator][token];
+    }
+    
+    /**
+     * @inheritdoc ISettlementHub
+     */
+    function claimFees(address[] calldata tokens) external nonReentrant {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 amount = pendingFees[msg.sender][token];
+            if (amount > 0) {
+                // Clear pending fees first (CEI pattern)
+                pendingFees[msg.sender][token] = 0;
+                
+                // Transfer fees to facilitator
+                IERC20(token).safeTransfer(msg.sender, amount);
+                
+                // Emit event
+                emit FeesClaimed(msg.sender, token, amount);
+            }
+        }
     }
 }
 

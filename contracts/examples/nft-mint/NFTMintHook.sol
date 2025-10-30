@@ -101,6 +101,9 @@ contract NFTMintHook is ISettlementHook {
         address payer,
         address token,
         uint256 amount,
+        bytes32 salt,
+        address payTo,
+        address facilitator,
         bytes calldata data
     ) external onlyHub returns (bytes memory) {
         // Decode configuration
@@ -124,6 +127,9 @@ contract NFTMintHook is ISettlementHook {
             amount
         );
         emit MerchantPaid(contextKey, config.merchant, amount);
+        
+        // Note: salt, payTo, and facilitator parameters are available but not used in this simple hook
+        // Advanced hooks could use facilitator for referral rewards or other incentive mechanisms
         
         // Return tokenId
         return abi.encode(config.tokenId);

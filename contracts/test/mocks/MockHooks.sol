@@ -29,6 +29,9 @@ contract MockFailingHook is ISettlementHook {
         address payer,
         address token,
         uint256 amount,
+        bytes32 salt,
+        address payTo,
+        address facilitator,
         bytes calldata data
     ) external override returns (bytes memory) {
         require(msg.sender == settlementHub, "Only settlement hub");
@@ -62,6 +65,9 @@ contract MockSimpleHook is ISettlementHook {
         address payer,
         address token,
         uint256 amount,
+        bytes32 salt,
+        address payTo,
+        address facilitator,
         bytes calldata data
     ) external override returns (bytes memory) {
         require(msg.sender == settlementHub, "Only settlement hub");

@@ -88,6 +88,9 @@ contract RevenueSplitHook is ISettlementHook {
         address payer,
         address token,
         uint256 amount,
+        bytes32 salt,
+        address payTo,
+        address facilitator,
         bytes calldata data
     ) external onlyHub returns (bytes memory) {
         // Decode split data
@@ -128,6 +131,9 @@ contract RevenueSplitHook is ISettlementHook {
             
             emit RevenueSplit(contextKey, splits[i].recipient, splitAmount);
         }
+        
+        // Note: salt, payTo, and facilitator parameters are available for advanced use cases
+        // For example, facilitator could receive additional rewards based on performance
         
         // Return number of splits
         return abi.encode(splits.length);
