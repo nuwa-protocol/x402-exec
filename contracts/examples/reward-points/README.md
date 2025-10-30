@@ -7,6 +7,11 @@ This scenario demonstrates customer loyalty and reward point systems.
 ### `RewardHook.sol`
 **Purpose**: Transfer payment to merchant and distribute reward points to customer
 
+**Architecture**:
+- Hook is deployed first as **reusable infrastructure**
+- Multiple RewardToken contracts can share the same hook
+- RewardToken address is passed via hookData at runtime (flexible)
+
 **Flow**:
 1. User makes payment
 2. Payment is transferred to merchant
@@ -19,44 +24,59 @@ This scenario demonstrates customer loyalty and reward point systems.
 
 **Configuration**:
 ```solidity
-constructor(address _settlementHub, address _rewardToken) {
+constructor(address _settlementHub) {
     settlementHub = _settlementHub;
-    rewardToken = _rewardToken;
 }
 
-// hookData format: abi.encode(merchantAddress)
+// hookData format: abi.encode(RewardConfig)
+struct RewardConfig {
+    address rewardToken;  // Reward token address
+    address merchant;     // Merchant receiving payment
+}
 ```
 
 ### `RewardToken.sol`
 **Purpose**: ERC20 reward points token with controlled distribution
 
+**Architecture**:
+- Depends on RewardHook (deployed first)
+- Hook address is immutably set in constructor (secure by design)
+- No front-running risk
+
 **Features**:
 - Fixed supply of 1,000,000 tokens
 - All tokens initially held by contract
 - Only designated hook can distribute tokens
-- One-time hook setup for security
+- Hook address is immutable
 
 **Key Functions**:
 ```solidity
-function distribute(address to, uint256 amount) external;
+constructor(address _hook); // Set hook address at deployment
+function distribute(address to, uint256 amount) external; // Only callable by hook
 function remainingRewards() external view returns (uint256);
 ```
 
 ## Deployment Example
 
 ```solidity
-// 1. Deploy RewardToken
-RewardToken rewardToken = new RewardToken();
+// 1. Deploy RewardHook (reusable infrastructure)
+RewardHook hook = new RewardHook(settlementHub);
 
-// 2. Deploy RewardHook
-RewardHook hook = new RewardHook(settlementHub, address(rewardToken));
+// 2. Deploy RewardToken with hook address (secure by design)
+RewardToken rewardToken = new RewardToken(address(hook));
 
-// 3. Set Hook as token distributor
-rewardToken.setRewardHook(address(hook));
-
-// 4. Configure hookData for each transaction
-bytes memory hookData = abi.encode(merchantAddress);
+// 3. Configure hookData for each transaction
+bytes memory hookData = abi.encode(RewardConfig({
+    rewardToken: address(rewardToken),
+    merchant: merchantAddress
+}));
 ```
+
+**Architecture Benefits**:
+- ✅ Hook deployed first → Can be reused by multiple tokens
+- ✅ Hook address set in constructor → No front-running risk
+- ✅ Token address passed at runtime → Flexibility for multi-token scenarios
+- ✅ Clean separation: Infrastructure (hook) vs Application (token)
 
 ## Reward Calculation Examples
 

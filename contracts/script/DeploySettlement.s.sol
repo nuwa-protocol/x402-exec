@@ -3,43 +3,51 @@ pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 import {SettlementHub} from "../src/SettlementHub.sol";
-import {RevenueSplitHook} from "../examples/revenue-split/RevenueSplitHook.sol";
-import {NFTMintHook} from "../examples/nft-mint/NFTMintHook.sol";
-import {NFTMintAndSplitHook} from "../examples/nft-mint/NFTMintAndSplitHook.sol";
 
 /**
  * @title DeploySettlement
- * @notice Deployment script: SettlementHub and example Hooks
+ * @notice Deployment script for SettlementHub core contract
+ * 
+ * This script ONLY deploys the core SettlementHub contract.
+ * Hooks and scenario-specific contracts should be deployed separately
+ * using scenario-specific deployment scripts.
+ * 
+ * Usage:
+ *   forge script script/DeploySettlement.s.sol:DeploySettlement \
+ *     --rpc-url $RPC_URL \
+ *     --broadcast \
+ *     --verify
+ * 
+ * Required environment variables:
+ *   - RPC_URL: Network RPC endpoint
+ *   - DEPLOYER_PRIVATE_KEY: Deployer private key
+ *   - ETHERSCAN_API_KEY: (optional) For contract verification
  */
 contract DeploySettlement is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         
+        console.log("Deploying SettlementHub...");
+        console.log("Deployer:", vm.addr(deployerPrivateKey));
+        console.log("Network Chain ID:", block.chainid);
+        console.log("");
+        
         vm.startBroadcast(deployerPrivateKey);
         
-        // 1. Deploy SettlementHub
+        // Deploy SettlementHub
         SettlementHub hub = new SettlementHub();
-        console.log("SettlementHub deployed at:", address(hub));
-        
-        // 2. Deploy example Hooks
-        RevenueSplitHook splitHook = new RevenueSplitHook(address(hub));
-        console.log("RevenueSplitHook deployed at:", address(splitHook));
-        
-        NFTMintHook mintHook = new NFTMintHook(address(hub));
-        console.log("NFTMintHook deployed at:", address(mintHook));
-        
-        NFTMintAndSplitHook combinedHook = new NFTMintAndSplitHook(address(hub));
-        console.log("NFTMintAndSplitHook deployed at:", address(combinedHook));
         
         vm.stopBroadcast();
         
         // Output deployment information
-        console.log("\n=== Deployment Summary ===");
-        console.log("Network:", block.chainid);
+        console.log("=== Deployment Complete ===");
         console.log("SettlementHub:", address(hub));
-        console.log("RevenueSplitHook:", address(splitHook));
-        console.log("NFTMintHook:", address(mintHook));
-        console.log("NFTMintAndSplitHook:", address(combinedHook));
+        console.log("");
+        console.log("Save this address to your .env file:");
+        console.log("SETTLEMENT_HUB_ADDRESS=%s", address(hub));
+        console.log("");
+        console.log("Next steps:");
+        console.log("1. Update .env with SETTLEMENT_HUB_ADDRESS");
+        console.log("2. Deploy scenario contracts (e.g., examples/settlement-showcase)");
     }
 }
-

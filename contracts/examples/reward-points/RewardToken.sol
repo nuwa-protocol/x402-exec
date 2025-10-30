@@ -8,11 +8,16 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @notice A reward points token with fixed supply and controlled distribution
  * @dev Used in Scenario 3: Points Reward showcase
  * 
+ * Architecture:
+ * - RewardHook is deployed first as reusable infrastructure
+ * - RewardToken is deployed with hook address in constructor (secure by design)
+ * - No front-running risk as hook is immutably set at deployment
+ * 
  * Features:
  * - Fixed supply of 1,000,000 tokens
  * - All tokens initially held by contract
  * - Only designated hook can distribute tokens
- * - One-time hook setup for security
+ * - Hook address is immutable (set in constructor)
  */
 contract RewardToken is ERC20 {
     // ===== Constants =====
@@ -23,12 +28,9 @@ contract RewardToken is ERC20 {
     // ===== State Variables =====
     
     /// @notice Address authorized to distribute rewards (RewardHook)
-    address public rewardHook;
+    address public immutable rewardHook;
     
     // ===== Events =====
-    
-    /// @notice Emitted when reward hook address is set
-    event RewardHookSet(address indexed hook);
     
     /// @notice Emitted when rewards are distributed
     event RewardsDistributed(address indexed to, uint256 amount);
@@ -36,28 +38,22 @@ contract RewardToken is ERC20 {
     // ===== Errors =====
     
     error OnlyRewardHook();
-    error HookAlreadySet();
     error InsufficientRewards();
     
     // ===== Constructor =====
     
-    constructor() ERC20("Reward Points", "POINTS") {
+    /**
+     * @notice Initializes the reward token with hook address
+     * @param _hook Address authorized to distribute rewards (should be RewardHook)
+     */
+    constructor(address _hook) ERC20("Reward Points", "POINTS") {
+        require(_hook != address(0), "Invalid hook address");
+        rewardHook = _hook;
         // Mint all tokens to this contract
         _mint(address(this), MAX_SUPPLY);
     }
     
     // ===== External Functions =====
-    
-    /**
-     * @notice Sets the authorized reward hook address
-     * @dev Can only be called once for security
-     * @param _hook Address to be set as reward hook (should be RewardHook)
-     */
-    function setRewardHook(address _hook) external {
-        if (rewardHook != address(0)) revert HookAlreadySet();
-        rewardHook = _hook;
-        emit RewardHookSet(_hook);
-    }
     
     /**
      * @notice Distributes reward tokens to a recipient

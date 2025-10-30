@@ -22,26 +22,6 @@ struct MintConfig {
 }
 ```
 
-### `NFTMintAndSplitHook.sol`
-**Purpose**: Combined NFT minting + revenue splitting (e.g., marketplace with commission)
-
-**Flow**:
-1. User pays for NFT
-2. Payment is split between merchant and platform
-3. NFT is minted to user's address
-
-**Configuration**:
-```solidity
-struct MintAndSplit {
-    address nftContract;
-    uint256 tokenId;
-    address merchant;
-    uint16 merchantBips;  // Merchant's share (basis points)
-    address platform;
-    uint16 platformBips;  // Platform's share (basis points)
-}
-```
-
 ### `RandomNFT.sol`
 **Purpose**: Example NFT contract with sequential token ID generation
 
@@ -54,16 +34,13 @@ struct MintAndSplit {
 ## Deployment Example
 
 ```solidity
-// 1. Deploy NFT contract
-RandomNFT nft = new RandomNFT();
-
-// 2. Deploy Hook
+// 1. Deploy Hook first
 NFTMintHook hook = new NFTMintHook(settlementHub);
 
-// 3. Set Hook as NFT minter
-nft.setMinter(address(hook));
+// 2. Deploy NFT contract with Hook as minter (secure by design)
+RandomNFT nft = new RandomNFT(address(hook));
 
-// 4. Configure hookData for each sale
+// 3. Configure hookData for each sale
 bytes memory hookData = abi.encode(MintConfig({
     nftContract: address(nft),
     tokenId: nextTokenId,
@@ -71,6 +48,8 @@ bytes memory hookData = abi.encode(MintConfig({
     merchant: merchantAddress
 }));
 ```
+
+**Security Note**: The minter address is set in the constructor to prevent front-running attacks. The deployment order matters: Hook must be deployed before the NFT contract.
 
 ## Use Cases
 

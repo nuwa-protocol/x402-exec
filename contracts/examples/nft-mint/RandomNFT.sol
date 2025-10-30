@@ -37,11 +37,18 @@ contract RandomNFT is ERC721 {
     
     error OnlyMinter();
     error MaxSupplyReached();
-    error MinterAlreadySet();
     
     // ===== Constructor =====
     
-    constructor() ERC721("Random NFT", "RNFT") {}
+    /**
+     * @notice Initializes the NFT contract with minter address
+     * @param _minter Address authorized to mint NFTs (should be NFTMintHook)
+     */
+    constructor(address _minter) ERC721("Random NFT", "RNFT") {
+        require(_minter != address(0), "Invalid minter address");
+        minter = _minter;
+        emit MinterSet(_minter);
+    }
     
     // ===== External Functions =====
     
@@ -57,17 +64,6 @@ contract RandomNFT is ERC721 {
         
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
-    }
-    
-    /**
-     * @notice Sets the authorized minter address
-     * @dev Can only be called once for security
-     * @param _minter Address to be set as minter (should be NFTMintHook)
-     */
-    function setMinter(address _minter) external {
-        if (minter != address(0)) revert MinterAlreadySet();
-        minter = _minter;
-        emit MinterSet(_minter);
     }
     
     /**
