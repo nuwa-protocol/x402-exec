@@ -99,13 +99,13 @@ interface ISettlementHook {
   "network": "base-sepolia",
   "maxAmountRequired": "1000000",
   "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-  "payTo": "0xSettlementHubAddress",
+  "payTo": "0xsettlementRouterAddress",
   "resource": "https://api.example.com/nft/mint",
   "description": "Mint NFT with revenue split",
   "mimeType": "application/json",
   "maxTimeoutSeconds": 60,
   "extra": {
-    "settlementHub": "0xSettlementHubAddress",
+    "settlementHub": "0xsettlementRouterAddress",
     "hook": "0xNFTMintAndSplitHookAddress",
     "hookData": "0x..."
   }

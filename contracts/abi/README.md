@@ -29,7 +29,7 @@ import { ethers } from 'ethers';
 import SettlementHubABI from './abi/SettlementHub.json';
 
 const settlement Hub = new ethers.Contract(
-  settlementHubAddress,
+  settlementRouterAddress,
   SettlementHubABI,
   signer
 );
