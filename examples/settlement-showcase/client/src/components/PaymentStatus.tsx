@@ -20,14 +20,31 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
         <div className="status-content">
           <div className="spinner"></div>
           <p>Preparing payment...</p>
+          <p className="hint">Fetching payment requirements</p>
         </div>
       )}
 
       {status === 'paying' && (
         <div className="status-content">
           <div className="spinner"></div>
-          <p>Processing payment...</p>
-          <p className="hint">Please sign the transaction in your wallet</p>
+          <p>Calculating commitment...</p>
+          <p className="hint">Binding settlement parameters</p>
+        </div>
+      )}
+
+      {status === 'signing' && (
+        <div className="status-content">
+          <div className="spinner"></div>
+          <p>Signing transaction...</p>
+          <p className="hint">Please sign in your wallet</p>
+        </div>
+      )}
+
+      {status === 'submitting' && (
+        <div className="status-content">
+          <div className="spinner"></div>
+          <p>Submitting payment...</p>
+          <p className="hint">Processing settlement</p>
         </div>
       )}
 

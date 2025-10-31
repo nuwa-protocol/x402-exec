@@ -5,6 +5,7 @@
 
 import { appConfig } from '../config.js';
 import { encodeRewardData } from '../utils/hookData.js';
+import { generateSalt } from '../utils/commitment.js';
 import { ethers } from 'ethers';
 
 /**
@@ -57,6 +58,12 @@ export async function generateRewardPayment(params: RewardParams = {}) {
     merchant
   });
   
+  // Generate unique salt for this settlement
+  const salt = generateSalt();
+  
+  // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
+  const facilitatorFee = '10000';
+  
   return {
     scheme: 'exact' as const,
     network: appConfig.network as any, // Cast to any to resolve type incompatibility
@@ -73,6 +80,9 @@ export async function generateRewardPayment(params: RewardParams = {}) {
       version: '2',
       // Settlement-specific data
       settlementHub: appConfig.settlementHubAddress,
+      salt,
+      payTo: merchant, // Final recipient for this scenario
+      facilitatorFee,
       hook: appConfig.rewardHookAddress,
       hookData,
       rewardAmount: '1000', // Points earned

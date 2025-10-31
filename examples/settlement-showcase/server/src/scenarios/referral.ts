@@ -5,6 +5,7 @@
 
 import { appConfig } from '../config.js';
 import { encodeRevenueSplitData, isValidAddress } from '../utils/hookData.js';
+import { generateSalt } from '../utils/commitment.js';
 import { PaymentRequirements } from 'x402/types';
 
 export interface ReferralSplitParams {
@@ -48,6 +49,12 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
   // Encode hook data
   const hookData = encodeRevenueSplitData(splits);
   
+  // Generate unique salt for this settlement
+  const salt = generateSalt();
+  
+  // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
+  const facilitatorFee = '10000';
+  
   // Return standard x402 PaymentRequirements format
   return {
     scheme: 'exact',
@@ -65,6 +72,9 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
       version: '2',
       // Settlement-specific data for SettlementHub
       settlementHub: appConfig.settlementHubAddress,
+      salt,
+      payTo: merchant, // Primary recipient for this scenario
+      facilitatorFee,
       hook: appConfig.revenueSplitHookAddress,
       hookData,
     },

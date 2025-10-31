@@ -5,6 +5,7 @@
 
 import { appConfig } from '../config.js';
 import { encodeNFTMintData } from '../utils/hookData.js';
+import { generateSalt } from '../utils/commitment.js';
 import { ethers } from 'ethers';
 
 // Simple in-memory counter for token IDs (in production, query contract)
@@ -69,6 +70,12 @@ export async function generateNFTPayment(params: NFTMintParams) {
     merchant,
   });
   
+  // Generate unique salt for this settlement
+  const salt = generateSalt();
+  
+  // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
+  const facilitatorFee = '10000';
+  
   return {
     scheme: 'exact' as const,
     network: appConfig.network as any, // Cast to any to resolve type incompatibility
@@ -85,6 +92,9 @@ export async function generateNFTPayment(params: NFTMintParams) {
       version: '2',
       // Settlement-specific data
       settlementHub: appConfig.settlementHubAddress,
+      salt,
+      payTo: merchant, // Final recipient for this scenario
+      facilitatorFee,
       hook: appConfig.nftMintHookAddress,
       hookData,
       nftTokenId: tokenId,
