@@ -13,9 +13,9 @@ Client (User)          →  Trusts Resource Server for payment parameters
      ↓                    ↓
 EIP-3009 Signature        Payment parameters (hook, hookData, salt, payTo, facilitatorFee)
      ↓                    ↓
-Facilitator            →  Calls SettlementHub with all parameters
+Facilitator            →  Calls SettlementRouter with all parameters
      ↓
-SettlementHub          →  Verifies commitment hash and signature
+SettlementRouter          →  Verifies commitment hash and signature
      ↓
 Hook Contract          →  Executes business logic
 ```
@@ -56,13 +56,13 @@ The protocol now uses a **commitment hash** mechanism to bind all business param
 
 3. **Client** uses commitment hash as EIP-3009 `nonce` and signs
 
-4. **SettlementHub** recalculates commitment from submitted parameters and verifies it equals `nonce`
+4. **SettlementRouter** recalculates commitment from submitted parameters and verifies it equals `nonce`
 
 ### Signature Coverage
 
 **Client's EIP-3009 Signature Now Covers** (via commitment hash):
 - ✅ `from` (Payer)
-- ✅ `to` (SettlementHub address)
+- ✅ `to` (SettlementRouter address)
 - ✅ `value` (Amount)
 - ✅ `validAfter`, `validBefore` (Validity period)
 - ✅ `nonce` (= commitment hash)
@@ -163,7 +163,7 @@ claimFees([USDC, DAI]) → transfers all pending fees
 
 1. **Verify Caller**
    - Use `onlyHub` modifier
-   - Ensure only callable by SettlementHub
+   - Ensure only callable by SettlementRouter
 
 2. **Parameter Validation**
    - Validate all input parameters

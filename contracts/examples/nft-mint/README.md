@@ -35,7 +35,7 @@ struct MintConfig {
 
 ```solidity
 // 1. Deploy Hook first
-NFTMintHook hook = new NFTMintHook(settlementHub);
+NFTMintHook hook = new NFTMintHook(settlementRouter);
 
 // 2. Deploy NFT contract with Hook as minter (secure by design)
 RandomNFT nft = new RandomNFT(address(hook));

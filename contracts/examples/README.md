@@ -60,7 +60,7 @@ This design is appropriate when:
 
 ## Integration
 
-All Hook examples implement the `ISettlementHook` interface and can be used with the SettlementHub contract. Each scenario includes:
+All Hook examples implement the `ISettlementHook` interface and can be used with the SettlementRouter contract. Each scenario includes:
 
 1. **Hook Contract** - Business logic implementation
 2. **Supporting Contracts** - Tokens, NFTs, or other required contracts

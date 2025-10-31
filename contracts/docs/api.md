@@ -1,4 +1,4 @@
-## SettlementHub Contract API Documentation
+## SettlementRouter Contract API Documentation
 
 ### Contract Addresses
 
@@ -226,13 +226,13 @@ mapping(address => mapping(address => uint256)) public pendingFees
 #### Calling from Facilitator
 
 ```typescript
-const settlementHub = new ethers.Contract(
+const settlementRouter = new ethers.Contract(
   SETTLEMENT_HUB_ADDRESS,
   SETTLEMENT_HUB_ABI,
   signer
 );
 
-const tx = await settlementHub.settleAndExecute(
+const tx = await settlementRouter.settleAndExecute(
   tokenAddress,
   from,
   value,
@@ -261,14 +261,14 @@ const contextKey = ethers.keccak256(
   )
 );
 
-const isSettled = await settlementHub.isSettled(contextKey);
+const isSettled = await settlementRouter.isSettled(contextKey);
 console.log('Is settled:', isSettled);
 ```
 
 ### Event Listening
 
 ```typescript
-settlementHub.on('Settled', (contextKey, payer, token, amount, hook, event) => {
+settlementRouter.on('Settled', (contextKey, payer, token, amount, hook, event) => {
   console.log('Settlement completed:', {
     contextKey,
     payer,
@@ -279,7 +279,7 @@ settlementHub.on('Settled', (contextKey, payer, token, amount, hook, event) => {
   });
 });
 
-settlementHub.on('HookExecuted', (contextKey, hook, returnData, event) => {
+settlementRouter.on('HookExecuted', (contextKey, hook, returnData, event) => {
   console.log('Hook executed:', {
     contextKey,
     hook,
@@ -293,7 +293,7 @@ settlementHub.on('HookExecuted', (contextKey, hook, returnData, event) => {
 
 ```typescript
 try {
-  const tx = await settlementHub.settleAndExecute(...);
+  const tx = await settlementRouter.settleAndExecute(...);
   await tx.wait();
 } catch (error) {
   if (error.message.includes('AlreadySettled')) {
@@ -315,7 +315,7 @@ try {
 Verify contract using Etherscan or Basescan:
 
 ```bash
-forge verify-contract <address> SettlementHub \
+forge verify-contract <address> SettlementRouter \
   --chain-id 84532 \
   --watch
 ```

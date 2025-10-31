@@ -33,7 +33,7 @@ Settlement Showcase 是一个基于 [x402 协议](https://x402.org) 和 [Settlem
     ↓ EIP-3009 签名
 Facilitator
     ↓ settleAndExecute()
-SettlementHub
+SettlementRouter
     ↓
 Hook（RevenueSplitHook/NFTMintHook/RewardHook）
     ↓
@@ -73,7 +73,7 @@ npm run install:all
 cp .env.example .env
 
 # 编辑 .env 文件，填入以下信息：
-# - SETTLEMENT_HUB_ADDRESS: 已部署的 SettlementHub 地址
+# - SETTLEMENT_HUB_ADDRESS: 已部署的 SettlementRouter 地址
 # - REVENUE_SPLIT_HOOK_ADDRESS: 已部署的 RevenueSplitHook 地址
 # - NFT_MINT_HOOK_ADDRESS: 已部署的 NFTMintHook 地址
 # - MERCHANT_ADDRESS: 商户地址（接收支付）
@@ -124,7 +124,7 @@ npm run dev
 2. 前端调用 /api/scenario-1/payment
 3. 服务器生成 PaymentRequirements (含 hookData)
 4. 用户签名授权 $0.1 USDC
-5. SettlementHub 调用 RevenueSplitHook
+5. SettlementRouter 调用 RevenueSplitHook
 6. Hook 自动分账：
    - 70% → 商户
    - 20% → 推荐人（或平台）
@@ -157,7 +157,7 @@ const hookData = ethers.AbiCoder.encode(
 3. 前端调用 /api/scenario-2/payment
 4. 服务器生成 PaymentRequirements (含 hookData)
 5. 用户签名授权 $0.1 USDC
-6. SettlementHub 调用 NFTMintHook
+6. SettlementRouter 调用 NFTMintHook
 7. Hook 执行：
    - mint NFT #{tokenId} → 用户
    - 转账 $0.1 USDC → 商户
@@ -189,7 +189,7 @@ const hookData = ethers.AbiCoder.encode(
 2. 前端调用 /api/scenario-3/payment
 3. 服务器生成 PaymentRequirements (含 hookData)
 4. 用户签名授权 $0.1 USDC
-5. SettlementHub 调用 RewardHook
+5. SettlementRouter 调用 RewardHook
 6. Hook 执行：
    - 转账 $0.1 USDC → 商户
    - 发放 1000 Points → 用户

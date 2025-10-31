@@ -12,11 +12,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract MockFailingHook is ISettlementHook {
     using SafeERC20 for IERC20;
     
-    address public immutable settlementHub;
+    address public immutable settlementRouter;
     bool public shouldFail;
     
     constructor(address _settlementHub) {
-        settlementHub = _settlementHub;
+        settlementRouter = _settlementHub;
         shouldFail = true;
     }
     
@@ -34,14 +34,14 @@ contract MockFailingHook is ISettlementHook {
         address facilitator,
         bytes calldata data
     ) external override returns (bytes memory) {
-        require(msg.sender == settlementHub, "Only settlement hub");
+        require(msg.sender == settlementRouter, "Only settlement hub");
         
         if (shouldFail) {
             revert("Mock hook failure");
         }
         
         // Success case: transfer funds back to payer
-        IERC20(token).safeTransferFrom(settlementHub, payer, amount);
+        IERC20(token).safeTransferFrom(settlementRouter, payer, amount);
         
         return abi.encode("success");
     }
@@ -55,7 +55,7 @@ contract MockFailingHook is ISettlementHook {
 contract MockSimpleHook is ISettlementHook {
     using SafeERC20 for IERC20;
     
-    address public immutable settlementHub;
+    address public immutable settlementRouter;
     
     // Store last call parameters for test verification
     bytes32 public lastContextKey;
@@ -68,7 +68,7 @@ contract MockSimpleHook is ISettlementHook {
     bytes public lastData;
     
     constructor(address _settlementHub) {
-        settlementHub = _settlementHub;
+        settlementRouter = _settlementHub;
     }
     
     function execute(
@@ -81,7 +81,7 @@ contract MockSimpleHook is ISettlementHook {
         address facilitator,
         bytes calldata data
     ) external override returns (bytes memory) {
-        require(msg.sender == settlementHub, "Only settlement hub");
+        require(msg.sender == settlementRouter, "Only settlement hub");
         
         // Store parameters for test verification
         lastContextKey = contextKey;
@@ -97,7 +97,7 @@ contract MockSimpleHook is ISettlementHook {
         address recipient = abi.decode(data, (address));
         
         // Transfer to recipient
-        IERC20(token).safeTransferFrom(settlementHub, recipient, amount);
+        IERC20(token).safeTransferFrom(settlementRouter, recipient, amount);
         
         return abi.encode(recipient, amount);
     }

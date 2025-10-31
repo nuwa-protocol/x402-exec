@@ -29,7 +29,7 @@ struct Split {
 ## Deployment Example
 ```solidity
 // 1. Deploy Hook
-RevenueSplitHook hook = new RevenueSplitHook(settlementHub);
+RevenueSplitHook hook = new RevenueSplitHook(settlementRouter);
 
 // 2. Configure split for each transaction
 Split[] memory splits = new Split[](2);

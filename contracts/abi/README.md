@@ -1,10 +1,10 @@
 # x402 Settlement Extension ABI
 
-本目录包含 SettlementHub 和 Hook 合约的 ABI 文件。
+本目录包含 SettlementRouter 和 Hook 合约的 ABI 文件。
 
 ## 文件
 
-- `SettlementHub.json` - SettlementHub 合约 ABI
+- `SettlementRouter.json` - SettlementRouter 合约 ABI
 - `ISettlementHook.json` - ISettlementHook 接口 ABI
 - `IERC3009.json` - IERC3009 接口 ABI
 
@@ -15,7 +15,7 @@
 ```bash
 cd contracts
 forge build
-cat out/SettlementHub.sol/SettlementHub.json | jq '.abi' > abi/SettlementHub.json
+cat out/SettlementRouter.sol/SettlementRouter.json | jq '.abi' > abi/SettlementRouter.json
 cat out/ISettlementHook.sol/ISettlementHook.json | jq '.abi' > abi/ISettlementHook.json
 cat out/IERC3009.sol/IERC3009.json | jq '.abi' > abi/IERC3009.json
 ```
@@ -26,7 +26,7 @@ cat out/IERC3009.sol/IERC3009.json | jq '.abi' > abi/IERC3009.json
 
 ```typescript
 import { ethers } from 'ethers';
-import SettlementHubABI from './abi/SettlementHub.json';
+import SettlementHubABI from './abi/SettlementRouter.json';
 
 const settlement Hub = new ethers.Contract(
   settlementRouterAddress,
@@ -43,11 +43,11 @@ use alloy::sol;
 sol! {
     #[sol(rpc)]
     #[derive(Debug)]
-    SettlementHub,
-    "abi/SettlementHub.json"
+    SettlementRouter,
+    "abi/SettlementRouter.json"
 }
 
-let settlement_hub = SettlementHub::new(address, provider);
+let settlement_hub = SettlementRouter::new(address, provider);
 ```
 
 ### Python
@@ -56,7 +56,7 @@ let settlement_hub = SettlementHub::new(address, provider);
 from web3 import Web3
 import json
 
-with open('abi/SettlementHub.json') as f:
+with open('abi/SettlementRouter.json') as f:
     abi = json.load(f)
 
 settlement_hub = w3.eth.contract(

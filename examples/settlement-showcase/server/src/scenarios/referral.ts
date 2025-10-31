@@ -70,7 +70,7 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
       // Required for EIP-712 signature (USDC contract domain)
       name: 'USDC',
       version: '2',
-      // Settlement-specific data for SettlementHub
+      // Settlement-specific data for SettlementRouter
       settlementRouter: appConfig.settlementRouterAddress,
       salt,
       payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient

@@ -24,7 +24,7 @@ interface PaymentRequirements {
   extra?: {
     name?: string;
     version?: string;
-    settlementHub?: string;
+    settlementRouter?: string;
     salt?: string;
     payTo?: string;
     facilitatorFee?: string;
@@ -94,7 +94,7 @@ export function usePayment() {
 
       // Step 3: Extract settlement parameters from extra field
       const {
-        settlementHub,
+        settlementRouter,
         salt,
         payTo: finalPayTo,
         facilitatorFee,
@@ -104,12 +104,12 @@ export function usePayment() {
         version,
       } = paymentReq.extra || {};
 
-      if (!settlementHub || !salt || !finalPayTo || !hook || !hookData) {
+      if (!settlementRouter || !salt || !finalPayTo || !hook || !hookData) {
         throw new Error('Missing required settlement parameters in payment requirements');
       }
 
       console.log('[Payment] Step 3: Settlement parameters', {
-        settlementHub,
+        settlementRouter,
         salt,
         finalPayTo,
         facilitatorFee,
@@ -141,7 +141,7 @@ export function usePayment() {
       // Step 5: Calculate commitment hash (this becomes the nonce)
       const commitmentParams = {
         chainId,
-        hub: settlementHub,
+        hub: settlementRouter,
         token: paymentReq.asset,
         from,
         value,
@@ -184,7 +184,7 @@ export function usePayment() {
 
       const message = {
         from,
-        to: settlementHub as Hex,
+        to: settlementRouter as Hex,
         value: BigInt(value),
         validAfter: BigInt(validAfter),
         validBefore: BigInt(validBefore),
@@ -213,7 +213,7 @@ export function usePayment() {
           signature,
           authorization: {
             from,
-            to: settlementHub,
+            to: settlementRouter,
             value,
             validAfter,
             validBefore,

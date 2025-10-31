@@ -23,7 +23,7 @@ interface IRewardToken {
  * - RewardToken address is passed via hookData at runtime
  * 
  * Flow:
- * 1. Receive payment authorization from SettlementHub
+ * 1. Receive payment authorization from SettlementRouter
  * 2. Transfer USDC to merchant
  * 3. Calculate reward points based on payment amount
  * 4. Distribute reward points to payer
@@ -96,7 +96,7 @@ contract RewardHook is ISettlementHook {
     
     /**
      * @notice Executes the reward distribution logic
-     * @dev Called by SettlementHub during settleAndExecute
+     * @dev Called by SettlementRouter during settleAndExecute
      * @param contextKey Unique identifier for this settlement
      * @param payer Address of the payment sender
      * @param token Address of the payment token (USDC)

@@ -2,7 +2,7 @@
 # Deployment script for Settlement Showcase scenarios
 # 
 # Prerequisites:
-# 1. SettlementHub must be deployed first (run: ./deploy.sh)
+# 1. SettlementRouter must be deployed first (run: ./deploy.sh)
 # 2. SETTLEMENT_HUB_ADDRESS must be set in .env
 #
 # This script deploys contracts for showcase scenarios:
@@ -101,7 +101,7 @@ set +a
 # Verify required variables
 if [ -z "$SETTLEMENT_HUB_ADDRESS" ]; then
     echo "Error: SETTLEMENT_HUB_ADDRESS is not set"
-    echo "Please deploy SettlementHub first:"
+    echo "Please deploy SettlementRouter first:"
     echo "  ./deploy.sh"
     exit 1
 fi
