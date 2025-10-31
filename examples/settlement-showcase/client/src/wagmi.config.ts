@@ -4,7 +4,7 @@
 
 import { http, createConfig } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { injected, walletConnect } from 'wagmi/connectors';
+import { injected } from 'wagmi/connectors';
 
 // Configure wagmi
 export const config = createConfig({

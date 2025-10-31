@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { usePayment } from '../hooks/usePayment';
 import { PaymentStatus } from '../components/PaymentStatus';
+import { DebugPanel } from '../components/DebugPanel';
 
 interface ReferralSplitProps {
   isConnected: boolean;
@@ -20,7 +21,7 @@ const DEFAULT_ADDRESSES = {
 
 export function ReferralSplit({ isConnected }: ReferralSplitProps) {
   const [referrer, setReferrer] = useState('');
-  const { status, error, result, pay, reset } = usePayment();
+  const { status, error, result, debugInfo, pay, reset } = usePayment();
 
   // Read referrer from URL parameters on component mount
   useEffect(() => {
@@ -127,6 +128,9 @@ export function ReferralSplit({ isConnected }: ReferralSplitProps) {
         error={error}
         successMessage="Payment split successfully among 3 parties!"
       />
+
+      {/* Debug Panel - shows commitment parameters and calculation */}
+      <DebugPanel debugInfo={debugInfo} />
 
       {status === 'success' && result?.settlement?.transaction && (
         <div className="success-details" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#d4edda', borderRadius: '8px', border: '1px solid #c3e6cb' }}>

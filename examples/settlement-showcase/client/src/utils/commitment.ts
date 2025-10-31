@@ -3,7 +3,7 @@
  * Generates cryptographic commitments binding all settlement parameters to client signature
  */
 
-import { ethers } from 'ethers';
+import { encodePacked, keccak256, isAddress, isHex } from 'viem';
 
 export interface CommitmentParams {
   chainId: number;
@@ -32,8 +32,8 @@ export interface CommitmentParams {
 export function calculateCommitment(params: CommitmentParams): string {
   // Pack parameters in exact order as in SettlementRouter.sol
   // Solidity: keccak256(abi.encodePacked(...))
-  return ethers.keccak256(
-    ethers.solidityPacked(
+  return keccak256(
+    encodePacked(
       [
         "string",    // Protocol identifier
         "uint256",   // Chain ID
@@ -51,18 +51,18 @@ export function calculateCommitment(params: CommitmentParams): string {
       ],
       [
         "X402/settle/v1",
-        params.chainId,
-        params.hub,
-        params.token,
-        params.from,
-        params.value,
-        params.validAfter,
-        params.validBefore,
-        params.salt,
-        params.payTo,
-        params.facilitatorFee,
-        params.hook,
-        ethers.keccak256(params.hookData)
+        BigInt(params.chainId),
+        params.hub as `0x${string}`,
+        params.token as `0x${string}`,
+        params.from as `0x${string}`,
+        BigInt(params.value),
+        BigInt(params.validAfter),
+        BigInt(params.validBefore),
+        params.salt as `0x${string}`,
+        params.payTo as `0x${string}`,
+        BigInt(params.facilitatorFee),
+        params.hook as `0x${string}`,
+        keccak256(params.hookData as `0x${string}`)
       ]
     )
   );
@@ -74,19 +74,19 @@ export function calculateCommitment(params: CommitmentParams): string {
  * @throws Error if validation fails
  */
 export function validateCommitmentParams(params: CommitmentParams): void {
-  if (!ethers.isAddress(params.hub)) {
+  if (!isAddress(params.hub)) {
     throw new Error('Invalid hub address');
   }
-  if (!ethers.isAddress(params.token)) {
+  if (!isAddress(params.token)) {
     throw new Error('Invalid token address');
   }
-  if (!ethers.isAddress(params.from)) {
+  if (!isAddress(params.from)) {
     throw new Error('Invalid from address');
   }
-  if (!ethers.isAddress(params.payTo)) {
+  if (!isAddress(params.payTo)) {
     throw new Error('Invalid payTo address');
   }
-  if (!ethers.isAddress(params.hook)) {
+  if (!isAddress(params.hook)) {
     throw new Error('Invalid hook address');
   }
   
@@ -101,11 +101,11 @@ export function validateCommitmentParams(params: CommitmentParams): void {
   }
   
   // Validate bytes32 values
-  if (!ethers.isHexString(params.salt, 32)) {
-    throw new Error('Invalid salt: must be bytes32');
+  if (!isHex(params.salt, { strict: true }) || (params.salt.length !== 66)) {
+    throw new Error('Invalid salt: must be bytes32 (0x + 64 hex chars)');
   }
   
-  if (!ethers.isHexString(params.hookData)) {
+  if (!isHex(params.hookData)) {
     throw new Error('Invalid hookData: must be hex string');
   }
 }

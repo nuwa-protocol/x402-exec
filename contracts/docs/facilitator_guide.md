@@ -156,7 +156,7 @@ function settleWithHub(request):
     payload = request.paymentPayload
     
     // 2. Create contract instance
-    settlementRouter = createContract(extra.settlementRouter, SETTLEMENT_HUB_ABI)
+    settlementRouter = createContract(extra.settlementRouter, SETTLEMENT_ROUTER_ABI)
     
     // 3. Call settleAndExecute with all parameters
     transaction = settlementRouter.settleAndExecute(
@@ -463,7 +463,7 @@ Test end-to-end settlement flow:
 ```pseudocode
 test "settles with hub successfully":
     request = createSettlementRequest(
-        settlementRouter: SETTLEMENT_HUB_ADDRESS,
+        settlementRouter: SETTLEMENT_ROUTER_ADDRESS,
         hook: HOOK_ADDRESS,
         hookData: "0x..."
     )
@@ -512,9 +512,9 @@ RPC_URL_BASE=https://mainnet.base.org
 PRIVATE_KEY=0x...
 
 # SettlementRouter addresses (per network)
-SETTLEMENT_HUB_BASE_SEPOLIA=0x...
-SETTLEMENT_HUB_BASE=0x...
-SETTLEMENT_HUB_ETHEREUM=0x...
+SETTLEMENT_ROUTER_BASE_SEPOLIA=0x...
+SETTLEMENT_ROUTER_BASE=0x...
+SETTLEMENT_ROUTER_ETHEREUM=0x...
 ```
 
 ### Network Configuration

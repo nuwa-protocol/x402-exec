@@ -46,7 +46,7 @@ app.onError((err, c) => {
 async function processPayment(
   c: any,
   scenarioName: string,
-  paymentRequirements: any[],
+  paymentRequirementsGenerator: (() => any[]) | (() => Promise<any[]>),
   onSuccess: (settlement: any, selectedRequirement: any) => any
 ) {
   const logPrefix = `[${scenarioName}]`;
@@ -55,7 +55,8 @@ async function processPayment(
   const payment = c.req.header('X-PAYMENT');
   if (!payment) {
     console.log(`${logPrefix} No X-PAYMENT header found, returning 402`);
-    // First request: return 402 with payment requirements
+    // First request: Generate and return 402 with payment requirements
+    const paymentRequirements = await paymentRequirementsGenerator();
     return c.json({
       error: 'X-PAYMENT header is required',
       accepts: paymentRequirements,
@@ -80,6 +81,8 @@ async function processPayment(
     }, null, 2));
   } catch (error: any) {
     console.error(`${logPrefix} Error decoding payment:`, error);
+    // On decode error, regenerate requirements
+    const paymentRequirements = await paymentRequirementsGenerator();
     return c.json({
       error: 'Invalid or malformed payment header',
       accepts: paymentRequirements,
@@ -87,13 +90,25 @@ async function processPayment(
     }, 402);
   }
   
+  // IMPORTANT: Extract paymentRequirements from the decoded payment if available
+  // This ensures we use the SAME requirements (including salt) that client used
+  let selectedPaymentRequirements: any[];
+  if ((decodedPayment as any).paymentRequirements) {
+    console.log(`${logPrefix} ✅ Using paymentRequirements from decoded payment (preserves original salt)`);
+    selectedPaymentRequirements = [(decodedPayment as any).paymentRequirements];
+  } else {
+    console.log(`${logPrefix} ⚠️  WARNING: No paymentRequirements in decoded payment, regenerating (may cause salt mismatch!)`);
+    selectedPaymentRequirements = await paymentRequirementsGenerator();
+  }
+  
   // Find matching payment requirement
-  const selectedRequirement = findMatchingPaymentRequirements(paymentRequirements, decodedPayment);
+  const selectedRequirement = findMatchingPaymentRequirements(selectedPaymentRequirements, decodedPayment);
   if (!selectedRequirement) {
     console.error(`${logPrefix} No matching payment requirements found`);
+    const fallbackRequirements = await paymentRequirementsGenerator();
     return c.json({
       error: 'Unable to find matching payment requirements',
-      accepts: paymentRequirements,
+      accepts: fallbackRequirements,
       x402Version,
     }, 402);
   }
@@ -108,7 +123,7 @@ async function processPayment(
     console.error(`${logPrefix} Payment verification failed:`, verification.invalidReason);
     return c.json({
       error: verification.invalidReason,
-      accepts: paymentRequirements,
+      accepts: selectedPaymentRequirements,
       payer: verification.payer,
       x402Version,
     }, 402);
@@ -124,7 +139,7 @@ async function processPayment(
     console.error(`${logPrefix} Settlement failed:`, settlement.errorReason);
     return c.json({
       error: settlement.errorReason || 'Settlement failed',
-      accepts: paymentRequirements,
+      accepts: selectedPaymentRequirements,
       x402Version,
     }, 402);
   }
@@ -185,17 +200,23 @@ app.post('/api/scenario-1/payment', async (c) => {
     const resource = url.href;
     console.log('[Referral Split] Resource URL:', resource);
     
-    // Generate payment requirements with custom extra fields (including hookData)
-    const paymentRequirements = [referral.generateReferralPayment({
-      referrer: body.referrer,
-      merchantAddress: body.merchantAddress,
-      platformAddress: body.platformAddress,
-      resource, // Pass the full URL
-    })];
-    console.log('[Referral Split] Generated payment requirements:', JSON.stringify(paymentRequirements, null, 2));
+    // IMPORTANT: Don't generate payment requirements here!
+    // Pass a generator function to processPayment instead.
+    // This ensures payment requirements are only generated when needed (for 402 response),
+    // and NOT regenerated when client sends back the payment with X-PAYMENT header.
+    const generatePaymentRequirements = () => {
+      const requirements = [referral.generateReferralPayment({
+        referrer: body.referrer,
+        merchantAddress: body.merchantAddress,
+        platformAddress: body.platformAddress,
+        resource, // Pass the full URL
+      })];
+      console.log('[Referral Split] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
     
     // Use generic payment processor
-    return await processPayment(c, 'Referral Split', paymentRequirements, (settlement, selectedRequirement) => {
+    return await processPayment(c, 'Referral Split', generatePaymentRequirements, (settlement, selectedRequirement) => {
       return c.json({
         success: true,
         message: 'Payment processed! Funds split among 3 parties.',
@@ -239,16 +260,19 @@ app.post('/api/scenario-2/payment', async (c) => {
     const resource = url.href;
     console.log('[NFT Mint] Resource URL:', resource);
     
-    // Generate payment requirements with custom extra fields
-    const paymentRequirements = [await nft.generateNFTPayment({
-      recipient: body.recipient,
-      merchantAddress: body.merchantAddress,
-      resource, // Pass the full URL
-    })];
-    console.log('[NFT Mint] Generated payment requirements:', JSON.stringify(paymentRequirements, null, 2));
+    // IMPORTANT: Use generator function to avoid regenerating on second request
+    const generatePaymentRequirements = async () => {
+      const requirements = [await nft.generateNFTPayment({
+        recipient: body.recipient,
+        merchantAddress: body.merchantAddress,
+        resource, // Pass the full URL
+      })];
+      console.log('[NFT Mint] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
     
     // Use generic payment processor
-    return await processPayment(c, 'NFT Mint', paymentRequirements, (settlement, selectedRequirement) => {
+    return await processPayment(c, 'NFT Mint', generatePaymentRequirements, (settlement, selectedRequirement) => {
       return c.json({
         success: true,
         message: `NFT #${selectedRequirement.extra?.nftTokenId} minted to your wallet!`,
@@ -289,15 +313,18 @@ app.post('/api/scenario-3/payment', async (c) => {
     const resource = url.href;
     console.log('[Reward Points] Resource URL:', resource);
     
-    // Generate payment requirements with custom extra fields
-    const paymentRequirements = [await reward.generateRewardPayment({
-      merchantAddress: body.merchantAddress,
-      resource, // Pass the full URL
-    })];
-    console.log('[Reward Points] Generated payment requirements:', JSON.stringify(paymentRequirements, null, 2));
+    // IMPORTANT: Use generator function to avoid regenerating on second request
+    const generatePaymentRequirements = async () => {
+      const requirements = [await reward.generateRewardPayment({
+        merchantAddress: body.merchantAddress,
+        resource, // Pass the full URL
+      })];
+      console.log('[Reward Points] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
     
     // Use generic payment processor
-    return await processPayment(c, 'Reward Points', paymentRequirements, (settlement, selectedRequirement) => {
+    return await processPayment(c, 'Reward Points', generatePaymentRequirements, (settlement, selectedRequirement) => {
       return c.json({
         success: true,
         message: '1000 reward points credited to your wallet!',

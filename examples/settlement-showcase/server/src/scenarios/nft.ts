@@ -47,8 +47,8 @@ export async function generateNFTPayment(params: NFTMintParams) {
     throw new Error('Invalid recipient address');
   }
   
-  // Use provided merchant address or fallback to default
-  const merchant = merchantAddress || '0x1111111111111111111111111111111111111111';
+  // Use provided merchant address or fallback to resource server address
+  const merchant = merchantAddress || appConfig.resourceServerAddress;
   
   if (!ethers.isAddress(merchant)) {
     throw new Error('Invalid merchant address');

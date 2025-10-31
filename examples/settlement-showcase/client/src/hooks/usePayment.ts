@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { useWalletClient } from 'wagmi';
 import { calculateCommitment, validateCommitmentParams } from '../utils/commitment';
-import { type Hex, encodePacked, keccak256, encodeAbiParameters } from 'viem';
+import { type Hex } from 'viem';
 
 export type PaymentStatus = 'idle' | 'preparing' | 'paying' | 'signing' | 'submitting' | 'success' | 'error';
 
@@ -40,10 +40,18 @@ interface PaymentResponse {
   x402Version?: number;
 }
 
+export interface DebugInfo {
+  paymentRequirements?: any;
+  commitmentParams?: any;
+  calculatedNonce?: string;
+  authorizationParams?: any;
+}
+
 export function usePayment() {
   const [status, setStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string>('');
   const [result, setResult] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({});
   const { data: walletClient } = useWalletClient();
 
   const pay = async (endpoint: string, body?: any) => {
@@ -92,6 +100,9 @@ export function usePayment() {
       const paymentReq = paymentResponse.accepts[0];
       const x402Version = paymentResponse.x402Version || 1;
 
+      // Store payment requirements for debugging
+      setDebugInfo(prev => ({ ...prev, paymentRequirements: paymentReq }));
+
       // Step 3: Extract settlement parameters from extra field
       const {
         settlementRouter,
@@ -130,13 +141,17 @@ export function usePayment() {
       const validAfter = (Math.floor(Date.now() / 1000) - 600).toString(); // 10 minutes before
       const validBefore = (Math.floor(Date.now() / 1000) + paymentReq.maxTimeoutSeconds).toString();
 
-      console.log('[Payment] Step 4: Authorization parameters', {
+      const authParams = {
         chainId,
         from,
         value,
         validAfter,
         validBefore,
-      });
+      };
+      console.log('[Payment] Step 4: Authorization parameters', authParams);
+      
+      // Store authorization parameters for debugging
+      setDebugInfo(prev => ({ ...prev, authorizationParams: authParams }));
 
       // Step 5: Calculate commitment hash (this becomes the nonce)
       const commitmentParams = {
@@ -160,6 +175,13 @@ export function usePayment() {
       const nonce = calculateCommitment(commitmentParams) as Hex;
       
       console.log('[Payment] Step 5: Calculated commitment/nonce', nonce);
+      
+      // Store commitment params and calculated nonce for debugging
+      setDebugInfo(prev => ({ 
+        ...prev, 
+        commitmentParams,
+        calculatedNonce: nonce 
+      }));
 
       setStatus('signing');
 
@@ -205,6 +227,8 @@ export function usePayment() {
       setStatus('submitting');
 
       // Step 7: Construct payment payload
+      // IMPORTANT: Include the original paymentRequirements in the payload
+      // This ensures the server uses the SAME salt and parameters
       const paymentPayload = {
         x402Version,
         scheme: paymentReq.scheme,
@@ -220,6 +244,7 @@ export function usePayment() {
             nonce,
           },
         },
+        paymentRequirements: paymentReq, // Include original requirements
       };
 
       // Step 8: Encode payment header (base64url)
@@ -267,12 +292,14 @@ export function usePayment() {
     setStatus('idle');
     setError('');
     setResult(null);
+    setDebugInfo({});
   };
 
   return {
     status,
     error,
     result,
+    debugInfo,
     pay,
     reset,
   };

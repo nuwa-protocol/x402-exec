@@ -227,8 +227,8 @@ mapping(address => mapping(address => uint256)) public pendingFees
 
 ```typescript
 const settlementRouter = new ethers.Contract(
-  SETTLEMENT_HUB_ADDRESS,
-  SETTLEMENT_HUB_ABI,
+  SETTLEMENT_ROUTER_ADDRESS,
+  SETTLEMENT_ROUTER_ABI,
   signer
 );
 

@@ -3,7 +3,7 @@
 # 
 # Prerequisites:
 # 1. SettlementRouter must be deployed first (run: ./deploy.sh)
-# 2. SETTLEMENT_HUB_ADDRESS must be set in .env
+# 2. SETTLEMENT_ROUTER_ADDRESS must be set in .env
 #
 # This script deploys contracts for showcase scenarios:
 # - referral: RevenueSplitHook (examples/revenue-split/)
@@ -99,8 +99,8 @@ source ../.env
 set +a
 
 # Verify required variables
-if [ -z "$SETTLEMENT_HUB_ADDRESS" ]; then
-    echo "Error: SETTLEMENT_HUB_ADDRESS is not set"
+if [ -z "$SETTLEMENT_ROUTER_ADDRESS" ]; then
+    echo "Error: SETTLEMENT_ROUTER_ADDRESS is not set"
     echo "Please deploy SettlementRouter first:"
     echo "  ./deploy.sh"
     exit 1
@@ -118,7 +118,7 @@ fi
 
 echo "Network Chain ID: $(cast chain-id --rpc-url $RPC_URL 2>/dev/null || echo 'N/A')"
 echo "RPC URL: $RPC_URL"
-echo "Settlement Hub: $SETTLEMENT_HUB_ADDRESS"
+echo "Settlement Router: $SETTLEMENT_ROUTER_ADDRESS"
 echo ""
 
 read -p "Deploy to this network? (y/n) " -n 1 -r

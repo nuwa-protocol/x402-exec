@@ -35,7 +35,7 @@ function App() {
             <p className="subtitle">x402 Payment Scenarios Demo</p>
           </div>
           <WalletConnect
-            address={address}
+            address={address ?? ''}
             isConnected={isConnected}
             isConnecting={isPending}
             onConnect={handleConnect}
@@ -72,7 +72,7 @@ function App() {
         <div className="scenario-container">
           {activeTab === 'referral' && <ReferralSplit isConnected={isConnected} />}
           {activeTab === 'nft' && (
-            <RandomNFT isConnected={isConnected} walletAddress={address} />
+            <RandomNFT isConnected={isConnected} walletAddress={address ?? ''} />
           )}
           {activeTab === 'reward' && <PointsReward isConnected={isConnected} />}
         </div>
@@ -82,7 +82,7 @@ function App() {
         <p>
           Built with <a href="https://x402.org" target="_blank" rel="noopener noreferrer">x402 Protocol</a>
           {' '} | {' '}
-          <a href="https://github.com/nuwa-protocol/x402_settle" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/nuwa-protocol/x402-exec" target="_blank" rel="noopener noreferrer">
             View on GitHub
           </a>
         </p>
