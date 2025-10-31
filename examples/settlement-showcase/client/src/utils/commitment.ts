@@ -24,13 +24,13 @@ export interface CommitmentParams {
  * Calculate commitment hash for X402 settlement
  * This hash becomes the EIP-3009 nonce, binding all business parameters to the client signature
  * 
- * CRITICAL: Parameter order must exactly match SettlementHub.sol
+ * CRITICAL: Parameter order must exactly match SettlementRouter.sol
  * 
  * @param params - All settlement parameters
  * @returns bytes32 commitment hash
  */
 export function calculateCommitment(params: CommitmentParams): string {
-  // Pack parameters in exact order as in SettlementHub.sol
+  // Pack parameters in exact order as in SettlementRouter.sol
   // Solidity: keccak256(abi.encodePacked(...))
   return ethers.keccak256(
     ethers.solidityPacked(

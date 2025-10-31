@@ -1,15 +1,15 @@
 #!/bin/bash
-# Deployment script for SettlementHub core contract
-# This ONLY deploys the core SettlementHub contract.
+# Deployment script for SettlementRouter core contract
+# This ONLY deploys the core SettlementRouter contract.
 # Hooks and scenarios should be deployed separately.
 
 set -e
 
 echo "========================================="
-echo "SettlementHub - Core Contract Deployment"
+echo "SettlementRouter - Core Contract Deployment"
 echo "========================================="
 echo ""
-echo "This script deploys ONLY the SettlementHub contract."
+echo "This script deploys ONLY the SettlementRouter contract."
 echo "Scenario-specific hooks will be deployed with their scenarios."
 echo ""
 
@@ -48,7 +48,7 @@ echo "RPC URL: $RPC_URL"
 echo "Deployer: $(cast wallet address --private-key $DEPLOYER_PRIVATE_KEY)"
 echo ""
 
-read -p "Deploy SettlementHub to this network? (y/n) " -n 1 -r
+read -p "Deploy SettlementRouter to this network? (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Deployment cancelled"
@@ -65,7 +65,7 @@ forge build
 
 echo ""
 echo "========================================="
-echo "Deploying SettlementHub..."
+echo "Deploying SettlementRouter..."
 echo "========================================="
 echo ""
 
@@ -86,7 +86,7 @@ forge script script/DeploySettlement.s.sol:DeploySettlement \
 
 echo ""
 echo "========================================="
-echo "✅ SettlementHub deployed!"
+echo "✅ SettlementRouter deployed!"
 echo "========================================="
 echo ""
 echo "Next steps:"

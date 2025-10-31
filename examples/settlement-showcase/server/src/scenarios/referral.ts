@@ -61,7 +61,7 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
     network: appConfig.network as any,
     maxAmountRequired: '100000', // 0.1 USDC (6 decimals)
     asset: appConfig.usdcAddress,
-    payTo: appConfig.settlementHubAddress,
+    payTo: appConfig.settlementRouterAddress,
     resource: resource || '/api/scenario-1/payment', // Use provided resource or fallback
     description: 'Referral Split: Pay $0.1 and split among merchant, referrer, and platform',
     mimeType: 'application/json',
@@ -70,10 +70,10 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
       // Required for EIP-712 signature (USDC contract domain)
       name: 'USDC',
       version: '2',
-      // Settlement-specific data for SettlementHub
-      settlementHub: appConfig.settlementHubAddress,
+      // Settlement-specific data for SettlementRouter
+      settlementRouter: appConfig.settlementRouterAddress,
       salt,
-      payTo: merchant, // Primary recipient for this scenario
+      payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient
       facilitatorFee,
       hook: appConfig.revenueSplitHookAddress,
       hookData,

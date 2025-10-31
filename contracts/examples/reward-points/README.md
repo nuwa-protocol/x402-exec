@@ -25,7 +25,7 @@ This scenario demonstrates customer loyalty and reward point systems.
 **Configuration**:
 ```solidity
 constructor(address _settlementHub) {
-    settlementHub = _settlementHub;
+    settlementRouter = _settlementHub;
 }
 
 // hookData format: abi.encode(RewardConfig)
@@ -60,7 +60,7 @@ function remainingRewards() external view returns (uint256);
 
 ```solidity
 // 1. Deploy RewardHook (reusable infrastructure)
-RewardHook hook = new RewardHook(settlementHub);
+RewardHook hook = new RewardHook(settlementRouter);
 
 // 2. Deploy RewardToken with hook address (secure by design)
 RewardToken rewardToken = new RewardToken(address(hook));

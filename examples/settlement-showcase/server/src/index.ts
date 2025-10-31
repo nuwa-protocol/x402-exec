@@ -147,7 +147,7 @@ app.get('/api/health', (c) => {
     message: 'Settlement Showcase Server',
     network: appConfig.network,
     contracts: {
-      settlementHub: appConfig.settlementHubAddress,
+      settlementRouter: appConfig.settlementRouterAddress,
       randomNFT: appConfig.randomNFTAddress,
       rewardToken: appConfig.rewardTokenAddress,
     },
@@ -330,7 +330,7 @@ console.log(`
 ║   Port:              ${port.toString().padEnd(33)}║
 ║   Facilitator:       ${appConfig.facilitatorUrl.slice(0, 33)}║
 ║                                                           ║
-║   SettlementHub:     ${appConfig.settlementHubAddress.slice(0, 20)}...       ║
+║   SettlementRouter:     ${appConfig.settlementRouterAddress.slice(0, 20)}...       ║
 ║   USDC Address:      ${appConfig.usdcAddress.slice(0, 20)}...       ║
 ║   RandomNFT:         ${appConfig.randomNFTAddress.slice(0, 20)}...       ║
 ║   RewardToken:       ${appConfig.rewardTokenAddress.slice(0, 20)}...       ║

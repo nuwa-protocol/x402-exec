@@ -29,7 +29,7 @@ export interface CommitmentParams {
  * @returns bytes32 commitment hash
  */
 export function calculateCommitment(params: CommitmentParams): string {
-  // Pack parameters in exact order as in SettlementHub.sol
+  // Pack parameters in exact order as in SettlementRouter.sol
   return ethers.keccak256(
     ethers.solidityPacked(
       [

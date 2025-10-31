@@ -81,7 +81,7 @@ export async function generateNFTPayment(params: NFTMintParams) {
     network: appConfig.network as any, // Cast to any to resolve type incompatibility
     maxAmountRequired: '100000', // 0.1 USDC
     asset: appConfig.usdcAddress,
-    payTo: appConfig.settlementHubAddress,
+    payTo: appConfig.settlementRouterAddress,
     resource: resource || '/api/scenario-2/payment', // Use provided resource or fallback
     description: `Random NFT #${tokenId}: Pay $0.1 and receive an NFT`,
     mimeType: 'application/json',
@@ -91,9 +91,9 @@ export async function generateNFTPayment(params: NFTMintParams) {
       name: 'USDC',
       version: '2',
       // Settlement-specific data
-      settlementHub: appConfig.settlementHubAddress,
+      settlementRouter: appConfig.settlementRouterAddress,
       salt,
-      payTo: merchant, // Final recipient for this scenario
+      payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient
       facilitatorFee,
       hook: appConfig.nftMintHookAddress,
       hookData,

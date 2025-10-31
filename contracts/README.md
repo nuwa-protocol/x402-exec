@@ -16,10 +16,10 @@
 
 ```
 Client (x402)
-  ↓ 签名 EIP-3009 授权 (to = SettlementHub)
+  ↓ 签名 EIP-3009 授权 (to = SettlementRouter)
 Facilitator
   ↓ settleAndExecute(token, from, value, ..., signature, hook, hookData)
-SettlementHub
+SettlementRouter
   ├─→ token.transferWithAuthorization() 【资金进入 Hub】
   ├─→ hook.execute() 【业务逻辑：分账/发货/NFT/...】
   └─→ 验证余额为 0 【不持币】
@@ -27,7 +27,7 @@ SettlementHub
 
 ## 合约
 
-### SettlementHub
+### SettlementRouter
 
 核心结算中心，负责：
 - 消费 EIP-3009 授权
@@ -85,7 +85,7 @@ interface ISettlementHook {
 
 ```json
 {
-  "settlementHub": "0x...",  // SettlementHub 合约地址
+  "settlementRouter": "0x...",  // SettlementRouter 合约地址
   "hook": "0x...",           // Hook 合约地址
   "hookData": "0x..."        // Hook 参数（hex 编码）
 }
@@ -99,13 +99,13 @@ interface ISettlementHook {
   "network": "base-sepolia",
   "maxAmountRequired": "1000000",
   "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-  "payTo": "0xSettlementHubAddress",
+  "payTo": "0xsettlementRouterAddress",
   "resource": "https://api.example.com/nft/mint",
   "description": "Mint NFT with revenue split",
   "mimeType": "application/json",
   "maxTimeoutSeconds": 60,
   "extra": {
-    "settlementHub": "0xSettlementHubAddress",
+    "settlementRouter": "0xsettlementRouterAddress",
     "hook": "0xNFTMintAndSplitHookAddress",
     "hookData": "0x..."
   }
@@ -120,19 +120,19 @@ interface ISettlementHook {
 fn is_settlement_mode(requirements: &PaymentRequirements) -> bool {
     requirements.extra
         .as_ref()
-        .and_then(|extra| extra.get("settlementHub"))
+        .and_then(|extra| extra.get("settlementRouter"))
         .is_some()
 }
 ```
 
-### 调用 SettlementHub
+### 调用 SettlementRouter
 
 ```rust
 // 标准模式：
 token.transferWithAuthorization(from, to, value, ..., signature)
 
 // 结算模式：
-settlementHub.settleAndExecute(token, from, value, ..., signature, hook, hookData)
+settlementRouter.settleAndExecute(token, from, value, ..., signature, hook, hookData)
 ```
 
 参数几乎完全相同，只是调用目标和多了 hook 参数！
@@ -143,15 +143,15 @@ settlementHub.settleAndExecute(token, from, value, ..., signature, hook, hookDat
 
 ```solidity
 contract MyHook is ISettlementHook {
-    address public immutable settlementHub;
+    address public immutable settlementRouter;
     
     modifier onlyHub() {
-        require(msg.sender == settlementHub, "Only hub");
+        require(msg.sender == settlementRouter, "Only hub");
         _;
     }
     
     constructor(address _settlementHub) {
-        settlementHub = _settlementHub;
+        settlementRouter = _settlementHub;
     }
     
     function execute(
@@ -163,7 +163,7 @@ contract MyHook is ISettlementHook {
     ) external onlyHub returns (bytes memory) {
         // 1. 解码业务数据
         // 2. 执行业务逻辑
-        // 3. 从 settlementHub 转账资金
+        // 3. 从 settlementRouter 转账资金
         // 4. 返回结果
     }
 }
@@ -171,10 +171,10 @@ contract MyHook is ISettlementHook {
 
 ### Hook 安全要求
 
-1. ✅ **onlyHub 修饰符**：只允许 SettlementHub 调用
+1. ✅ **onlyHub 修饰符**：只允许 SettlementRouter 调用
 2. ✅ **消费全部资金**：Hook 必须将全部 amount 转出或退回
 3. ✅ **不持有资金**：Hook 不应保留任何余额
-4. ✅ **重入保护**：依赖 SettlementHub 的 nonReentrant
+4. ✅ **重入保护**：依赖 SettlementRouter 的 nonReentrant
 5. ✅ **错误处理**：使用 revert 确保失败时整体回滚
 
 ### hookData 编码示例
@@ -232,14 +232,14 @@ export BASESCAN_API_KEY="..."
 ### 部署脚本
 
 ```bash
-# 部署 SettlementHub
+# 部署 SettlementRouter
 forge script script/DeploySettlementHub.s.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
 
 # 部署 Hook 示例
 forge script script/DeployHooks.s.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
 
 # 验证合约
-forge verify-contract <address> SettlementHub --chain-id 84532
+forge verify-contract <address> SettlementRouter --chain-id 84532
 ```
 
 ## 测试
@@ -260,7 +260,7 @@ forge coverage
 
 ## 安全考虑
 
-### SettlementHub 安全
+### SettlementRouter 安全
 
 - ✅ 不持币：每笔交易后余额必须为 0
 - ✅ 重入保护：nonReentrant 修饰符

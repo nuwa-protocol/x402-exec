@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -23,7 +23,7 @@ interface IRewardToken {
  * - RewardToken address is passed via hookData at runtime
  * 
  * Flow:
- * 1. Receive payment authorization from SettlementHub
+ * 1. Receive payment authorization from SettlementRouter
  * 2. Transfer USDC to merchant
  * 3. Calculate reward points based on payment amount
  * 4. Distribute reward points to payer
@@ -38,8 +38,8 @@ contract RewardHook is ISettlementHook {
     
     // ===== Constants & Immutables =====
     
-    /// @notice Address of the SettlementHub contract
-    address public immutable settlementHub;
+    /// @notice Address of the SettlementRouter contract
+    address public immutable settlementRouter;
     
     /// @notice Reward rate: points per $0.1 USDC
     /// @dev For 0.1 USDC (100,000 in 6 decimals), user gets 1000 points (1000 * 10^18)
@@ -71,13 +71,13 @@ contract RewardHook is ISettlementHook {
     
     // ===== Errors =====
     
-    error OnlyHub();
+    error OnlyRouter();
     error InvalidAddress();
     
     // ===== Modifiers =====
     
-    modifier onlyHub() {
-        if (msg.sender != settlementHub) revert OnlyHub();
+    modifier onlyRouter() {
+        if (msg.sender != settlementRouter) revert OnlyRouter();
         _;
     }
     
@@ -85,18 +85,18 @@ contract RewardHook is ISettlementHook {
     
     /**
      * @notice Initializes the reward hook
-     * @param _settlementHub Address of the SettlementHub contract
+     * @param _settlementRouter Address of the SettlementRouter contract
      */
-    constructor(address _settlementHub) {
-        require(_settlementHub != address(0), "Invalid hub address");
-        settlementHub = _settlementHub;
+    constructor(address _settlementRouter) {
+        require(_settlementRouter != address(0), "Invalid router address");
+        settlementRouter = _settlementRouter;
     }
     
     // ===== External Functions =====
     
     /**
      * @notice Executes the reward distribution logic
-     * @dev Called by SettlementHub during settleAndExecute
+     * @dev Called by SettlementRouter during settleAndExecute
      * @param contextKey Unique identifier for this settlement
      * @param payer Address of the payment sender
      * @param token Address of the payment token (USDC)
@@ -116,7 +116,7 @@ contract RewardHook is ISettlementHook {
         address payTo,
         address facilitator,
         bytes calldata data
-    ) external onlyHub returns (bytes memory) {
+    ) external onlyRouter returns (bytes memory) {
         // Decode configuration
         RewardConfig memory config = abi.decode(data, (RewardConfig));
         
@@ -126,7 +126,7 @@ contract RewardHook is ISettlementHook {
         }
         
         // 1. Transfer payment to merchant
-        IERC20(token).safeTransferFrom(settlementHub, config.merchant, amount);
+        IERC20(token).safeTransferFrom(settlementRouter, config.merchant, amount);
         
         // 2. Calculate reward points
         // amount is in 6 decimals (USDC), reward is in 18 decimals (ERC20)

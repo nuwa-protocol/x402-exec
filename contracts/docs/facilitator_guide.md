@@ -14,7 +14,7 @@ A Facilitator is a service that processes x402 payment requests by:
 ## Settlement Extension Framework
 
 The x402 settlement extension allows Facilitators to support advanced payment flows through:
-- **SettlementHub**: A smart contract that coordinates payments and executes hooks
+- **SettlementRouter**: A smart contract that coordinates payments and executes hooks
 - **Hooks**: Custom logic executed after payment settlement
 - **Extended Parameters**: Additional configuration in the `extra` field
 
@@ -27,7 +27,7 @@ Your Facilitator needs to detect when a payment request requires settlement exte
 **Required Fields in `extra`:**
 ```json
 {
-  "settlementHub": "0x...",  // SettlementHub contract address
+  "settlementRouter": "0x...",  // SettlementRouter contract address
   "salt": "0x...",           // Unique identifier (32 bytes, for idempotency)
   "payTo": "0x...",          // Final recipient address
   "facilitatorFee": "10000", // Facilitator fee amount (e.g., 0.01 USDC = 10000 in 6 decimals)
@@ -40,7 +40,7 @@ Your Facilitator needs to detect when a payment request requires settlement exte
 
 ```pseudocode
 function isSettlementMode(paymentRequirements):
-    return paymentRequirements.extra.settlementHub exists
+    return paymentRequirements.extra.settlementRouter exists
 ```
 
 ### 2. Settlement Flow Routing
@@ -51,10 +51,10 @@ Modify your main settlement method to route between standard and extended modes:
 ```
 Payment Request
        ↓
-   Check extra.settlementHub
+   Check extra.settlementRouter
        ↓
    ┌─────────────────┐
-   │ settlementHub?  │
+   │ settlementRouter?  │
    └─────────────────┘
        ↓         ↓
     Yes │       │ No
@@ -73,16 +73,16 @@ function settle(request):
         return settleStandard(request)
 ```
 
-### 3. SettlementHub Integration
+### 3. SettlementRouter Integration
 
-When settlement mode is detected, call `SettlementHub.settleAndExecute` instead of direct token transfer:
+When settlement mode is detected, call `SettlementRouter.settleAndExecute` instead of direct token transfer:
 
 **Standard vs Settlement Mode:**
 
 | Mode | Target Contract | Method | Parameters |
 |------|----------------|--------|------------|
 | Standard | ERC-3009 Token | `transferWithAuthorization` | token, from, to, value, validAfter, validBefore, nonce, signature |
-| Settlement | SettlementHub | `settleAndExecute` | **same as above** + salt, payTo, facilitatorFee, hook, hookData |
+| Settlement | SettlementRouter | `settleAndExecute` | **same as above** + salt, payTo, facilitatorFee, hook, hookData |
 
 **Key Insight:** Settlement mode uses the same authorization parameters but adds settlement-specific parameters!
 
@@ -94,7 +94,7 @@ Parse the `extra` field to extract settlement parameters:
 ```json
 {
   "extra": {
-    "settlementHub": "0x1234...",
+    "settlementRouter": "0x1234...",
     "salt": "0x5abc...",
     "payTo": "0x9def...",
     "facilitatorFee": "10000",
@@ -108,7 +108,7 @@ Parse the `extra` field to extract settlement parameters:
 
 ```pseudocode
 function parseSettlementExtra(extra):
-    validate extra.settlementHub exists
+    validate extra.settlementRouter exists
     validate extra.salt exists
     validate extra.payTo exists
     validate extra.facilitatorFee exists
@@ -116,7 +116,7 @@ function parseSettlementExtra(extra):
     validate extra.hookData exists
     
     return {
-        settlementHub: extra.settlementHub,
+        settlementRouter: extra.settlementRouter,
         salt: extra.salt,
         payTo: extra.payTo,
         facilitatorFee: extra.facilitatorFee,
@@ -127,7 +127,7 @@ function parseSettlementExtra(extra):
 
 ### 5. Smart Contract Interaction
 
-Call the SettlementHub contract with the extracted parameters:
+Call the SettlementRouter contract with the extracted parameters:
 
 **Contract ABI:**
 ```solidity
@@ -156,10 +156,10 @@ function settleWithHub(request):
     payload = request.paymentPayload
     
     // 2. Create contract instance
-    settlementHub = createContract(extra.settlementHub, SETTLEMENT_HUB_ABI)
+    settlementRouter = createContract(extra.settlementRouter, SETTLEMENT_HUB_ABI)
     
     // 3. Call settleAndExecute with all parameters
-    transaction = settlementHub.settleAndExecute(
+    transaction = settlementRouter.settleAndExecute(
         request.paymentRequirements.asset,    // token
         payload.authorization.from,           // from
         payload.authorization.value,          // value
@@ -179,7 +179,7 @@ function settleWithHub(request):
     return createSuccessResponse(receipt)
 ```
 
-## SettlementHub Contract Interface
+## SettlementRouter Contract Interface
 
 ### Core Functions
 
@@ -332,7 +332,7 @@ event FeesClaimed(
 
 **Commitment Calculation:**
 
-The SettlementHub contract calculates the commitment hash as follows:
+The SettlementRouter contract calculates the commitment hash as follows:
 
 ```solidity
 bytes32 commitment = keccak256(abi.encodePacked(
@@ -363,7 +363,7 @@ bytes32 commitment = keccak256(abi.encodePacked(
 
 - ✅ Pass parameters exactly as received from Resource Server in `extra` field
 - ✅ Do NOT modify any settlement parameters (`salt`, `payTo`, `facilitatorFee`, `hook`, `hookData`)
-- ✅ The SettlementHub contract will automatically verify the commitment matches the nonce
+- ✅ The SettlementRouter contract will automatically verify the commitment matches the nonce
 - ❌ Do NOT attempt to recalculate or verify the commitment yourself - the Hub handles this
 
 **Flow:**
@@ -374,12 +374,12 @@ bytes32 commitment = keccak256(abi.encodePacked(
 3. Client → uses commitment as EIP-3009 nonce, signs authorization
 4. Client → sends payment with signature to Facilitator
 5. Facilitator → extracts parameters from extra, calls settleAndExecute
-6. SettlementHub → verifies nonce == commitment, proceeds if valid
+6. SettlementRouter → verifies nonce == commitment, proceeds if valid
 ```
 
 ## Facilitator Fee Mechanism
 
-The SettlementHub contract includes a built-in fee accumulation and claiming mechanism for facilitators.
+The SettlementRouter contract includes a built-in fee accumulation and claiming mechanism for facilitators.
 
 **How It Works:**
 
@@ -448,7 +448,7 @@ Test the detection and parsing logic:
 
 ```pseudocode
 test "detects settlement mode":
-    requirements = { extra: { settlementHub: "0x1234..." } }
+    requirements = { extra: { settlementRouter: "0x1234..." } }
     assert isSettlementMode(requirements) == true
 
 test "detects standard mode":
@@ -463,7 +463,7 @@ Test end-to-end settlement flow:
 ```pseudocode
 test "settles with hub successfully":
     request = createSettlementRequest(
-        settlementHub: SETTLEMENT_HUB_ADDRESS,
+        settlementRouter: SETTLEMENT_HUB_ADDRESS,
         hook: HOOK_ADDRESS,
         hookData: "0x..."
     )
@@ -481,7 +481,7 @@ test "settles with hub successfully":
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `MissingExtra` | No `extra` field | Check request format |
-| `MissingSettlementHub` | No `settlementHub` in extra | Verify client configuration |
+| `MissingSettlementHub` | No `settlementRouter` in extra | Verify client configuration |
 | `InvalidAddress` | Malformed address | Validate address format |
 | `TransactionFailed` | On-chain execution failed | Check hook implementation |
 | `InsufficientFunds` | Insufficient token balance | Verify payer balance |
@@ -511,7 +511,7 @@ RPC_URL_BASE_SEPOLIA=https://sepolia.base.org
 RPC_URL_BASE=https://mainnet.base.org
 PRIVATE_KEY=0x...
 
-# SettlementHub addresses (per network)
+# SettlementRouter addresses (per network)
 SETTLEMENT_HUB_BASE_SEPOLIA=0x...
 SETTLEMENT_HUB_BASE=0x...
 SETTLEMENT_HUB_ETHEREUM=0x...
@@ -524,12 +524,12 @@ SETTLEMENT_HUB_ETHEREUM=0x...
   "networks": {
     "base": {
       "rpcUrl": "https://mainnet.base.org",
-      "settlementHub": "0x...",
+      "settlementRouter": "0x...",
       "chainId": 8453
     },
     "base-sepolia": {
       "rpcUrl": "https://sepolia.base.org", 
-      "settlementHub": "0x...",
+      "settlementRouter": "0x...",
       "chainId": 84532
     }
   }
@@ -545,7 +545,7 @@ SETTLEMENT_HUB_ETHEREUM=0x...
 - Gas usage per settlement
 
 ### Event Monitoring
-Listen for SettlementHub events:
+Listen for SettlementRouter events:
 - `Settled`: Payment completed successfully
 - `HookExecuted`: Hook logic executed
 
@@ -571,24 +571,24 @@ Listen for SettlementHub events:
 
 1. **Add Detection Logic**: Implement `isSettlementMode()` function
 2. **Add Routing**: Modify main `settle()` method to route between modes
-3. **Add SettlementHub Integration**: Implement `settleWithHub()` method
-4. **Update Configuration**: Add SettlementHub addresses
+3. **Add SettlementRouter Integration**: Implement `settleWithHub()` method
+4. **Update Configuration**: Add SettlementRouter addresses
 5. **Update Tests**: Add settlement mode test cases
 
 ### Backward Compatibility
 
 The settlement extension is fully backward compatible:
 - Existing standard payments continue to work unchanged
-- Only requests with `extra.settlementHub` use the new flow
+- Only requests with `extra.settlementRouter` use the new flow
 - No breaking changes to existing APIs
 
 ## Summary
 
 Extending a Facilitator for x402 settlement requires minimal changes:
 
-1. **Detection**: Check for `extra.settlementHub` field
+1. **Detection**: Check for `extra.settlementRouter` field
 2. **Routing**: Route to appropriate settlement method
-3. **Integration**: Call `SettlementHub.settleAndExecute` with hook parameters
+3. **Integration**: Call `SettlementRouter.settleAndExecute` with hook parameters
 4. **Same Parameters**: Use existing authorization data + hook info
 
 **Key Benefits:**

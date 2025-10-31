@@ -13,7 +13,7 @@ export interface Config {
   facilitatorUrl: string;
   
   // Contract addresses
-  settlementHubAddress: string;
+  settlementRouterAddress: string;
   revenueSplitHookAddress: string;
   nftMintHookAddress: string;
   randomNFTAddress: string;
@@ -21,6 +21,8 @@ export interface Config {
   rewardHookAddress: string;
   usdcAddress: string;
   
+  // Resource server configuration
+  resourceServerAddress: string;
 }
 
 function getRequiredEnv(key: string): string {
@@ -38,7 +40,7 @@ export const appConfig: Config = {
   facilitatorUrl: getRequiredEnv('FACILITATOR_URL'),
   
   // Contract addresses
-  settlementHubAddress: getRequiredEnv('SETTLEMENT_HUB_ADDRESS'),
+  settlementRouterAddress: getRequiredEnv('SETTLEMENT_ROUTER_ADDRESS'),
   revenueSplitHookAddress: getRequiredEnv('REVENUE_SPLIT_HOOK_ADDRESS'),
   nftMintHookAddress: getRequiredEnv('NFT_MINT_HOOK_ADDRESS'),
   randomNFTAddress: getRequiredEnv('RANDOM_NFT_ADDRESS'),
@@ -46,5 +48,7 @@ export const appConfig: Config = {
   rewardHookAddress: getRequiredEnv('REWARD_HOOK_ADDRESS'),
   usdcAddress: getRequiredEnv('USDC_ADDRESS'),
   
+  // Resource server configuration
+  resourceServerAddress: getRequiredEnv('RESOURCE_SERVER_ADDRESS'),
 };
 

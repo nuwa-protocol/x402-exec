@@ -1,19 +1,19 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
-import {SettlementHub} from "../src/SettlementHub.sol";
+import {SettlementRouter} from "../src/SettlementRouter.sol";
 import {RevenueSplitHook} from "../examples/revenue-split/RevenueSplitHook.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {MockFailingHook, MockSimpleHook} from "./mocks/MockHooks.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title SettlementHubTest
- * @notice Test SettlementHub core functionality
+ * @title SettlementRouterTest
+ * @notice Test SettlementRouter core functionality
  */
-contract SettlementHubTest is Test {
-    SettlementHub public hub;
+contract SettlementRouterTest is Test {
+    SettlementRouter public router;
     RevenueSplitHook public splitHook;
     MockUSDC public token;
     MockFailingHook public failingHook;
@@ -72,7 +72,7 @@ contract SettlementHubTest is Test {
         return keccak256(abi.encodePacked(
             "X402/settle/v1",
             block.chainid,
-            address(hub),
+            address(router),
             token,
             from,
             value,
@@ -88,11 +88,11 @@ contract SettlementHubTest is Test {
     
     function setUp() public {
         // Deploy contracts
-        hub = new SettlementHub();
+        router = new SettlementRouter();
         token = new MockUSDC();
-        splitHook = new RevenueSplitHook(address(hub));
-        failingHook = new MockFailingHook(address(hub));
-        simpleHook = new MockSimpleHook(address(hub));
+        splitHook = new RevenueSplitHook(address(router));
+        failingHook = new MockFailingHook(address(router));
+        simpleHook = new MockSimpleHook(address(router));
         
         // Setup accounts
         payer = makeAddr("payer");
@@ -108,7 +108,7 @@ contract SettlementHubTest is Test {
         address tokenAddr = address(0x2);
         bytes32 nonce = bytes32(uint256(1));
         
-        bytes32 contextKey = hub.calculateContextKey(from, tokenAddr, nonce);
+        bytes32 contextKey = router.calculateContextKey(from, tokenAddr, nonce);
         bytes32 expected = keccak256(abi.encodePacked(from, tokenAddr, nonce));
         
         assertEq(contextKey, expected);
@@ -118,7 +118,7 @@ contract SettlementHubTest is Test {
         bytes32 contextKey = keccak256("test");
         
         // Initial state: not settled
-        assertFalse(hub.isSettled(contextKey));
+        assertFalse(router.isSettled(contextKey));
         
         // We cannot directly set settled state here as it is private
         // Need to test through actual settleAndExecute calls
@@ -146,7 +146,7 @@ contract SettlementHubTest is Test {
         );
         
         // Calculate contextKey
-        bytes32 contextKey = hub.calculateContextKey(payer, address(token), nonce);
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
         
         // Expected events - note the order of event emission
         vm.expectEmit(true, true, false, true);
@@ -156,7 +156,7 @@ contract SettlementHubTest is Test {
         emit Settled(contextKey, payer, address(token), AMOUNT, address(simpleHook), salt, payTo, facilitatorFee);
         
         // Execute settlement
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -172,10 +172,10 @@ contract SettlementHubTest is Test {
         );
         
         // Verify state
-        assertTrue(hub.isSettled(contextKey));
+        assertTrue(router.isSettled(contextKey));
         
         // Verify balances
-        assertEq(token.balanceOf(address(hub)), 0); // Hub holds no funds
+        assertEq(token.balanceOf(address(router)), 0); // Hub holds no funds
         assertEq(token.balanceOf(merchant), AMOUNT); // Merchant received funds
         assertEq(token.balanceOf(payer), 9 * AMOUNT); // Payer balance decreased
         
@@ -205,7 +205,7 @@ contract SettlementHubTest is Test {
         );
         
         // First call: success
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -220,18 +220,18 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        bytes32 contextKey = hub.calculateContextKey(payer, address(token), nonce);
-        assertTrue(hub.isSettled(contextKey));
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        assertTrue(router.isSettled(contextKey));
         
         // Second call: should fail (idempotency)
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.AlreadySettled.selector,
+                SettlementRouter.AlreadySettled.selector,
                 contextKey
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -274,13 +274,13 @@ contract SettlementHubTest is Test {
         // Call should fail
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.HookExecutionFailed.selector,
+                SettlementRouter.HookExecutionFailed.selector,
                 address(failingHook),
                 abi.encodeWithSignature("Error(string)", "Mock hook failure")
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -296,12 +296,12 @@ contract SettlementHubTest is Test {
         );
         
         // Verify state: transaction failed, contextKey should not be marked as settled
-        bytes32 contextKey = hub.calculateContextKey(payer, address(token), nonce);
-        assertFalse(hub.isSettled(contextKey));
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        assertFalse(router.isSettled(contextKey));
         
         // Verify balances: payer balance should not change
         assertEq(token.balanceOf(payer), 10 * AMOUNT);
-        assertEq(token.balanceOf(address(hub)), 0);
+        assertEq(token.balanceOf(address(router)), 0);
     }
     
     function testSettleWithoutHook() public {
@@ -328,13 +328,13 @@ contract SettlementHubTest is Test {
         // No Hook (hook = address(0))
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.HubShouldNotHoldFunds.selector,
+                SettlementRouter.RouterShouldNotHoldFunds.selector,
                 address(token),
                 AMOUNT
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -385,7 +385,7 @@ contract SettlementHubTest is Test {
         );
         
         // Execute settlement
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -403,7 +403,7 @@ contract SettlementHubTest is Test {
         // Verify split results
         assertEq(token.balanceOf(merchant), 700000); // 70%
         assertEq(token.balanceOf(platform), 300000); // 30%
-        assertEq(token.balanceOf(address(hub)), 0); // Hub holds no funds
+        assertEq(token.balanceOf(address(router)), 0); // Hub holds no funds
         assertEq(token.balanceOf(payer), 9 * AMOUNT); // Payer balance decreased
     }
     
@@ -442,12 +442,12 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.HookExecutionFailed.selector,
+                SettlementRouter.HookExecutionFailed.selector,
                 address(splitHook),
                 abi.encodeWithSelector(RevenueSplitHook.InvalidTotalBips.selector, 9000)
             )
         );
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -490,7 +490,7 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(); // transferWithAuthorization will fail
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             poorPayer,
             AMOUNT,
@@ -530,7 +530,7 @@ contract SettlementHubTest is Test {
         );
         
         // This should succeed (commitment matches)
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -545,8 +545,8 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        bytes32 contextKey = hub.calculateContextKey(payer, address(token), nonce);
-        assertTrue(hub.isSettled(contextKey));
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        assertTrue(router.isSettled(contextKey));
     }
     
     function testInvalidCommitmentRejected() public {
@@ -575,13 +575,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 correctNonce,
                 wrongNonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -636,13 +636,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             tamperedValue,
@@ -695,13 +695,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -756,13 +756,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -817,13 +817,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -878,13 +878,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -939,13 +939,13 @@ contract SettlementHubTest is Test {
         
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementHub.InvalidCommitment.selector,
+                SettlementRouter.InvalidCommitment.selector,
                 expectedCommitment,
                 nonce
             )
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -986,13 +986,13 @@ contract SettlementHubTest is Test {
         );
         
         // Check initial pending fees
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
         
         // Execute settlement
         vm.expectEmit(true, true, false, true);
         emit FeeAccumulated(facilitator, address(token), facilitatorFee);
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1008,7 +1008,7 @@ contract SettlementHubTest is Test {
         );
         
         // Check pending fees after settlement
-        assertEq(hub.getPendingFees(facilitator, address(token)), facilitatorFee);
+        assertEq(router.getPendingFees(facilitator, address(token)), facilitatorFee);
         
         // Verify merchant received amount minus fee
         assertEq(token.balanceOf(merchant), AMOUNT - facilitatorFee);
@@ -1041,7 +1041,7 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1070,7 +1070,7 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token2),
             payer,
             AMOUNT,
@@ -1086,8 +1086,8 @@ contract SettlementHubTest is Test {
         );
         
         // Verify pending fees
-        assertEq(hub.getPendingFees(facilitator, address(token)), facilitatorFee);
-        assertEq(hub.getPendingFees(facilitator, address(token2)), facilitatorFee);
+        assertEq(router.getPendingFees(facilitator, address(token)), facilitatorFee);
+        assertEq(router.getPendingFees(facilitator, address(token2)), facilitatorFee);
         
         // Claim fees for both tokens
         address[] memory tokens = new address[](2);
@@ -1102,15 +1102,15 @@ contract SettlementHubTest is Test {
         vm.expectEmit(true, true, false, true);
         emit FeesClaimed(facilitator, address(token2), facilitatorFee);
         
-        hub.claimFees(tokens);
+        router.claimFees(tokens);
         
         // Verify balances
         assertEq(token.balanceOf(facilitator), balanceBefore + facilitatorFee);
         assertEq(token2.balanceOf(facilitator), balanceBefore2 + facilitatorFee);
         
         // Verify pending fees are cleared
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
-        assertEq(hub.getPendingFees(facilitator, address(token2)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token2)), 0);
     }
     
     function testClaimFeesWithZeroBalance() public {
@@ -1119,13 +1119,13 @@ contract SettlementHubTest is Test {
         tokens[0] = address(token);
         
         // No fees accumulated
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
         
         // Claiming should not revert, just not emit event
-        hub.claimFees(tokens);
+        router.claimFees(tokens);
         
         // Balance unchanged
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
     }
     
     function testZeroFacilitatorFee() public {
@@ -1150,7 +1150,7 @@ contract SettlementHubTest is Test {
         );
         
         // Execute settlement with zero fee
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1166,7 +1166,7 @@ contract SettlementHubTest is Test {
         );
         
         // No fees accumulated
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
         
         // Merchant received full amount
         assertEq(token.balanceOf(merchant), AMOUNT);
@@ -1192,7 +1192,7 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1237,7 +1237,7 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1279,9 +1279,9 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        bytes32 expectedContextKey = hub.calculateContextKey(payer, address(token), nonce);
+        bytes32 expectedContextKey = router.calculateContextKey(payer, address(token), nonce);
         
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1328,7 +1328,7 @@ contract SettlementHubTest is Test {
         );
         
         // Call from this contract
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1386,7 +1386,7 @@ contract SettlementHubTest is Test {
         );
         
         // First settlement
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1401,14 +1401,14 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        bytes32 contextKey1 = hub.calculateContextKey(payer, address(token), nonce1);
-        assertTrue(hub.isSettled(contextKey1));
+        bytes32 contextKey1 = router.calculateContextKey(payer, address(token), nonce1);
+        assertTrue(router.isSettled(contextKey1));
         
         // Mint more tokens for second payment
         token.mint(payer, AMOUNT);
         
         // Second settlement with different salt - should succeed
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1423,8 +1423,8 @@ contract SettlementHubTest is Test {
             hookData
         );
         
-        bytes32 contextKey2 = hub.calculateContextKey(payer, address(token), nonce2);
-        assertTrue(hub.isSettled(contextKey2));
+        bytes32 contextKey2 = router.calculateContextKey(payer, address(token), nonce2);
+        assertTrue(router.isSettled(contextKey2));
         
         // Both settlements succeeded
         assertEq(token.balanceOf(merchant), 2 * (AMOUNT - facilitatorFee));
@@ -1452,7 +1452,7 @@ contract SettlementHubTest is Test {
         );
         
         // Accumulate some fees
-        hub.settleAndExecute(
+        router.settleAndExecute(
             address(token),
             payer,
             AMOUNT,
@@ -1471,15 +1471,15 @@ contract SettlementHubTest is Test {
         tokens[0] = address(token);
         
         // First claim
-        hub.claimFees(tokens);
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        router.claimFees(tokens);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
         
         // Second claim (nothing to claim) - should not revert
-        hub.claimFees(tokens);
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        router.claimFees(tokens);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
         
         // Third claim - still should not revert
-        hub.claimFees(tokens);
-        assertEq(hub.getPendingFees(facilitator, address(token)), 0);
+        router.claimFees(tokens);
+        assertEq(router.getPendingFees(facilitator, address(token)), 0);
     }
 }

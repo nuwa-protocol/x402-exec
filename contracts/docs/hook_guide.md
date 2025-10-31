@@ -40,15 +40,15 @@ We provide complete implementations for three common scenarios. Choose the one t
 contract MyHook is ISettlementHook {
     using SafeERC20 for IERC20;
     
-    address public immutable settlementHub;
+    address public immutable settlementRouter;
     
     modifier onlyHub() {
-        require(msg.sender == settlementHub, "Only hub");
+        require(msg.sender == settlementRouter, "Only hub");
         _;
     }
     
     constructor(address _settlementHub) {
-        settlementHub = _settlementHub;
+        settlementRouter = _settlementHub;
     }
     
     function execute(
@@ -65,7 +65,7 @@ contract MyHook is ISettlementHook {
         // TODO: Your business logic here
         
         // 3. Transfer funds (must consume all amount)
-        IERC20(token).safeTransferFrom(settlementHub, recipient, amount);
+        IERC20(token).safeTransferFrom(settlementRouter, recipient, amount);
         
         return abi.encode(recipient);
     }
@@ -77,25 +77,25 @@ contract MyHook is ISettlementHook {
 ### ✅ Must Follow Rules
 
 1. **Only Hub can call** - Use `onlyHub` modifier to prevent unauthorized access
-2. **Consume all funds from Hub** - Must transfer out the entire `amount` from SettlementHub
+2. **Consume all funds from Hub** - Must transfer out the entire `amount` from SettlementRouter
 
 ```solidity
 // ✅ Correct: Consume all amount from Hub
-IERC20(token).safeTransferFrom(settlementHub, recipient, amount);
+IERC20(token).safeTransferFrom(settlementRouter, recipient, amount);
 
 // ✅ Also correct: Hook can hold funds if needed for business logic
-IERC20(token).safeTransferFrom(settlementHub, address(this), amount);
+IERC20(token).safeTransferFrom(settlementRouter, address(this), amount);
 // ... later business logic to distribute funds
 
 // ❌ Wrong: Leaving funds in Hub
-IERC20(token).safeTransferFrom(settlementHub, recipient, amount / 2);
+IERC20(token).safeTransferFrom(settlementRouter, recipient, amount / 2);
 // This will cause "HubShouldNotHoldFunds" error
 ```
 
 ### 💡 Design Flexibility
 
 - **Hooks CAN hold funds** - Useful for escrow, batching, or delayed payments
-- **Hub CANNOT hold funds** - This is enforced by the SettlementHub contract
+- **Hub CANNOT hold funds** - This is enforced by the SettlementRouter contract
 - **Business logic is flexible** - Design your Hook according to your use case
 
 ## 📚 Complete Examples
@@ -147,7 +147,7 @@ Each example includes complete contract code, deployment scripts, and test cases
 A: Ensure your Hook consumes the entire `amount` parameter
 
 **Q: "Only hub" error when testing**  
-A: Make sure to call from the SettlementHub address in tests
+A: Make sure to call from the SettlementRouter address in tests
 
 **Q: Gas limit exceeded**  
 A: Optimize your Hook logic or split complex operations

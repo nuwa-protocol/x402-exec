@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
@@ -30,10 +30,10 @@ import {RewardHook} from "../examples/reward-points/RewardHook.sol";
  * Required environment variables:
  * - RPC_URL: Network RPC endpoint
  * - DEPLOYER_PRIVATE_KEY: Deployer private key
- * - SETTLEMENT_HUB_ADDRESS: Address of deployed SettlementHub
+ * - SETTLEMENT_ROUTER_ADDRESS: Address of deployed SettlementRouter
  */
 contract DeployShowcase is Script {
-    address settlementHub;
+    address settlementRouter;
     uint256 deployerPrivateKey;
     
     // Deployed contract addresses
@@ -44,10 +44,10 @@ contract DeployShowcase is Script {
     address rewardHook;
     
     function setUp() public {
-        settlementHub = vm.envAddress("SETTLEMENT_HUB_ADDRESS");
+        settlementRouter = vm.envAddress("SETTLEMENT_ROUTER_ADDRESS");
         deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         
-        console.log("Settlement Hub:", settlementHub);
+        console.log("Settlement Router:", settlementRouter);
         console.log("Deployer:", vm.addr(deployerPrivateKey));
         console.log("Network Chain ID:", block.chainid);
         console.log("");
@@ -102,7 +102,7 @@ contract DeployShowcase is Script {
     
     function _deployReferral() internal {
         console.log("=== Deploying Referral Split (revenue-split) ===");
-        revenueSplitHook = address(new RevenueSplitHook(settlementHub));
+        revenueSplitHook = address(new RevenueSplitHook(settlementRouter));
         console.log("RevenueSplitHook:", revenueSplitHook);
         console.log("");
     }
@@ -111,7 +111,7 @@ contract DeployShowcase is Script {
         console.log("=== Deploying NFT Mint (nft-mint) ===");
         
         // Deploy NFTMintHook first
-        nftMintHook = address(new NFTMintHook(settlementHub));
+        nftMintHook = address(new NFTMintHook(settlementRouter));
         console.log("NFTMintHook:", nftMintHook);
         
         // Deploy RandomNFT with NFTMintHook as minter
@@ -125,7 +125,7 @@ contract DeployShowcase is Script {
         console.log("=== Deploying Reward Points (reward-points) ===");
         
         // Deploy RewardHook first (reusable infrastructure)
-        rewardHook = address(new RewardHook(settlementHub));
+        rewardHook = address(new RewardHook(settlementRouter));
         console.log("RewardHook:", rewardHook);
         
         // Deploy RewardToken with RewardHook address (secure by design)

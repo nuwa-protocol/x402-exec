@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 /**
  * @title ISettlementHook
  * @notice Interface for settlement hooks that execute business logic after payment
- * @dev Hooks are called by SettlementHub after consuming EIP-3009 authorization
+ * @dev Hooks are called by SettlementRouter after consuming EIP-3009 authorization
  */
 interface ISettlementHook {
     /**
      * @notice Executes the hook's business logic
-     * @dev Called by SettlementHub with approved token amount
+     * @dev Called by SettlementRouter with approved token amount
      * @param contextKey Unique identifier for this settlement (based on EIP-3009 nonce)
      * @param payer Address that signed the EIP-3009 authorization
      * @param token Address of the payment token (e.g., USDC)

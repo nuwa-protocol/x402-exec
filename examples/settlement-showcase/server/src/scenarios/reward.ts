@@ -69,7 +69,7 @@ export async function generateRewardPayment(params: RewardParams = {}) {
     network: appConfig.network as any, // Cast to any to resolve type incompatibility
     maxAmountRequired: '100000', // 0.1 USDC
     asset: appConfig.usdcAddress,
-    payTo: appConfig.settlementHubAddress,
+    payTo: appConfig.settlementRouterAddress,
     resource: resource || '/api/scenario-3/payment', // Use provided resource or fallback
     description: 'Points Reward: Pay $0.1 and receive 1000 reward points',
     mimeType: 'application/json',
@@ -79,9 +79,9 @@ export async function generateRewardPayment(params: RewardParams = {}) {
       name: 'USDC',
       version: '2',
       // Settlement-specific data
-      settlementHub: appConfig.settlementHubAddress,
+      settlementRouter: appConfig.settlementRouterAddress,
       salt,
-      payTo: merchant, // Final recipient for this scenario
+      payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient
       facilitatorFee,
       hook: appConfig.rewardHookAddress,
       hookData,
