@@ -255,7 +255,6 @@ claimFees([USDC, DAI]) → transfers all pending fees
 If you discover a security vulnerability, please disclose responsibly through:
 
 1. GitHub security advisory
-2. Email: security@x402settlement.org (if applicable)
 
 **Please do not** open public issues for security vulnerabilities.
 
