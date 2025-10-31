@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -22,8 +22,8 @@ contract NFTMintHook is ISettlementHook {
     
     // ===== State Variables =====
     
-    /// @notice SettlementHub contract address
-    address public immutable settlementHub;
+    /// @notice SettlementRouter contract address
+    address public immutable settlementRouter;
     
     // ===== Data Structures =====
     
@@ -71,23 +71,23 @@ contract NFTMintHook is ISettlementHook {
     
     // ===== Error Definitions =====
     
-    error OnlyHub();
+    error OnlyRouter();
     error InvalidAddress();
     
     // ===== Modifiers =====
     
-    modifier onlyHub() {
-        if (msg.sender != settlementHub) {
-            revert OnlyHub();
+    modifier onlyRouter() {
+        if (msg.sender != settlementRouter) {
+            revert OnlyRouter();
         }
         _;
     }
     
     // ===== Constructor =====
     
-    constructor(address _settlementHub) {
-        require(_settlementHub != address(0), "Invalid hub address");
-        settlementHub = _settlementHub;
+    constructor(address _settlementRouter) {
+        require(_settlementRouter != address(0), "Invalid router address");
+        settlementRouter = _settlementRouter;
     }
     
     // ===== Core Functions =====
@@ -105,7 +105,7 @@ contract NFTMintHook is ISettlementHook {
         address payTo,
         address facilitator,
         bytes calldata data
-    ) external onlyHub returns (bytes memory) {
+    ) external onlyRouter returns (bytes memory) {
         // Decode configuration
         MintConfig memory config = abi.decode(data, (MintConfig));
         
@@ -122,7 +122,7 @@ contract NFTMintHook is ISettlementHook {
         
         // 2. Transfer to merchant
         IERC20(token).safeTransferFrom(
-            settlementHub,
+            settlementRouter,
             config.merchant,
             amount
         );

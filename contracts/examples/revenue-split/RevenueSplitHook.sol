@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -21,8 +21,8 @@ contract RevenueSplitHook is ISettlementHook {
     
     // ===== State Variables =====
     
-    /// @notice SettlementHub contract address
-    address public immutable settlementHub;
+    /// @notice SettlementRouter contract address
+    address public immutable settlementRouter;
     
     // ===== Data Structures =====
     
@@ -52,24 +52,24 @@ contract RevenueSplitHook is ISettlementHook {
     
     // ===== Error Definitions =====
     
-    error OnlyHub();
+    error OnlyRouter();
     error InvalidTotalBips(uint256 totalBips);
     error InvalidRecipient(address recipient);
     
     // ===== Modifiers =====
     
-    modifier onlyHub() {
-        if (msg.sender != settlementHub) {
-            revert OnlyHub();
+    modifier onlyRouter() {
+        if (msg.sender != settlementRouter) {
+            revert OnlyRouter();
         }
         _;
     }
     
     // ===== Constructor =====
     
-    constructor(address _settlementHub) {
-        require(_settlementHub != address(0), "Invalid hub address");
-        settlementHub = _settlementHub;
+    constructor(address _settlementRouter) {
+        require(_settlementRouter != address(0), "Invalid router address");
+        settlementRouter = _settlementRouter;
     }
     
     // ===== Core Functions =====
@@ -92,7 +92,7 @@ contract RevenueSplitHook is ISettlementHook {
         address payTo,
         address facilitator,
         bytes calldata data
-    ) external onlyHub returns (bytes memory) {
+    ) external onlyRouter returns (bytes memory) {
         // Decode split data
         Split[] memory splits = abi.decode(data, (Split[]));
         
@@ -122,9 +122,9 @@ contract RevenueSplitHook is ISettlementHook {
                 remaining -= splitAmount;
             }
             
-            // Transfer from Hub to recipient
+            // Transfer from Router to recipient
             IERC20(token).safeTransferFrom(
-                settlementHub,
+                settlementRouter,
                 splits[i].recipient,
                 splitAmount
             );

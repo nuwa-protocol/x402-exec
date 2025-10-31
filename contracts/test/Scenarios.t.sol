@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
@@ -17,7 +17,7 @@ contract ScenariosTest is Test {
     RewardToken public rewardToken;
     RewardHook public rewardHook;
     
-    address public settlementHub = address(0x1);
+    address public settlementRouter = address(0x1);
     address public nftMintHook = address(0x2);
     address public merchant = address(0x3);
     address public user = address(0x4);
@@ -25,7 +25,7 @@ contract ScenariosTest is Test {
     function setUp() public {
         // Deploy contracts in correct order
         // 1. Deploy hook first (infrastructure)
-        rewardHook = new RewardHook(settlementHub);
+        rewardHook = new RewardHook(settlementRouter);
         
         // 2. Deploy NFT with hook address
         nft = new RandomNFT(nftMintHook);
@@ -96,7 +96,7 @@ contract ScenariosTest is Test {
     // ===== RewardHook Tests =====
     
     function testRewardHookConstants() public view {
-        assertEq(rewardHook.settlementHub(), settlementHub);
+        assertEq(rewardHook.settlementRouter(), settlementRouter);
         assertEq(rewardHook.REWARD_RATE(), 1000);
     }
     

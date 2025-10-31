@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
 /**
- * @title ISettlementHub
- * @notice Settlement Hub Interface - x402 Extended Settlement Framework
+ * @title ISettlementRouter
+ * @notice Settlement Router Interface - x402 Extended Settlement Framework
  * @dev Provides ability to complete payment verification and business execution in a single contract call
  */
-interface ISettlementHub {
+interface ISettlementRouter {
     // ===== Events =====
     
     /**
@@ -90,7 +90,7 @@ interface ISettlementHub {
      *   - nonce must equal commitment hash of all parameters
      *   - Authorization signature is valid
      *   - contextKey is unused (idempotency)
-     *   - Hub balance is 0 after Hook execution (no fund holding)
+     *   - Router balance is 0 after Hook execution (no fund holding)
      */
     function settleAndExecute(
         address token,
