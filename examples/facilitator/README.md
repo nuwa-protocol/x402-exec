@@ -290,10 +290,18 @@ For production use, consider:
 
 ## Further Reading
 
-- [Facilitator Integration Guide](../../contracts/docs/facilitator_guide.md) - Detailed integration guide
-- [SettlementRouter API](../../contracts/docs/api.md) - Contract interface documentation
-- [Hook Development Guide](../../contracts/docs/hook_guide.md) - Build custom Hooks
-- [x402 Protocol](https://github.com/coinbase/x402) - Official x402 specification
+### Documentation
+
+- **[Facilitator Developer Guide](../../contracts/docs/facilitator_guide.md)** - Complete language-agnostic integration guide with detailed examples in pseudocode
+- **[SettlementRouter API](../../contracts/docs/api.md)** - Contract interface documentation with all functions and events
+- **[Hook Development Guide](../../contracts/docs/hook_guide.md)** - Build custom Hooks for your business logic
+- **[x402 Protocol](https://github.com/coinbase/x402)** - Official x402 specification
+
+### Integration Guides
+
+If you're extending an existing facilitator in another language:
+- See the [Facilitator Developer Guide](../../contracts/docs/facilitator_guide.md) for step-by-step integration instructions
+- This TypeScript implementation serves as a reference for any language
 
 ## License
 

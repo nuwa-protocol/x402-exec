@@ -115,11 +115,15 @@ export function usePayment() {
         version,
       } = paymentReq.extra || {};
 
-      if (!settlementRouter || !salt || !finalPayTo || !hook || !hookData) {
+      // Check if this is a complex settlement (with router/hook) or simple direct payment
+      const isComplexSettlement = !!settlementRouter;
+
+      if (isComplexSettlement && (!salt || !finalPayTo || !hook || !hookData)) {
         throw new Error('Missing required settlement parameters in payment requirements');
       }
 
       console.log('[Payment] Step 3: Settlement parameters', {
+        isComplexSettlement,
         settlementRouter,
         salt,
         finalPayTo,
@@ -153,35 +157,56 @@ export function usePayment() {
       // Store authorization parameters for debugging
       setDebugInfo(prev => ({ ...prev, authorizationParams: authParams }));
 
-      // Step 5: Calculate commitment hash (this becomes the nonce)
-      const commitmentParams = {
-        chainId,
-        hub: settlementRouter,
-        token: paymentReq.asset,
-        from,
-        value,
-        validAfter,
-        validBefore,
-        salt,
-        payTo: finalPayTo,
-        facilitatorFee: facilitatorFee || '0',
-        hook,
-        hookData,
-      };
-
-      // Validate parameters before calculating commitment
-      validateCommitmentParams(commitmentParams);
-
-      const nonce = calculateCommitment(commitmentParams) as Hex;
+      // Step 5: Calculate nonce
+      // Two modes: commitment-based (for complex settlement) or random (for simple payment)
+      let nonce: Hex;
       
-      console.log('[Payment] Step 5: Calculated commitment/nonce', nonce);
-      
-      // Store commitment params and calculated nonce for debugging
-      setDebugInfo(prev => ({ 
-        ...prev, 
-        commitmentParams,
-        calculatedNonce: nonce 
-      }));
+      if (isComplexSettlement) {
+        // Complex settlement: Calculate commitment hash (this becomes the nonce)
+        const commitmentParams = {
+          chainId,
+          hub: settlementRouter!,
+          token: paymentReq.asset,
+          from,
+          value,
+          validAfter,
+          validBefore,
+          salt: salt!,
+          payTo: finalPayTo!,
+          facilitatorFee: facilitatorFee || '0',
+          hook: hook!,
+          hookData: hookData!,
+        };
+
+        // Validate parameters before calculating commitment
+        validateCommitmentParams(commitmentParams);
+
+        nonce = calculateCommitment(commitmentParams) as Hex;
+        
+        console.log('[Payment] Step 5: Calculated commitment-based nonce', nonce);
+        
+        // Store commitment params and calculated nonce for debugging
+        setDebugInfo(prev => ({ 
+          ...prev, 
+          commitmentParams,
+          calculatedNonce: nonce 
+        }));
+      } else {
+        // Simple direct payment: Generate random nonce
+        const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+        nonce = `0x${Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')}` as Hex;
+        
+        console.log('[Payment] Step 5: Generated random nonce', nonce);
+        
+        // Store nonce for debugging
+        setDebugInfo(prev => ({ 
+          ...prev, 
+          calculatedNonce: nonce,
+          nonceType: 'random'
+        }));
+      }
 
       setStatus('signing');
 
@@ -206,7 +231,7 @@ export function usePayment() {
 
       const message = {
         from,
-        to: settlementRouter as Hex,
+        to: (isComplexSettlement ? settlementRouter : paymentReq.payTo) as Hex,
         value: BigInt(value),
         validAfter: BigInt(validAfter),
         validBefore: BigInt(validBefore),
@@ -237,7 +262,7 @@ export function usePayment() {
           signature,
           authorization: {
             from,
-            to: settlementRouter,
+            to: (isComplexSettlement ? settlementRouter : paymentReq.payTo),
             value,
             validAfter,
             validBefore,

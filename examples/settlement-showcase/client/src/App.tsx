@@ -6,15 +6,16 @@
 import { useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { WalletConnect } from './components/WalletConnect';
+import { DirectPayment } from './scenarios/DirectPayment';
 import { ReferralSplit } from './scenarios/ReferralSplit';
 import { RandomNFT } from './scenarios/RandomNFT';
 import { PointsReward } from './scenarios/PointsReward';
 import './App.css';
 
-type ScenarioTab = 'referral' | 'nft' | 'reward';
+type ScenarioTab = 'direct-payment' | 'referral' | 'nft' | 'reward';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<ScenarioTab>('referral');
+  const [activeTab, setActiveTab] = useState<ScenarioTab>('direct-payment');
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
@@ -47,6 +48,13 @@ function App() {
       <main className="app-main">
         <div className="tabs">
           <button
+            className={`tab ${activeTab === 'direct-payment' ? 'active' : ''}`}
+            onClick={() => setActiveTab('direct-payment')}
+          >
+            <span className="tab-number">0</span>
+            <span>Simple Payment</span>
+          </button>
+          <button
             className={`tab ${activeTab === 'referral' ? 'active' : ''}`}
             onClick={() => setActiveTab('referral')}
           >
@@ -70,6 +78,7 @@ function App() {
         </div>
 
         <div className="scenario-container">
+          {activeTab === 'direct-payment' && <DirectPayment isConnected={isConnected} />}
           {activeTab === 'referral' && <ReferralSplit isConnected={isConnected} />}
           {activeTab === 'nft' && (
             <RandomNFT isConnected={isConnected} walletAddress={address ?? ''} />

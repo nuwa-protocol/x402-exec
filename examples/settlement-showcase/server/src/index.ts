@@ -11,6 +11,7 @@ import { PaymentPayload, settleResponseHeader } from 'x402/types';
 import { useFacilitator } from 'x402/verify';
 import { findMatchingPaymentRequirements } from 'x402/shared';
 import { appConfig } from './config.js';
+import * as directPayment from './scenarios/direct-payment.js';
 import * as referral from './scenarios/referral.js';
 import * as nft from './scenarios/nft.js';
 import * as reward from './scenarios/reward.js';
@@ -172,6 +173,7 @@ app.get('/api/health', (c) => {
 app.get('/api/scenarios', async (c) => {
   try {
     const scenarios = [
+      directPayment.getScenarioInfo(),
       referral.getScenarioInfo(),
       await nft.getScenarioInfo(),
       await reward.getScenarioInfo(),
@@ -179,6 +181,52 @@ app.get('/api/scenarios', async (c) => {
     return c.json({ scenarios });
   } catch (error) {
     return c.json({ error: 'Failed to fetch scenarios' }, 500);
+  }
+});
+
+// ===== Simple Direct Payment =====
+
+app.get('/api/direct-payment/info', (c) => {
+  const info = directPayment.getScenarioInfo();
+  return c.json(info);
+});
+
+app.post('/api/direct-payment/payment', async (c) => {
+  try {
+    console.log('[Direct Payment] Received payment request');
+    const body = await c.req.json().catch(() => ({}));
+    console.log('[Direct Payment] Request body:', JSON.stringify(body, null, 2));
+    
+    // Get the full URL for the resource field
+    const url = new URL(c.req.url);
+    const resource = url.href;
+    console.log('[Direct Payment] Resource URL:', resource);
+    
+    // Generate simple payment requirements (no router/hook)
+    const generatePaymentRequirements = () => {
+      const requirements = [directPayment.generateDirectPayment({
+        resource, // Pass the full URL
+      })];
+      console.log('[Direct Payment] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
+    
+    // Use generic payment processor
+    return await processPayment(c, 'Direct Payment', generatePaymentRequirements, (settlement, selectedRequirement) => {
+      return c.json({
+        success: true,
+        message: 'Payment processed! $0.1 USDC sent directly to resource server.',
+        settlement: {
+          transaction: settlement.transaction,
+          network: settlement.network,
+          payer: settlement.payer,
+        },
+      });
+    });
+  } catch (error: any) {
+    console.error('[Direct Payment] Unexpected error:', error);
+    console.error('[Direct Payment] Error stack:', error.stack);
+    return c.json({ error: error.message }, 400);
   }
 });
 
@@ -365,6 +413,7 @@ console.log(`
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║
 ║   📋 Scenarios:                                           ║
+║   0. Direct Payment    - Simple x402 payment             ║
 ║   1. Referral Split    - 3-way payment split             ║
 ║   2. Random NFT Mint   - Sequential NFT minting          ║
 ║   3. Points Reward     - Reward token distribution       ║
@@ -374,6 +423,8 @@ console.log(`
 ║   🌐 Endpoints:                                           ║
 ║   GET  /api/health                                        ║
 ║   GET  /api/scenarios                                     ║
+║   GET  /api/direct-payment/info                          ║
+║   POST /api/direct-payment/payment                       ║
 ║   GET  /api/scenario-{1|2|3}/info                        ║
 ║   POST /api/scenario-{1|2|3}/payment                     ║
 ║                                                           ║

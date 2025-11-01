@@ -65,7 +65,7 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
     resource: resource || '/api/scenario-1/payment', // Use provided resource or fallback
     description: 'Referral Split: Pay $0.1 and split among merchant, referrer, and platform',
     mimeType: 'application/json',
-    maxTimeoutSeconds: 600, // 10 minutes validity window (total 20 min with validAfter offset)
+    maxTimeoutSeconds: 3600, // 1 hour validity window (total 70 min with validAfter offset)
     extra: {
       // Required for EIP-712 signature (USDC contract domain)
       name: 'USDC',

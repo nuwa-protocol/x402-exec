@@ -73,7 +73,7 @@ export async function generateRewardPayment(params: RewardParams = {}) {
     resource: resource || '/api/scenario-3/payment', // Use provided resource or fallback
     description: 'Points Reward: Pay $0.1 and receive 1000 reward points',
     mimeType: 'application/json',
-    maxTimeoutSeconds: 600, // 10 minutes validity window (total 20 min with validAfter offset)
+    maxTimeoutSeconds: 3600, // 1 hour validity window (total 70 min with validAfter offset)
     extra: {
       // Required for EIP-712 signature (USDC contract domain)
       name: 'USDC',
