@@ -17,7 +17,7 @@ import {
   isSvmSignerWallet,
   type X402Config,
 } from "x402/types";
-import { isSettlementMode, settleWithRouter } from "./settlement";
+import { isSettlementMode, settleWithRouter } from "./settlement.js";
 
 config();
 

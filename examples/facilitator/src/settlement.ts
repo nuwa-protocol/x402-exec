@@ -8,8 +8,8 @@
 import { parseErc6492Signature, type Address, type Hex } from "viem";
 import type { PaymentPayload, PaymentRequirements, SettleResponse, Signer } from "x402/types";
 import { isEvmSignerWallet, evm } from "x402/types";
-import { settlementRouterAbi } from "./settlement-router-abi";
-import { SettlementExtra, SettlementExtraError } from "./types";
+import { settlementRouterAbi } from "./settlement-router-abi.js";
+import { SettlementExtra, SettlementExtraError } from "./types.js";
 
 /**
  * Check if a payment request requires SettlementRouter mode
