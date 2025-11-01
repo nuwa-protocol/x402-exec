@@ -16,7 +16,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nuwa-protocol/x402-facilitator
+  IMAGE_NAME: nuwa-protocol/facilitator
 
 jobs:
   build:
