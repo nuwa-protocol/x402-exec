@@ -1,8 +1,12 @@
-# Multi-stage build for X402 Facilitator
-FROM node:20-alpine AS builder
+# Single-stage build for X402 Facilitator
+# This approach keeps the workspace structure intact and avoids symlink issues
+FROM node:20-alpine
 
 # Install git for submodule support
 RUN apk add --no-cache git
+
+# Install pnpm
+RUN npm install -g pnpm@10.7.0
 
 # Set working directory
 WORKDIR /app
@@ -10,9 +14,6 @@ WORKDIR /app
 # Clone the repository with submodules
 ARG GITHUB_TOKEN
 RUN git clone --recursive https://github.com/nuwa-protocol/x402-exec.git .
-
-# Install pnpm
-RUN npm install -g pnpm@10.7.0
 
 # Install all dependencies (including workspace dependencies)
 RUN pnpm install --frozen-lockfile
@@ -23,16 +24,10 @@ RUN pnpm run build:x402
 # Build the facilitator
 RUN pnpm run build:facilitator
 
-# Production stage
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-# Copy the entire built workspace structure to preserve links
-COPY --from=builder /app/examples/facilitator ./
-COPY --from=builder /app/deps/x402/typescript/packages ./node_modules/
-
-# No need to install dependencies - everything is already built and linked
+# Clean up unnecessary files to reduce image size
+RUN rm -rf .git deps/x402/.git
+RUN pnpm prune --prod
+RUN rm -rf /root/.pnpm-store
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -41,6 +36,9 @@ RUN addgroup -g 1001 -S nodejs && \
 # Change ownership of the app directory
 RUN chown -R facilitator:nodejs /app
 USER facilitator
+
+# Set working directory to facilitator
+WORKDIR /app/examples/facilitator
 
 # Expose port
 EXPOSE 3000
