@@ -1,0 +1,14 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:server"
+watchPatterns = ["examples/settlement-showcase/server/**", "deps/x402/**"]
+
+[deploy]
+startCommand = "cd examples/settlement-showcase/server && node dist/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+NODE_VERSION = "20"
+PNPM_VERSION = "10.7.0"
+

@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:facilitator"
+watchPatterns = ["examples/facilitator/**", "deps/x402/**"]
+
+[deploy]
+startCommand = "cd examples/facilitator && node dist/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+

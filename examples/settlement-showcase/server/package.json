@@ -14,7 +14,7 @@
     "ethers": "^6.13.0",
     "hono": "^4.5.0",
     "viem": "^2.38.5",
-    "x402": "^0.6.5"
+    "x402": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

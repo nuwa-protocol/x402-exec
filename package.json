@@ -1,0 +1,25 @@
+{
+  "name": "x402-settle-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "X402 Settlement Extension with Examples",
+  "packageManager": "pnpm@10.7.0",
+  "scripts": {
+    "install:all": "pnpm install",
+    "build": "pnpm run build:x402 && pnpm run build:examples",
+    "build:x402": "pnpm --filter='./deps/x402/typescript/packages/**' run build",
+    "build:examples": "pnpm --filter='./examples/**' run build",
+    "build:showcase": "pnpm run build:x402 && pnpm --filter='./examples/settlement-showcase/**' run build",
+    "build:server": "pnpm run build:x402 && pnpm --filter=settlement-showcase-server build",
+    "build:client": "pnpm run build:x402 && pnpm --filter=settlement-showcase-client build",
+    "build:facilitator": "pnpm run build:x402 && pnpm --filter='@x402-exec/facilitator-example' build",
+    "dev": "pnpm --filter=settlement-showcase dev",
+    "dev:server": "pnpm --filter=settlement-showcase-server dev",
+    "dev:client": "pnpm --filter=settlement-showcase-client dev",
+    "clean": "pnpm -r exec rm -rf node_modules dist",
+    "clean:build": "pnpm -r exec rm -rf dist"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  }
+}
