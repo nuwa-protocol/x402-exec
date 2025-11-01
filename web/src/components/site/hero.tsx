@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { CodeTabs } from "@/components/ui/shadcn-io/code-tabs";
 import { Rocket } from "lucide-react";
 import { ApplicationHooksSnippets } from "./application-hooks-snippets";
 
@@ -32,7 +31,12 @@ export function Hero() {
         </p>
         <div className="mt-6 flex items-center justify-center gap-3">
           <Button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            onClick={() =>
+              window.open(
+                "https://github.com/nuwa-protocol/x402-exec",
+                "_blank",
+              )
+            }
           >
             <span className="inline-flex items-center gap-2">
               <Rocket className="h-4 w-4" />
@@ -53,9 +57,9 @@ export function Hero() {
         </div>
 
         {/* Simple installation snippet */}
-        <div className="mt-8 text-left">
+        {/* <div className="mt-8 text-left">
           <CodeTabs codes={installCodes} lang="bash" />
-        </div>
+        </div> */}
 
         {/* Application hooks */}
         <ApplicationHooksSnippets />

@@ -5,6 +5,11 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { FaGithub } from "react-icons/fa6";
 
 export function Navbar() {
@@ -17,14 +22,14 @@ export function Navbar() {
           className="px-2 font-semibold"
           onClick={() => window.location.assign("/")}
         >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs">
+          {/* <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs">
             ⚡
-          </span>
+          </span> */}
           <span className="ml-2">x402-exec</span>
         </Button>
         <NavigationMenu className="hidden md:flex" viewport={false}>
           <NavigationMenuList className="justify-end">
-            <NavigationMenuItem>
+            {/* <NavigationMenuItem>
               <NavigationMenuLink
                 href="https://github.com/nuwa-protocol/x402-exec#readme"
                 target="_blank"
@@ -32,7 +37,7 @@ export function Navbar() {
               >
                 Docs
               </NavigationMenuLink>
-            </NavigationMenuItem>
+            </NavigationMenuItem> */}
             <NavigationMenuItem>
               <NavigationMenuLink
                 href="https://github.com/nuwa-protocol/x402-exec"
@@ -47,18 +52,26 @@ export function Navbar() {
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink
-                href="#diagram"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById("diagram")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="inline-flex h-9 items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 focus:bg-primary/90 focus-visible:ring-ring/50 outline-none transition-colors focus-visible:ring-[3px] focus-visible:outline-1"
-              >
-                Try the demo
-              </NavigationMenuLink>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <NavigationMenuLink
+                    href="#diagram"
+                    onClick={(e) => {
+                      e.preventDefault();
+                    }}
+                    className="inline-flex h-9 items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium opacity-50 cursor-not-allowed"
+                  >
+                    Try the demo
+                  </NavigationMenuLink>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Coming soon</p>
+                  <p>
+                    We are working on the demo and will release it soon. Please
+                    stay tuned.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
