@@ -1,16 +1,15 @@
 # Railway deployment configuration for X402 Facilitator
 # 
-# Uses Docker for reliable deployment with all dependencies
+# Uses pre-built Docker images from GitHub Container Registry
+# Images are built automatically by GitHub Actions on push to main
 # 
-# IMPORTANT: In Railway Dashboard, ensure:
-# 1. "Root Directory" is set to "/" (project root)
-# 2. Enable "Clone Submodules" in Source → Git Configuration
-#    If this option is not available, the Dockerfile will automatically
-#    clone the x402 repository during build
+# DEPLOYMENT STEPS:
+# 1. In Railway Dashboard, create a new service
+# 2. Choose "Deploy from Docker Image"  
+# 3. Use image: ghcr.io/nuwa-protocol/x402-facilitator:latest
+# 4. Set environment variables (see below)
 
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "examples/facilitator/Dockerfile"
+# Note: No build configuration needed when using pre-built images
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

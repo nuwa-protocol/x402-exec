@@ -14,17 +14,7 @@ WORKDIR /app
 # Copy the entire project (including local changes)
 COPY . .
 
-# Handle submodules for different environments
-RUN if [ -d ".git" ]; then \
-        echo "Git repository detected, initializing submodules..."; \
-        git submodule update --init --recursive; \
-    elif [ ! -d "deps/x402" ]; then \
-        echo "No submodules found, cloning x402 directly..."; \
-        mkdir -p deps && \
-        git clone --depth 1 https://github.com/nuwa-protocol/x402.git deps/x402; \
-    else \
-        echo "Submodules already present"; \
-    fi
+# Submodules should be initialized by CI checkout action
 
 # Install all dependencies (including workspace dependencies)
 RUN pnpm install --frozen-lockfile
@@ -50,6 +40,9 @@ USER facilitator
 
 # Set working directory to facilitator
 WORKDIR /app/examples/facilitator
+
+# Add environment variable for Railway
+ENV PORT=3000
 
 # Expose port
 EXPOSE 3000
