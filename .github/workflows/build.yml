@@ -43,11 +43,10 @@ jobs:
         run: forge build
 
       - name: Build x402 dependencies
-        working-directory: deps/x402/typescript
-        run: pnpm run build -- --concurrency=2
+        run: pnpm run build:x402
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-          TURBO_FORCE: false
+          TURBO_CONCURRENCY: 2
 
       - name: Build all examples
         run: pnpm run build:examples
