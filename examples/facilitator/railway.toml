@@ -1,10 +1,20 @@
+# Railway deployment configuration for X402 Facilitator
+# 
+# Uses Docker for reliable deployment with all dependencies
+
 [build]
-builder = "NIXPACKS"
-buildCommand = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter='@x402-exec/facilitator-example' build"
-watchPatterns = ["examples/facilitator/**", "deps/x402/**"]
+builder = "DOCKERFILE"
+dockerfilePath = "examples/facilitator/Dockerfile"
 
 [deploy]
-startCommand = "node examples/facilitator/dist/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+[env]
+NODE_VERSION = "20"
+# Required environment variables:
+# EVM_PRIVATE_KEY = "your-evm-private-key"
+# SVM_PRIVATE_KEY = "your-solana-private-key" (optional)
+# SVM_RPC_URL = "your-solana-rpc-url" (optional)
+# PORT = "3000" (optional, defaults to 3000)
 
