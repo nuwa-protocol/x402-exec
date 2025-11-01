@@ -14,8 +14,13 @@ WORKDIR /app
 # Copy the entire project (including local changes)
 COPY . .
 
-# Initialize submodules if they don't exist
-RUN git submodule update --init --recursive || echo "Submodules already initialized"
+# Check if we're in a git repository and handle submodules accordingly
+RUN if [ -d ".git" ]; then \
+        echo "Git repository detected, initializing submodules..."; \
+        git submodule update --init --recursive; \
+    else \
+        echo "No git repository found (Railway environment), submodules should already be included"; \
+    fi
 
 # Install all dependencies (including workspace dependencies)
 RUN pnpm install --frozen-lockfile

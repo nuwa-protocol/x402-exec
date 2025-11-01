@@ -1,6 +1,10 @@
 # Railway deployment configuration for X402 Facilitator
 # 
 # Uses Docker for reliable deployment with all dependencies
+# 
+# IMPORTANT: In Railway Dashboard, ensure:
+# 1. "Root Directory" is set to "/" (project root)
+# 2. Git submodules are enabled in the repository settings
 
 [build]
 builder = "DOCKERFILE"

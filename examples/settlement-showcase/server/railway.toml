@@ -1,6 +1,15 @@
+# Railway deployment configuration for Settlement Showcase Server
+# 
+# IMPORTANT: In Railway Dashboard, set "Root Directory" to "/" (project root)
+# This allows pnpm to properly resolve workspace dependencies
+#
+# NOTE: Railway will automatically handle Git submodule cloning during the clone step.
+# The git directory is not available inside the Docker container, so git commands
+# should not be used in buildCommand.
+
 [build]
 builder = "NIXPACKS"
-buildCommand = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm --filter=settlement-showcase-server build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter=settlement-showcase-server build"
 watchPatterns = ["examples/settlement-showcase/server/**", "deps/x402/**"]
 
 [deploy]
