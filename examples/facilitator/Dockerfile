@@ -14,12 +14,16 @@ WORKDIR /app
 # Copy the entire project (including local changes)
 COPY . .
 
-# Check if we're in a git repository and handle submodules accordingly
+# Handle submodules for different environments
 RUN if [ -d ".git" ]; then \
         echo "Git repository detected, initializing submodules..."; \
         git submodule update --init --recursive; \
+    elif [ ! -d "deps/x402" ]; then \
+        echo "No submodules found, cloning x402 directly..."; \
+        mkdir -p deps && \
+        git clone --depth 1 https://github.com/nuwa-protocol/x402.git deps/x402; \
     else \
-        echo "No git repository found (Railway environment), submodules should already be included"; \
+        echo "Submodules already present"; \
     fi
 
 # Install all dependencies (including workspace dependencies)

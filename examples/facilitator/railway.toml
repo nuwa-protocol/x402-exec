@@ -4,7 +4,9 @@
 # 
 # IMPORTANT: In Railway Dashboard, ensure:
 # 1. "Root Directory" is set to "/" (project root)
-# 2. Git submodules are enabled in the repository settings
+# 2. Enable "Clone Submodules" in Source → Git Configuration
+#    If this option is not available, the Dockerfile will automatically
+#    clone the x402 repository during build
 
 [build]
 builder = "DOCKERFILE"
