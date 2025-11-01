@@ -7,6 +7,7 @@
 
 import { parseErc6492Signature, type Address, type Hex } from "viem";
 import type { PaymentPayload, PaymentRequirements, SettleResponse, Signer } from "x402/types";
+import { isEvmSignerWallet, evm } from "x402/types";
 import { settlementRouterAbi } from "./settlement-router-abi";
 import { SettlementExtra, SettlementExtraError } from "./types";
 
@@ -140,7 +141,18 @@ export async function settleWithRouter(
     // 3. Parse ERC-6492 signature if needed (returns original if not ERC-6492)
     const { signature } = parseErc6492Signature(payload.signature as Hex);
 
-    // 4. Call SettlementRouter.settleAndExecute
+    // 4. Ensure signer is EVM signer
+    if (!isEvmSignerWallet(signer)) {
+      throw new Error("Settlement Router requires an EVM signer");
+    }
+
+    // For EVM signers created via createSigner, they are SignerWallet instances
+    // which include writeContract and waitForTransactionReceipt methods
+    // Use type assertion to access these methods
+    const walletClient = signer as any;
+    const publicClient = signer as any;
+
+    // 5. Call SettlementRouter.settleAndExecute
     console.log("Calling SettlementRouter.settleAndExecute with params:", {
       router: extra.settlementRouter,
       token: paymentRequirements.asset,
@@ -152,7 +164,7 @@ export async function settleWithRouter(
       hook: extra.hook,
     });
 
-    const tx = await signer.writeContract({
+    const tx = await walletClient.writeContract({
       address: extra.settlementRouter as Address,
       abi: settlementRouterAbi,
       functionName: "settleAndExecute",
@@ -174,8 +186,8 @@ export async function settleWithRouter(
 
     console.log("SettlementRouter transaction sent:", tx);
 
-    // 5. Wait for transaction confirmation
-    const receipt = await signer.waitForTransactionReceipt({ hash: tx });
+    // 6. Wait for transaction confirmation
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
 
     console.log("SettlementRouter transaction confirmed:", {
       hash: tx,
