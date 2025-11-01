@@ -11,7 +11,7 @@ import {RewardHook} from "../examples/reward-points/RewardHook.sol";
 
 /**
  * @title DeployShowcase
- * @notice Deployment script for Settlement Showcase scenarios
+ * @notice Deployment script for x402-exec Showcase scenarios
  * 
  * This script deploys all contracts needed for the three showcase scenarios:
  * - referral: RevenueSplitHook

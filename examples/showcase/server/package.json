@@ -1,7 +1,7 @@
 {
-  "name": "settlement-showcase-server",
+  "name": "x402-exec-showcase-server",
   "version": "1.0.0",
-  "description": "x402 Settlement Showcase - Backend Server",
+  "description": "x402-exec Showcase - Backend Server",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

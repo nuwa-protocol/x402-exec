@@ -1,7 +1,7 @@
 {
-  "name": "settlement-showcase",
+  "name": "x402-exec-showcase",
   "version": "1.0.0",
-  "description": "x402 Settlement Extension Showcase - Demonstrating 3 payment scenarios",
+  "description": "x402-exec Showcase - Demonstrating 3 payment scenarios",
   "private": true,
   "scripts": {
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",

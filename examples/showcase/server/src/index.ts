@@ -1,5 +1,5 @@
 /**
- * Settlement Showcase Server
+ * x402-exec Showcase Server
  * Provides payment endpoints for 3 demonstration scenarios
  */
 
@@ -160,7 +160,7 @@ async function processPayment(
 app.get('/api/health', (c) => {
   return c.json({
     status: 'ok',
-    message: 'Settlement Showcase Server',
+    message: 'x402-exec Showcase Server',
     network: appConfig.network,
     contracts: {
       settlementRouter: appConfig.settlementRouterAddress,
@@ -397,7 +397,7 @@ const port = appConfig.port;
 console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🎯 Settlement Showcase Server                           ║
+║   🎯 x402-exec Showcase Server                            ║
 ║                                                           ║
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║

@@ -19,7 +19,7 @@ x402_settle/
 ├── deps/
 │   └── x402/                  # Git Submodule: x402 protocol implementation
 ├── examples/
-│   ├── settlement-showcase/   # Settlement example application
+│   ├── showcase/               # Showcase example application
 │   │   ├── client/           # Frontend application
 │   │   └── server/           # Backend service
 │   └── facilitator/          # Facilitator example
@@ -63,8 +63,8 @@ pnpm install
 
 This will automatically install all dependencies in the workspace, including:
 - Dependencies for deps/x402
-- Dependencies for examples/settlement-showcase/server
-- Dependencies for examples/settlement-showcase/client
+- Dependencies for examples/showcase/server
+- Dependencies for examples/showcase/client
 
 ### 3. Local Development
 
@@ -82,14 +82,14 @@ pnpm run dev:server  # Start backend, default http://localhost:3000
 #### Developing Client Only
 
 ```bash
-cd examples/settlement-showcase/client
+cd examples/showcase/client
 pnpm run dev
 ```
 
 #### Developing Server Only
 
 ```bash
-cd examples/settlement-showcase/server
+cd examples/showcase/server
 pnpm run dev
 ```
 
@@ -241,11 +241,11 @@ cd deps/x402/typescript
 pnpm run build
 
 # Build server
-cd examples/settlement-showcase/server
+cd examples/showcase/server
 pnpm run build
 
 # Build client
-cd examples/settlement-showcase/client
+cd examples/showcase/client
 pnpm run build
 ```
 
@@ -253,8 +253,8 @@ pnpm run build
 
 Detailed deployment documentation:
 
-- **Client (Cloudflare Pages)**: See `examples/settlement-showcase/client/CLOUDFLARE_DEPLOY.md`
-- **Server (Railway)**: See `examples/settlement-showcase/server/RAILWAY_DEPLOY.md`
+- **Client (Cloudflare Pages)**: See `examples/showcase/client/CLOUDFLARE_DEPLOY.md`
+- **Server (Railway)**: See `examples/showcase/server/RAILWAY_DEPLOY.md`
 - **Vercel (Alternative)**: See `VERCEL_DEPLOY.md` in the root directory
 
 Deployment key points:
@@ -336,9 +336,9 @@ git submodule update --init --recursive
 pnpm install --frozen-lockfile
 cd deps/x402/typescript && pnpm run build
 cd ../../..
-cd examples/settlement-showcase/server && pnpm run build
+cd examples/showcase/server && pnpm run build
 cd ../../..
-cd examples/settlement-showcase/client && pnpm run build
+cd examples/showcase/client && pnpm run build
 ```
 
 ## Getting Help

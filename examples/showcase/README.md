@@ -1,4 +1,4 @@
-# Settlement Showcase
+# x402-exec Showcase
 
 > Full-stack demo application showcasing x402-exec's atomic settlement capabilities
 
@@ -6,7 +6,7 @@ A complete example application demonstrating how to use x402-exec to implement *
 
 ## 🎯 Overview
 
-Settlement Showcase is built on the [x402 protocol](https://x402.org) and [x402-exec](../../README.md), demonstrating key capabilities through three payment scenarios:
+x402-exec Showcase is built on the [x402 protocol](https://x402.org) and [x402-exec](../../README.md), demonstrating key capabilities through three payment scenarios:
 
 - **Atomic Operations**: Payment and on-chain execution in a single transaction
 - **Automated Fulfillment**: Smart contracts handle business logic without manual intervention
@@ -60,7 +60,7 @@ Recipients (Merchant/Referrer/Platform) + NFT/Tokens
 
 ```bash
 # Navigate to showcase directory
-cd examples/settlement-showcase
+cd examples/showcase
 
 # Install all dependencies
 npm run install:all
@@ -206,7 +206,7 @@ uint256 rewardPoints = (amount * REWARD_RATE * 10**18) / 100_000;
 ## 📁 Project Structure
 
 ```
-settlement-showcase/
+showcase/
 ├── contracts/              # Solidity smart contracts
 │   ├── src/
 │   │   ├── RandomNFT.sol

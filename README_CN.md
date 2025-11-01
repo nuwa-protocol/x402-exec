@@ -90,7 +90,7 @@ x402-exec/
 │   ├── test/                       # 合约测试
 │   └── docs/                       # 合约文档
 ├── examples/
-│   └── settlement-showcase/        # 全栈演示应用
+│   └── showcase/                   # 全栈演示应用
 └── docs/                           # 项目文档
 ```
 
@@ -128,7 +128,7 @@ cd contracts
 ### 在线演示
 
 查看全栈演示应用：
-- **位置**：[`examples/settlement-showcase/`](./examples/settlement-showcase/)
+- **位置**：[`examples/showcase/`](./examples/showcase/)
 - **场景**：收入分账、NFT 铸造、积分奖励
 - **技术栈**：React + TypeScript + Viem
 

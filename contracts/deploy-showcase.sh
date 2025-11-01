@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deployment script for Settlement Showcase scenarios
+# Deployment script for x402-exec Showcase scenarios
 # 
 # Prerequisites:
 # 1. SettlementRouter must be deployed first (run: ./deploy.sh)
@@ -77,7 +77,7 @@ if [ "$DEPLOY_ALL" = true ]; then
 fi
 
 echo "========================================="
-echo "Settlement Showcase - Scenario Deployment"
+echo "x402-exec Showcase - Scenario Deployment"
 echo "========================================="
 echo ""
 echo "Deploying:"
@@ -223,7 +223,7 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo "1. Copy the deployed addresses from above"
-echo "2. Update examples/settlement-showcase/server/.env with the new addresses"
+echo "2. Update examples/showcase/server/.env with the new addresses"
 echo "3. Start the showcase services:"
-echo "   cd ../examples/settlement-showcase && npm run dev"
+echo "   cd ../examples/showcase && npm run dev"
 echo ""

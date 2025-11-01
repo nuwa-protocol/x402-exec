@@ -2,9 +2,9 @@ packages:
   # X402 
   - 'deps/x402/typescript/packages/*'
   
-  # Settlement showcase 
-  - 'examples/settlement-showcase/server'
-  - 'examples/settlement-showcase/client'
+  # Showcase 
+  - 'examples/showcase/server'
+  - 'examples/showcase/client'
   
   # Facilitator
   - 'examples/facilitator'

@@ -48,6 +48,6 @@ contract DeploySettlement is Script {
         console.log("");
         console.log("Next steps:");
         console.log("1. Update .env with SETTLEMENT_ROUTER_ADDRESS");
-        console.log("2. Deploy scenario contracts (e.g., examples/settlement-showcase)");
+        console.log("2. Deploy scenario contracts (e.g., examples/showcase)");
     }
 }

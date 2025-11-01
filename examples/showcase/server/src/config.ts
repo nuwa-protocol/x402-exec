@@ -1,5 +1,5 @@
 /**
- * Configuration loader for Settlement Showcase server
+ * Configuration loader for x402-exec Showcase server
  * Loads and validates environment variables
  */
 

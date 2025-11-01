@@ -1,6 +1,6 @@
 # Cloudflare Pages`
 
-name = "settlement-showcase-client"
+name = "x402-exec-showcase-client"
 
 [build]
 command = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:client"
@@ -11,5 +11,5 @@ NODE_VERSION = "20"
 PNPM_VERSION = "10.7.0"
 
 [[build.output]]
-directory = "examples/settlement-showcase/client/dist"
+directory = "examples/showcase/client/dist"
 

@@ -1,7 +1,7 @@
 {
-  "name": "settlement-showcase-client",
+  "name": "x402-exec-showcase-client",
   "version": "1.0.0",
-  "description": "x402 Settlement Showcase - Frontend Client",
+  "description": "x402-exec Showcase - Frontend Client",
   "type": "module",
   "scripts": {
     "dev": "vite",

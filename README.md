@@ -91,7 +91,7 @@ x402-exec/
 │   └── docs/                       # Contract documentation
 ├── examples/
 │   ├── facilitator/                # SettlementRouter-enabled facilitator
-│   └── settlement-showcase/        # Full-stack demo application
+│   └── showcase/                   # Full-stack demo application
 └── docs/                           # Project documentation
 ```
 
@@ -147,7 +147,7 @@ See the [Facilitator README](./examples/facilitator/README.md) for complete setu
 ### Live Demo
 
 Check out the full-stack showcase application:
-- **Location**: [`examples/settlement-showcase/`](./examples/settlement-showcase/)
+- **Location**: [`examples/showcase/`](./examples/showcase/)
 - **Scenarios**: Revenue splitting, NFT minting, reward points
 - **Tech Stack**: React + TypeScript + Viem
 

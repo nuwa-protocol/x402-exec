@@ -32,7 +32,7 @@ function App() {
       <header className="app-header">
         <div className="header-content">
           <div className="header-left">
-            <h1>🎯 Settlement Showcase</h1>
+            <h1>🎯 x402-exec Showcase</h1>
             <p className="subtitle">x402 Payment Scenarios Demo</p>
           </div>
           <WalletConnect

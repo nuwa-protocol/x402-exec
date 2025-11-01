@@ -231,7 +231,7 @@ curl -X POST http://localhost:3000/settle \
 
 ### Integration Testing
 
-Use the [settlement-showcase](../settlement-showcase/) application for end-to-end testing with real Hook examples.
+Use the [showcase](../showcase/) application for end-to-end testing with real Hook examples.
 
 ## Architecture
 

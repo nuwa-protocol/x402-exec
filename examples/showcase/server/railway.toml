@@ -1,4 +1,4 @@
-# Railway deployment configuration for Settlement Showcase Server
+# Railway deployment configuration for x402-exec Showcase Server
 # 
 # IMPORTANT: In Railway Dashboard, set "Root Directory" to "/" (project root)
 # This allows pnpm to properly resolve workspace dependencies
@@ -9,11 +9,11 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm --filter=settlement-showcase-server build"
-watchPatterns = ["examples/settlement-showcase/server/**", "deps/x402/**"]
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter=x402-exec-showcase-server build"
+watchPatterns = ["examples/showcase/server/**", "deps/x402/**"]
 
 [deploy]
-startCommand = "node examples/settlement-showcase/server/dist/index.js"
+startCommand = "node examples/showcase/server/dist/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
