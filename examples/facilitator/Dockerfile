@@ -11,9 +11,11 @@ RUN npm install -g pnpm@10.7.0
 # Set working directory
 WORKDIR /app
 
-# Clone the repository with submodules
-ARG GITHUB_TOKEN
-RUN git clone --recursive https://github.com/nuwa-protocol/x402-exec.git .
+# Copy the entire project (including local changes)
+COPY . .
+
+# Initialize submodules if they don't exist
+RUN git submodule update --init --recursive || echo "Submodules already initialized"
 
 # Install all dependencies (including workspace dependencies)
 RUN pnpm install --frozen-lockfile
