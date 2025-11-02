@@ -1,9 +1,10 @@
-# Single-stage build for X402 Facilitator
+# Multi-service Docker image for X402 services
+# Supports both facilitator and showcase-server services via SERVICE_NAME environment variable
 # This approach keeps the workspace structure intact and avoids symlink issues
 FROM node:20-alpine
 
-# Install git for submodule support
-RUN apk add --no-cache git
+# Install git and wget for submodule support and health checks
+RUN apk add --no-cache git wget
 
 # Install pnpm
 RUN npm install -g pnpm@10.7.0
@@ -22,8 +23,9 @@ RUN pnpm install --frozen-lockfile
 # Build x402 dependencies first
 RUN pnpm run build:x402
 
-# Build the facilitator
+# Build both facilitator and showcase-server
 RUN pnpm run build:facilitator
+RUN pnpm run build:server
 
 # Clean up unnecessary files to reduce image size
 RUN rm -rf .git deps/x402/.git
@@ -38,18 +40,24 @@ RUN addgroup -g 1001 -S nodejs && \
 RUN chown -R facilitator:nodejs /app
 USER facilitator
 
-# Set working directory to facilitator
-WORKDIR /app/examples/facilitator
-
-# Add environment variable for Railway
+# Set default service (facilitator for backward compatibility)
+ENV SERVICE_NAME=facilitator
 ENV PORT=3000
 
 # Expose port
 EXPOSE 3000
 
-# Health check
+# Health check - service-aware
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/supported', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD sh -c 'if [ "$SERVICE_NAME" = "showcase-server" ]; then \
+      wget -qO- http://localhost:${PORT:-3000}/api/health || exit 1; \
+    else \
+      node -e "require(\"http\").get(\"http://localhost:${PORT:-3000}/supported\", (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"; \
+    fi'
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Conditional startup based on SERVICE_NAME
+CMD sh -c 'if [ "$SERVICE_NAME" = "showcase-server" ]; then \
+      cd /app/examples/showcase/server && node dist/index.js; \
+    else \
+      cd /app/examples/facilitator && node dist/index.js; \
+    fi'

@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'examples/facilitator/**'
+      - 'examples/showcase/server/**'
       - 'deps/x402/**'
       - '.github/workflows/docker-facilitator.yml'
   pull_request:
     branches: [main]
     paths:
       - 'examples/facilitator/**'
+      - 'examples/showcase/server/**'
       - 'deps/x402/**'
       - '.github/workflows/docker-facilitator.yml'
 
