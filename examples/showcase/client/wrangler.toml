@@ -1,4 +1,5 @@
-# Cloudflare Pages
+# Cloudflare Pages Configuration
+# This file configures the build and deployment for Cloudflare Pages
 
 name = "x402-exec-showcase-client"
 
@@ -11,11 +12,13 @@ NODE_VERSION = "20"
 PNPM_VERSION = "10.7.0"
 
 # Production server URL - set this in Cloudflare Pages dashboard
-# Environment Variables section:
-# VITE_SERVER_URL = https://your-showcase-server.railway.app
+# Go to: Settings → Environment variables → Add variable
+# Variable name: VITE_SERVER_URL
+# Value: https://your-showcase-server.railway.app
 # 
 # If not set, the client will use relative paths (requires server on same domain)
 
+# Build output directory configuration
 [[build.output]]
 directory = "examples/showcase/client/dist"
 

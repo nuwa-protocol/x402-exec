@@ -36,18 +36,41 @@ VITE_SERVER_URL=
 
 #### Step 2: Configure Build Settings
 
-**Build Configuration**:
-- **Framework preset**: None
-- **Build command**: `git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:client`
-- **Build output directory**: `examples/showcase/client/dist`
-- **Root directory**: `/` (repository root)
+Cloudflare Pages can be configured through the UI or automatically via `wrangler.toml` (already provided).
 
-**Environment Variables** (in Cloudflare Pages dashboard):
-```
-NODE_VERSION = 20
-PNPM_VERSION = 10.7.0
-VITE_SERVER_URL = https://your-showcase-server.railway.app
-```
+**Option A: Use wrangler.toml (Recommended)**
+
+The project already includes a `wrangler.toml` file with all necessary configuration. Cloudflare Pages will automatically detect it. You only need to:
+
+1. In Cloudflare Pages dashboard, go to your project → **Settings** → **Environment variables**
+2. Add the following variables:
+   ```
+   NODE_VERSION = 20
+   PNPM_VERSION = 10.7.0
+   VITE_SERVER_URL = https://your-showcase-server.railway.app
+   ```
+3. Trigger a new deployment (or it will deploy automatically on next push)
+
+**Option B: Manual Configuration via UI**
+
+If you prefer to configure through the UI:
+
+1. **Framework preset**: None (or Vite)
+2. **Build command**: 
+   ```bash
+   git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:client
+   ```
+3. **Build output directory**: `examples/showcase/client/dist` (if the field is available)
+   - Some Cloudflare Pages UIs may not show this field - that's OK, it will be inferred from `wrangler.toml`
+4. **Root directory**: Leave empty or set to `/`
+5. **Environment Variables**: (in Settings → Environment variables)
+   ```
+   NODE_VERSION = 20
+   PNPM_VERSION = 10.7.0
+   VITE_SERVER_URL = https://your-showcase-server.railway.app
+   ```
+
+> **Note**: The UI layout may vary based on Cloudflare's updates. The `wrangler.toml` configuration ensures consistency regardless of UI changes.
 
 #### Step 3: Deploy
 
