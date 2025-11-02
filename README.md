@@ -159,6 +159,30 @@ All Hook implementations are available in [`contracts/examples/`](./contracts/ex
 - **NFTMintHook**: Atomic NFT minting with payment ([source](./contracts/examples/nft-mint/))
 - **RewardHook**: Loyalty points distribution ([source](./contracts/examples/reward-points/))
 
+## 🌐 Deployments
+
+> ⚠️ **Development Status**: Under active development and not yet audited. For demonstration and testing purposes only.
+
+### SettlementRouter Contract
+
+| Network | SettlementRouter | Status |
+|---------|------------------|--------|
+| Base Sepolia (Testnet) | [`0x32431D4511e061F1133520461B07eC42afF157D6`](https://sepolia.basescan.org/address/0x32431D4511e061F1133520461B07eC42afF157D6) | ✅ Active |
+| Base Mainnet | - | 🚧 Pending Audit |
+| Ethereum Mainnet | - | 🚧 Pending Audit |
+
+### Live Examples (Base Sepolia)
+
+Example deployments for testing and reference:
+
+- **Showcase Demo**: [https://x402-exec.pages.dev/](https://x402-exec.pages.dev/)  
+  Interactive demo with 3 payment scenarios (referral split, NFT mint, loyalty rewards)
+
+- **Example Facilitator**: [https://facilitator.x402-exec.org](https://facilitator.x402-exec.org)  
+  Reference facilitator implementation (see [Facilitator Guide](./examples/facilitator/README.md))
+
+> 💡 **Note**: These are example deployments. For production use, deploy your own facilitator and configure it according to your needs.
+
 ## 📖 Documentation
 
 ### For Developers
