@@ -22,10 +22,10 @@ const app = new Hono();
 const { verify, settle } = useFacilitator({ url: appConfig.facilitatorUrl as `${string}://${string}` });
 const x402Version = 1;
 
-// Enable CORS for frontend
+// Enable CORS for frontend - Allow all origins for demo/showcase purposes
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true,
+  origin: '*',
+  credentials: false, // Must be false when origin is '*'
 }));
 
 // Global error handler
