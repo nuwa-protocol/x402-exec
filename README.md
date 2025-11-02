@@ -182,6 +182,8 @@ All Hook implementations are available in [`contracts/examples/`](./contracts/ex
 
 Contributions are welcome! Please check the [Contributing Guide](./CONTRIBUTING.md).
 
+**For AI Agents**: Before making any code changes, **you MUST read** the [Development Workflow Rules](./.github/WORKFLOW.md) which define mandatory Git workflow practices.
+
 ## 📄 License
 
 Apache-2.0 License - see [LICENSE](./LICENSE) for details
