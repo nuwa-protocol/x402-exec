@@ -7,11 +7,13 @@
  * parameters are cryptographically bound to the user's signature.
  */
 
-import { useState } from 'react';
-import { useWalletClient } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { useAccount, useConnectorClient } from 'wagmi';
+import { createWalletClient, custom } from 'viem';
+import { signTypedData } from 'viem/actions';
+import { type Hex, type WalletClient } from 'viem';
 import { calculateCommitment, validateCommitmentParams } from '../utils/commitment';
 import { buildApiUrl } from '../config';
-import { type Hex } from 'viem';
 
 export type PaymentStatus = 'idle' | 'preparing' | 'paying' | 'signing' | 'submitting' | 'success' | 'error';
 
@@ -53,14 +55,107 @@ export function usePayment() {
   const [error, setError] = useState<string>('');
   const [result, setResult] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({});
-  const { data: walletClient } = useWalletClient();
+  
+  // CRITICAL FIX: Use useConnectorClient with fallback to manual creation
+  const { address, isConnected, connector, chain } = useAccount();
+  const { data: connectorClient } = useConnectorClient();
+  
+  // State for manually created wallet client (fallback for non-standard wallets)
+  const [manualWalletClient, setManualWalletClient] = useState<WalletClient | null>(null);
+  
+  // Fallback: Manually create wallet client if useConnectorClient fails
+  useEffect(() => {
+    const createManualClient = async () => {
+      if (!connectorClient && connector && isConnected && address && chain) {
+        try {
+          console.log('[Payment] useConnectorClient failed, trying manual creation...');
+          
+          // Try to get provider from connector
+          const provider = await connector.getProvider();
+          
+          if (provider && typeof provider === 'object') {
+            const client = createWalletClient({
+              account: address,
+              chain: chain,
+              transport: custom(provider as any), // Use 'as any' for non-standard wallet providers
+            });
+            
+            console.log('[Payment] Manual wallet client created successfully');
+            setManualWalletClient(client);
+          } else {
+            console.error('[Payment] Failed to get provider from connector');
+            setManualWalletClient(null);
+          }
+        } catch (err) {
+          console.error('[Payment] Failed to create manual wallet client:', err);
+          setManualWalletClient(null);
+        }
+      } else if (connectorClient) {
+        // If connectorClient is available, clear manual client
+        setManualWalletClient(null);
+      }
+    };
+    
+    createManualClient();
+  }, [connectorClient, connector, isConnected, address, chain]);
+  
+  // Use connectorClient if available, otherwise use manual client
+  const walletClient = (connectorClient || manualWalletClient) as WalletClient | undefined;
 
   const pay = async (endpoint: string, body?: any) => {
-    if (!walletClient) {
-      setError('Please connect your wallet first');
+    // Enhanced wallet connection check with better error messages
+    if (!isConnected || !address) {
+      const errorMsg = 'No wallet connected. Please connect your wallet first.';
+      console.error('[Payment] Account check failed:', {
+        isConnected,
+        address,
+        connector: connector?.name,
+      });
+      
+      setError(errorMsg);
       setStatus('error');
-      throw new Error('Wallet not connected');
+      throw new Error(errorMsg);
     }
+
+    if (!walletClient) {
+      const errorMsg = `Wallet client not available for ${connector?.name || 'current wallet'}. Please try disconnecting and reconnecting your wallet.`;
+      console.error('[Payment] walletClient is null. This can happen when:');
+      console.error('  1. The wallet provider is not fully initialized');
+      console.error('  2. The wallet uses a non-standard provider interface');
+      console.error('  3. Multiple wallets are causing conflicts');
+      console.error('  Current state:', {
+        isConnected,
+        address,
+        connector: connector?.name,
+        connectorId: connector?.id,
+        hasConnectorClient: !!connectorClient,
+        hasManualClient: !!manualWalletClient,
+        hasWalletClient: !!walletClient,
+      });
+      console.error('  Solution: Disconnect wallet, refresh page, and reconnect');
+      
+      setError(errorMsg);
+      setStatus('error');
+      throw new Error(errorMsg);
+    }
+
+    // Additional check: verify the wallet client has required properties
+    if (!walletClient.account?.address) {
+      const errorMsg = 'Wallet account not available. Please reconnect your wallet.';
+      console.error('[Payment] walletClient exists but account.address is missing');
+      setError(errorMsg);
+      setStatus('error');
+      throw new Error(errorMsg);
+    }
+
+    console.log('[Payment] Wallet client validated:', {
+      source: connectorClient ? 'useConnectorClient' : 'manual',
+      hasWalletClient: !!walletClient,
+      hasAccount: !!walletClient.account,
+      address: walletClient.account?.address,
+      chain: walletClient.chain?.id,
+      connector: connector?.name,
+    });
 
     setStatus('preparing');
     setError('');
@@ -137,8 +232,12 @@ export function usePayment() {
       setStatus('preparing');
 
       // Step 4: Prepare EIP-3009 authorization parameters
-      const chainId = await walletClient.getChainId();
+      const chainId = walletClient.chain?.id;
       const from = walletClient.account?.address;
+      
+      if (!chainId) {
+        throw new Error('Chain ID not available. Please ensure your wallet is connected to Base Sepolia network.');
+      }
       
       if (!from) {
         throw new Error('No account address available');
@@ -243,7 +342,10 @@ export function usePayment() {
 
       console.log('[Payment] Step 6: Signing EIP-712 message', { domain, message });
 
-      const signature = await walletClient.signTypedData({
+      // Use viem's signTypedData function instead of method call
+      // This works with both standard and manually-created wallet clients
+      const signature = await signTypedData(walletClient, {
+        account: walletClient.account,
         domain,
         types,
         primaryType: 'TransferWithAuthorization',
