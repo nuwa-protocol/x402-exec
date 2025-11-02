@@ -20,12 +20,12 @@ COPY . .
 # Install all dependencies (including workspace dependencies)
 RUN pnpm install --frozen-lockfile
 
-# Build x402 dependencies first
+# Build x402 dependencies once
 RUN pnpm run build:x402
 
-# Build both facilitator and showcase-server
-RUN pnpm run build:facilitator
-RUN pnpm run build:server
+# Build both services (without rebuilding x402)
+RUN pnpm --filter='@nuwa-ai/facilitator' build
+RUN pnpm --filter=x402-exec-showcase-server build
 
 # Clean up unnecessary files to reduce image size
 RUN rm -rf .git deps/x402/.git
