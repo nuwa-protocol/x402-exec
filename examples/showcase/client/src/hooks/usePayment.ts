@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { useWalletClient } from 'wagmi';
 import { calculateCommitment, validateCommitmentParams } from '../utils/commitment';
+import { buildApiUrl } from '../config';
 import { type Hex } from 'viem';
 
 export type PaymentStatus = 'idle' | 'preparing' | 'paying' | 'signing' | 'submitting' | 'success' | 'error';
@@ -66,10 +67,12 @@ export function usePayment() {
     setResult(null);
 
     try {
-      console.log('[Payment] Step 1: Initial request to', endpoint);
+      // Build full API URL
+      const fullUrl = buildApiUrl(endpoint);
+      console.log('[Payment] Step 1: Initial request to', fullUrl);
       
       // Step 1: Make initial request to get 402 response
-      const initialResponse = await fetch(endpoint, {
+      const initialResponse = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +285,7 @@ export function usePayment() {
       console.log('[Payment] Step 8: Encoded payment header (first 100 chars)', paymentBase64.substring(0, 100));
 
       // Step 9: Resend request with X-PAYMENT header
-      const finalResponse = await fetch(endpoint, {
+      const finalResponse = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
