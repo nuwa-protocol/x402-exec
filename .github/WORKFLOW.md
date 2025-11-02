@@ -1,5 +1,7 @@
 # Development Workflow Rules
 
+> **⚠️ IMPORTANT FOR AI AGENTS**: If you are an AI coding assistant working on this repository, **YOU MUST READ THIS FILE FIRST** before making any code changes or commits. These rules are mandatory and will be enforced.
+
 This document defines the Git workflow rules that **ALL agents and contributors MUST follow** when making code changes.
 
 ## Git Branch Rules
