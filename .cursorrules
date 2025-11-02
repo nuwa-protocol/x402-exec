@@ -1,0 +1,45 @@
+# Cursor AI Rules for x402-exec
+
+## CRITICAL: Git Workflow Rules (READ FIRST)
+
+Before making ANY code changes or commits, you MUST:
+1. Read `.github/WORKFLOW.md` for complete workflow rules
+2. Check current branch with `git branch --show-current`
+3. Follow these rules:
+
+### Branch Rules
+- If on `main` branch: CREATE a new branch first (git checkout -b feature/name)
+- If on non-main branch: You can commit, but DO NOT push without review
+- NEVER commit directly to main
+- NEVER push without explicit user approval
+
+### Review Process
+- Always show changes to user before committing
+- Always ask for review before pushing
+- Wait for explicit "yes" or "approved" before pushing
+
+## Code Standards
+
+- Use TypeScript for all JavaScript code
+- Follow existing code style and patterns
+- Write clear commit messages following conventional commits
+- Add tests for new features when applicable
+
+## Documentation
+
+- Update relevant documentation when changing features
+- Keep README.md up to date
+- Document complex logic with comments
+
+## Before Every Git Operation
+
+1. Check: `git branch --show-current`
+2. If main → Stop and create new branch
+3. If feature branch → Commit OK, but ask before push
+4. Always inform user about git operations
+
+## Reference Documents
+
+- Workflow Rules: `.github/WORKFLOW.md` (MUST READ)
+- Contributing Guide: `CONTRIBUTING.md`
+- Development Guide: `docs/development.md`
