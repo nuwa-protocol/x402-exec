@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { usePayment } from '../hooks/usePayment';
 import { PaymentStatus } from '../components/PaymentStatus';
+import { buildApiUrl } from '../config';
 
 interface PointsRewardProps {
   isConnected: boolean;
@@ -26,7 +27,7 @@ export function PointsReward({ isConnected }: PointsRewardProps) {
   const { status, error, result, pay, reset } = usePayment();
 
   useEffect(() => {
-    fetch('/api/scenario-3/info')
+    fetch(buildApiUrl('/api/scenario-3/info'))
       .then((res) => res.json())
       .then((data) => setRewardInfo(data))
       .catch(console.error);

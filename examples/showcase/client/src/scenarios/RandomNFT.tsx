@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { usePayment } from '../hooks/usePayment';
 import { PaymentStatus } from '../components/PaymentStatus';
+import { buildApiUrl } from '../config';
 
 interface RandomNFTProps {
   isConnected: boolean;
@@ -27,7 +28,7 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
   const { status, error, pay, reset, result } = usePayment();
 
   useEffect(() => {
-    fetch('/api/scenario-2/info')
+    fetch(buildApiUrl('/api/scenario-2/info'))
       .then((res) => res.json())
       .then((data) => setNftInfo(data))
       .catch(console.error);
