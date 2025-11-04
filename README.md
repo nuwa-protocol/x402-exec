@@ -97,6 +97,33 @@ x402-exec/
 
 ## 🚀 Quick Start
 
+### Third-Party Integration
+
+If you want to use x402-exec in your own project, we provide an enhanced version of the x402 package. See the [Third-Party Integration Guide](./docs/third-party-integration.md) for details.
+
+**Quick Install:**
+
+```bash
+# Using npm alias (recommended)
+npm install x402@npm:@x402x/x402@^0.6.6-patch.1
+
+# Or using pnpm
+pnpm add x402@npm:@x402x/x402@^0.6.6-patch.1
+```
+
+In `package.json`:
+```json
+{
+  "dependencies": {
+    "x402": "npm:@x402x/x402@^0.6.6-patch.1"
+  }
+}
+```
+
+> 💡 **Why the modified version?** We've added `paymentRequirements` field support to x402 ([PR #578](https://github.com/coinbase/x402/pull/578)), but the improvement was deferred to v2. `@x402x/x402` gives you access to these features now, with full backward compatibility.
+
+### Developer Quick Start
+
 ### Prerequisites
 
 ```bash

@@ -97,6 +97,33 @@ x402-exec/
 
 ## 🚀 快速开始
 
+### 第三方开发者集成
+
+如果你想在自己的项目中使用 x402-exec，我们提供了一个增强版的 x402 包。详细说明请查看 [第三方集成指南](./docs/third-party-integration.md)。
+
+**快速安装：**
+
+```bash
+# 使用 npm alias（推荐）
+npm install x402@npm:@x402x/x402@^0.6.6-patch.1
+
+# 或使用 pnpm
+pnpm add x402@npm:@x402x/x402@^0.6.6-patch.1
+```
+
+在 `package.json` 中：
+```json
+{
+  "dependencies": {
+    "x402": "npm:@x402x/x402@^0.6.6-patch.1"
+  }
+}
+```
+
+> 💡 **为什么使用修改版？** 我们对 x402 添加了 `paymentRequirements` 字段支持（[PR #578](https://github.com/coinbase/x402/pull/578)），但该改进被官方推迟到 v2。`@x402x/x402` 让你现在就能使用这些功能，且完全向后兼容。
+
+### 开发者快速开始
+
 ### 前置要求
 
 ```bash
