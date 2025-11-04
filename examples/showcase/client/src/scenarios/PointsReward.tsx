@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
-import { buildApiUrl, Network } from '../config';
+import { buildApiUrl, Network, NETWORKS } from '../config';
 
 interface PointsRewardProps {}
 
@@ -62,7 +62,6 @@ export function PointsReward({}: PointsRewardProps) {
     setResult(null);
   };
 
-  const remainingPoints = rewardInfo ? parseFloat(rewardInfo.reward.remaining) : 0;
 
   return (
     <div className="scenario-card">
@@ -76,29 +75,137 @@ export function PointsReward({}: PointsRewardProps) {
           Pay <strong>$0.1 USDC</strong> and instantly receive <strong>1000 Reward Points</strong>!
         </p>
 
-        {rewardInfo && (
-          <div className="reward-stats">
-            <div className="stat-large">
-              <span className="reward-icon">🏆</span>
-              <div>
-                <div className="stat-value-large">{rewardInfo.reward.amountPerPayment}</div>
-                <div className="stat-label">Points per Payment</div>
-              </div>
+        {/* Points per Payment Info */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px', 
+          padding: '16px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px', 
+          marginBottom: '20px' 
+        }}>
+          <span style={{ fontSize: '24px' }}>🏆</span>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>
+              1000 Points
             </div>
+            <div style={{ fontSize: '14px', color: '#6c757d' }}>
+              Earned per payment
+            </div>
+          </div>
+        </div>
 
-            <div className="stats-row">
-              <div className="stat">
-                <span className="stat-label">Total Supply</span>
-                <span className="stat-value">
-                  {parseFloat(rewardInfo.reward.totalSupply).toLocaleString()}
-                </span>
-              </div>
-              <div className="stat">
-                <span className="stat-label">Remaining</span>
-                <span className="stat-value">
-                  {remainingPoints.toLocaleString()}
-                </span>
-              </div>
+        {/* Network Rewards Table */}
+        {rewardInfo?.networks && (
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+              Reward Points Status Across Networks
+            </h4>
+            <div style={{ 
+              overflowX: 'auto',
+              border: '1px solid #e1e5e9',
+              borderRadius: '8px',
+              backgroundColor: 'white'
+            }}>
+              <table style={{ 
+                width: '100%', 
+                borderCollapse: 'collapse',
+                fontSize: '14px'
+              }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'left', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Network
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Total Supply
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Remaining
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(rewardInfo.networks).map(([network, networkData]) => {
+                    const config = NETWORKS[network as Network];
+                    const reward = networkData.reward;
+                    const remaining = parseFloat(reward.remaining);
+                    const isAvailable = remaining >= 1000; // Need at least 1000 points for one payment
+                    
+                    return (
+                      <tr key={network} style={{ 
+                        borderBottom: '1px solid #f1f3f4',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '12px 16px', fontWeight: '500' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: isAvailable ? '#28a745' : '#dc3545'
+                            }} />
+                            {config?.displayName || network}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{ fontFamily: 'monospace' }}>
+                            {parseFloat(reward.totalSupply).toLocaleString()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{ 
+                            fontFamily: 'monospace',
+                            fontWeight: '600',
+                            color: isAvailable ? '#28a745' : '#dc3545'
+                          }}>
+                            {remaining.toLocaleString()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            backgroundColor: isAvailable ? '#d4edda' : '#f8d7da',
+                            color: isAvailable ? '#155724' : '#721c24'
+                          }}>
+                            {isAvailable ? 'Available' : 'Depleted'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -115,12 +222,9 @@ export function PointsReward({}: PointsRewardProps) {
 
         <button
           onClick={() => setShowPaymentDialog(true)}
-          disabled={remainingPoints < 1000}
           className="btn-pay"
         >
-          {remainingPoints < 1000
-            ? 'Rewards Depleted'
-            : 'Select Payment Method & Earn Points ($0.1 USDC)'}
+          Select Payment Method & Earn Points ($0.1 USDC)
         </button>
       </div>
 

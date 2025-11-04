@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
-import { buildApiUrl, Network, NETWORKS, getPreferredNetwork } from '../config';
+import { buildApiUrl, Network, NETWORKS } from '../config';
 
 interface RandomNFTProps {}
 
@@ -36,7 +36,6 @@ export function RandomNFT({}: RandomNFTProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string>('');
   const [result, setResult] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<Network>(() => getPreferredNetwork() || 'base-sepolia');
 
   useEffect(() => {
     fetch(buildApiUrl('/api/scenario-2/info'))
@@ -64,9 +63,6 @@ export function RandomNFT({}: RandomNFTProps) {
   };
 
   const tokenId = result?.payment?.extra?.nftTokenId;
-  
-  // Get current network's collection info
-  const currentCollection = nftInfo?.networks?.[selectedNetwork]?.collection || nftInfo?.collection;
 
   return (
     <div className="scenario-card">
@@ -80,46 +76,115 @@ export function RandomNFT({}: RandomNFTProps) {
           Pay <strong>$0.1 USDC</strong> and instantly receive a Random NFT in your wallet!
         </p>
 
-        {/* Network Selector */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>
-            View Network Stats:
-          </label>
-          <select
-            value={selectedNetwork}
-            onChange={(e) => setSelectedNetwork(e.target.value as Network)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              fontSize: '14px',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            {Object.entries(NETWORKS).map(([network, config]) => (
-              <option key={network} value={network}>
-                {config.displayName}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {currentCollection && (
-          <div className="nft-stats">
-            <div className="stat">
-              <span className="stat-label">Collection</span>
-              <span className="stat-value">{currentCollection.name}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Minted on {NETWORKS[selectedNetwork].displayName}</span>
-              <span className="stat-value">
-                {currentCollection.currentSupply} / {currentCollection.maxSupply}
-              </span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Remaining</span>
-              <span className="stat-value">{currentCollection.remaining}</span>
+        {/* Network Stats Table */}
+        {nftInfo?.networks && (
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: 'bold' }}>
+              NFT Collection Status Across Networks
+            </h4>
+            <div style={{ 
+              overflowX: 'auto',
+              border: '1px solid #e1e5e9',
+              borderRadius: '8px',
+              backgroundColor: 'white'
+            }}>
+              <table style={{ 
+                width: '100%', 
+                borderCollapse: 'collapse',
+                fontSize: '14px'
+              }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'left', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Network
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Minted
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Remaining
+                    </th>
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'center', 
+                      fontWeight: '600',
+                      borderBottom: '1px solid #e1e5e9'
+                    }}>
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(nftInfo.networks).map(([network, networkData]) => {
+                    const config = NETWORKS[network as Network];
+                    const collection = networkData.collection;
+                    const isAvailable = collection.remaining > 0;
+                    
+                    return (
+                      <tr key={network} style={{ 
+                        borderBottom: '1px solid #f1f3f4',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '12px 16px', fontWeight: '500' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: isAvailable ? '#28a745' : '#dc3545'
+                            }} />
+                            {config?.displayName || network}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{ fontFamily: 'monospace' }}>
+                            {collection.currentSupply} / {collection.maxSupply}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{ 
+                            fontFamily: 'monospace',
+                            fontWeight: '600',
+                            color: isAvailable ? '#28a745' : '#dc3545'
+                          }}>
+                            {collection.remaining}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            backgroundColor: isAvailable ? '#d4edda' : '#f8d7da',
+                            color: isAvailable ? '#155724' : '#721c24'
+                          }}>
+                            {isAvailable ? 'Available' : 'Sold Out'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -136,12 +201,9 @@ export function RandomNFT({}: RandomNFTProps) {
 
         <button
           onClick={() => setShowPaymentDialog(true)}
-          disabled={currentCollection?.remaining === 0}
           className="btn-pay"
         >
-          {currentCollection?.remaining === 0
-            ? `Sold Out on ${NETWORKS[selectedNetwork].displayName}`
-            : 'Select Payment Method & Mint NFT ($0.1 USDC)'}
+          Select Payment Method & Mint NFT ($0.1 USDC)
         </button>
       </div>
 
