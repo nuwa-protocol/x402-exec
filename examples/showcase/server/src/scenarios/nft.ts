@@ -110,23 +110,55 @@ export async function generateNFTPayment(params: NFTMintParams) {
 }
 
 /**
- * Get scenario information
+ * Get scenario information for all supported networks
  */
 export async function getScenarioInfo() {
-  const currentSupply = await getNextTokenId();
-  const remaining = 1000 - currentSupply;
+  const supportedNetworks = Object.keys(appConfig.networks);
+  const networkInfo: Record<string, any> = {};
+  
+  // Get NFT collection info for each network
+  for (const network of supportedNetworks) {
+    try {
+      const currentSupply = await getNextTokenId(network);
+      const remaining = 1000 - currentSupply;
+      
+      networkInfo[network] = {
+        collection: {
+          name: 'Random NFT',
+          symbol: 'RNFT',
+          maxSupply: 1000,
+          currentSupply,
+          remaining,
+        },
+      };
+    } catch (error) {
+      console.warn(`Failed to get NFT info for network ${network}:`, error);
+      // Fallback info for networks that might not have contracts deployed
+      networkInfo[network] = {
+        collection: {
+          name: 'Random NFT',
+          symbol: 'RNFT',
+          maxSupply: 1000,
+          currentSupply: 0,
+          remaining: 1000,
+        },
+      };
+    }
+  }
   
   return {
     id: 2,
     name: 'Random NFT Mint',
     description: 'Mint a random NFT on payment',
     price: '$0.1 USDC',
-    collection: {
+    networks: networkInfo,
+    // Keep legacy format for backward compatibility
+    collection: networkInfo[appConfig.defaultNetwork]?.collection || {
       name: 'Random NFT',
       symbol: 'RNFT',
       maxSupply: 1000,
-      currentSupply,
-      remaining,
+      currentSupply: 0,
+      remaining: 1000,
     },
   };
 }

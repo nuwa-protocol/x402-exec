@@ -98,22 +98,54 @@ export async function generateRewardPayment(params: RewardParams = {}) {
 }
 
 /**
- * Get scenario information
+ * Get scenario information for all supported networks
  */
 export async function getScenarioInfo() {
-  const remaining = await getRemainingRewards();
+  const supportedNetworks = Object.keys(appConfig.networks);
+  const networkInfo: Record<string, any> = {};
+  
+  // Get reward info for each network
+  for (const network of supportedNetworks) {
+    try {
+      const remaining = await getRemainingRewards(network);
+      
+      networkInfo[network] = {
+        reward: {
+          token: 'Reward Points',
+          symbol: 'POINTS',
+          amountPerPayment: '1000',
+          totalSupply: '1000000',
+          remaining,
+        },
+      };
+    } catch (error) {
+      console.warn(`Failed to get reward info for network ${network}:`, error);
+      // Fallback info for networks that might not have contracts deployed
+      networkInfo[network] = {
+        reward: {
+          token: 'Reward Points',
+          symbol: 'POINTS',
+          amountPerPayment: '1000',
+          totalSupply: '1000000',
+          remaining: '1000000',
+        },
+      };
+    }
+  }
   
   return {
     id: 3,
     name: 'Points Reward',
     description: 'Earn reward points on payment',
     price: '$0.1 USDC',
-    reward: {
+    networks: networkInfo,
+    // Keep legacy format for backward compatibility
+    reward: networkInfo[appConfig.defaultNetwork]?.reward || {
       token: 'Reward Points',
       symbol: 'POINTS',
       amountPerPayment: '1000',
       totalSupply: '1000000',
-      remaining,
+      remaining: '1000000',
     },
   };
 }
