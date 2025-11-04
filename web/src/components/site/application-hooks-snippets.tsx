@@ -227,7 +227,7 @@ export const ApplicationHooksSnippets = () => {
               rel="noreferrer"
               className="underline hover:text-foreground"
             >
-              x402-exec GitHub repository.
+              x402X GitHub repository.
             </a>
           </p>
         </div>

@@ -6,10 +6,10 @@ import { ApplicationHooksSnippets } from "./application-hooks-snippets";
 // Add a small installation snippet with common package managers.
 export function Hero() {
   // const installCodes: Record<string, string> = {
-  //   pnpm: "pnpm install x402-exec",
-  //   npm: "npm install x402-exec",
-  //   yarn: "yarn add x402-exec",
-  //   bun: "bun add x402-exec",
+  //   pnpm: "pnpm install x402X",
+  //   npm: "npm install x402X",
+  //   yarn: "yarn add x402X",
+  //   bun: "bun add x402X",
   // };
 
   return (
@@ -25,7 +25,7 @@ export function Hero() {
           Pay and Execute Any Smart Contract
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-balance text-muted-foreground">
-          x402-exec extends x402 payments with hooks and a settlement router so
+          x402X (short for x402-exec) extends x402 payments with hooks and a settlement router so
           your agents can mint, trade, split revenue and more — all in one
           atomic transaction.
         </p>

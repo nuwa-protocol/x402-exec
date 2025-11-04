@@ -12,9 +12,9 @@ export default function DocsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">x402‑exec Developer Guide</h1>
+        <h1 className="text-2xl font-bold tracking-tight">x402X Developer Guide</h1>
         <p className="text-muted-foreground mt-1">
-          Learn how to build the client, server, and smart contracts using the three showcase scenarios:
+          x402X is short for x402‑exec. Learn how to build the client, server, and smart contracts using the three showcase scenarios:
           Referral Split, Random NFT Mint, and Loyalty Points.
         </p>
       </div>

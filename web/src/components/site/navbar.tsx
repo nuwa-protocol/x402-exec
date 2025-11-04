@@ -21,7 +21,7 @@ export function Navbar() {
             ⚡
           </span> */}
           <span className="ml-2 text-xl font-bold tracking-tight">
-            x402-exec
+            x402X
           </span>
         </Button>
         <NavigationMenu className="hidden md:flex" viewport={false}>
@@ -61,7 +61,8 @@ export function Navbar() {
                 href="#diagram"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.open("https://demo.x402-exec.org/", "_blank");
+                  // Open the new primary domain for the demo
+                  window.open("https://x402x.dev/", "_blank");
                 }}
                 className="inline-flex h-9 items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium  cursor-pointer"
               >

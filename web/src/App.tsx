@@ -29,7 +29,7 @@ function App() {
 
   // Basic client-side SEO: update document title based on route
   useEffect(() => {
-    const base = "x402-exec";
+    const base = "x402X";
     const title = route === "docs" ? `${base} • Docs` : route === "facilitator" ? `${base} • Facilitator` : `${base} • Atomic Pay-and-Execute`;
     if (typeof document !== "undefined") {
       document.title = title;

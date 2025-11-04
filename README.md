@@ -1,4 +1,4 @@
-# x402-exec
+# x402X
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Solidity](https://img.shields.io/badge/solidity-^0.8.20-green.svg)](https://soliditylang.org/)
@@ -6,11 +6,11 @@
 
 English | [简体中文](./README_CN.md)
 
-x402-exec is a programmable settlement framework for [x402 protocol](https://github.com/coinbase/x402), combining payment verification, Hook-based business logic, and facilitator incentives in atomic transactions.
+x402X (short for x402-exec) is a programmable settlement framework for [x402 protocol](https://github.com/coinbase/x402), combining payment verification, Hook-based business logic, and facilitator incentives in atomic transactions.
 
 ## ✨ Features
 
-### 💎 What Makes x402-exec Special
+### 💎 What Makes x402X Special
 
 **Programmable Settlement with Real Atomicity** - Not just payment routing, but a complete settlement execution framework that combines payment verification, business logic execution, and facilitator incentives in a single atomic transaction.
 
@@ -175,10 +175,10 @@ All Hook implementations are available in [`contracts/examples/`](./contracts/ex
 
 Example deployments for testing and reference:
 
-- **Showcase Demo**: [https://x402-exec.pages.dev/](https://x402-exec.pages.dev/)  
+- **Showcase Demo**: [https://x402x.dev/](https://x402x.dev/)  
   Interactive demo with 3 payment scenarios (referral split, NFT mint, loyalty rewards)
 
-- **Example Facilitator**: [https://facilitator.x402-exec.org](https://facilitator.x402-exec.org)  
+- **Example Facilitator**: [https://facilitator.x402x.dev](https://facilitator.x402x.dev)  
   Reference facilitator implementation (see [Facilitator Guide](./examples/facilitator/README.md))
 
 > 💡 **Note**: These are example deployments. For production use, deploy your own facilitator and configure it according to your needs.

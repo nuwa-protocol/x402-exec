@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 export default function FacilitatorPage() {
-  const hostedUrl = "https://facilitator.x402-exec.org/";
+  const hostedUrl = "https://facilitator.x402x.dev/";
   const GH_ROOT = "https://github.com/nuwa-protocol/x402-exec/tree/main/" as const;
 
   return (
@@ -11,7 +11,7 @@ export default function FacilitatorPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Facilitator</h1>
         <p className="text-muted-foreground mt-1">
-          Reference facilitator service for x402‑exec. Use this hosted instance or run the
+          Reference facilitator service for x402X (short for x402‑exec). Use this hosted instance or run the
           example server locally from{" "}
           <a href={`${GH_ROOT}examples/facilitator`} target="_blank" rel="noreferrer">
             <code>examples/facilitator</code>

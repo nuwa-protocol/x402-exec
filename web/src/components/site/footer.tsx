@@ -6,9 +6,9 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground">
         <div className="flex flex-col items-center justify-between gap-3 md:flex-row">
           <p className="flex flex-col">
-            <span className="font-semibold text-foreground">x402-exec © {new Date().getFullYear()}</span>
+            <span className="font-semibold text-foreground">x402X © {new Date().getFullYear()}</span>
             <span>
-              A project by <a href="https://nuwa.dev" target="_blank" rel="noreferrer" className="underline hover:text-foreground">Nuwa AI</a>.
+              This is a project from <a href="https://x.com/NuwaDev" target="_blank" rel="noreferrer" className="underline hover:text-foreground">Nuwa AI</a>. x402X is short for x402-exec.
             </span>
           </p>
           <div className="flex items-center gap-3">
