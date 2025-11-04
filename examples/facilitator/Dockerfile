@@ -1,6 +1,5 @@
 # Multi-service Docker image for X402 services
 # Supports both facilitator and showcase-server services via SERVICE_NAME environment variable
-# This approach keeps the workspace structure intact and avoids symlink issues
 FROM node:20-alpine
 
 # Install git and wget for submodule support and health checks
@@ -12,18 +11,14 @@ RUN npm install -g pnpm@10.7.0
 # Set working directory
 WORKDIR /app
 
-# Copy the entire project (including local changes)
+# Copy the entire project
 COPY . .
 
-# Submodules should be initialized by CI checkout action
-
-# Install all dependencies (including workspace dependencies)
+# Install all dependencies
+# Note: Examples use npm:@x402x/x402 (pre-built from npm), so no need to build x402 workspace packages
 RUN pnpm install --frozen-lockfile
 
-# Build x402 dependencies once
-RUN pnpm run build:x402
-
-# Build both services (without rebuilding x402)
+# Build both services directly (x402 is already built and comes from npm)
 RUN pnpm --filter='@nuwa-ai/facilitator' build
 RUN pnpm --filter=x402-exec-showcase-server build
 

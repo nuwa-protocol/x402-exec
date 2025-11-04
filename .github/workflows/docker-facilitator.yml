@@ -6,14 +6,13 @@ on:
     paths:
       - 'examples/facilitator/**'
       - 'examples/showcase/server/**'
-      - 'deps/x402/**'
       - '.github/workflows/docker-facilitator.yml'
+      # Note: No need to rebuild on deps/x402 changes since examples use @x402x/x402 from npm
   pull_request:
     branches: [main]
     paths:
       - 'examples/facilitator/**'
       - 'examples/showcase/server/**'
-      - 'deps/x402/**'
       - '.github/workflows/docker-facilitator.yml'
 
 env:
