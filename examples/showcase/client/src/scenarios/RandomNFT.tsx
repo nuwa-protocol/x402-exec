@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
 import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
 import { buildApiUrl, Network, NETWORKS, getPreferredNetwork } from '../config';
@@ -32,7 +31,6 @@ interface NFTInfo {
 }
 
 export function RandomNFT({}: RandomNFTProps) {
-  const { address } = useAccount();
   const [nftInfo, setNftInfo] = useState<NFTInfo | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
