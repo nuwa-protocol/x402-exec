@@ -3,20 +3,22 @@
  * Generates payment requirements for reward point distribution
  */
 
-import { appConfig } from '../config.js';
+import { appConfig, getNetworkConfig, getUsdcDomainForNetwork } from '../config.js';
 import { encodeRewardData } from '../utils/hookData.js';
 import { generateSalt } from '../utils/commitment.js';
 import { ethers } from 'ethers';
 
 /**
  * Gets remaining reward points from contract
+ * @param network Network to query
  * @returns Remaining points available
  */
-async function getRemainingRewards(): Promise<string> {
+async function getRemainingRewards(network: string = appConfig.defaultNetwork): Promise<string> {
   try {
-    const provider = new ethers.JsonRpcProvider(appConfig.rpcUrl);
+    const networkConfig = getNetworkConfig(network);
+    const provider = new ethers.JsonRpcProvider(networkConfig.rpcUrl);
     const abi = ['function remainingRewards() view returns (uint256)'];
-    const contract = new ethers.Contract(appConfig.rewardTokenAddress, abi, provider);
+    const contract = new ethers.Contract(networkConfig.rewardTokenAddress, abi, provider);
     const remaining = await contract.remainingRewards();
     return ethers.formatEther(remaining);
   } catch (error) {
@@ -28,6 +30,7 @@ async function getRemainingRewards(): Promise<string> {
 export interface RewardParams {
   merchantAddress?: string;
   resource?: string;
+  network?: string;
 }
 
 /**
@@ -36,9 +39,10 @@ export interface RewardParams {
  * @returns Payment requirements object
  */
 export async function generateRewardPayment(params: RewardParams = {}) {
-  const { merchantAddress, resource } = params;
+  const { merchantAddress, resource, network = appConfig.defaultNetwork } = params;
+  const networkConfig = getNetworkConfig(network);
   
-  const remaining = await getRemainingRewards();
+  const remaining = await getRemainingRewards(network);
   
   // Check if rewards are depleted
   if (parseFloat(remaining) < 1000) {
@@ -54,36 +58,39 @@ export async function generateRewardPayment(params: RewardParams = {}) {
   
   // Encode hook data (reward config with token and merchant addresses)
   const hookData = encodeRewardData({
-    rewardToken: appConfig.rewardTokenAddress,
+    rewardToken: networkConfig.rewardTokenAddress,
     merchant
   });
   
   // Generate unique salt for this settlement
   const salt = generateSalt();
   
+  // Get correct USDC domain info for the network
+  const usdcDomain = getUsdcDomainForNetwork(network);
+  
   // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
   const facilitatorFee = '10000';
   
   return {
     scheme: 'exact' as const,
-    network: appConfig.network as any, // Cast to any to resolve type incompatibility
+    network: network as any, // Cast to any to resolve type incompatibility
     maxAmountRequired: '100000', // 0.1 USDC
-    asset: appConfig.usdcAddress,
-    payTo: appConfig.settlementRouterAddress,
+    asset: networkConfig.usdcAddress,
+    payTo: networkConfig.settlementRouterAddress,
     resource: resource || '/api/scenario-3/payment', // Use provided resource or fallback
-    description: 'Points Reward: Pay $0.1 and receive 1000 reward points',
+    description: `Points Reward: Pay $0.1 and receive 1000 reward points on ${network}`,
     mimeType: 'application/json',
     maxTimeoutSeconds: 3600, // 1 hour validity window (total 70 min with validAfter offset)
     extra: {
       // Required for EIP-712 signature (USDC contract domain)
-      name: 'USDC',
-      version: '2',
+      name: usdcDomain.name,
+      version: usdcDomain.version,
       // Settlement-specific data
-      settlementRouter: appConfig.settlementRouterAddress,
+      settlementRouter: networkConfig.settlementRouterAddress,
       salt,
       payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient
       facilitatorFee,
-      hook: appConfig.rewardHookAddress,
+      hook: networkConfig.rewardHookAddress,
       hookData,
       rewardAmount: '1000', // Points earned
     },

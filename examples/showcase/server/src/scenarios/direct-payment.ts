@@ -4,11 +4,12 @@
  * Pays directly to resource server for debugging and comparison
  */
 
-import { appConfig } from '../config.js';
+import { appConfig, getNetworkConfig, getUsdcDomainForNetwork } from '../config.js';
 import { PaymentRequirements } from 'x402/types';
 
 export interface DirectPaymentParams {
   resource?: string;
+  network?: string;
 }
 
 /**
@@ -17,23 +18,27 @@ export interface DirectPaymentParams {
  * @returns Payment requirements object
  */
 export function generateDirectPayment(params: DirectPaymentParams = {}): PaymentRequirements {
-  const { resource } = params;
+  const { resource, network = appConfig.defaultNetwork } = params;
+  const networkConfig = getNetworkConfig(network);
+  
+  // Get correct USDC domain info for the network
+  const usdcDomain = getUsdcDomainForNetwork(network);
   
   // Return standard x402 PaymentRequirements format (simple version)
   return {
     scheme: 'exact',
-    network: appConfig.network as any,
+    network: network as any,
     maxAmountRequired: '100000', // 0.1 USDC (6 decimals)
-    asset: appConfig.usdcAddress,
+    asset: networkConfig.usdcAddress,
     payTo: appConfig.resourceServerAddress, // Direct payment to resource server
     resource: resource || '/api/direct-payment/payment',
-    description: 'Simple Direct Payment: $0.1 USDC to resource server (no router/hook)',
+    description: `Simple Direct Payment: $0.1 USDC to resource server on ${network} (no router/hook)`,
     mimeType: 'application/json',
     maxTimeoutSeconds: 3600, // 1 hour validity window
     extra: {
       // Required for EIP-712 signature (USDC contract domain)
-      name: 'USDC',
-      version: '2',
+      name: usdcDomain.name,
+      version: usdcDomain.version,
       // NO settlementRouter, salt, hook, hookData - this is a simple direct payment
     },
   };
