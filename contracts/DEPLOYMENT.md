@@ -1,0 +1,342 @@
+# Multi-Network Deployment Guide
+
+## 📋 Overview
+
+This guide explains how to deploy x402-exec contracts to different networks, with a focus on X-Layer Testnet deployment.
+
+## 🌐 Supported Networks
+
+| Network | Chain ID | RPC Default | Block Explorer |
+|---------|----------|-------------|----------------|
+| Base Sepolia | 84532 | https://sepolia.base.org | https://sepolia.basescan.org |
+| Base Mainnet | 8453 | https://mainnet.base.org | https://basescan.org |
+| X-Layer Testnet | 1952 | https://testrpc.xlayer.tech | https://www.oklink.com/xlayer-test |
+| X-Layer Mainnet | 196 | https://rpc.xlayer.tech | https://www.oklink.com/xlayer |
+
+## 🚀 Quick Start: Deploy to X-Layer Testnet
+
+### 1. Prerequisites
+
+```bash
+# Install Foundry (if not already installed)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Verify installation
+forge --version
+cast --version
+```
+
+### 2. Configure Environment Variables
+
+Create or update `.env` in **project root** (for contract deployment only):
+
+```bash
+# Copy template
+cp env.template .env
+
+# Edit .env and fill in:
+DEPLOYER_PRIVATE_KEY=0x...
+X_LAYER_TESTNET_RPC_URL=https://testrpc.xlayer.tech/terigon
+
+# Optional: For contract verification
+OKLINK_API_KEY=your_oklink_api_key_here
+```
+
+**Note:** For other services configuration:
+- **Facilitator**: See `examples/facilitator/env.example`
+- **Showcase Server**: See `examples/showcase/server/env.example`
+
+**Important:** Never commit `.env` to git! It's already in `.gitignore`.
+
+### 3. Fund Your Deployer Wallet
+
+```bash
+# Get deployer address
+cast wallet address --private-key $DEPLOYER_PRIVATE_KEY
+
+# Get OKB testnet tokens from faucet
+# Visit: https://www.okx.com/xlayer/faucet
+```
+
+### 4. Deploy Everything (Recommended)
+
+Deploy both SettlementRouter and all showcase scenarios:
+
+```bash
+cd contracts
+./deploy-network.sh xlayer-testnet --all
+```
+
+This will:
+1. ✅ Deploy `SettlementRouter`
+2. ✅ Deploy `RevenueSplitHook`
+3. ✅ Deploy `NFTMintHook` + `RandomNFT`
+4. ✅ Deploy `RewardHook` + `RewardToken`
+
+### 5. Save Deployed Addresses
+
+Copy the output addresses to:
+
+**Project root `.env`** (for future deployments):
+```bash
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
+```
+
+**Showcase server `.env`** (`examples/showcase/server/.env`):
+```bash
+# Copy from env.example first: cp env.example .env
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
+X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS=0x...
+X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS=0x...
+X_LAYER_TESTNET_RANDOM_NFT_ADDRESS=0x...
+X_LAYER_TESTNET_REWARD_HOOK_ADDRESS=0x...
+X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS=0x...
+```
+
+See `examples/showcase/server/ENVIRONMENT_VARIABLES.md` for details.
+
+### 6. Verify Deployment (Optional)
+
+If you have `OKLINK_API_KEY` set and used `--verify` flag:
+
+```bash
+# Contracts will be automatically verified on OKLink
+# Visit: https://www.oklink.com/xlayer-test
+```
+
+## 📚 Advanced Usage
+
+### Deploy Only SettlementRouter
+
+```bash
+./deploy-network.sh xlayer-testnet --settlement
+```
+
+After deployment, save the address:
+```bash
+# Add to .env
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
+```
+
+### Deploy Only Showcase Scenarios
+
+Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
+
+```bash
+# Make sure X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS is set in .env
+./deploy-network.sh xlayer-testnet --showcase
+```
+
+### Deploy with Verification
+
+```bash
+# Requires OKLINK_API_KEY in .env
+./deploy-network.sh xlayer-testnet --all --verify
+```
+
+### Non-Interactive Deployment
+
+Skip confirmation prompts:
+
+```bash
+./deploy-network.sh xlayer-testnet --all --yes
+```
+
+## 🔧 Legacy Deployment Scripts
+
+### Old Scripts (Still Work)
+
+```bash
+# Deploy SettlementRouter only
+./deploy.sh
+
+# Deploy showcase scenarios only
+./deploy-showcase.sh --all
+```
+
+**Limitations:**
+- Only work with Base Sepolia (hardcoded RPC_URL)
+- Require manual RPC URL configuration for other networks
+
+### Migration Guide
+
+**Before (Base Sepolia):**
+```bash
+export RPC_URL=https://sepolia.base.org
+./deploy.sh
+./deploy-showcase.sh --all
+```
+
+**After (Multi-Network):**
+```bash
+# Just specify the network!
+./deploy-network.sh base-sepolia --all
+```
+
+## 🌐 Deploy to Other Networks
+
+### Base Mainnet
+
+```bash
+# Configure .env
+BASE_RPC_URL=https://mainnet.base.org
+BASESCAN_API_KEY=your_api_key
+
+# Deploy
+./deploy-network.sh base --all --verify
+```
+
+### X-Layer Mainnet
+
+```bash
+# Configure .env
+X_LAYER_RPC_URL=https://rpc.xlayer.tech
+OKLINK_API_KEY=your_api_key
+
+# Deploy
+./deploy-network.sh xlayer --all --verify
+```
+
+## 🛠️ Troubleshooting
+
+### Chain ID Mismatch
+
+**Error:**
+```
+Chain ID mismatch!
+  Expected: 1952
+  Actual:   84532
+```
+
+**Solution:** Check your RPC URL in `.env` matches the target network.
+
+### Insufficient Funds
+
+**Error:**
+```
+Error: insufficient funds for gas * price + value
+```
+
+**Solution:** Fund your deployer wallet with native tokens (OKB for X-Layer, ETH for Base).
+
+### RPC URL Not Set
+
+**Error:**
+```
+X_LAYER_TESTNET_RPC_URL is not set
+```
+
+**Solution:** Add to `.env`:
+```bash
+X_LAYER_TESTNET_RPC_URL=https://testrpc.xlayer.tech/terigon
+```
+
+### Settlement Router Not Found
+
+**Error (when deploying showcase):**
+```
+Cannot deploy showcase: SETTLEMENT_ROUTER_ADDRESS not set
+```
+
+**Solution:** Either:
+1. Deploy SettlementRouter first: `./deploy-network.sh xlayer-testnet --settlement`
+2. Or use `--all` to deploy everything at once
+
+## 📝 Deployment Checklist
+
+- [ ] Foundry installed and updated (`foundryup`)
+- [ ] `.env` configured with required variables
+- [ ] Deployer wallet funded with native tokens
+- [ ] RPC URL accessible and correct
+- [ ] API key set (if using `--verify`)
+- [ ] Git branch is clean (follow `.github/WORKFLOW.md`)
+- [ ] Ready to save deployed addresses
+
+## 🔐 Security Best Practices
+
+### Private Key Management
+
+1. **Never commit private keys to git**
+   - `.env` is in `.gitignore`
+   - Double-check before committing
+
+2. **Use separate wallets for different environments**
+   ```bash
+   # Testnet wallet
+   DEPLOYER_PRIVATE_KEY=0x...  # For testnet deployments
+   
+   # Mainnet wallet (keep extra secure!)
+   MAINNET_DEPLOYER_PRIVATE_KEY=0x...  # For production
+   ```
+
+3. **Consider using hardware wallets for mainnet**
+   ```bash
+   # Deploy with Ledger (advanced)
+   forge script ... --ledger --sender 0x...
+   ```
+
+### Verification
+
+Always verify contracts on mainnet deployments:
+```bash
+./deploy-network.sh xlayer --all --verify
+```
+
+## 📊 Gas Costs (Estimates)
+
+| Contract | Estimated Gas (X-Layer) | Estimated Cost (OKB) |
+|----------|-------------------------|----------------------|
+| SettlementRouter | ~1.5M gas | ~0.001 OKB |
+| RevenueSplitHook | ~800K gas | ~0.0005 OKB |
+| NFTMintHook | ~1.2M gas | ~0.0008 OKB |
+| RandomNFT | ~2M gas | ~0.001 OKB |
+| RewardHook | ~800K gas | ~0.0005 OKB |
+| RewardToken | ~1.5M gas | ~0.001 OKB |
+| **Total** | **~7.8M gas** | **~0.005 OKB** |
+
+*Costs vary based on network congestion and gas price*
+
+## 🔄 Redeployment
+
+### When to Redeploy
+
+- Contract logic changes
+- Bug fixes
+- Network migration
+- Testing new features
+
+### How to Redeploy
+
+```bash
+# Redeploy everything
+./deploy-network.sh xlayer-testnet --all
+
+# Redeploy specific scenario
+cd contracts
+forge script script/DeployShowcase.s.sol:DeployShowcase \
+  --sig "deployReferral()" \
+  --rpc-url $X_LAYER_TESTNET_RPC_URL \
+  --broadcast
+```
+
+**Remember:** Update all `.env` files with new addresses!
+
+## 📞 Support
+
+- **Issues:** https://github.com/nuwa-protocol/x402_settle/issues
+- **Docs:** See `docs/` directory
+- **X-Layer Docs:** https://docs.okx.com/xlayer/
+
+## 🎓 Additional Resources
+
+- [Foundry Book](https://book.getfoundry.sh/)
+- [X-Layer Documentation](https://docs.okx.com/xlayer/)
+- [Base Documentation](https://docs.base.org/)
+- [Hook Development Guide](../docs/hook_guide.md)
+- [Security Guidelines](../docs/security.md)
+
+---
+
+**Last Updated:** 2025-11-04
+
