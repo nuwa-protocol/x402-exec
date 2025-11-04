@@ -4,15 +4,23 @@
  */
 
 import { useState, useEffect } from 'react';
-import { usePayment } from '../hooks/usePayment';
+import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
-import { buildApiUrl } from '../config';
+import { buildApiUrl, Network } from '../config';
 
-interface PointsRewardProps {
-  isConnected: boolean;
-}
+interface PointsRewardProps {}
 
 interface RewardInfo {
+  networks: Record<Network, {
+    reward: {
+      token: string;
+      symbol: string;
+      amountPerPayment: string;
+      totalSupply: string;
+      remaining: string;
+    };
+  }>;
+  // Legacy format for backward compatibility
   reward: {
     token: string;
     symbol: string;
@@ -22,9 +30,12 @@ interface RewardInfo {
   };
 }
 
-export function PointsReward({ isConnected }: PointsRewardProps) {
+export function PointsReward({}: PointsRewardProps) {
   const [rewardInfo, setRewardInfo] = useState<RewardInfo | null>(null);
-  const { status, error, result, pay, reset } = usePayment();
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
     fetch(buildApiUrl('/api/scenario-3/info'))
@@ -33,19 +44,22 @@ export function PointsReward({ isConnected }: PointsRewardProps) {
       .catch(console.error);
   }, [status]); // Refresh after successful payment
 
-  const handlePay = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  const handlePaymentSuccess = (result: any) => {
+    setResult(result);
+    setStatus('success');
+    setShowPaymentDialog(false);
+  };
 
-    try {
-      await pay('/api/scenario-3/payment', {
-        merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address
-      });
-    } catch (err) {
-      // Error handled by usePayment hook
-    }
+  const handlePaymentError = (error: string) => {
+    setError(error);
+    setStatus('error');
+    setShowPaymentDialog(false);
+  };
+
+  const reset = () => {
+    setStatus('idle');
+    setError('');
+    setResult(null);
   };
 
   const remainingPoints = rewardInfo ? parseFloat(rewardInfo.reward.remaining) : 0;
@@ -100,20 +114,13 @@ export function PointsReward({ isConnected }: PointsRewardProps) {
         </div>
 
         <button
-          onClick={handlePay}
-          disabled={
-            !isConnected ||
-            status === 'preparing' ||
-            status === 'paying' ||
-            remainingPoints < 1000
-          }
+          onClick={() => setShowPaymentDialog(true)}
+          disabled={remainingPoints < 1000}
           className="btn-pay"
         >
           {remainingPoints < 1000
             ? 'Rewards Depleted'
-            : status === 'preparing' || status === 'paying'
-            ? 'Processing...'
-            : 'Earn 1000 Points for $0.1 USDC'}
+            : 'Select Payment Method & Earn Points ($0.1 USDC)'}
         </button>
       </div>
 
@@ -162,7 +169,7 @@ export function PointsReward({ isConnected }: PointsRewardProps) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
           >
-            🔍 View on BaseScan →
+            🔍 View on Explorer →
           </a>
         </div>
       )}
@@ -175,7 +182,20 @@ export function PointsReward({ isConnected }: PointsRewardProps) {
           </button>
         </div>
       )}
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        amount="0.1"
+        currency="USDC"
+        endpoint="/api/scenario-3/payment"
+        requestBody={{
+          merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address
+        }}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+      />
     </div>
   );
 }
-

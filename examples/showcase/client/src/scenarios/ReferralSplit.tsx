@@ -4,13 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { usePayment } from '../hooks/usePayment';
+import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
 import { DebugPanel } from '../components/DebugPanel';
 
-interface ReferralSplitProps {
-  isConnected: boolean;
-}
+interface ReferralSplitProps {}
 
 // Default addresses for testing
 const DEFAULT_ADDRESSES = {
@@ -19,9 +17,13 @@ const DEFAULT_ADDRESSES = {
   referrerFallback: '0x1111111111111111111111111111111111111111', // All 1s address when no referrer
 };
 
-export function ReferralSplit({ isConnected }: ReferralSplitProps) {
+export function ReferralSplit({}: ReferralSplitProps) {
   const [referrer, setReferrer] = useState('');
-  const { status, error, result, debugInfo, pay, reset } = usePayment();
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
   // Read referrer from URL parameters on component mount
   useEffect(() => {
@@ -32,21 +34,23 @@ export function ReferralSplit({ isConnected }: ReferralSplitProps) {
     }
   }, []);
 
-  const handlePay = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  const handlePaymentSuccess = (result: any) => {
+    setResult(result);
+    setStatus('success');
+    setShowPaymentDialog(false);
+  };
 
-    try {
-      await pay('/api/scenario-1/payment', { 
-        referrer: referrer || DEFAULT_ADDRESSES.referrerFallback,
-        merchantAddress: DEFAULT_ADDRESSES.merchant,
-        platformAddress: DEFAULT_ADDRESSES.platform
-      });
-    } catch (err) {
-      // Error handled by usePayment hook
-    }
+  const handlePaymentError = (error: string) => {
+    setError(error);
+    setStatus('error');
+    setShowPaymentDialog(false);
+  };
+
+  const reset = () => {
+    setStatus('idle');
+    setError('');
+    setResult(null);
+    setDebugInfo({});
   };
 
   // Get the actual referrer address to display
@@ -109,17 +113,15 @@ export function ReferralSplit({ isConnected }: ReferralSplitProps) {
             placeholder="0x... or leave empty for fallback address"
             value={referrer}
             onChange={(e) => setReferrer(e.target.value)}
-            disabled={status === 'preparing' || status === 'paying'}
           />
           <span className="hint">Leave empty to use fallback address (0x111...111) as referrer. Can also be set via URL parameter ?referrer=0x...</span>
         </div>
 
         <button
-          onClick={handlePay}
-          disabled={!isConnected || status === 'preparing' || status === 'paying'}
+          onClick={() => setShowPaymentDialog(true)}
           className="btn-pay"
         >
-          {status === 'preparing' || status === 'paying' ? 'Processing...' : 'Pay $0.1 USDC'}
+          Select Payment Method & Pay $0.1 USDC
         </button>
       </div>
 
@@ -171,7 +173,7 @@ export function ReferralSplit({ isConnected }: ReferralSplitProps) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
           >
-            🔍 View on BaseScan →
+            🔍 View on Explorer →
           </a>
         </div>
       )}
@@ -181,7 +183,22 @@ export function ReferralSplit({ isConnected }: ReferralSplitProps) {
           Make Another Payment
         </button>
       )}
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        amount="0.1"
+        currency="USDC"
+        endpoint="/api/scenario-1/payment"
+        requestBody={{ 
+          referrer: referrer || DEFAULT_ADDRESSES.referrerFallback,
+          merchantAddress: DEFAULT_ADDRESSES.merchant,
+          platformAddress: DEFAULT_ADDRESSES.platform
+        }}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+      />
     </div>
   );
 }
-

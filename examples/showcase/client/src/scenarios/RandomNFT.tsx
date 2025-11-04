@@ -4,16 +4,24 @@
  */
 
 import { useState, useEffect } from 'react';
-import { usePayment } from '../hooks/usePayment';
+import { useAccount } from 'wagmi';
+import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
-import { buildApiUrl } from '../config';
+import { buildApiUrl, Network, NETWORKS, getPreferredNetwork } from '../config';
 
-interface RandomNFTProps {
-  isConnected: boolean;
-  walletAddress: string;
-}
+interface RandomNFTProps {}
 
 interface NFTInfo {
+  networks: Record<Network, {
+    collection: {
+      name: string;
+      symbol: string;
+      maxSupply: number;
+      currentSupply: number;
+      remaining: number;
+    };
+  }>;
+  // Legacy format for backward compatibility
   collection: {
     name: string;
     symbol: string;
@@ -23,9 +31,14 @@ interface NFTInfo {
   };
 }
 
-export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
+export function RandomNFT({}: RandomNFTProps) {
+  const { address } = useAccount();
   const [nftInfo, setNftInfo] = useState<NFTInfo | null>(null);
-  const { status, error, pay, reset, result } = usePayment();
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState<any>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(() => getPreferredNetwork() || 'base-sepolia');
 
   useEffect(() => {
     fetch(buildApiUrl('/api/scenario-2/info'))
@@ -34,23 +47,28 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
       .catch(console.error);
   }, [status]); // Refresh after successful payment
 
-  const handlePay = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  const handlePaymentSuccess = (result: any) => {
+    setResult(result);
+    setStatus('success');
+    setShowPaymentDialog(false);
+  };
 
-    try {
-      await pay('/api/scenario-2/payment', { 
-        recipient: walletAddress,
-        merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address
-      });
-    } catch (err) {
-      // Error handled by usePayment hook
-    }
+  const handlePaymentError = (error: string) => {
+    setError(error);
+    setStatus('error');
+    setShowPaymentDialog(false);
+  };
+
+  const reset = () => {
+    setStatus('idle');
+    setError('');
+    setResult(null);
   };
 
   const tokenId = result?.payment?.extra?.nftTokenId;
+  
+  // Get current network's collection info
+  const currentCollection = nftInfo?.networks?.[selectedNetwork]?.collection || nftInfo?.collection;
 
   return (
     <div className="scenario-card">
@@ -64,21 +82,46 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
           Pay <strong>$0.1 USDC</strong> and instantly receive a Random NFT in your wallet!
         </p>
 
-        {nftInfo && (
+        {/* Network Selector */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>
+            View Network Stats:
+          </label>
+          <select
+            value={selectedNetwork}
+            onChange={(e) => setSelectedNetwork(e.target.value as Network)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              fontSize: '14px',
+              backgroundColor: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            {Object.entries(NETWORKS).map(([network, config]) => (
+              <option key={network} value={network}>
+                {config.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {currentCollection && (
           <div className="nft-stats">
             <div className="stat">
               <span className="stat-label">Collection</span>
-              <span className="stat-value">{nftInfo.collection.name}</span>
+              <span className="stat-value">{currentCollection.name}</span>
             </div>
             <div className="stat">
-              <span className="stat-label">Minted</span>
+              <span className="stat-label">Minted on {NETWORKS[selectedNetwork].displayName}</span>
               <span className="stat-value">
-                {nftInfo.collection.currentSupply} / {nftInfo.collection.maxSupply}
+                {currentCollection.currentSupply} / {currentCollection.maxSupply}
               </span>
             </div>
             <div className="stat">
               <span className="stat-label">Remaining</span>
-              <span className="stat-value">{nftInfo.collection.remaining}</span>
+              <span className="stat-value">{currentCollection.remaining}</span>
             </div>
           </div>
         )}
@@ -94,20 +137,13 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
         </div>
 
         <button
-          onClick={handlePay}
-          disabled={
-            !isConnected ||
-            status === 'preparing' ||
-            status === 'paying' ||
-            (nftInfo?.collection.remaining === 0)
-          }
+          onClick={() => setShowPaymentDialog(true)}
+          disabled={currentCollection?.remaining === 0}
           className="btn-pay"
         >
-          {nftInfo?.collection.remaining === 0
-            ? 'Sold Out'
-            : status === 'preparing' || status === 'paying'
-            ? 'Minting...'
-            : 'Mint NFT for $0.1 USDC'}
+          {currentCollection?.remaining === 0
+            ? `Sold Out on ${NETWORKS[selectedNetwork].displayName}`
+            : 'Select Payment Method & Mint NFT ($0.1 USDC)'}
         </button>
       </div>
 
@@ -156,7 +192,7 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
           >
-            🔍 View on BaseScan →
+            🔍 View on Explorer →
           </a>
         </div>
       )}
@@ -169,7 +205,21 @@ export function RandomNFT({ isConnected, walletAddress }: RandomNFTProps) {
           </button>
         </div>
       )}
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        amount="0.1"
+        currency="USDC"
+        endpoint="/api/scenario-2/payment"
+        getRequestBody={(walletAddress) => ({
+          recipient: walletAddress, // NFT will be minted to the connected wallet
+          merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address
+        })}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+      />
     </div>
   );
 }
-
