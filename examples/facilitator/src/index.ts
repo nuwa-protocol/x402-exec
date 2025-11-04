@@ -25,6 +25,20 @@ const EVM_PRIVATE_KEY = process.env.EVM_PRIVATE_KEY || "";
 const SVM_PRIVATE_KEY = process.env.SVM_PRIVATE_KEY || "";
 const SVM_RPC_URL = process.env.SVM_RPC_URL || "";
 
+// SettlementRouter whitelist configuration for security
+const ALLOWED_SETTLEMENT_ROUTERS: Record<string, string[]> = {
+  "base-sepolia": [
+    process.env.BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS ||
+      "0x32431D4511e061F1133520461B07eC42afF157D6",
+  ],
+  base: [process.env.BASE_SETTLEMENT_ROUTER_ADDRESS || ""].filter(Boolean),
+  "x-layer-testnet": [
+    process.env.X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS ||
+      "0x1ae0e196dc18355af3a19985faf67354213f833d",
+  ],
+  "x-layer": [process.env.X_LAYER_SETTLEMENT_ROUTER_ADDRESS || ""].filter(Boolean),
+};
+
 if (!EVM_PRIVATE_KEY && !SVM_PRIVATE_KEY) {
   console.error("Missing required environment variables: EVM_PRIVATE_KEY or SVM_PRIVATE_KEY");
   process.exit(1);
@@ -190,8 +204,13 @@ app.post("/settle", async (req: Request, res: Response) => {
         throw new Error("Settlement Router mode is only supported on EVM networks");
       }
 
-      // Settle using SettlementRouter
-      const response = await settleWithRouter(signer, paymentPayload, paymentRequirements);
+      // Settle using SettlementRouter with whitelist validation
+      const response = await settleWithRouter(
+        signer,
+        paymentPayload,
+        paymentRequirements,
+        ALLOWED_SETTLEMENT_ROUTERS,
+      );
       res.json(response);
     } else {
       console.log("Standard settlement mode");
@@ -211,6 +230,16 @@ app.listen(PORT, () => {
   console.log(`x402-exec Facilitator listening at http://localhost:${PORT}`);
   console.log(`  - Standard x402 settlement: ✓`);
   console.log(`  - SettlementRouter support: ✓`);
+  console.log(`  - Security whitelist: ✓`);
+  console.log(``);
+  console.log(`SettlementRouter Whitelist:`);
+  Object.entries(ALLOWED_SETTLEMENT_ROUTERS).forEach(([network, routers]) => {
+    if (routers.length > 0) {
+      console.log(`  ${network}: ${routers.join(", ")}`);
+    } else {
+      console.log(`  ${network}: (not configured)`);
+    }
+  });
   console.log(``);
   console.log(`Endpoints:`);
   console.log(`  GET  /supported - List supported payment kinds`);

@@ -22,6 +22,43 @@ export function isSettlementMode(paymentRequirements: PaymentRequirements): bool
 }
 
 /**
+ * Validate SettlementRouter address against whitelist
+ *
+ * @param network - The network name (e.g., "base-sepolia", "x-layer-testnet")
+ * @param routerAddress - The SettlementRouter address to validate
+ * @param allowedRouters - Whitelist of allowed router addresses per network
+ * @throws SettlementExtraError if router address is not in whitelist
+ */
+export function validateSettlementRouter(
+  network: string,
+  routerAddress: string,
+  allowedRouters: Record<string, string[]>
+): void {
+  const allowedForNetwork = allowedRouters[network];
+  
+  if (!allowedForNetwork || allowedForNetwork.length === 0) {
+    throw new SettlementExtraError(
+      `No allowed settlement routers configured for network: ${network}. ` +
+      `Please configure environment variables for this network.`
+    );
+  }
+  
+  const normalizedRouter = routerAddress.toLowerCase();
+  const isAllowed = allowedForNetwork.some(
+    allowed => allowed.toLowerCase() === normalizedRouter
+  );
+  
+  if (!isAllowed) {
+    throw new SettlementExtraError(
+      `Settlement router ${routerAddress} is not in whitelist for network ${network}. ` +
+      `Allowed addresses: ${allowedForNetwork.join(', ')}`
+    );
+  }
+  
+  console.log(`✅ Settlement router validated: ${routerAddress} for network: ${network}`);
+}
+
+/**
  * Parse and validate settlement extra parameters from PaymentRequirements
  *
  * @param extra - The extra field from PaymentRequirements
@@ -102,15 +139,17 @@ export function parseSettlementExtra(extra: unknown): SettlementExtra {
  * Settle payment using SettlementRouter contract
  *
  * This function calls the SettlementRouter.settleAndExecute method which:
- * 1. Verifies the EIP-3009 authorization
- * 2. Transfers tokens from payer to Router
- * 3. Deducts facilitator fee
- * 4. Executes the Hook with remaining amount
- * 5. Ensures Router doesn't hold funds
+ * 1. Validates SettlementRouter address against whitelist (SECURITY)
+ * 2. Verifies the EIP-3009 authorization
+ * 3. Transfers tokens from payer to Router
+ * 4. Deducts facilitator fee
+ * 5. Executes the Hook with remaining amount
+ * 6. Ensures Router doesn't hold funds
  *
  * @param signer - The facilitator's wallet signer (must support EVM)
  * @param paymentPayload - The payment payload with authorization and signature
  * @param paymentRequirements - The payment requirements with settlement extra parameters
+ * @param allowedRouters - Whitelist of allowed SettlementRouter addresses per network
  * @returns SettleResponse indicating success or failure
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
@@ -118,12 +157,16 @@ export async function settleWithRouter(
   signer: Signer,
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
+  allowedRouters: Record<string, string[]>,
 ): Promise<SettleResponse> {
   try {
     // 1. Parse settlement extra parameters
     const extra = parseSettlementExtra(paymentRequirements.extra);
 
-    // 2. Extract authorization data from payload
+    // 2. 🔒 SECURITY: Validate SettlementRouter address against whitelist
+    validateSettlementRouter(paymentRequirements.network, extra.settlementRouter, allowedRouters);
+
+    // 3. Extract authorization data from payload
     const payload = paymentPayload.payload as {
       authorization: {
         from: string;
@@ -138,10 +181,10 @@ export async function settleWithRouter(
 
     const { authorization } = payload;
 
-    // 3. Parse ERC-6492 signature if needed (returns original if not ERC-6492)
+    // 4. Parse ERC-6492 signature if needed (returns original if not ERC-6492)
     const { signature } = parseErc6492Signature(payload.signature as Hex);
 
-    // 4. Ensure signer is EVM signer
+    // 5. Ensure signer is EVM signer
     if (!isEvmSignerWallet(signer)) {
       throw new Error("Settlement Router requires an EVM signer");
     }
@@ -152,7 +195,7 @@ export async function settleWithRouter(
     const walletClient = signer as any;
     const publicClient = signer as any;
 
-    // 5. Call SettlementRouter.settleAndExecute
+    // 6. Call SettlementRouter.settleAndExecute
     console.log("Calling SettlementRouter.settleAndExecute with params:", {
       router: extra.settlementRouter,
       token: paymentRequirements.asset,
@@ -186,7 +229,7 @@ export async function settleWithRouter(
 
     console.log("SettlementRouter transaction sent:", tx);
 
-    // 6. Wait for transaction confirmation
+    // 7. Wait for transaction confirmation
     const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
 
     console.log("SettlementRouter transaction confirmed:", {

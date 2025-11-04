@@ -12,6 +12,13 @@ This is an example implementation of an x402 facilitator service with **Settleme
   - Built-in facilitator fee mechanism
   - Support for revenue splitting, NFT minting, reward distribution, etc.
 
+### 🔒 Security Features
+
+- **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
+- **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
+- **Case-Insensitive Matching**: Address validation works regardless of case
+- **Comprehensive Error Messages**: Clear feedback when addresses are rejected
+
 ### 🎯 Auto-Detection
 
 The facilitator automatically detects the settlement mode based on the presence of `extra.settlementRouter` in PaymentRequirements. No manual configuration needed!
@@ -47,7 +54,7 @@ pnpm install
 1. Copy the example environment file:
 
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
 
 2. Edit `.env` and add your private key:
@@ -60,12 +67,12 @@ EVM_PRIVATE_KEY=0xYourPrivateKeyHere
 # SVM_PRIVATE_KEY=your_solana_private_key_base58
 # SVM_RPC_URL=https://api.devnet.solana.com
 
-# SettlementRouter addresses are pre-configured
-SETTLEMENT_ROUTER_BASE_SEPOLIA=0x32431d4511e061f1133520461b07ec42aff157d6
+# SettlementRouter addresses (following project naming convention)
+BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x32431d4511e061f1133520461b07ec42aff157d6
 
 # X-Layer SettlementRouter addresses (deploy contracts and update these)
-SETTLEMENT_ROUTER_X_LAYER=0x...  # X-Layer Mainnet SettlementRouter address
-SETTLEMENT_ROUTER_X_LAYER_TESTNET=0x...  # X-Layer Testnet SettlementRouter address
+X_LAYER_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Mainnet SettlementRouter address
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Testnet SettlementRouter address
 
 # Server port (default: 3000)
 PORT=3000
@@ -78,6 +85,37 @@ pnpm dev
 ```
 
 The server will start on http://localhost:3000
+
+## Security Configuration
+
+### SettlementRouter Whitelist
+
+For security, the facilitator only accepts SettlementRouter addresses that are explicitly configured in environment variables. This prevents malicious resource servers from specifying arbitrary contract addresses.
+
+**Startup Log Example:**
+```
+x402-exec Facilitator listening at http://localhost:3000
+  - Standard x402 settlement: ✓
+  - SettlementRouter support: ✓
+  - Security whitelist: ✓
+
+SettlementRouter Whitelist:
+  base-sepolia: 0x32431D4511e061F1133520461B07eC42afF157D6
+  x-layer-testnet: 0x1ae0e196dc18355af3a19985faf67354213f833d
+  base: (not configured)
+  x-layer: (not configured)
+```
+
+**Security Benefits:**
+- 🛡️ **Prevents malicious contracts**: Only trusted SettlementRouter addresses are accepted
+- 🔍 **Network isolation**: Each network has its own whitelist
+- 📝 **Audit trail**: All validation attempts are logged
+- ❌ **Clear rejections**: Detailed error messages for invalid addresses
+
+**Adding New Networks:**
+1. Deploy SettlementRouter contract on the new network
+2. Add the address to your `.env` file using the correct naming convention
+3. Restart the facilitator to load the new configuration
 
 ## API Endpoints
 
@@ -280,10 +318,26 @@ The facilitator handles various error scenarios:
 
 | Error | Cause | Response |
 |-------|-------|----------|
-| `invalid_payment_requirements` | Missing or invalid extra parameters | 400 with error details |
+| `invalid_payment_requirements` | Missing/invalid extra parameters or **untrusted SettlementRouter address** | 400 with error details |
 | `invalid_network` | Unsupported network | 400 with error details |
 | `invalid_transaction_state` | Transaction reverted | Settlement response with error |
 | `unexpected_settle_error` | Unexpected error during settlement | Settlement response with error |
+
+### Security Error Examples
+
+**Untrusted SettlementRouter:**
+```json
+{
+  "error": "Invalid request: Settlement router 0x1234... is not in whitelist for network base-sepolia. Allowed addresses: 0x32431D4511e061F1133520461B07eC42afF157D6"
+}
+```
+
+**Unconfigured Network:**
+```json
+{
+  "error": "Invalid request: No allowed settlement routers configured for network: base. Please configure environment variables for this network."
+}
+```
 
 ## Production Deployment
 
