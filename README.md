@@ -128,16 +128,6 @@ cd contracts
 
 ### Facilitator Integration
 
-Run a SettlementRouter-enabled facilitator locally:
-
-```bash
-cd examples/facilitator
-cp .env.example .env
-# Edit .env with your private key
-pnpm install
-pnpm dev
-```
-
 The facilitator automatically supports both:
 - **Standard x402 payments**: Direct ERC-3009 transfers
 - **SettlementRouter payments**: Extended settlement with Hook execution
@@ -168,14 +158,15 @@ All Hook implementations are available in [`contracts/examples/`](./contracts/ex
 | Network | SettlementRouter | Status |
 |---------|------------------|--------|
 | Base Sepolia (Testnet) | [`0x32431D4511e061F1133520461B07eC42afF157D6`](https://sepolia.basescan.org/address/0x32431D4511e061F1133520461B07eC42afF157D6) | ✅ Active |
+| X-Layer Testnet | [`0x1ae0e196dc18355af3a19985faf67354213f833d`](https://www.oklink.com/xlayer-test/address/0x1ae0e196dc18355af3a19985faf67354213f833d) | ✅ Active |
 | Base Mainnet | - | 🚧 Pending Audit |
 | Ethereum Mainnet | - | 🚧 Pending Audit |
 
-### Live Examples (Base Sepolia)
+### Live Examples
 
 Example deployments for testing and reference:
 
-- **Showcase Demo**: [https://x402x.dev/](https://x402x.dev/)  
+- **Showcase Demo**: [https://demo.x402x.dev/](https://demo.x402x.dev/)  
   Interactive demo with 3 payment scenarios (referral split, NFT mint, loyalty rewards)
 
 - **Example Facilitator**: [https://facilitator.x402x.dev](https://facilitator.x402x.dev)  
