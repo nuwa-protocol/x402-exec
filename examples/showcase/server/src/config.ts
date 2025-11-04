@@ -7,6 +7,7 @@ import { config, parse } from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { evm } from 'x402/types';
 
 // Load env from local .env first; then fill missing keys from repo root .env
 config();
@@ -51,13 +52,8 @@ config();
   }
 })();
 
-export interface Config {
-  port: number;
-  network: string;
+export interface NetworkConfig {
   rpcUrl: string;
-  facilitatorUrl: string;
-  
-  // Contract addresses
   settlementRouterAddress: string;
   revenueSplitHookAddress: string;
   nftMintHookAddress: string;
@@ -65,6 +61,15 @@ export interface Config {
   rewardTokenAddress: string;
   rewardHookAddress: string;
   usdcAddress: string;
+}
+
+export interface Config {
+  port: number;
+  defaultNetwork: string;
+  facilitatorUrl: string;
+  
+  // Network-specific configurations
+  networks: Record<string, NetworkConfig>;
   
   // Resource server configuration
   resourceServerAddress: string;
@@ -78,21 +83,135 @@ function getRequiredEnv(key: string): string {
   return value;
 }
 
+function getOptionalEnv(key: string, defaultValue?: string): string | undefined {
+  return process.env[key] || defaultValue;
+}
+
+/**
+ * Get default RPC URL for a network from viem Chain definition
+ * @param network Network name
+ * @returns Default RPC URL
+ */
+function getDefaultRpcUrl(network: string): string {
+  try {
+    const chain = evm.getChainFromNetwork(network);
+    return chain.rpcUrls.default.http[0];
+  } catch (error) {
+    console.warn(`Failed to get default RPC URL for network ${network}:`, error);
+    // Fallback URLs for known networks
+    switch (network) {
+      case 'base-sepolia':
+        return 'https://sepolia.base.org';
+      case 'x-layer-testnet':
+        return 'https://testrpc.xlayer.tech/terigon';
+      default:
+        throw new Error(`No default RPC URL available for network: ${network}`);
+    }
+  }
+}
+
+/**
+ * Get default USDC address for a network from x402 EVM config
+ * @param network Network name
+ * @returns Default USDC address
+ */
+function getDefaultUsdcAddress(network: string): string {
+  try {
+    const chain = evm.getChainFromNetwork(network);
+    const chainConfig = evm.config[chain.id.toString()];
+    if (chainConfig?.usdcAddress) {
+      return chainConfig.usdcAddress as string;
+    }
+    throw new Error(`No USDC address configured for chain ID: ${chain.id}`);
+  } catch (error) {
+    console.warn(`Failed to get default USDC address for network ${network}:`, error);
+    // Fallback addresses for known networks
+    switch (network) {
+      case 'base-sepolia':
+        return '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+      case 'x-layer-testnet':
+        return '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d';
+      default:
+        throw new Error(`No default USDC address available for network: ${network}`);
+    }
+  }
+}
+
+/**
+ * Get USDC EIP-712 domain info for a network
+ * @param network Network name
+ * @returns USDC domain info (name and version)
+ */
+export function getUsdcDomainForNetwork(network: string): { name: string; version: string } {
+  try {
+    const chain = evm.getChainFromNetwork(network);
+    const chainConfig = evm.config[chain.id.toString()];
+    if (chainConfig?.usdcName) {
+      return {
+        name: chainConfig.usdcName,
+        version: '2', // All USDC contracts use version "2"
+      };
+    }
+    throw new Error(`No USDC name configured for chain ID: ${chain.id}`);
+  } catch (error) {
+    console.warn(`Failed to get USDC domain for network ${network}:`, error);
+    // Fallback domain info for known networks
+    switch (network) {
+      case 'base-sepolia':
+        return { name: 'USDC', version: '2' };
+      case 'x-layer-testnet':
+        return { name: 'USDC_TEST', version: '2' };
+      case 'base':
+        return { name: 'USD Coin', version: '2' };
+      case 'polygon':
+        return { name: 'USD Coin', version: '2' };
+      default:
+        // Default fallback
+        return { name: 'USDC', version: '2' };
+    }
+  }
+}
+
 export const appConfig: Config = {
   port: parseInt(process.env.PORT || '3001'),
-  network: getRequiredEnv('NETWORK'),
-  rpcUrl: getRequiredEnv('RPC_URL'),
+  defaultNetwork: getRequiredEnv('DEFAULT_NETWORK'),
   facilitatorUrl: getRequiredEnv('FACILITATOR_URL'),
   
-  // Contract addresses
-  settlementRouterAddress: getRequiredEnv('SETTLEMENT_ROUTER_ADDRESS'),
-  revenueSplitHookAddress: getRequiredEnv('REVENUE_SPLIT_HOOK_ADDRESS'),
-  nftMintHookAddress: getRequiredEnv('NFT_MINT_HOOK_ADDRESS'),
-  randomNFTAddress: getRequiredEnv('RANDOM_NFT_ADDRESS'),
-  rewardTokenAddress: getRequiredEnv('REWARD_TOKEN_ADDRESS'),
-  rewardHookAddress: getRequiredEnv('REWARD_HOOK_ADDRESS'),
-  usdcAddress: getRequiredEnv('USDC_ADDRESS'),
+  // Network-specific configurations
+  networks: {
+    // Base Sepolia configuration (supports both new prefixed and legacy env vars for backward compatibility)
+    'base-sepolia': {
+      rpcUrl: getOptionalEnv('BASE_SEPOLIA_RPC_URL') || getOptionalEnv('RPC_URL') || getDefaultRpcUrl('base-sepolia'),
+      settlementRouterAddress: getOptionalEnv('BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS') || getOptionalEnv('SETTLEMENT_ROUTER_ADDRESS') || (() => { throw new Error('SETTLEMENT_ROUTER_ADDRESS or BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS is required'); })(),
+      revenueSplitHookAddress: getOptionalEnv('BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS') || getOptionalEnv('REVENUE_SPLIT_HOOK_ADDRESS') || (() => { throw new Error('REVENUE_SPLIT_HOOK_ADDRESS or BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS is required'); })(),
+      nftMintHookAddress: getOptionalEnv('BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS') || getOptionalEnv('NFT_MINT_HOOK_ADDRESS') || (() => { throw new Error('NFT_MINT_HOOK_ADDRESS or BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS is required'); })(),
+      randomNFTAddress: getOptionalEnv('BASE_SEPOLIA_RANDOM_NFT_ADDRESS') || getOptionalEnv('RANDOM_NFT_ADDRESS') || (() => { throw new Error('RANDOM_NFT_ADDRESS or BASE_SEPOLIA_RANDOM_NFT_ADDRESS is required'); })(),
+      rewardTokenAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_TOKEN_ADDRESS') || getOptionalEnv('REWARD_TOKEN_ADDRESS') || (() => { throw new Error('REWARD_TOKEN_ADDRESS or BASE_SEPOLIA_REWARD_TOKEN_ADDRESS is required'); })(),
+      rewardHookAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_HOOK_ADDRESS') || getOptionalEnv('REWARD_HOOK_ADDRESS') || (() => { throw new Error('REWARD_HOOK_ADDRESS or BASE_SEPOLIA_REWARD_HOOK_ADDRESS is required'); })(),
+      usdcAddress: getOptionalEnv('BASE_SEPOLIA_USDC_ADDRESS') || getOptionalEnv('USDC_ADDRESS') || getDefaultUsdcAddress('base-sepolia'),
+    },
+    // X-Layer Testnet configuration (uses defaults from x402 and viem definitions)
+    'x-layer-testnet': {
+      rpcUrl: getOptionalEnv('X_LAYER_TESTNET_RPC_URL') || getDefaultRpcUrl('x-layer-testnet'),
+      settlementRouterAddress: getOptionalEnv('X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      revenueSplitHookAddress: getOptionalEnv('X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      nftMintHookAddress: getOptionalEnv('X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      randomNFTAddress: getOptionalEnv('X_LAYER_TESTNET_RANDOM_NFT_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      rewardTokenAddress: getOptionalEnv('X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      rewardHookAddress: getOptionalEnv('X_LAYER_TESTNET_REWARD_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      usdcAddress: getOptionalEnv('X_LAYER_TESTNET_USDC_ADDRESS') || getDefaultUsdcAddress('x-layer-testnet'),
+    },
+  },
   
   // Resource server configuration
   resourceServerAddress: getRequiredEnv('RESOURCE_SERVER_ADDRESS'),
 };
+
+// Helper function to get network configuration
+export function getNetworkConfig(network: string): NetworkConfig {
+  const config = appConfig.networks[network];
+  if (!config) {
+    throw new Error(`Unsupported network: ${network}. Supported networks: ${Object.keys(appConfig.networks).join(', ')}`);
+  }
+  return config;
+}

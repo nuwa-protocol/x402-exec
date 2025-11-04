@@ -161,12 +161,9 @@ app.get('/api/health', (c) => {
   return c.json({
     status: 'ok',
     message: 'x402-exec Showcase Server',
-    network: appConfig.network,
-    contracts: {
-      settlementRouter: appConfig.settlementRouterAddress,
-      randomNFT: appConfig.randomNFTAddress,
-      rewardToken: appConfig.rewardTokenAddress,
-    },
+    defaultNetwork: appConfig.defaultNetwork,
+    supportedNetworks: Object.keys(appConfig.networks),
+    networks: appConfig.networks,
   });
 });
 
@@ -197,6 +194,10 @@ app.post('/api/direct-payment/payment', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     console.log('[Direct Payment] Request body:', JSON.stringify(body, null, 2));
     
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Direct Payment] Using network:', network);
+    
     // Get the full URL for the resource field
     const url = new URL(c.req.url);
     const resource = url.href;
@@ -206,6 +207,7 @@ app.post('/api/direct-payment/payment', async (c) => {
     const generatePaymentRequirements = () => {
       const requirements = [directPayment.generateDirectPayment({
         resource, // Pass the full URL
+        network,
       })];
       console.log('[Direct Payment] Generated payment requirements:', JSON.stringify(requirements, null, 2));
       return requirements;
@@ -243,6 +245,10 @@ app.post('/api/scenario-1/payment', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     console.log('[Referral Split] Request body:', JSON.stringify(body, null, 2));
     
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Referral Split] Using network:', network);
+    
     // Get the full URL for the resource field
     const url = new URL(c.req.url);
     const resource = url.href;
@@ -258,6 +264,7 @@ app.post('/api/scenario-1/payment', async (c) => {
         merchantAddress: body.merchantAddress,
         platformAddress: body.platformAddress,
         resource, // Pass the full URL
+        network,
       })];
       console.log('[Referral Split] Generated payment requirements:', JSON.stringify(requirements, null, 2));
       return requirements;
@@ -303,6 +310,10 @@ app.post('/api/scenario-2/payment', async (c) => {
       return c.json({ error: 'Recipient address required' }, 400);
     }
     
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[NFT Mint] Using network:', network);
+    
     // Get the full URL for the resource field
     const url = new URL(c.req.url);
     const resource = url.href;
@@ -314,6 +325,7 @@ app.post('/api/scenario-2/payment', async (c) => {
         recipient: body.recipient,
         merchantAddress: body.merchantAddress,
         resource, // Pass the full URL
+        network,
       })];
       console.log('[NFT Mint] Generated payment requirements:', JSON.stringify(requirements, null, 2));
       return requirements;
@@ -356,6 +368,10 @@ app.post('/api/scenario-3/payment', async (c) => {
     const body = await c.req.json().catch(() => ({}));
     console.log('[Reward Points] Request body:', JSON.stringify(body, null, 2));
     
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Reward Points] Using network:', network);
+    
     // Get the full URL for the resource field
     const url = new URL(c.req.url);
     const resource = url.href;
@@ -366,6 +382,7 @@ app.post('/api/scenario-3/payment', async (c) => {
       const requirements = [await reward.generateRewardPayment({
         merchantAddress: body.merchantAddress,
         resource, // Pass the full URL
+        network,
       })];
       console.log('[Reward Points] Generated payment requirements:', JSON.stringify(requirements, null, 2));
       return requirements;
@@ -401,14 +418,10 @@ console.log(`
 ║                                                           ║
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║
-║   Network:           ${appConfig.network.padEnd(33)}║
+║   Default Network:   ${appConfig.defaultNetwork.padEnd(33)}║
+║   Supported Networks: ${Object.keys(appConfig.networks).join(', ').padEnd(31)}║
 ║   Port:              ${port.toString().padEnd(33)}║
 ║   Facilitator:       ${appConfig.facilitatorUrl.slice(0, 33)}║
-║                                                           ║
-║   SettlementRouter:     ${appConfig.settlementRouterAddress.slice(0, 20)}...       ║
-║   USDC Address:      ${appConfig.usdcAddress.slice(0, 20)}...       ║
-║   RandomNFT:         ${appConfig.randomNFTAddress.slice(0, 20)}...       ║
-║   RewardToken:       ${appConfig.rewardTokenAddress.slice(0, 20)}...       ║
 ║                                                           ║
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║

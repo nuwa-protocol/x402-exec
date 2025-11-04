@@ -18,7 +18,10 @@ The facilitator automatically detects the settlement mode based on the presence 
 
 ### 🌐 Multi-Network Support
 
-- **EVM Networks**: Base Sepolia (testnet), Base (mainnet)
+- **EVM Networks**: 
+  - Base Sepolia (testnet), Base (mainnet)
+  - X-Layer Mainnet (Chain ID: 196)
+  - X-Layer Testnet (Chain ID: 1952)
 - **Solana**: Devnet support (standard mode only)
 
 ## Quick Start
@@ -60,6 +63,10 @@ EVM_PRIVATE_KEY=0xYourPrivateKeyHere
 # SettlementRouter addresses are pre-configured
 SETTLEMENT_ROUTER_BASE_SEPOLIA=0x32431d4511e061f1133520461b07ec42aff157d6
 
+# X-Layer SettlementRouter addresses (deploy contracts and update these)
+SETTLEMENT_ROUTER_X_LAYER=0x...  # X-Layer Mainnet SettlementRouter address
+SETTLEMENT_ROUTER_X_LAYER_TESTNET=0x...  # X-Layer Testnet SettlementRouter address
+
 # Server port (default: 3000)
 PORT=3000
 ```
@@ -86,6 +93,16 @@ Returns the payment kinds that the facilitator supports.
       "x402Version": 1,
       "scheme": "exact",
       "network": "base-sepolia"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "x-layer"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "x-layer-testnet"
     }
   ]
 }

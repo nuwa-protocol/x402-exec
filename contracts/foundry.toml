@@ -10,8 +10,12 @@ via_ir = true
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 base = "${BASE_RPC_URL}"
+xlayer_testnet = "${X_LAYER_TESTNET_RPC_URL}"
+xlayer = "${X_LAYER_RPC_URL}"
 
 [etherscan]
 base_sepolia = { key = "${BASESCAN_API_KEY}" }
 base = { key = "${BASESCAN_API_KEY}" }
+xlayer_testnet = { key = "${OKLINK_API_KEY}", url = "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET" }
+xlayer = { key = "${OKLINK_API_KEY}", url = "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER" }
 

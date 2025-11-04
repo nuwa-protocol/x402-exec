@@ -121,6 +121,20 @@ app.get("/supported", async (req: Request, res: Response) => {
       scheme: "exact",
       network: "base-sepolia",
     });
+
+    // Add X-Layer Mainnet support
+    kinds.push({
+      x402Version: 1,
+      scheme: "exact",
+      network: "x-layer",
+    });
+
+    // Add X-Layer Testnet support
+    kinds.push({
+      x402Version: 1,
+      scheme: "exact",
+      network: "x-layer-testnet",
+    });
   }
 
   // svm
