@@ -13,7 +13,8 @@ import { createWalletClient, custom } from 'viem';
 import { signTypedData } from 'viem/actions';
 import { type Hex, type WalletClient } from 'viem';
 import { calculateCommitment, validateCommitmentParams } from '../utils/commitment';
-import { buildApiUrl } from '../config';
+import { buildApiUrl, Network } from '../config';
+import { useNetworkSwitch } from './useNetworkSwitch';
 
 export type PaymentStatus = 'idle' | 'preparing' | 'paying' | 'signing' | 'submitting' | 'success' | 'error';
 
@@ -59,6 +60,7 @@ export function usePayment() {
   // CRITICAL FIX: Use useConnectorClient with fallback to manual creation
   const { address, isConnected, connector, chain } = useAccount();
   const { data: connectorClient } = useConnectorClient();
+  const { switchToNetwork, isSwitching } = useNetworkSwitch();
   
   // State for manually created wallet client (fallback for non-standard wallets)
   const [manualWalletClient, setManualWalletClient] = useState<WalletClient | null>(null);
@@ -70,20 +72,25 @@ export function usePayment() {
         try {
           console.log('[Payment] useConnectorClient failed, trying manual creation...');
           
-          // Try to get provider from connector
-          const provider = await connector.getProvider();
-          
-          if (provider && typeof provider === 'object') {
-            const client = createWalletClient({
-              account: address,
-              chain: chain,
-              transport: custom(provider as any), // Use 'as any' for non-standard wallet providers
-            });
+          // Check if connector has getProvider method before calling it
+          if (typeof connector.getProvider === 'function') {
+            const provider = await connector.getProvider();
             
-            console.log('[Payment] Manual wallet client created successfully');
-            setManualWalletClient(client);
+            if (provider && typeof provider === 'object') {
+              const client = createWalletClient({
+                account: address,
+                chain: chain,
+                transport: custom(provider as any), // Use 'as any' for non-standard wallet providers
+              });
+              
+              console.log('[Payment] Manual wallet client created successfully');
+              setManualWalletClient(client);
+            } else {
+              console.error('[Payment] Failed to get provider from connector');
+              setManualWalletClient(null);
+            }
           } else {
-            console.error('[Payment] Failed to get provider from connector');
+            console.log('[Payment] Connector does not have getProvider method, skipping manual client creation');
             setManualWalletClient(null);
           }
         } catch (err) {
@@ -102,13 +109,14 @@ export function usePayment() {
   // Use connectorClient if available, otherwise use manual client
   const walletClient = (connectorClient || manualWalletClient) as WalletClient | undefined;
 
-  const pay = async (endpoint: string, body?: any) => {
-    // Enhanced wallet connection check with better error messages
+  const pay = async (endpoint: string, network: Network, body?: any) => {
+    // Wallet connection validation - these checks are now handled by PaymentDialog
+    // but we keep them here as a safety net
     if (!isConnected || !address) {
-      const errorMsg = 'No wallet connected. Please connect your wallet first.';
-      console.error('[Payment] Account check failed:', {
+      const errorMsg = 'Wallet not connected. Please connect your wallet and try again.';
+      console.error('[Payment] Wallet validation failed:', {
         isConnected,
-        address,
+        address: !!address,
         connector: connector?.name,
       });
       
@@ -118,31 +126,15 @@ export function usePayment() {
     }
 
     if (!walletClient) {
-      const errorMsg = `Wallet client not available for ${connector?.name || 'current wallet'}. Please try disconnecting and reconnecting your wallet.`;
-      console.error('[Payment] walletClient is null. This can happen when:');
-      console.error('  1. The wallet provider is not fully initialized');
-      console.error('  2. The wallet uses a non-standard provider interface');
-      console.error('  3. Multiple wallets are causing conflicts');
-      console.error('  Current state:', {
-        isConnected,
-        address,
-        connector: connector?.name,
-        connectorId: connector?.id,
+      const errorMsg = `Unable to create wallet client for ${connector?.name || 'current wallet'}. This may be due to wallet compatibility issues. Please try disconnecting and reconnecting your wallet, or try a different wallet.`;
+      console.error('[Payment] Wallet client not available:', {
         hasConnectorClient: !!connectorClient,
         hasManualClient: !!manualWalletClient,
-        hasWalletClient: !!walletClient,
+        connector: connector?.name,
+        connectorId: connector?.id,
+        hasGetProvider: connector && typeof connector.getProvider === 'function',
       });
-      console.error('  Solution: Disconnect wallet, refresh page, and reconnect');
       
-      setError(errorMsg);
-      setStatus('error');
-      throw new Error(errorMsg);
-    }
-
-    // Additional check: verify the wallet client has required properties
-    if (!walletClient.account?.address) {
-      const errorMsg = 'Wallet account not available. Please reconnect your wallet.';
-      console.error('[Payment] walletClient exists but account.address is missing');
       setError(errorMsg);
       setStatus('error');
       throw new Error(errorMsg);
@@ -157,6 +149,16 @@ export function usePayment() {
       connector: connector?.name,
     });
 
+    // Switch to target network before payment
+    console.log('[Payment] Switching to network:', network);
+    const switched = await switchToNetwork(network);
+    if (!switched) {
+      const errorMsg = `Failed to switch to ${network}. Please switch manually and try again.`;
+      setError(errorMsg);
+      setStatus('error');
+      throw new Error(errorMsg);
+    }
+
     setStatus('preparing');
     setError('');
     setResult(null);
@@ -166,13 +168,14 @@ export function usePayment() {
       const fullUrl = buildApiUrl(endpoint);
       console.log('[Payment] Step 1: Initial request to', fullUrl);
       
-      // Step 1: Make initial request to get 402 response
+      // Step 1: Make initial request to get 402 response (include network in body)
+      const requestBody = { ...body, network };
       const initialResponse = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(requestBody),
       });
 
       // If not 402, return the response directly
@@ -345,7 +348,7 @@ export function usePayment() {
       // Use viem's signTypedData function instead of method call
       // This works with both standard and manually-created wallet clients
       const signature = await signTypedData(walletClient, {
-        account: walletClient.account,
+        account: walletClient.account!,
         domain,
         types,
         primaryType: 'TransferWithAuthorization',
@@ -386,14 +389,14 @@ export function usePayment() {
 
       console.log('[Payment] Step 8: Encoded payment header (first 100 chars)', paymentBase64.substring(0, 100));
 
-      // Step 9: Resend request with X-PAYMENT header
+      // Step 9: Resend request with X-PAYMENT header (include network in body)
       const finalResponse = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-PAYMENT': paymentBase64,
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(requestBody),
       });
 
       console.log('[Payment] Step 9: Final response status', finalResponse.status);
@@ -432,6 +435,7 @@ export function usePayment() {
     debugInfo,
     pay,
     reset,
+    isSwitching,
   };
 }
 

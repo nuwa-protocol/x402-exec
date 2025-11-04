@@ -4,28 +4,37 @@
  * No router, no hook, no complex settlement logic - for debugging and comparison
  */
 
-import { usePayment } from '../hooks/usePayment';
+import { useState } from 'react';
+import { PaymentDialog } from '../components/PaymentDialog';
 import { PaymentStatus } from '../components/PaymentStatus';
 import { DebugPanel } from '../components/DebugPanel';
 
-interface DirectPaymentProps {
-  isConnected: boolean;
-}
+interface DirectPaymentProps {}
 
-export function DirectPayment({ isConnected }: DirectPaymentProps) {
-  const { status, error, result, debugInfo, pay, reset } = usePayment();
+export function DirectPayment({}: DirectPaymentProps) {
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
-  const handlePay = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  const handlePaymentSuccess = (result: any) => {
+    setResult(result);
+    setStatus('success');
+    setShowPaymentDialog(false);
+  };
 
-    try {
-      await pay('/api/direct-payment/payment', {});
-    } catch (err) {
-      // Error handled by usePayment hook
-    }
+  const handlePaymentError = (error: string) => {
+    setError(error);
+    setStatus('error');
+    setShowPaymentDialog(false);
+  };
+
+  const reset = () => {
+    setStatus('idle');
+    setError('');
+    setResult(null);
+    setDebugInfo({});
   };
 
   return (
@@ -55,11 +64,10 @@ export function DirectPayment({ isConnected }: DirectPaymentProps) {
 
       <div className="scenario-form">
         <button
-          onClick={handlePay}
-          disabled={!isConnected || status === 'preparing' || status === 'paying'}
+          onClick={() => setShowPaymentDialog(true)}
           className="btn-pay"
         >
-          {status === 'preparing' || status === 'paying' ? 'Processing...' : 'Pay $0.1 USDC'}
+          Select Payment Method & Pay $0.1 USDC
         </button>
       </div>
 
@@ -111,7 +119,7 @@ export function DirectPayment({ isConnected }: DirectPaymentProps) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
           >
-            🔍 View on BaseScan →
+            🔍 View on Explorer →
           </a>
         </div>
       )}
@@ -121,7 +129,17 @@ export function DirectPayment({ isConnected }: DirectPaymentProps) {
           Make Another Payment
         </button>
       )}
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        amount="0.1"
+        currency="USDC"
+        endpoint="/api/direct-payment/payment"
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+      />
     </div>
   );
 }
-

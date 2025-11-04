@@ -1,0 +1,232 @@
+/* Payment Method Selector Styles */
+
+.payment-method-selector {
+  margin: 20px 0;
+}
+
+.selector-header {
+  margin-bottom: 20px;
+}
+
+.selector-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.selector-description {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.network-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.network-option {
+  position: relative;
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+}
+
+.network-option:hover:not(:disabled):not(.unavailable) {
+  border-color: #4A90E2;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+}
+
+.network-option.selected {
+  border-color: #4A90E2;
+  background: #f0f7ff;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+}
+
+.network-option.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.network-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.network-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.network-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.network-icon {
+  font-size: 24px;
+}
+
+.network-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.network-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.selected-badge {
+  font-size: 12px;
+  color: #4A90E2;
+  font-weight: 500;
+}
+
+.radio-indicator {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.radio-indicator.checked {
+  border-color: #4A90E2;
+  background: #4A90E2;
+  color: white;
+}
+
+.radio-indicator.checked span {
+  font-size: 12px;
+}
+
+.network-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balance-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.balance-info.loading {
+  color: #999;
+  font-style: italic;
+}
+
+.balance-info.error {
+  color: #d32f2f;
+}
+
+.balance-label {
+  color: #666;
+}
+
+.balance-value {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.warning-message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #856404;
+}
+
+.warning-message span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.faucet-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.faucet-link:hover {
+  background-color: rgba(74, 144, 226, 0.1);
+}
+
+.ready-message {
+  padding: 8px 12px;
+  background: #d4edda;
+  border: 1px solid #28a745;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #155724;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selected-network-summary {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f0f7ff;
+  border: 1px solid #4A90E2;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.selected-network-summary p {
+  margin: 0;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.selected-network-summary strong {
+  color: #4A90E2;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .network-option {
+    padding: 12px;
+  }
+
+  .network-icon {
+    font-size: 20px;
+  }
+
+  .network-name {
+    font-size: 14px;
+  }
+
+  .balance-info,
+  .warning-message,
+  .ready-message {
+    font-size: 12px;
+  }
+}
+
