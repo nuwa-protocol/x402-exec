@@ -4,7 +4,23 @@
  * Contains deployed contract addresses and configuration for each supported network.
  */
 
+import { getUsdcChainConfigForChain } from 'x402/shared/evm';
 import type { NetworkConfig } from './types.js';
+
+/**
+ * Helper to create USDC config from x402's chain config
+ */
+function createUsdcConfig(chainId: number) {
+  const chainConfig = getUsdcChainConfigForChain(chainId);
+  if (!chainConfig) {
+    throw new Error(`No USDC config found for chainId ${chainId}`);
+  }
+  return {
+    address: chainConfig.usdcAddress as string,
+    name: chainConfig.usdcName,
+    version: '2',
+  };
+}
 
 /**
  * Network configurations for all supported networks
@@ -13,11 +29,7 @@ export const networks: Record<string, NetworkConfig> = {
   'base-sepolia': {
     chainId: 84532,
     settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
-    usdc: {
-      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-      name: 'USD Coin',
-      version: '2',
-    },
+    usdc: createUsdcConfig(84532),
     hooks: {
       transfer: '0x6b486aF5A08D27153d0374BE56A1cB1676c460a8',
     },
@@ -25,11 +37,9 @@ export const networks: Record<string, NetworkConfig> = {
   'x-layer-testnet': {
     chainId: 195,
     settlementRouter: '0x1ae0e196dc18355af3a19985faf67354213f833d',
-    usdc: {
-      address: '0x...',  // TODO: Add X-Layer Testnet USDC address
-      name: 'USD Coin',
-      version: '2',
-    },
+    // Note: X-Layer Testnet (chainId: 195) not yet in x402 config
+    // Using chainId 196 (X-Layer Mainnet) as fallback for now
+    usdc: createUsdcConfig(196),
     hooks: {
       transfer: '0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB',
     },
@@ -38,11 +48,7 @@ export const networks: Record<string, NetworkConfig> = {
   // 'base': {
   //   chainId: 8453,
   //   settlementRouter: '0x...',
-  //   usdc: {
-  //     address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  //     name: 'USD Coin',
-  //     version: '2',
-  //   },
+  //   usdc: createUsdcConfig(8453),
   //   hooks: {
   //     transfer: '0x...',
   //   },
