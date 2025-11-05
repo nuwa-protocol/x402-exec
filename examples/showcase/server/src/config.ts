@@ -55,6 +55,7 @@ config();
 export interface NetworkConfig {
   rpcUrl: string;
   settlementRouterAddress: string;
+  transferHookAddress: string; // Built-in TransferHook
   revenueSplitHookAddress: string;
   nftMintHookAddress: string;
   randomNFTAddress: string;
@@ -183,6 +184,7 @@ export const appConfig: Config = {
     'base-sepolia': {
       rpcUrl: getOptionalEnv('BASE_SEPOLIA_RPC_URL') || getOptionalEnv('RPC_URL') || getDefaultRpcUrl('base-sepolia'),
       settlementRouterAddress: getOptionalEnv('BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS') || getOptionalEnv('SETTLEMENT_ROUTER_ADDRESS') || (() => { throw new Error('SETTLEMENT_ROUTER_ADDRESS or BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS is required'); })(),
+      transferHookAddress: getOptionalEnv('BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS') || getOptionalEnv('TRANSFER_HOOK_ADDRESS') || (() => { throw new Error('TRANSFER_HOOK_ADDRESS or BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS is required'); })(),
       revenueSplitHookAddress: getOptionalEnv('BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS') || getOptionalEnv('REVENUE_SPLIT_HOOK_ADDRESS') || (() => { throw new Error('REVENUE_SPLIT_HOOK_ADDRESS or BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS is required'); })(),
       nftMintHookAddress: getOptionalEnv('BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS') || getOptionalEnv('NFT_MINT_HOOK_ADDRESS') || (() => { throw new Error('NFT_MINT_HOOK_ADDRESS or BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS is required'); })(),
       randomNFTAddress: getOptionalEnv('BASE_SEPOLIA_RANDOM_NFT_ADDRESS') || getOptionalEnv('RANDOM_NFT_ADDRESS') || (() => { throw new Error('RANDOM_NFT_ADDRESS or BASE_SEPOLIA_RANDOM_NFT_ADDRESS is required'); })(),
@@ -194,6 +196,7 @@ export const appConfig: Config = {
     'x-layer-testnet': {
       rpcUrl: getOptionalEnv('X_LAYER_TESTNET_RPC_URL') || getDefaultRpcUrl('x-layer-testnet'),
       settlementRouterAddress: getOptionalEnv('X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      transferHookAddress: getOptionalEnv('X_LAYER_TESTNET_TRANSFER_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       revenueSplitHookAddress: getOptionalEnv('X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       nftMintHookAddress: getOptionalEnv('X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       randomNFTAddress: getOptionalEnv('X_LAYER_TESTNET_RANDOM_NFT_ADDRESS') || '0x0000000000000000000000000000000000000000',

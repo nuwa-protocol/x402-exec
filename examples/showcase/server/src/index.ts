@@ -12,6 +12,7 @@ import { useFacilitator } from 'x402/verify';
 import { findMatchingPaymentRequirements } from 'x402/shared';
 import { appConfig } from './config.js';
 import * as directPayment from './scenarios/direct-payment.js';
+import * as transferWithHook from './scenarios/transfer-with-hook.js';
 import * as referral from './scenarios/referral.js';
 import * as nft from './scenarios/nft.js';
 import * as reward from './scenarios/reward.js';
@@ -171,6 +172,7 @@ app.get('/api/scenarios', async (c) => {
   try {
     const scenarios = [
       directPayment.getScenarioInfo(),
+      transferWithHook.getScenarioInfo(),
       referral.getScenarioInfo(),
       await nft.getScenarioInfo(),
       await reward.getScenarioInfo(),
@@ -228,6 +230,57 @@ app.post('/api/direct-payment/payment', async (c) => {
   } catch (error: any) {
     console.error('[Direct Payment] Unexpected error:', error);
     console.error('[Direct Payment] Error stack:', error.stack);
+    return c.json({ error: error.message }, 400);
+  }
+});
+
+// ===== Transfer with Hook Scenario =====
+
+app.get('/api/transfer-with-hook/info', (c) => {
+  const info = transferWithHook.getScenarioInfo();
+  return c.json(info);
+});
+
+app.post('/api/transfer-with-hook/payment', async (c) => {
+  try {
+    console.log('[Transfer with Hook] Received payment request');
+    const body = await c.req.json().catch(() => ({}));
+    console.log('[Transfer with Hook] Request body:', JSON.stringify(body, null, 2));
+    
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Transfer with Hook] Using network:', network);
+    
+    // Get the full URL for the resource field
+    const url = new URL(c.req.url);
+    const resource = url.href;
+    console.log('[Transfer with Hook] Resource URL:', resource);
+    
+    // Pass a generator function to processPayment
+    const generatePaymentRequirements = () => {
+      const requirements = [transferWithHook.generateTransferWithHook({
+        resource,
+        network,
+      })];
+      console.log('[Transfer with Hook] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
+    
+    // Use generic payment processor
+    return await processPayment(c, 'Transfer with Hook', generatePaymentRequirements, (settlement, selectedRequirement) => {
+      return c.json({
+        success: true,
+        message: 'Payment processed using TransferHook! Facilitator earned $0.01 fee.',
+        settlement: {
+          transaction: settlement.transaction,
+          network: settlement.network,
+          payer: settlement.payer,
+        },
+      });
+    });
+  } catch (error: any) {
+    console.error('[Transfer with Hook] Unexpected error:', error);
+    console.error('[Transfer with Hook] Error stack:', error.stack);
     return c.json({ error: error.message }, 400);
   }
 });
@@ -426,10 +479,11 @@ console.log(`
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║
 ║   📋 Scenarios:                                           ║
-║   0. Direct Payment    - Simple x402 payment             ║
-║   1. Referral Split    - 3-way payment split             ║
-║   2. Random NFT Mint   - Sequential NFT minting          ║
-║   3. Points Reward     - Reward token distribution       ║
+║   0. Direct Payment    - Original x402 (debug baseline)  ║
+║   1. Transfer Hook     - Basic x402x with fee            ║
+║   2. Referral Split    - 3-way payment split             ║
+║   3. Random NFT Mint   - Sequential NFT minting          ║
+║   4. Points Reward     - Reward token distribution       ║
 ║                                                           ║
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║
@@ -438,6 +492,8 @@ console.log(`
 ║   GET  /api/scenarios                                     ║
 ║   GET  /api/direct-payment/info                          ║
 ║   POST /api/direct-payment/payment                       ║
+║   GET  /api/transfer-with-hook/info                      ║
+║   POST /api/transfer-with-hook/payment                   ║
 ║   GET  /api/scenario-{1|2|3}/info                        ║
 ║   POST /api/scenario-{1|2|3}/payment                     ║
 ║                                                           ║

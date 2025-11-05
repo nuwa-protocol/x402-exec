@@ -6,12 +6,13 @@
 import { useState } from 'react';
 import { WalletDebugInfo } from './components/WalletDebugInfo';
 import { DirectPayment } from './scenarios/DirectPayment';
+import { TransferWithHook } from './scenarios/TransferWithHook';
 import { ReferralSplit } from './scenarios/ReferralSplit';
 import { RandomNFT } from './scenarios/RandomNFT';
 import { PointsReward } from './scenarios/PointsReward';
 import './App.css';
 
-type ScenarioTab = 'direct-payment' | 'referral' | 'nft' | 'reward';
+type ScenarioTab = 'direct-payment' | 'transfer-with-hook' | 'referral' | 'nft' | 'reward';
 
 function App() {
   const [activeTab, setActiveTab] = useState<ScenarioTab>('direct-payment');
@@ -37,33 +38,41 @@ function App() {
             onClick={() => setActiveTab('direct-payment')}
           >
             <span className="tab-number">0</span>
-            <span>Simple Payment</span>
+            <span>Direct Payment</span>
+          </button>
+          <button
+            className={`tab ${activeTab === 'transfer-with-hook' ? 'active' : ''}`}
+            onClick={() => setActiveTab('transfer-with-hook')}
+          >
+            <span className="tab-number">1</span>
+            <span>Transfer Hook</span>
           </button>
           <button
             className={`tab ${activeTab === 'referral' ? 'active' : ''}`}
             onClick={() => setActiveTab('referral')}
           >
-            <span className="tab-number">1</span>
+            <span className="tab-number">2</span>
             <span>Referral Split</span>
           </button>
           <button
             className={`tab ${activeTab === 'nft' ? 'active' : ''}`}
             onClick={() => setActiveTab('nft')}
           >
-            <span className="tab-number">2</span>
+            <span className="tab-number">3</span>
             <span>NFT Mint</span>
           </button>
           <button
             className={`tab ${activeTab === 'reward' ? 'active' : ''}`}
             onClick={() => setActiveTab('reward')}
           >
-            <span className="tab-number">3</span>
+            <span className="tab-number">4</span>
             <span>Points Reward</span>
           </button>
         </div>
 
         <div className="scenario-container">
           {activeTab === 'direct-payment' && <DirectPayment />}
+          {activeTab === 'transfer-with-hook' && <TransferWithHook />}
           {activeTab === 'referral' && <ReferralSplit />}
           {activeTab === 'nft' && <RandomNFT />}
           {activeTab === 'reward' && <PointsReward />}

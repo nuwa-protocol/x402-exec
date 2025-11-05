@@ -6,23 +6,31 @@ A complete example application demonstrating how to use x402-exec to implement *
 
 ## 🎯 Overview
 
-x402-exec Showcase is built on the [x402 protocol](https://x402.org) and [x402-exec](../../README.md), demonstrating key capabilities through three payment scenarios:
+x402-exec Showcase is built on the [x402 protocol](https://x402.org) and [x402-exec](../../README.md), demonstrating key capabilities through multiple payment scenarios:
 
 - **Atomic Operations**: Payment and on-chain execution in a single transaction
 - **Automated Fulfillment**: Smart contracts handle business logic without manual intervention
 - **Infinite Extensibility**: Hook pattern supports arbitrary scenarios
 
-### Three Scenarios
+### Five Scenarios
 
-1. **💰 Referral Revenue Split**
+0. **💳 Direct Payment**
+   - Original x402 protocol without router/hook
+   - Debugging baseline for isolating issues
+
+1. **🎣 Transfer with Hook**
+   - Pay $0.11 → Basic x402x settlement with $0.01 facilitator fee
+   - Entry-level scenario demonstrating Hook architecture
+
+2. **💰 Referral Revenue Split**
    - Pay $0.1 → Automatic 3-way split (70% merchant + 20% referrer + 10% platform)
    - Demonstrates multi-party distribution and dynamic parameters
 
-2. **🎨 Random NFT Mint**
+3. **🎨 Random NFT Mint**
    - Pay $0.1 → Automatic NFT minting + merchant payment
    - Demonstrates on-chain minting with supply cap (1000 NFTs)
 
-3. **🎁 Loyalty Points Reward**
+4. **🎁 Loyalty Points Reward**
    - Pay $0.1 → Automatic 1000 points distribution + merchant payment
    - Demonstrates ERC20 token distribution and reward mechanics
 
@@ -114,7 +122,56 @@ This starts both:
 
 ## 📖 Scenario Details
 
-### Scenario 1: Referral Revenue Split
+### Scenario 0: Direct Payment (Debugging Baseline)
+
+**Purpose**: Original x402 protocol implementation for debugging and comparison
+
+**Workflow**:
+```
+1. User clicks payment button
+2. Frontend calls /api/direct-payment/payment
+3. Server generates standard PaymentRequirements (no router/hook)
+4. User signs authorization for $0.1 USDC
+5. Facilitator calls USDC.transferWithAuthorization()
+6. USDC transferred directly to merchant
+```
+
+**Key Characteristics**:
+- No SettlementRouter
+- No Hook
+- No commitment hash
+- Simplest possible flow for debugging
+
+---
+
+### Scenario 1: Transfer with Hook
+
+**Core Contract**: `TransferHook.sol` (built-in Hook)
+
+**Workflow**:
+```
+1. User clicks payment button  
+2. Frontend calls /api/transfer-with-hook/payment
+3. Server generates PaymentRequirements (with TransferHook)
+4. User signs authorization for $0.11 USDC ($0.1 + $0.01 fee)
+5. Facilitator calls SettlementRouter.settleAndExecute()
+6. Router deducts $0.01 facilitator fee
+7. Router calls TransferHook.execute() with remaining $0.1
+8. TransferHook transfers $0.1 → Merchant
+9. Facilitator claims accumulated fees later
+```
+
+**hookData**: Empty (`0x`) - TransferHook doesn't need any data
+
+**Key Features**:
+- Entry-level x402x scenario
+- Demonstrates facilitator fee mechanism
+- Minimal gas overhead (~8k gas vs direct transfer)
+- Production-ready pattern for simple merchant payments
+
+---
+
+### Scenario 2: Referral Revenue Split
 
 **Core Contract**: `RevenueSplitHook.sol` (deployed in main project)
 
@@ -144,7 +201,7 @@ const hookData = ethers.AbiCoder.encode(
 );
 ```
 
-### Scenario 2: Random NFT Mint
+### Scenario 3: Random NFT Mint
 
 **Core Contracts**: 
 - `RandomNFT.sol` (newly deployed) - ERC721 with 1000 supply cap
@@ -177,7 +234,7 @@ const hookData = ethers.AbiCoder.encode(
 );
 ```
 
-### Scenario 3: Loyalty Points Reward
+### Scenario 4: Loyalty Points Reward
 
 **Core Contracts**:
 - `RewardToken.sol` (newly deployed) - ERC20 with 1M supply
@@ -276,9 +333,11 @@ npm run dev:client
 
 | Scenario | Gas Cost | Notes |
 |----------|----------|-------|
-| Referral Split | ~120k | 1x transferWithAuthorization + 3x transfer |
-| NFT Mint | ~180k | 1x transferWithAuthorization + 1x mint + 1x transfer |
-| Points Reward | ~150k | 1x transferWithAuthorization + 1x ERC20 transfer + 1x transfer |
+| Direct Payment | ~50k | Original x402 - 1x transferWithAuthorization |
+| Transfer Hook | ~58k | TransferHook - adds ~8k gas (~16%) for router+hook |
+| Referral Split | ~120k | 1x settleAndExecute + 3x transfer |
+| NFT Mint | ~180k | 1x settleAndExecute + 1x mint + 1x transfer |
+| Points Reward | ~150k | 1x settleAndExecute + 1x ERC20 transfer + 1x transfer |
 
 ## 🧪 Testing Guide
 
@@ -293,17 +352,27 @@ npm run dev:client
 
 ### Testing Steps
 
-1. **Scenario 1**: Test referral revenue split
+0. **Scenario 0**: Test direct payment (debugging baseline)
+   - Pay $0.1 USDC
+   - Verify direct transfer to merchant in block explorer
+   - Use this to isolate router/hook issues
+
+1. **Scenario 1**: Test transfer with hook
+   - Pay $0.11 USDC ($0.1 + $0.01 fee)
+   - Verify merchant received $0.1
+   - Verify facilitator accumulated $0.01 fee
+
+2. **Scenario 2**: Test referral revenue split
    - Enter referrer address or leave empty
    - Pay $0.1 USDC
    - Verify 3 transfers in block explorer
 
-2. **Scenario 2**: Test NFT minting
+3. **Scenario 3**: Test NFT minting
    - Pay $0.1 USDC
    - Check NFT in wallet (#0-#999)
    - View NFT on OpenSea Testnet
 
-3. **Scenario 3**: Test loyalty points
+4. **Scenario 4**: Test loyalty points
    - Pay $0.1 USDC
    - Check 1000 POINTS tokens in wallet
    - Import token address to MetaMask
