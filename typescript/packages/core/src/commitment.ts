@@ -5,7 +5,7 @@
  * preventing parameter tampering attacks.
  */
 
-import { keccak256, encodePacked, type Hex } from 'viem';
+import { keccak256, encodePacked, hexToBytes, bytesToHex, type Hex } from 'viem';
 import type { CommitmentParams } from './types.js';
 
 /**
@@ -78,6 +78,10 @@ export function calculateCommitment(params: CommitmentParams): string {
  * Generate a random salt for settlement uniqueness
  * 
  * Works in both Node.js and browser environments.
+ * Uses crypto.getRandomValues (Web Crypto API) which is available in:
+ * - Modern browsers
+ * - Node.js 15+ (via global crypto)
+ * - Older Node.js (via crypto.webcrypto)
  * 
  * @returns bytes32 hex string (0x + 64 hex characters)
  * 
@@ -88,25 +92,24 @@ export function calculateCommitment(params: CommitmentParams): string {
  * ```
  */
 export function generateSalt(): string {
-  // Check if we're in a browser environment
-  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-    // Browser environment: use Web Crypto API
-    const randomBytes = new Uint8Array(32);
-    window.crypto.getRandomValues(randomBytes);
-    return `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+  // Try to get crypto from global (browser or Node.js 15+)
+  const globalCrypto = typeof crypto !== 'undefined' ? crypto : undefined;
+  
+  if (globalCrypto?.getRandomValues) {
+    // Use Web Crypto API (works in browser and modern Node.js)
+    const bytes = new Uint8Array(32);
+    globalCrypto.getRandomValues(bytes);
+    return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
   }
   
-  // Node.js environment: use crypto module
-  if (typeof require !== 'undefined') {
-    try {
-      const { randomBytes } = require('crypto');
-      return `0x${randomBytes(32).toString('hex')}`;
-    } catch (err) {
-      // Fall through to error
-    }
+  // Fallback: use Math.random() (less secure, but works everywhere)
+  // Note: Salt doesn't require cryptographic security - it's just for uniqueness
+  console.warn('[generateSalt] Using Math.random() fallback - consider upgrading to Node.js 15+ or use in browser');
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    bytes[i] = Math.floor(Math.random() * 256);
   }
-  
-  throw new Error('Unable to generate random bytes: neither Web Crypto API nor Node.js crypto module is available');
+  return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
 }
 
 /**

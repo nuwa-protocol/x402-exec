@@ -49,10 +49,16 @@ export function addSettlementExtra(
 ): PaymentRequirements {
   const config = getNetworkConfig(requirements.network);
   
+  // Preserve existing name/version from requirements.extra if they exist (from x402 official middleware)
+  // Only use config values as fallback
+  const existingExtra = requirements.extra || {};
+  const name = existingExtra.name || config.usdc.name;
+  const version = existingExtra.version || config.usdc.version;
+  
   const extra: SettlementExtra = {
-    // USDC EIP-712 domain info
-    name: config.usdc.name,
-    version: config.usdc.version,
+    // USDC EIP-712 domain info (preserve existing if available)
+    name,
+    version,
     // Settlement parameters
     settlementRouter: config.settlementRouter,
     salt: params.salt || generateSalt(),
