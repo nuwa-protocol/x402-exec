@@ -19,7 +19,6 @@ export interface Split {
 export interface MintConfig {
   nftContract: string;
   tokenId: number;
-  recipient: string;
   merchant: string;
 }
 
@@ -53,8 +52,8 @@ export function encodeRevenueSplitData(splits: Split[]): string {
 export function encodeNFTMintData(config: MintConfig): string {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const encoded = abiCoder.encode(
-    ['tuple(address nftContract, uint256 tokenId, address recipient, address merchant)'],
-    [[config.nftContract, config.tokenId, config.recipient, config.merchant]]
+    ['tuple(address nftContract, uint256 tokenId, address merchant)'],
+    [[config.nftContract, config.tokenId, config.merchant]]
   );
   return encoded;
 }

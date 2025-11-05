@@ -198,7 +198,13 @@ export function usePayment() {
         throw new Error('No payment requirements provided');
       }
 
-      const paymentReq = paymentResponse.accepts[0];
+      // Find the payment requirements that match the selected network
+      const paymentReq = paymentResponse.accepts.find(req => req.network === network);
+      if (!paymentReq) {
+        throw new Error(`No payment requirements found for network: ${network}. Available networks: ${paymentResponse.accepts.map(r => r.network).join(', ')}`);
+      }
+      console.log('[Payment] Selected payment requirements for network:', network);
+      
       const x402Version = paymentResponse.x402Version || 1;
 
       // Store payment requirements for debugging

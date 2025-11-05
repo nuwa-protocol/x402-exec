@@ -36,6 +36,7 @@
     "directory": "examples/facilitator"
   },
   "dependencies": {
+    "@x402x/core": "workspace:*",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "viem": "^2.0.0",

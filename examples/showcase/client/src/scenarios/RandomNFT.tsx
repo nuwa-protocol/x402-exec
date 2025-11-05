@@ -38,7 +38,7 @@ export function RandomNFT({}: RandomNFTProps) {
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
-    fetch(buildApiUrl('/api/scenario-2/info'))
+    fetch(buildApiUrl('/api/nft-minting/info'))
       .then((res) => res.json())
       .then((data) => setNftInfo(data))
       .catch(console.error);
@@ -272,7 +272,7 @@ export function RandomNFT({}: RandomNFTProps) {
         onClose={() => setShowPaymentDialog(false)}
         amount="0.1"
         currency="USDC"
-        endpoint="/api/scenario-2/payment"
+        endpoint="/api/nft-minting/payment"
         getRequestBody={(walletAddress) => ({
           recipient: walletAddress, // NFT will be minted to the connected wallet
           merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address

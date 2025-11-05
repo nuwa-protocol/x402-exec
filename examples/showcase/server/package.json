@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
+    "@x402x/core": "workspace:*",
+    "@x402x/hono": "workspace:*",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.0",
     "hono": "^4.5.0",

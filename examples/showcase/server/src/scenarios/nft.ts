@@ -66,11 +66,10 @@ export async function generateNFTPayment(params: NFTMintParams) {
     throw new Error('Max NFT supply reached (1000)');
   }
   
-  // Encode hook data
+  // Encode hook data (recipient removed - NFTMintHook now uses payer parameter directly)
   const hookData = encodeNFTMintData({
     nftContract: networkConfig.randomNFTAddress,
     tokenId,
-    recipient,
     merchant,
   });
   

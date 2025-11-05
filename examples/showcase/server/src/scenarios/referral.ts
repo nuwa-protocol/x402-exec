@@ -1,12 +1,14 @@
 /**
  * Scenario 1: Referral Split
  * Generates payment requirements for 3-way split (merchant + referrer + platform)
+ * 
+ * Simplified using @x402x/core utilities
  */
 
-import { appConfig, getNetworkConfig, getUsdcDomainForNetwork } from '../config.js';
+import { appConfig, getNetworkConfig } from '../config.js';
 import { encodeRevenueSplitData, isValidAddress } from '../utils/hookData.js';
-import { generateSalt } from '../utils/commitment.js';
 import { PaymentRequirements } from 'x402/types';
+import { addSettlementExtra } from '@x402x/core';
 
 export interface ReferralSplitParams {
   referrer?: string;
@@ -27,7 +29,7 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
   
   // Use provided addresses or fallback to defaults
   const merchant = merchantAddress || '0x1111111111111111111111111111111111111111';
-  const platform = platformAddress || '0x2222222222222222222222222222222222222222'; // Use all 2s instead of all 0s
+  const platform = platformAddress || '0x2222222222222222222222222222222222222222';
   const actualReferrer = referrer || '0x1111111111111111111111111111111111111111';
   
   // Validate addresses
@@ -51,39 +53,30 @@ export function generateReferralPayment(params: ReferralSplitParams = {}): Payme
   // Encode hook data
   const hookData = encodeRevenueSplitData(splits);
   
-  // Generate unique salt for this settlement
-  const salt = generateSalt();
-  
-  // Get correct USDC domain info for the network
-  const usdcDomain = getUsdcDomainForNetwork(network);
-  
   // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
   const facilitatorFee = '10000';
   
-  // Return standard x402 PaymentRequirements format
-  return {
+  // Build base PaymentRequirements (standard x402 format)
+  const baseRequirements: PaymentRequirements = {
     scheme: 'exact',
     network: network as any,
     maxAmountRequired: '100000', // 0.1 USDC (6 decimals)
     asset: networkConfig.usdcAddress,
     payTo: networkConfig.settlementRouterAddress,
-    resource: resource || '/api/scenario-1/payment', // Use provided resource or fallback
+    resource: resource || '/api/scenario-1/payment',
     description: `Referral Split: Pay $0.1 and split among merchant, referrer, and platform on ${network}`,
     mimeType: 'application/json',
-    maxTimeoutSeconds: 3600, // 1 hour validity window (total 70 min with validAfter offset)
-    extra: {
-      // Required for EIP-712 signature (USDC contract domain)
-      name: usdcDomain.name,
-      version: usdcDomain.version,
-      // Settlement-specific data for SettlementRouter
-      settlementRouter: networkConfig.settlementRouterAddress,
-      salt,
-      payTo: appConfig.resourceServerAddress, // Resource server's address as the final recipient
-      facilitatorFee,
-      hook: networkConfig.revenueSplitHookAddress,
-      hookData,
-    },
+    maxTimeoutSeconds: 3600, // 1 hour validity window
   };
+  
+  // Add settlement extension using SDK helper
+  // This automatically adds: settlementRouter, salt, name, version
+  return addSettlementExtra(baseRequirements, {
+    hook: networkConfig.revenueSplitHookAddress,
+    hookData,
+    facilitatorFee,
+    payTo: appConfig.resourceServerAddress,
+  });
 }
 
 /**
@@ -102,4 +95,3 @@ export function getScenarioInfo() {
     ],
   };
 }
-

@@ -38,7 +38,7 @@ export function PointsReward({}: PointsRewardProps) {
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
-    fetch(buildApiUrl('/api/scenario-3/info'))
+    fetch(buildApiUrl('/api/reward-points/info'))
       .then((res) => res.json())
       .then((data) => setRewardInfo(data))
       .catch(console.error);
@@ -293,7 +293,7 @@ export function PointsReward({}: PointsRewardProps) {
         onClose={() => setShowPaymentDialog(false)}
         amount="0.1"
         currency="USDC"
-        endpoint="/api/scenario-3/payment"
+        endpoint="/api/reward-points/payment"
         requestBody={{
           merchantAddress: '0x1111111111111111111111111111111111111111' // Default merchant address
         }}

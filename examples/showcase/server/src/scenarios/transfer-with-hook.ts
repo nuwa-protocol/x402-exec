@@ -2,11 +2,13 @@
  * Transfer with Hook Scenario
  * Basic x402x settlement using TransferHook with facilitator fee support
  * This is the entry-level scenario for understanding x402x settlement
+ * 
+ * Simplified using @x402x/core utilities
  */
 
-import { appConfig, getNetworkConfig, getUsdcDomainForNetwork } from '../config.js';
+import { appConfig, getNetworkConfig } from '../config.js';
 import { PaymentRequirements } from 'x402/types';
-import { generateSalt } from '../utils/commitment.js';
+import { addSettlementExtra, TransferHook } from '@x402x/core';
 
 export interface TransferWithHookParams {
   resource?: string;
@@ -27,42 +29,33 @@ export function generateTransferWithHook(params: TransferWithHookParams = {}): P
     throw new Error(`TransferHook address not configured for network: ${network}`);
   }
   
-  // Get correct USDC domain info for the network
-  const usdcDomain = getUsdcDomainForNetwork(network);
-  
-  // Generate unique salt for this settlement
-  const salt = generateSalt();
-  
   // Facilitator fee (0.01 USDC = 10000 in 6 decimals)
   const facilitatorFee = '10000';
   
   // Total amount including facilitator fee (0.1 + 0.01 = 0.11 USDC)
   const totalAmount = '110000';
   
-  // Return standard x402 PaymentRequirements format with settlement extension
-  return {
+  // Build base PaymentRequirements (standard x402 format)
+  const baseRequirements: PaymentRequirements = {
     scheme: 'exact',
     network: network as any,
     maxAmountRequired: totalAmount,
     asset: networkConfig.usdcAddress,
-    payTo: networkConfig.settlementRouterAddress, // Payment goes to SettlementRouter
+    payTo: networkConfig.settlementRouterAddress, // Will be set by addSettlementExtra
     resource: resource || '/api/transfer-with-hook/payment',
     description: `Transfer with Hook: Pay $0.1 to merchant with $0.01 facilitator fee on ${network}`,
     mimeType: 'application/json',
     maxTimeoutSeconds: 3600, // 1 hour validity window
-    extra: {
-      // Required for EIP-712 signature (USDC contract domain)
-      name: usdcDomain.name,
-      version: usdcDomain.version,
-      // Settlement-specific data for SettlementRouter
-      settlementRouter: networkConfig.settlementRouterAddress,
-      salt,
-      payTo: appConfig.resourceServerAddress, // Final recipient (merchant)
-      facilitatorFee,
-      hook: networkConfig.transferHookAddress, // Use built-in TransferHook
-      hookData: '0x', // TransferHook doesn't need hookData
-    },
   };
+  
+  // Add settlement extension using SDK helper
+  // TransferHook doesn't need hookData, just use empty bytes
+  return addSettlementExtra(baseRequirements, {
+    hook: TransferHook.getAddress(network), // Use SDK's TransferHook helper
+    hookData: TransferHook.encode(), // Empty hookData
+    facilitatorFee,
+    payTo: appConfig.resourceServerAddress, // Final recipient (merchant)
+  });
 }
 
 /**
@@ -79,4 +72,3 @@ export function getScenarioInfo() {
     note: 'Entry-level x402x scenario demonstrating Hook architecture and facilitator incentives',
   };
 }
-

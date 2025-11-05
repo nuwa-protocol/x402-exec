@@ -190,7 +190,7 @@ export function ReferralSplit({}: ReferralSplitProps) {
         onClose={() => setShowPaymentDialog(false)}
         amount="0.1"
         currency="USDC"
-        endpoint="/api/scenario-1/payment"
+        endpoint="/api/referral-split/payment"
         requestBody={{ 
           referrer: referrer || DEFAULT_ADDRESSES.referrerFallback,
           merchantAddress: DEFAULT_ADDRESSES.merchant,

@@ -99,11 +99,26 @@ app.post("/verify", async (req: Request, res: Response) => {
     }
 
     // verify
+    console.log('[Facilitator] Verifying payment...');
+    console.log('[Facilitator] Payment network:', paymentRequirements.network);
+    console.log('[Facilitator] Payment requirements extra:', JSON.stringify(paymentRequirements.extra, null, 2));
+    
     const valid = await verify(client, paymentPayload, paymentRequirements, x402Config);
+    
+    console.log('[Facilitator] Verification result:', {
+      isValid: valid.isValid,
+      payer: valid.payer,
+      invalidReason: valid.invalidReason,
+    });
+    
+    if (!valid.isValid) {
+      console.error('[Facilitator] Verification failed:', valid.invalidReason);
+    }
+    
     res.json(valid);
   } catch (error) {
-    console.error("error", error);
-    res.status(400).json({ error: "Invalid request" });
+    console.error("[Facilitator] Verify error:", error);
+    res.status(400).json({ error: "Invalid request", details: error instanceof Error ? error.message : String(error) });
   }
 });
 
@@ -197,31 +212,50 @@ app.post("/settle", async (req: Request, res: Response) => {
 
     // Check if this is a Settlement Router payment
     if (isSettlementMode(paymentRequirements)) {
-      console.log("Settlement Router mode detected");
+      console.log("[Facilitator] Settlement Router mode detected");
+      console.log("[Facilitator] Settlement parameters:", {
+        router: paymentRequirements.extra?.settlementRouter,
+        hook: paymentRequirements.extra?.hook,
+        facilitatorFee: paymentRequirements.extra?.facilitatorFee,
+        salt: paymentRequirements.extra?.salt,
+      });
 
       // Ensure this is an EVM network (Settlement Router is EVM-only)
       if (!SupportedEVMNetworks.includes(paymentRequirements.network)) {
         throw new Error("Settlement Router mode is only supported on EVM networks");
       }
 
-      // Settle using SettlementRouter with whitelist validation
-      const response = await settleWithRouter(
-        signer,
-        paymentPayload,
-        paymentRequirements,
-        ALLOWED_SETTLEMENT_ROUTERS,
-      );
-      res.json(response);
+      try {
+        // Settle using SettlementRouter with whitelist validation
+        const response = await settleWithRouter(
+          signer,
+          paymentPayload,
+          paymentRequirements,
+          ALLOWED_SETTLEMENT_ROUTERS,
+        );
+        console.log("[Facilitator] Settlement successful:", {
+          transaction: response.transaction,
+          success: response.success,
+        });
+        res.json(response);
+      } catch (error) {
+        console.error("[Facilitator] Settlement failed:", error);
+        throw error;
+      }
     } else {
-      console.log("Standard settlement mode");
+      console.log("[Facilitator] Standard settlement mode");
 
       // Settle using standard x402 flow
       const response = await settle(signer, paymentPayload, paymentRequirements, x402Config);
+      console.log("[Facilitator] Standard settlement successful");
       res.json(response);
     }
   } catch (error) {
-    console.error("error", error);
-    res.status(400).json({ error: `Invalid request: ${error}` });
+    console.error("[Facilitator] Settle error:", error);
+    res.status(400).json({ 
+      error: `Settlement failed: ${error instanceof Error ? error.message : String(error)}`,
+      details: error instanceof Error ? error.stack : undefined,
+    });
   }
 });
 
