@@ -119,6 +119,28 @@ After deployment, save the address:
 X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
 ```
 
+### Deploy Built-in Hooks
+
+Built-in Hooks are protocol-level Hooks deployed once per network for universal use.
+
+Requires `[NETWORK]_SETTLEMENT_ROUTER_ADDRESS` to be set first:
+
+```bash
+# Deploy all built-in hooks to X-Layer Testnet
+./deploy-builtin-hooks.sh xlayer-testnet --all
+
+# Deploy specific hooks
+./deploy-builtin-hooks.sh base-sepolia --transfer  # TransferHook only
+
+# Deploy with verification
+./deploy-builtin-hooks.sh xlayer-testnet --all --verify
+```
+
+**Current Built-in Hooks:**
+- **TransferHook**: Simple transfers with facilitator fee support (replaces direct ERC-3009 transfers)
+
+**Note**: Built-in Hook addresses are typically used by Resource Servers and client applications, not for contract deployment configuration.
+
 ### Deploy Only Showcase Scenarios
 
 Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
@@ -285,15 +307,36 @@ Always verify contracts on mainnet deployments:
 
 ## 📊 Gas Costs (Estimates)
 
+### Core Contracts
+
 | Contract | Estimated Gas (X-Layer) | Estimated Cost (OKB) |
 |----------|-------------------------|----------------------|
 | SettlementRouter | ~1.5M gas | ~0.001 OKB |
+
+### Built-in Hooks
+
+| Contract | Estimated Gas (X-Layer) | Estimated Cost (OKB) |
+|----------|-------------------------|----------------------|
+| TransferHook | ~600K gas | ~0.0004 OKB |
+
+### Example Hooks (Showcase)
+
+| Contract | Estimated Gas (X-Layer) | Estimated Cost (OKB) |
+|----------|-------------------------|----------------------|
 | RevenueSplitHook | ~800K gas | ~0.0005 OKB |
 | NFTMintHook | ~1.2M gas | ~0.0008 OKB |
 | RandomNFT | ~2M gas | ~0.001 OKB |
 | RewardHook | ~800K gas | ~0.0005 OKB |
 | RewardToken | ~1.5M gas | ~0.001 OKB |
-| **Total** | **~7.8M gas** | **~0.005 OKB** |
+
+### Total Costs
+
+| Deployment Type | Total Gas | Estimated Cost (OKB) |
+|----------------|-----------|---------------------|
+| Core Only | ~1.5M | ~0.001 OKB |
+| Core + Built-in Hooks | ~2.1M | ~0.0014 OKB |
+| Core + All Showcase | ~7.8M | ~0.005 OKB |
+| **Everything** | **~8.4M** | **~0.0054 OKB** |
 
 *Costs vary based on network congestion and gas price*
 

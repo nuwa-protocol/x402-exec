@@ -73,7 +73,13 @@ Client (EIP-3009 Signature)
    - 调用 Hook 执行业务逻辑
    - 确保原子性和幂等性
 
-2. **ISettlementHook**：Hook 接口
+2. **TransferHook**（内置）：默认转账 Hook
+   - 简单转账与 Facilitator 费用支持
+   - 替代直接 ERC-3009 转账
+   - 最小 Gas 开销（~8k gas）
+   - 通用部署（每个网络一个实例）
+
+3. **ISettlementHook**：Hook 接口
    - 所有业务逻辑通过 Hook 实现
    - 完全可扩展，支持任意场景
 
@@ -170,7 +176,18 @@ cd contracts
 
 ### Hook 示例
 
-所有 Hook 实现都可以在 [`contracts/examples/`](./contracts/examples/) 中找到：
+#### 内置 Hooks
+
+协议级 Hooks，每个网络部署一次，供所有项目使用：
+
+- **TransferHook**：简单转账与 Facilitator 费用支持 ([文档](./contracts/docs/builtin_hooks.md))
+  - 直接替代 ERC-3009 转账
+  - 最小 Gas 开销
+  - 无需 hookData
+
+#### 示例 Hooks
+
+教学模板和参考实现，位于 [`contracts/examples/`](./contracts/examples/)：
 
 - **RevenueSplitHook**：多方支付分配 ([源码](./contracts/examples/revenue-split/))
 - **NFTMintHook**：原子化 NFT 铸造与支付 ([源码](./contracts/examples/nft-mint/))
@@ -186,6 +203,15 @@ cd contracts
 |------|------------------|------|
 | Base Sepolia (测试网) | [`0x32431D4511e061F1133520461B07eC42afF157D6`](https://sepolia.basescan.org/address/0x32431D4511e061F1133520461B07eC42afF157D6) | ✅ 活跃 |
 | X-Layer 测试网 | [`0x1ae0e196dc18355af3a19985faf67354213f833d`](https://www.oklink.com/xlayer-test/address/0x1ae0e196dc18355af3a19985faf67354213f833d) | ✅ 活跃 |
+| Base 主网 | - | 🚧 等待审计 |
+| Ethereum 主网 | - | 🚧 等待审计 |
+
+### TransferHook（内置）
+
+| 网络 | TransferHook | 状态 |
+|------|--------------|------|
+| Base Sepolia (测试网) | [`0x6b486aF5A08D27153d0374BE56A1cB1676c460a8`](https://sepolia.basescan.org/address/0x6b486aF5A08D27153d0374BE56A1cB1676c460a8) | ✅ 活跃 |
+| X-Layer 测试网 | [`0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB`](https://www.oklink.com/xlayer-test/address/0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB) | ✅ 活跃 |
 | Base 主网 | - | 🚧 等待审计 |
 | Ethereum 主网 | - | 🚧 等待审计 |
 
@@ -205,6 +231,7 @@ cd contracts
 
 ### 开发者文档
 
+- **[内置 Hooks 指南](./contracts/docs/builtin_hooks.md)** - 使用 TransferHook 和其他内置 Hooks
 - **[Facilitator 示例与设置](./examples/facilitator/README.md)** - 完整的 TypeScript 实现和设置指南
 - **[Facilitator 开发指南](./contracts/docs/facilitator_guide.md)** - 语言无关的集成指南，用于扩展你的 Facilitator
 - **[Hook 开发指南](./contracts/docs/hook_guide.md)** - 构建自定义 Hook 实现业务逻辑
@@ -214,6 +241,7 @@ cd contracts
 
 - [x] SettlementRouter 核心合约
 - [x] Hook 接口和示例
+- [x] TransferHook 内置实现
 - [x] 文档和指南
 - [ ] 完整测试覆盖
 - [ ] Gas 优化

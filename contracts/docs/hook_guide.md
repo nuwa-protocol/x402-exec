@@ -8,6 +8,57 @@ Hooks are the core extension mechanism of the x402 settlement system. By impleme
 - 🎁 Reward points
 - 📦 Automatic fulfillment
 
+## Built-in vs Example Hooks
+
+The x402 settlement framework provides two types of Hooks:
+
+### 🏗️ Built-in Hooks
+
+Protocol-level Hooks deployed once per network for universal use:
+
+| Hook | Location | Purpose | Usage |
+|------|----------|---------|-------|
+| **TransferHook** | `src/hooks/` | Simple transfers with facilitator fee | Production-ready, shared deployment |
+
+**Characteristics:**
+- ✅ Production-ready and optimized
+- ✅ Deployed once per network
+- ✅ Universal addresses for all projects
+- ✅ Minimal gas overhead
+- ✅ Battle-tested and audited
+
+📖 **[Learn more about Built-in Hooks →](./builtin_hooks.md)**
+
+### 📚 Example Hooks
+
+Educational templates and reference implementations:
+
+| Hook | Location | Purpose |
+|------|----------|---------|
+| **RevenueSplitHook** | `examples/revenue-split/` | Multi-party payment distribution |
+| **NFTMintHook** | `examples/nft-mint/` | Atomic NFT minting with payment |
+| **RewardHook** | `examples/reward-points/` | Loyalty points distribution |
+
+**Characteristics:**
+- 📖 Learning and customization templates
+- 🔧 Per-application deployment
+- 🎯 Scenario-specific implementations
+- 🔄 Starting points for custom Hooks
+
+### When to Use Which?
+
+**Use Built-in Hooks when:**
+- ✅ You need simple token transfers
+- ✅ You want facilitator fee support
+- ✅ You value minimal gas costs
+- ✅ You don't need custom business logic
+
+**Use or Create Custom Hooks when:**
+- 🎯 You need revenue splitting
+- 🎯 You need NFT minting
+- 🎯 You need custom business logic
+- 🎯 You need Hook-specific state
+
 ## Core Interface
 
 ```solidity

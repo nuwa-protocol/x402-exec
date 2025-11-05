@@ -73,7 +73,13 @@ Client (EIP-3009 Signature)
    - Calls Hooks to execute business logic
    - Ensures atomicity and idempotency
 
-2. **ISettlementHook**: Hook interface
+2. **TransferHook** (Built-in): Default transfer Hook
+   - Simple transfers with facilitator fee support
+   - Replaces direct ERC-3009 transfers
+   - Minimal gas overhead (~8k gas)
+   - Universal deployment (one instance per network)
+
+3. **ISettlementHook**: Hook interface
    - All business logic implemented through Hooks
    - Fully extensible, supports arbitrary scenarios
 
@@ -170,7 +176,18 @@ Check out the full-stack showcase application:
 
 ### Hook Examples
 
-All Hook implementations are available in [`contracts/examples/`](./contracts/examples/):
+#### Built-in Hooks
+
+Protocol-level Hooks deployed once per network for universal use:
+
+- **TransferHook**: Simple transfers with facilitator fee support ([docs](./contracts/docs/builtin_hooks.md))
+  - Direct replacement for ERC-3009 transfers
+  - Minimal gas overhead
+  - No hookData required
+
+#### Example Hooks
+
+Educational templates and reference implementations in [`contracts/examples/`](./contracts/examples/):
 
 - **RevenueSplitHook**: Multi-party payment distribution ([source](./contracts/examples/revenue-split/))
 - **NFTMintHook**: Atomic NFT minting with payment ([source](./contracts/examples/nft-mint/))
@@ -186,6 +203,15 @@ All Hook implementations are available in [`contracts/examples/`](./contracts/ex
 |---------|------------------|--------|
 | Base Sepolia (Testnet) | [`0x32431D4511e061F1133520461B07eC42afF157D6`](https://sepolia.basescan.org/address/0x32431D4511e061F1133520461B07eC42afF157D6) | ✅ Active |
 | X-Layer Testnet | [`0x1ae0e196dc18355af3a19985faf67354213f833d`](https://www.oklink.com/xlayer-test/address/0x1ae0e196dc18355af3a19985faf67354213f833d) | ✅ Active |
+| Base Mainnet | - | 🚧 Pending Audit |
+| Ethereum Mainnet | - | 🚧 Pending Audit |
+
+### TransferHook (Built-in)
+
+| Network | TransferHook | Status |
+|---------|--------------|--------|
+| Base Sepolia (Testnet) | [`0x6b486aF5A08D27153d0374BE56A1cB1676c460a8`](https://sepolia.basescan.org/address/0x6b486aF5A08D27153d0374BE56A1cB1676c460a8) | ✅ Active |
+| X-Layer Testnet | [`0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB`](https://www.oklink.com/xlayer-test/address/0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB) | ✅ Active |
 | Base Mainnet | - | 🚧 Pending Audit |
 | Ethereum Mainnet | - | 🚧 Pending Audit |
 
@@ -205,6 +231,7 @@ Example deployments for testing and reference:
 
 ### For Developers
 
+- **[Built-in Hooks Guide](./contracts/docs/builtin_hooks.md)** - Using TransferHook and other built-in Hooks
 - **[Facilitator Example & Setup](./examples/facilitator/README.md)** - Complete TypeScript implementation with setup guide
 - **[Facilitator Developer Guide](./contracts/docs/facilitator_guide.md)** - Language-agnostic integration guide for extending your facilitator
 - **[Hook Development Guide](./contracts/docs/hook_guide.md)** - Build custom Hooks for business logic
@@ -214,6 +241,7 @@ Example deployments for testing and reference:
 
 - [x] SettlementRouter core contract
 - [x] Hook interface and examples
+- [x] TransferHook built-in implementation
 - [x] Documentation and guides
 - [ ] Complete test coverage
 - [ ] Gas optimization
