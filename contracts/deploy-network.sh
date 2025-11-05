@@ -29,8 +29,11 @@ usage() {
     echo ""
     echo "Options:"
     echo "  --settlement      Deploy only SettlementRouter"
-    echo "  --showcase        Deploy only showcase scenarios (requires SETTLEMENT_ROUTER_ADDRESS)"
-    echo "  --all             Deploy both SettlementRouter and showcase (default)"
+    echo "  --showcase        Deploy all showcase scenarios (requires SETTLEMENT_ROUTER_ADDRESS)"
+    echo "  --referral        Deploy only Referral Split scenario"
+    echo "  --nft             Deploy only NFT Minting scenario"
+    echo "  --reward          Deploy only Reward Points scenario"
+    echo "  --all             Deploy both SettlementRouter and all showcase (default)"
     echo "  --verify          Verify contracts on block explorer"
     echo "  --yes             Skip confirmation prompts"
     echo "  -h, --help        Show this help message"
@@ -38,13 +41,14 @@ usage() {
     echo "Examples:"
     echo "  $0 xlayer-testnet                    # Deploy everything on X-Layer Testnet"
     echo "  $0 xlayer-testnet --settlement       # Deploy only SettlementRouter"
-    echo "  $0 xlayer-testnet --showcase         # Deploy only showcase scenarios"
+    echo "  $0 xlayer-testnet --showcase         # Deploy all showcase scenarios"
+    echo "  $0 xlayer-testnet --nft              # Deploy only NFT scenario"
     echo "  $0 base-sepolia --all --verify       # Deploy and verify on Base Sepolia"
     echo ""
     echo "Environment Variables Required:"
     echo "  DEPLOYER_PRIVATE_KEY                 Deployer wallet private key"
     echo "  [NETWORK]_RPC_URL                    RPC URL for the network (e.g., X_LAYER_TESTNET_RPC_URL)"
-    echo "  [NETWORK]_SETTLEMENT_ROUTER_ADDRESS  (Only for --showcase) Deployed router address"
+    echo "  [NETWORK]_SETTLEMENT_ROUTER_ADDRESS  (Only for showcase) Deployed router address"
     echo ""
     echo "Optional for verification:"
     echo "  BASESCAN_API_KEY                     For Base networks"
@@ -54,7 +58,7 @@ usage() {
 
 # Parse arguments
 NETWORK=""
-DEPLOY_MODE="all"  # all | settlement | showcase
+DEPLOY_MODE="all"  # all | settlement | showcase | referral | nft | reward
 VERIFY=false
 AUTO_YES=false
 
@@ -70,6 +74,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --showcase)
             DEPLOY_MODE="showcase"
+            shift
+            ;;
+        --referral)
+            DEPLOY_MODE="referral"
+            shift
+            ;;
+        --nft)
+            DEPLOY_MODE="nft"
+            shift
+            ;;
+        --reward)
+            DEPLOY_MODE="reward"
             shift
             ;;
         --all)
@@ -187,8 +203,9 @@ fi
 SETTLEMENT_ROUTER_VAR="${ENV_PREFIX}_SETTLEMENT_ROUTER_ADDRESS"
 SETTLEMENT_ROUTER="${!SETTLEMENT_ROUTER_VAR}"
 
-if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "all" ]; then
-    if [ "$DEPLOY_MODE" = "showcase" ] && [ -z "$SETTLEMENT_ROUTER" ]; then
+# Check if we need settlement router for showcase scenarios
+if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "all" ]; then
+    if [ "$DEPLOY_MODE" != "all" ] && [ -z "$SETTLEMENT_ROUTER" ]; then
         print_error "${SETTLEMENT_ROUTER_VAR} is not set"
         echo ""
         echo "For showcase deployment, you must first deploy SettlementRouter or set its address in .env"
@@ -201,7 +218,8 @@ print_info "Network: $NETWORK_NAME (Chain ID: $CHAIN_ID)"
 print_info "RPC URL: $RPC_URL"
 print_info "Deployer: $(cast wallet address --private-key $DEPLOYER_PRIVATE_KEY 2>/dev/null || echo 'N/A')"
 
-if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "all" ]; then
+# Show settlement router for any showcase scenario
+if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "all" ]; then
     if [ ! -z "$SETTLEMENT_ROUTER" ]; then
         print_info "Settlement Router: $SETTLEMENT_ROUTER"
     fi
@@ -286,25 +304,48 @@ if [ "$DEPLOY_MODE" = "settlement" ] || [ "$DEPLOY_MODE" = "all" ]; then
 fi
 
 # Deploy Showcase scenarios
-if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "all" ]; then
+if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "all" ]; then
     if [ -z "$SETTLEMENT_ROUTER_ADDRESS" ]; then
         print_error "Cannot deploy showcase: SETTLEMENT_ROUTER_ADDRESS not set"
         exit 1
     fi
     
+    # Determine which function to call
+    DEPLOY_FUNCTION="deployAll"
+    SCENARIO_NAME="All Showcase Scenarios"
+    
+    case $DEPLOY_MODE in
+        showcase|all)
+            DEPLOY_FUNCTION="deployAll"
+            SCENARIO_NAME="All Showcase Scenarios"
+            ;;
+        referral)
+            DEPLOY_FUNCTION="deployReferral"
+            SCENARIO_NAME="Referral Split Scenario"
+            ;;
+        nft)
+            DEPLOY_FUNCTION="deployNFT"
+            SCENARIO_NAME="NFT Minting Scenario"
+            ;;
+        reward)
+            DEPLOY_FUNCTION="deployReward"
+            SCENARIO_NAME="Reward Points Scenario"
+            ;;
+    esac
+    
     echo "========================================="
-    echo "  Deploying Showcase Scenarios..."
+    echo "  Deploying $SCENARIO_NAME..."
     echo "========================================="
     echo ""
     
     forge script script/DeployShowcase.s.sol:DeployShowcase \
-        --sig "deployAll(string)" "$ENV_PREFIX" \
+        --sig "${DEPLOY_FUNCTION}(string)" "$ENV_PREFIX" \
         --rpc-url $RPC_URL \
         --broadcast \
         $VERIFY_FLAG \
         -vv
     
-    print_success "Showcase scenarios deployed!"
+    print_success "$SCENARIO_NAME deployed!"
     echo ""
     print_info "Addresses are displayed above with ${ENV_PREFIX}_ prefix"
     echo ""

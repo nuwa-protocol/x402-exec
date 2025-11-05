@@ -31,13 +31,11 @@ contract NFTMintHook is ISettlementHook {
      * @notice NFT mint configuration
      * @param nftContract NFT contract address
      * @param tokenId Token ID
-     * @param recipient Recipient address (usually the payer)
      * @param merchant Merchant address (recipient of funds)
      */
     struct MintConfig {
         address nftContract;
         uint256 tokenId;
-        address recipient;
         address merchant;
     }
     
@@ -111,14 +109,13 @@ contract NFTMintHook is ISettlementHook {
         
         // Validate addresses
         if (config.nftContract == address(0) || 
-            config.recipient == address(0) || 
             config.merchant == address(0)) {
             revert InvalidAddress();
         }
         
-        // 1. Mint NFT to recipient
-        _safeMint(config.nftContract, config.recipient, config.tokenId);
-        emit NFTMinted(contextKey, config.nftContract, config.tokenId, config.recipient);
+        // 1. Mint NFT to payer (not from config, use the payer parameter directly)
+        _safeMint(config.nftContract, payer, config.tokenId);
+        emit NFTMinted(contextKey, config.nftContract, config.tokenId, payer);
         
         // 2. Transfer to merchant
         IERC20(token).safeTransferFrom(
