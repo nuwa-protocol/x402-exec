@@ -342,6 +342,59 @@ app.post('/api/scenario-1/payment', async (c) => {
   }
 });
 
+// ===== NEW: Referral Split (named route) =====
+
+app.get('/api/referral-split/info', (c) => {
+  const info = referral.getScenarioInfo();
+  return c.json(info);
+});
+
+app.post('/api/referral-split/payment', async (c) => {
+  try {
+    console.log('[Referral Split] Received payment request');
+    const body = await c.req.json().catch(() => ({}));
+    console.log('[Referral Split] Request body:', JSON.stringify(body, null, 2));
+    
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Referral Split] Using network:', network);
+    
+    // Get the full URL for the resource field
+    const url = new URL(c.req.url);
+    const resource = url.href;
+    console.log('[Referral Split] Resource URL:', resource);
+    
+    const generatePaymentRequirements = () => {
+      const requirements = [referral.generateReferralPayment({
+        referrer: body.referrer,
+        merchantAddress: body.merchantAddress,
+        platformAddress: body.platformAddress,
+        resource,
+        network,
+      })];
+      console.log('[Referral Split] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
+    
+    // Use generic payment processor
+    return await processPayment(c, 'Referral Split', generatePaymentRequirements, (settlement, selectedRequirement) => {
+      return c.json({
+        success: true,
+        message: 'Payment processed! Funds split among 3 parties.',
+        settlement: {
+          transaction: settlement.transaction,
+          network: settlement.network,
+          payer: settlement.payer,
+        },
+      });
+    });
+  } catch (error: any) {
+    console.error('[Referral Split] Unexpected error:', error);
+    console.error('[Referral Split] Error stack:', error.stack);
+    return c.json({ error: error.message }, 400);
+  }
+});
+
 // ===== Scenario 2: Random NFT Mint =====
 
 app.get('/api/scenario-2/info', async (c) => {
@@ -378,6 +431,67 @@ app.post('/api/scenario-2/payment', async (c) => {
         recipient: body.recipient,
         merchantAddress: body.merchantAddress,
         resource, // Pass the full URL
+        network,
+      })];
+      console.log('[NFT Mint] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
+    
+    // Use generic payment processor
+    return await processPayment(c, 'NFT Mint', generatePaymentRequirements, (settlement, selectedRequirement) => {
+      return c.json({
+        success: true,
+        message: `NFT #${selectedRequirement.extra?.nftTokenId} minted to your wallet!`,
+        settlement: {
+          transaction: settlement.transaction,
+          network: settlement.network,
+          payer: settlement.payer,
+        },
+        nftTokenId: selectedRequirement.extra?.nftTokenId,
+      });
+    });
+  } catch (error: any) {
+    console.error('[NFT Mint] Unexpected error:', error);
+    console.error('[NFT Mint] Error stack:', error.stack);
+    return c.json({ error: error.message }, 400);
+  }
+});
+
+// ===== NEW: NFT Mint (named route) =====
+
+app.get('/api/nft-mint/info', async (c) => {
+  try {
+    const info = await nft.getScenarioInfo();
+    return c.json(info);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.post('/api/nft-mint/payment', async (c) => {
+  try {
+    console.log('[NFT Mint] Received payment request');
+    const body = await c.req.json().catch(() => ({}));
+    console.log('[NFT Mint] Request body:', JSON.stringify(body, null, 2));
+    
+    if (!body.recipient) {
+      return c.json({ error: 'Recipient address required' }, 400);
+    }
+    
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[NFT Mint] Using network:', network);
+    
+    // Get the full URL for the resource field
+    const url = new URL(c.req.url);
+    const resource = url.href;
+    console.log('[NFT Mint] Resource URL:', resource);
+    
+    const generatePaymentRequirements = async () => {
+      const requirements = [await nft.generateNFTPayment({
+        recipient: body.recipient,
+        merchantAddress: body.merchantAddress,
+        resource,
         network,
       })];
       console.log('[NFT Mint] Generated payment requirements:', JSON.stringify(requirements, null, 2));
@@ -461,6 +575,62 @@ app.post('/api/scenario-3/payment', async (c) => {
   }
 });
 
+// ===== NEW: Points Reward (named route) =====
+
+app.get('/api/points-reward/info', async (c) => {
+  try {
+    const info = await reward.getScenarioInfo();
+    return c.json(info);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+app.post('/api/points-reward/payment', async (c) => {
+  try {
+    console.log('[Reward Points] Received payment request');
+    const body = await c.req.json().catch(() => ({}));
+    console.log('[Reward Points] Request body:', JSON.stringify(body, null, 2));
+    
+    // Get network from query parameter or body, fallback to default
+    const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
+    console.log('[Reward Points] Using network:', network);
+    
+    // Get the full URL for the resource field
+    const url = new URL(c.req.url);
+    const resource = url.href;
+    console.log('[Reward Points] Resource URL:', resource);
+    
+    const generatePaymentRequirements = async () => {
+      const requirements = [await reward.generateRewardPayment({
+        merchantAddress: body.merchantAddress,
+        resource,
+        network,
+      })];
+      console.log('[Reward Points] Generated payment requirements:', JSON.stringify(requirements, null, 2));
+      return requirements;
+    };
+    
+    // Use generic payment processor
+    return await processPayment(c, 'Reward Points', generatePaymentRequirements, (settlement, selectedRequirement) => {
+      return c.json({
+        success: true,
+        message: '1000 reward points credited to your wallet!',
+        settlement: {
+          transaction: settlement.transaction,
+          network: settlement.network,
+          payer: settlement.payer,
+        },
+        rewardAmount: selectedRequirement.extra?.rewardAmount,
+      });
+    });
+  } catch (error: any) {
+    console.error('[Reward Points] Unexpected error:', error);
+    console.error('[Reward Points] Error stack:', error.stack);
+    return c.json({ error: error.message }, 400);
+  }
+});
+
 // Start server
 const port = appConfig.port;
 
@@ -490,10 +660,20 @@ console.log(`
 ║   🌐 Endpoints:                                           ║
 ║   GET  /api/health                                        ║
 ║   GET  /api/scenarios                                     ║
+║                                                           ║
+║   📍 Named Routes (Recommended):                          ║
 ║   GET  /api/direct-payment/info                          ║
 ║   POST /api/direct-payment/payment                       ║
 ║   GET  /api/transfer-with-hook/info                      ║
 ║   POST /api/transfer-with-hook/payment                   ║
+║   GET  /api/referral-split/info                          ║
+║   POST /api/referral-split/payment                       ║
+║   GET  /api/nft-mint/info                                ║
+║   POST /api/nft-mint/payment                             ║
+║   GET  /api/points-reward/info                           ║
+║   POST /api/points-reward/payment                        ║
+║                                                           ║
+║   📍 Legacy Routes (Deprecated):                          ║
 ║   GET  /api/scenario-{1|2|3}/info                        ║
 ║   POST /api/scenario-{1|2|3}/payment                     ║
 ║                                                           ║
