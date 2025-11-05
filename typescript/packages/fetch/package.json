@@ -1,0 +1,46 @@
+{
+  "name": "@x402x/fetch",
+  "version": "0.1.0",
+  "description": "Fetch wrapper for x402x settlement framework",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "x402",
+    "x402x",
+    "fetch",
+    "payment",
+    "settlement"
+  ],
+  "author": "Nuwa Protocol",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@x402x/core": "workspace:*",
+    "viem": "^2.17.0",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^1.0.0"
+  }
+}
+

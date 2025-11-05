@@ -2,6 +2,9 @@ packages:
   # X402 core and adapter packages
   - 'deps/x402/typescript/packages/*'
   
+  # X402x SDK packages
+  - 'typescript/packages/*'
+  
   # Examples (use npm alias for x402, but managed in workspace for convenience)
   - 'examples/facilitator'
   - 'examples/showcase/server'
