@@ -119,12 +119,14 @@ fi
 print_info "Publishing to npm..."
 if [ "$TAG" = "latest" ]; then
     npm publish --access public
+    PUBLISH_EXIT_CODE=$?
 else
     npm publish --access public --tag "$TAG"
+    PUBLISH_EXIT_CODE=$?
 fi
 
 # Check publication result
-if [ $? -eq 0 ]; then
+if [ $PUBLISH_EXIT_CODE -eq 0 ]; then
     print_info "✅ Published successfully!"
     print_info ""
     print_info "Third-party developers can use it like this:"
