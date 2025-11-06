@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAccount, useWalletClient } from 'wagmi';
 import { publicActions } from 'viem';
-import { x402xFetch } from '@x402x/fetch';
+import { wrapFetchWithPayment } from '@x402x/fetch';
 
 /**
  * Hook options
@@ -87,7 +87,7 @@ export function useX402Payment(options?: UseX402PaymentOptions) {
       // This follows the same pattern used in x402's PaywallApp
       const extendedWalletClient = walletClient.extend(publicActions);
       
-      const fetchWithPay = x402xFetch(fetch, extendedWalletClient as any, options?.maxValue);
+      const fetchWithPay = wrapFetchWithPayment(fetch, extendedWalletClient as any, options?.maxValue);
       const response = await fetchWithPay(url, init);
       
       if (!response.ok) {

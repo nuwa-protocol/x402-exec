@@ -1,42 +1,59 @@
 # @x402x/express
 
-Express middleware for x402x settlement framework - easily add 402 payment gates to your Express routes.
+Express middleware for the x402x settlement framework. Provides full x402 payment protocol support with x402x settlement extensions.
+
+## Features
+
+- ✅ **Full x402 Payment Flow**: Automatic payment verification and settlement
+- ✅ **X402Context Extension**: Access payment details in route handlers
+- ✅ **Multi-Network Support**: Accept payments on multiple networks
+- ✅ **Custom Settlement Hooks**: Configure hook contracts for programmable settlement
+- ✅ **Dollar-Denominated Pricing**: Simple USD-based price configuration
+- ✅ **Facilitator Integration**: Built-in facilitator support for payment processing
 
 ## Installation
 
 ```bash
-npm install @x402x/express @x402x/core
+npm install @x402x/express
+# or
+pnpm add @x402x/express
+# or
+yarn add @x402x/express
 ```
-
-## Features
-
-- 🚀 Drop-in middleware for Express routes
-- 🔐 Automatic settlement mode support
-- 💰 Configurable facilitator fees
-- 🎯 Zero configuration for basic usage
-- 🔌 Works with builtin or custom hooks
 
 ## Quick Start
 
 ```typescript
 import express from 'express';
-import { x402Middleware } from '@x402x/express';
+import { paymentMiddleware } from '@x402x/express';
 
 const app = express();
 
-// Add payment gate to a route
-app.post('/api/premium-content',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '100000', // 0.1 USDC
-    resource: '/api/premium-content',
-    facilitatorFee: '10000', // 0.01 USDC
-  }),
+// Single route with payment requirement
+app.post('/api/premium',
+  paymentMiddleware(
+    "0xYourRecipientAddress", // Final payment recipient
+    {
+      price: "$0.10",              // 0.10 USD in USDC
+      network: "base-sepolia",     // Payment network
+      facilitatorFee: "$0.01",     // 0.01 USD facilitator fee
+      config: {
+        description: "Access to premium content",
+      }
+    },
+    {
+      url: "https://your-facilitator.com", // Optional facilitator config
+    }
+  ),
   (req, res) => {
-    // This handler only runs after successful payment
-    res.json({
-      content: 'Here is your premium content!',
-      timestamp: Date.now(),
+    // Access verified payment context (x402x extension)
+    const { payer, amount, network } = req.x402!;
+    
+    console.log(`Received payment from ${payer}: ${amount} on ${network}`);
+    
+    res.json({ 
+      success: true,
+      message: "Payment received and settled",
     });
   }
 );
@@ -44,256 +61,238 @@ app.post('/api/premium-content',
 app.listen(3000);
 ```
 
-## API Reference
-
-### `x402Middleware(options)`
-
-Creates an Express middleware that returns 402 responses with payment requirements.
-
-#### Parameters
-
-**`options`**: Configuration object with the following properties:
-
-- **`network`** (required): Network name (e.g., `'base-sepolia'`, `'x-layer-testnet'`)
-- **`amount`** (required): Payment amount in token's smallest unit (e.g., `'100000'` = 0.1 USDC)
-- **`resource`** (required): Resource path (e.g., `'/api/payment'`)
-- **`token`** (optional): Token address (defaults to USDC for the network)
-- **`hook`** (optional): Hook address (defaults to TransferHook)
-- **`hookData`** (optional): Encoded hook data (defaults to `'0x'`)
-- **`facilitatorFee`** (optional): Facilitator fee amount (defaults to `'0'`)
-- **`payTo`** (optional): Final recipient address
-- **`description`** (optional): Payment description
-- **`maxTimeoutSeconds`** (optional): Maximum timeout (defaults to 3600)
-
-#### Returns
-
-Express middleware function `(req, res, next) => void`
-
-## Examples
-
-### Basic Payment Gate
+## Multi-Network Support
 
 ```typescript
-import express from 'express';
-import { x402Middleware } from '@x402x/express';
-
-const app = express();
-
-app.get('/api/data',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '50000', // 0.05 USDC
-    resource: '/api/data',
-  }),
-  (req, res) => {
-    res.json({ data: 'Secret data' });
-  }
-);
-```
-
-### With Custom Description
-
-```typescript
-app.post('/api/generate-report',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '200000', // 0.2 USDC
-    resource: '/api/generate-report',
-    description: 'Generate custom analytics report',
-    facilitatorFee: '20000', // 0.02 USDC
-  }),
-  async (req, res) => {
-    const report = await generateReport(req.body);
-    res.json({ report });
-  }
-);
-```
-
-### Multiple Payment Tiers
-
-```typescript
-import { x402Middleware } from '@x402x/express';
-
-const app = express();
-
-// Basic tier - 0.01 USDC
-app.get('/api/basic',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '10000',
-    resource: '/api/basic',
-  }),
-  (req, res) => {
-    res.json({ tier: 'basic', content: '...' });
-  }
-);
-
-// Premium tier - 0.1 USDC
-app.get('/api/premium',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '100000',
-    resource: '/api/premium',
-  }),
-  (req, res) => {
-    res.json({ tier: 'premium', content: '...' });
-  }
-);
-```
-
-### With Request Body
-
-```typescript
-app.post('/api/ai-query',
-  express.json(), // Parse JSON body first
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '50000',
-    resource: '/api/ai-query',
-  }),
-  async (req, res) => {
-    const { query } = req.body;
-    const response = await processAIQuery(query);
-    res.json({ response });
-  }
-);
-```
-
-### Custom Recipient
-
-```typescript
-const MERCHANT_ADDRESS = '0x1234...';
-
-app.post('/api/purchase',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '1000000', // 1 USDC
-    resource: '/api/purchase',
-    payTo: MERCHANT_ADDRESS, // Send funds to merchant
-    facilitatorFee: '50000', // 0.05 USDC facilitator fee
-  }),
-  (req, res) => {
-    res.json({ success: true, orderId: '123' });
-  }
-);
-```
-
-### With Error Handling
-
-```typescript
-import { x402Middleware } from '@x402x/express';
-
-app.post('/api/protected',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '100000',
-    resource: '/api/protected',
-  }),
-  async (req, res, next) => {
-    try {
-      const data = await fetchProtectedData();
-      res.json({ data });
-    } catch (error) {
-      next(error); // Pass to error handler
+// Accept payments on multiple networks
+app.post('/api/multi-network',
+  paymentMiddleware(
+    "0xYourAddress",
+    {
+      price: "$1.00",
+      network: ["base-sepolia", "base"], // Multiple networks
+      facilitatorFee: "$0.01",
     }
+  ),
+  (req, res) => {
+    const { network } = req.x402!;
+    res.json({ message: `Paid on ${network}` });
   }
 );
+```
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+## Multiple Routes Configuration
+
+```typescript
+// Protect multiple routes with different prices
+app.use(paymentMiddleware(
+  "0xYourAddress",
+  {
+    "/api/basic": {
+      price: "$0.01",
+      network: "base-sepolia",
+    },
+    "/api/premium": {
+      price: "$1.00",
+      network: ["base-sepolia", "base"],
+    },
+    "/api/enterprise": {
+      price: "$10.00",
+      network: "base",
+      facilitatorFee: "$0.50",
+    }
+  },
+  facilitatorConfig
+));
+
+// Route handlers can access req.x402
+app.get("/api/basic", (req, res) => {
+  const { payer } = req.x402!;
+  res.json({ message: "Basic access", payer });
 });
 ```
 
-### Conditional Payment
+## Custom Settlement Hooks
 
 ```typescript
-app.get('/api/content/:id',
-  async (req, res, next) => {
-    const content = await getContent(req.params.id);
-    
-    // Only require payment for premium content
-    if (content.isPremium) {
-      return x402Middleware({
-        network: 'base-sepolia',
-        amount: content.price,
-        resource: `/api/content/${req.params.id}`,
-      })(req, res, next);
+// Use custom hook for revenue split
+app.post('/api/referral',
+  paymentMiddleware(
+    "0xMerchantAddress",
+    {
+      price: "$0.10",
+      network: "base-sepolia",
+      hook: "0xRevenueSplitHookAddress",
+      hookData: encodeRevenueSplitData({
+        merchant: "0xMerchantAddress",
+        referrer: "0xReferrerAddress",
+        platform: "0xPlatformAddress",
+      }),
     }
-    
-    // Free content
-    res.json({ content });
+  ),
+  (req, res) => {
+    res.json({ message: "Revenue split executed" });
+  }
+);
+
+// Dynamic hook configuration
+app.post('/api/nft-mint',
+  paymentMiddleware(
+    "0xMerchantAddress",
+    {
+      price: "$1.00",
+      network: "base-sepolia",
+      hook: (network) => getNFTMintHookAddress(network),
+      hookData: (network) => encodeNFTMintData({
+        nftContract: getNFTContract(network),
+        tokenId: generateTokenId(),
+        merchant: "0xMerchantAddress",
+      }),
+    }
+  ),
+  (req, res) => {
+    const { payer } = req.x402!;
+    res.json({ 
+      message: "NFT minted",
+      recipient: payer,
+    });
   }
 );
 ```
 
-## How It Works
+## X402Context Access
 
-1. **No Payment Header**: When a request arrives without `X-PAYMENT` header:
-   - Returns 402 status
-   - Includes payment requirements in response body
-   
-2. **With Payment Header**: When a request arrives with `X-PAYMENT` header:
-   - Calls `next()` to proceed to your handler
-   - Your handler executes normally
-
-## Integration with x402x Client
-
-The middleware works seamlessly with x402x client libraries:
+The middleware extends Express `Request` with an `x402` property containing payment details:
 
 ```typescript
-// Server (Express)
-import { x402Middleware } from '@x402x/express';
+import type { X402Request } from '@x402x/express';
 
-app.get('/api/data',
-  x402Middleware({
-    network: 'base-sepolia',
-    amount: '100000',
-    resource: '/api/data',
-  }),
-  (req, res) => {
-    res.json({ data: 'Protected data' });
+app.post('/api/payment',
+  paymentMiddleware(...),
+  (req: X402Request, res) => {
+    const x402 = req.x402!;
+    
+    // Access verified payment information
+    console.log("Payer:", x402.payer);              // Address of payer
+    console.log("Amount:", x402.amount);            // Amount in atomic units
+    console.log("Network:", x402.network);          // Network used
+    console.log("Payment:", x402.payment);          // Full payment payload
+    console.log("Requirements:", x402.requirements); // Payment requirements
+    
+    // Settlement information (x402x specific)
+    if (x402.settlement) {
+      console.log("Router:", x402.settlement.router);
+      console.log("Hook:", x402.settlement.hook);
+      console.log("Hook Data:", x402.settlement.hookData);
+      console.log("Facilitator Fee:", x402.settlement.facilitatorFee);
+    }
+    
+    res.json({ success: true });
   }
 );
+```
 
-// Client (React)
-import { useX402Payment } from '@x402x/react';
+## API Reference
 
-function DataFetcher() {
-  const { pay } = useX402Payment();
-  
-  const fetchData = async () => {
-    const result = await pay('/api/data');
-    console.log(result.data);
+### `paymentMiddleware(payTo, routes, facilitator?)`
+
+Creates Express middleware for x402x payment processing.
+
+**Parameters:**
+
+- `payTo: string` - Final recipient address for payments
+- `routes: X402xRoutesConfig` - Route configuration(s)
+- `facilitator?: FacilitatorConfig` - Optional facilitator configuration
+
+**Returns:** Express middleware function
+
+### `X402xRouteConfig`
+
+```typescript
+interface X402xRouteConfig {
+  price: string | Money;              // USD or Money object
+  network: Network | Network[];       // Single or multiple networks
+  hook?: string | ((network) => string);
+  hookData?: string | ((network) => string);
+  facilitatorFee?: string | Money | ((network) => string | Money);
+  config?: {
+    description?: string;
+    mimeType?: string;
+    maxTimeoutSeconds?: number;
+    resource?: Resource;
+    errorMessages?: {
+      paymentRequired?: string;
+      invalidPayment?: string;
+      noMatchingRequirements?: string;
+      verificationFailed?: string;
+      settlementFailed?: string;
+    };
   };
-  
-  return <button onClick={fetchData}>Fetch Data</button>;
 }
 ```
 
-## TypeScript Support
-
-Full TypeScript support with type definitions included.
+### `X402Context`
 
 ```typescript
-import type { X402MiddlewareOptions } from '@x402x/express';
-
-const options: X402MiddlewareOptions = {
-  network: 'base-sepolia',
-  amount: '100000',
-  resource: '/api/endpoint',
-};
+interface X402Context {
+  payer: Address | SolanaAddress;     // Verified payer address
+  amount: string;                     // Payment amount (atomic units)
+  network: Network;                   // Payment network
+  payment: PaymentPayload;            // Decoded payment
+  requirements: PaymentRequirements;  // Matched requirements
+  settlement?: {                      // x402x settlement info
+    router: Address;
+    hook: Address;
+    hookData: string;
+    facilitatorFee: string;
+  };
+}
 ```
+
+## Payment Flow
+
+The middleware handles the complete payment lifecycle:
+
+1. **402 Response**: Returns payment requirements when no payment is provided
+2. **Payment Decode**: Decodes `X-PAYMENT` header from client
+3. **Verification**: Verifies payment signature via facilitator
+4. **Context Setup**: Attaches payment details to `req.x402`
+5. **Handler Execution**: Runs your route handler (business logic)
+6. **Settlement**: Settles payment via facilitator (if response status < 400)
+7. **Response**: Returns `X-PAYMENT-RESPONSE` header to client
+
+## Compatibility with x402
+
+This middleware is fully compatible with the official x402 Express middleware API. To migrate from x402 to x402x:
+
+```typescript
+// Before (x402)
+import { paymentMiddleware } from 'x402-express';
+
+// After (x402x)
+import { paymentMiddleware } from '@x402x/express';
+
+// Same API! 🎉
+```
+
+The only difference is the addition of `req.x402` context and support for x402x settlement extensions.
+
+## Examples
+
+See the [showcase server](../../examples/showcase/server) for complete examples including:
+
+- Revenue split (referral payments)
+- NFT minting with payment
+- Reward points distribution
+- Multi-network support
 
 ## Related Packages
 
-- [`@x402x/core`](../core): Core utilities and types
-- [`@x402x/hono`](../hono): Hono middleware
-- [`@x402x/fetch`](../fetch): Fetch wrapper for clients
-- [`@x402x/react`](../react): React hooks
+- [`@x402x/core`](../core) - Core utilities and types
+- [`@x402x/hono`](../hono) - Hono middleware (alternative to Express)
+- [`@x402x/fetch`](../fetch) - Client-side fetch wrapper
+- [`@x402x/react`](../react) - React hooks for payments
 
 ## License
 
 Apache-2.0
-
