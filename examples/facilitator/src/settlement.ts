@@ -14,6 +14,9 @@ import {
   settleWithRouter as settleWithRouterCore,
 } from "@x402x/core";
 import { SettlementExtraError } from "./types.js";
+import { getLogger } from "./telemetry.js";
+
+const logger = getLogger();
 
 /**
  * Check if a payment request requires SettlementRouter mode
@@ -45,10 +48,16 @@ export function validateSettlementRouter(
   const allowedForNetwork = allowedRouters[network];
   
   if (!allowedForNetwork || allowedForNetwork.length === 0) {
-    throw new SettlementExtraError(
+    const error = new SettlementExtraError(
       `No allowed settlement routers configured for network: ${network}. ` +
       `Please configure environment variables for this network.`
     );
+    logger.error({
+      network,
+      routerAddress,
+      error: error.message,
+    }, "No settlement routers configured for network");
+    throw error;
   }
   
   const normalizedRouter = routerAddress.toLowerCase();
@@ -57,13 +66,23 @@ export function validateSettlementRouter(
   );
   
   if (!isAllowed) {
-    throw new SettlementExtraError(
+    const error = new SettlementExtraError(
       `Settlement router ${routerAddress} is not in whitelist for network ${network}. ` +
       `Allowed addresses: ${allowedForNetwork.join(', ')}`
     );
+    logger.error({
+      network,
+      routerAddress,
+      allowedAddresses: allowedForNetwork,
+      error: error.message,
+    }, "Settlement router not in whitelist");
+    throw error;
   }
   
-  console.log(`✅ Settlement router validated: ${routerAddress} for network: ${network}`);
+  logger.info({
+    network,
+    routerAddress,
+  }, "Settlement router validated");
 }
 
 /**
@@ -96,6 +115,11 @@ export async function settleWithRouter(
       throw new SettlementExtraError("Missing settlementRouter in payment requirements");
     }
     
+    logger.debug({
+      settlementRouter: paymentRequirements.extra.settlementRouter,
+      network: paymentRequirements.network,
+    }, "Validating settlement router");
+    
     validateSettlementRouter(
       paymentRequirements.network, 
       paymentRequirements.extra.settlementRouter,
@@ -109,6 +133,12 @@ export async function settleWithRouter(
 
     // Use @x402x/core's settleWithRouter
     const walletClient = signer as any;
+    
+    logger.debug({
+      network: paymentRequirements.network,
+      router: paymentRequirements.extra.settlementRouter,
+    }, "Calling core settleWithRouter");
+    
     const result = await settleWithRouterCore(
       walletClient, 
       paymentPayload, 
@@ -116,10 +146,11 @@ export async function settleWithRouter(
       { allowedRouters }
     );
     
-    console.log("SettlementRouter transaction confirmed:", {
+    logger.info({
       transaction: result.transaction,
+      payer: result.payer,
       success: result.success,
-    });
+    }, "SettlementRouter transaction confirmed");
 
     return {
       success: true,
@@ -128,7 +159,11 @@ export async function settleWithRouter(
       payer: result.payer,
     };
   } catch (error) {
-    console.error("Error in settleWithRouter:", error);
+    logger.error({
+      error,
+      network: paymentRequirements.network,
+      router: paymentRequirements.extra?.settlementRouter,
+    }, "Error in settleWithRouter");
 
     // Extract payer from payload if available
     let payer = "";

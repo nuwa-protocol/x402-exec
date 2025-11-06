@@ -1,6 +1,6 @@
 # x402-exec Facilitator Example
 
-This is an example implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. It demonstrates how to build a facilitator that supports both standard x402 payments and extended settlement flows with Hook-based business logic.
+This is a **production-grade** implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. It demonstrates how to build a facilitator that supports both standard x402 payments and extended settlement flows with Hook-based business logic.
 
 ## Features
 
@@ -18,6 +18,37 @@ This is an example implementation of an x402 facilitator service with **Settleme
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
 - **Case-Insensitive Matching**: Address validation works regardless of case
 - **Comprehensive Error Messages**: Clear feedback when addresses are rejected
+- **Structured Error Handling**: Type-safe error classification and recovery
+
+### 📊 Production-Ready Observability
+
+- **Structured Logging**: Using Pino for high-performance JSON logging
+- **OpenTelemetry Integration**: Full distributed tracing and metrics
+  - HTTP request tracing with automatic instrumentation
+  - Settlement operation spans with detailed attributes
+  - Business metrics (success rate, latency, gas usage)
+  - Compatible with Honeycomb, Jaeger, and other OTLP backends
+- **Comprehensive Metrics**:
+  - `facilitator.verify.total` - Verification request count
+  - `facilitator.verify.duration_ms` - Verification latency histogram
+  - `facilitator.settle.total` - Settlement request count by mode
+  - `facilitator.settle.duration_ms` - Settlement latency histogram
+  - `facilitator.verify.errors` - Verification error count
+  - `facilitator.settle.errors` - Settlement error count
+
+### 🛡️ Reliability & Resilience
+
+- **Graceful Shutdown**: Proper SIGTERM/SIGINT handling
+  - Rejects new requests during shutdown
+  - Waits for in-flight requests to complete (configurable timeout)
+  - Cleans up resources properly
+- **Smart Retry Mechanism**: Exponential backoff with jitter
+  - RPC call retries for transient failures
+  - Transaction confirmation retries
+  - Configurable retry policies
+- **Health Checks**: Kubernetes-compatible endpoints
+  - `/health` - Liveness probe (process is alive)
+  - `/ready` - Readiness probe (service is ready for traffic)
 
 ### 🎯 Auto-Detection
 
@@ -76,6 +107,17 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Testnet SettlementRou
 
 # Server port (default: 3000)
 PORT=3000
+
+# Logging level (default: info)
+LOG_LEVEL=info
+
+# OpenTelemetry configuration (optional)
+# OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io:443
+# OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+# OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+# OTEL_SERVICE_NAME=x402-facilitator
+# OTEL_SERVICE_VERSION=1.0.0
+# OTEL_SERVICE_DEPLOYMENT=production
 ```
 
 ### Running the Facilitator
@@ -118,6 +160,54 @@ SettlementRouter Whitelist:
 3. Restart the facilitator to load the new configuration
 
 ## API Endpoints
+
+### GET /health
+
+Health check endpoint for liveness probes (e.g., Kubernetes).
+
+**Response Example:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "uptime": 12345.67
+}
+```
+
+### GET /ready
+
+Readiness check endpoint for readiness probes. Validates that:
+- Private keys are configured
+- SettlementRouter whitelist is configured
+- Service is not shutting down
+
+**Response Example (Ready):**
+```json
+{
+  "status": "ready",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "checks": {
+    "privateKeys": { "status": "ok" },
+    "settlementRouterWhitelist": { "status": "ok" },
+    "shutdown": { "status": "ok" },
+    "activeRequests": { "status": "ok", "message": "0 active request(s)" }
+  }
+}
+```
+
+**Response Example (Not Ready):**
+```json
+{
+  "status": "not_ready",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "checks": {
+    "privateKeys": { "status": "error", "message": "No private keys configured" },
+    "settlementRouterWhitelist": { "status": "ok" },
+    "shutdown": { "status": "error", "message": "Shutdown in progress" },
+    "activeRequests": { "status": "ok", "message": "2 active request(s)" }
+  }
+}
+```
 
 ### GET /supported
 
@@ -284,31 +374,48 @@ curl -X POST http://localhost:3000/settle \
   }'
 ```
 
-### Integration Testing
-
-Use the [showcase](../showcase/) application for end-to-end testing with real Hook examples.
+3. **Monitoring**:
+   - Track settlement success rates (target: >99%)
+   - Monitor P99 latency (target: <30s)
+   - Alert on high error rates
+   - Monitor active request counts
+   - Track RPC endpoint health
+   - Log all transactions for reconciliation and auditing
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────┐
 │              Facilitator Server                 │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  POST /settle                                   │
-│       ↓                                         │
-│  isSettlementMode()?                            │
-│       ↓                ↓                        │
-│     Yes              No                         │
-│       ↓                ↓                        │
-│  settleWithRouter  settle (x402 standard)       │
-│       ↓                                         │
-│  SettlementRouter.settleAndExecute()            │
-│       ↓                                         │
-│  Hook.execute()                                 │
-│       ↓                                         │
-│  Business Logic                                 │
-│                                                 │
+│  ┌──────────────────────────────────────────┐  │
+│  │         Observability Layer              │  │
+│  │  - Structured Logging (Pino)             │  │
+│  │  - OpenTelemetry Tracing                 │  │
+│  │  - Metrics Collection                    │  │
+│  └──────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  │
+│  │         Reliability Layer                │  │
+│  │  - Graceful Shutdown                     │  │
+│  │  - Health Checks                         │  │
+│  │  - Retry Mechanism                       │  │
+│  │  - Error Classification                  │  │
+│  └──────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────┐  │
+│  │         Business Logic                   │  │
+│  │  POST /settle                            │  │
+│  │       ↓                                  │  │
+│  │  isSettlementMode()?                     │  │
+│  │       ↓                ↓                 │  │
+│  │     Yes              No                  │  │
+│  │       ↓                ↓                 │  │
+│  │  settleWithRouter  settle (standard)     │  │
+│  │       ↓                                  │  │
+│  │  SettlementRouter.settleAndExecute()     │  │
+│  │       ↓                                  │  │
+│  │  Hook.execute()                          │  │
+│  │       ↓                                  │  │
+│  │  Business Logic                          │  │
+│  └──────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -340,6 +447,124 @@ The facilitator handles various error scenarios:
 ```
 
 ## Production Deployment
+
+### Observability
+
+#### Structured Logging
+
+The facilitator uses Pino for structured JSON logging with the following features:
+
+- **Development**: Pretty-printed colored logs for readability
+- **Production**: JSON logs optimized for log aggregation systems
+- **Log Levels**: `trace`, `debug`, `info`, `warn`, `error`, `fatal`
+- **Context**: All logs include service name, version, and environment
+
+Configure logging:
+```env
+LOG_LEVEL=info  # or debug, warn, error
+NODE_ENV=production  # disables pretty printing
+```
+
+#### OpenTelemetry Integration
+
+Enable distributed tracing and metrics by setting OTLP environment variables:
+
+**Honeycomb Example:**
+```env
+OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io:443
+OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_SERVICE_NAME=x402-facilitator
+OTEL_SERVICE_VERSION=1.0.0
+OTEL_SERVICE_DEPLOYMENT=production
+```
+
+**Jaeger Example:**
+```env
+OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+**Available Metrics:**
+- Request counts by endpoint and status
+- Settlement success/failure rates by network and mode
+- Latency histograms (P50, P95, P99)
+- Error rates by type
+- Active request counts
+
+**Available Traces:**
+- HTTP request spans with method, URL, status
+- Settlement operation spans with network, mode, transaction hash
+- Verification spans with validation details
+
+### Kubernetes Deployment
+
+The facilitator includes health check endpoints compatible with Kubernetes:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: x402-facilitator
+spec:
+  containers:
+  - name: facilitator
+    image: your-registry/x402-facilitator:latest
+    ports:
+    - containerPort: 3000
+    env:
+    - name: EVM_PRIVATE_KEY
+      valueFrom:
+        secretKeyRef:
+          name: facilitator-secrets
+          key: evm-private-key
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 3000
+      initialDelaySeconds: 10
+      periodSeconds: 30
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    lifecycle:
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "sleep 15"]
+```
+
+### Graceful Shutdown
+
+The facilitator handles SIGTERM and SIGINT signals gracefully:
+
+1. **Signal received**: Logs shutdown initiation
+2. **Stop accepting new requests**: Returns 503 for new requests
+3. **Wait for in-flight requests**: Up to 30 seconds (configurable)
+4. **Run cleanup handlers**: Close connections, flush telemetry
+5. **Exit cleanly**: Process exits with code 0
+
+This ensures zero request drops during rolling updates or scaling operations.
+
+### Error Handling & Retry
+
+The facilitator includes production-grade error handling:
+
+**Error Classification:**
+- `ConfigurationError` - Missing/invalid config (not recoverable)
+- `ValidationError` - Invalid payment data (not recoverable)
+- `SettlementError` - Transaction/RPC errors (may be recoverable)
+- `RpcError` - Network issues (recoverable with retry)
+- `NonceError` - Nonce conflicts (recoverable with retry)
+
+**Retry Policies:**
+- **RPC Calls**: 5 attempts, exponential backoff (500ms - 10s)
+- **Transaction Confirmation**: 60 attempts, slow growth (2s - 5s), 2min timeout
+- **Jitter**: Random ±25% to prevent thundering herd
+
+### Security Best Practices
 
 For production use, consider:
 
