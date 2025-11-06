@@ -377,9 +377,10 @@ app.post("/settle", async (req: Request, res: Response) => {
           {
             transaction: response.transaction,
             success: response.success,
+            payer: response.payer,
             duration_ms: duration,
           },
-          "Settlement successful",
+          "SettlementRouter settlement successful",
         );
 
         res.json(response);
@@ -395,7 +396,14 @@ app.post("/settle", async (req: Request, res: Response) => {
         throw error;
       }
     } else {
-      logger.info("Standard settlement mode");
+      logger.info(
+        {
+          network: paymentRequirements.network,
+          asset: paymentRequirements.asset,
+          maxAmountRequired: paymentRequirements.maxAmountRequired,
+        },
+        "Standard settlement mode",
+      );
 
       try {
         // Settle using standard x402 flow
@@ -420,7 +428,15 @@ app.post("/settle", async (req: Request, res: Response) => {
           mode: "standard",
         });
 
-        logger.info({ duration_ms: duration }, "Standard settlement successful");
+        logger.info(
+          {
+            transaction: response.transaction,
+            success: response.success,
+            payer: response.payer,
+            duration_ms: duration,
+          },
+          "Standard settlement successful",
+        );
         res.json(response);
       } catch (error) {
         const duration = Date.now() - startTime;
