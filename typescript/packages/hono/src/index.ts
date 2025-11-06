@@ -388,24 +388,6 @@ export function paymentMiddleware(
       );
     }
 
-    // Decode payment (if not already decoded)
-    if (!decodedPayment) {
-      try {
-        decodedPayment = exact.evm.decodePayment(payment!);
-        decodedPayment.x402Version = x402Version;
-      } catch (error) {
-        return c.json(
-          {
-            error: errorMessages?.invalidPayment || 
-              (error instanceof Error ? error.message : 'Invalid or malformed payment header'),
-            accepts: paymentRequirements,
-            x402Version,
-          },
-          402
-        );
-      }
-    }
-
     // Find matching payment requirement
     const selectedPaymentRequirements = findMatchingPaymentRequirements(
       paymentRequirements,
