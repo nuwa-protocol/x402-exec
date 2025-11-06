@@ -91,7 +91,7 @@ function detectTelemetryFromEnv(): TelemetryConfig | null {
 /**
  * Global logger instance
  */
-let logger: pino.Logger;
+let logger: pino.Logger | null = null;
 
 /**
  * Global OpenTelemetry SDK instance
@@ -215,10 +215,23 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
 
 /**
  * Get logger instance
+ *
+ * Returns a fallback logger if not initialized (before initTelemetry() is called).
+ * The fallback logger uses console methods but maintains pino-compatible interface.
  */
 export function getLogger(): pino.Logger {
   if (!logger) {
-    throw new Error("Logger not initialized. Call initTelemetry() first.");
+    // Return a fallback logger that uses console
+    // This allows modules to safely call getLogger() at load time
+    return {
+      info: (...args: any[]) => console.log(...args),
+      warn: (...args: any[]) => console.warn(...args),
+      error: (...args: any[]) => console.error(...args),
+      debug: (...args: any[]) => console.debug(...args),
+      trace: (...args: any[]) => console.trace(...args),
+      fatal: (...args: any[]) => console.error("[FATAL]", ...args),
+      child: () => getLogger(), // Return self for child loggers
+    } as any as pino.Logger;
   }
   return logger;
 }
@@ -247,12 +260,13 @@ export function getMeter(): Meter {
  * Shutdown telemetry system gracefully
  */
 export async function shutdownTelemetry(): Promise<void> {
+  const currentLogger = getLogger(); // Use getLogger() to handle null case
   if (otelSDK) {
     try {
       await otelSDK.shutdown();
-      logger.info("OpenTelemetry SDK shut down successfully");
+      currentLogger.info("OpenTelemetry SDK shut down successfully");
     } catch (error) {
-      logger.error({ error }, "Error shutting down OpenTelemetry SDK");
+      currentLogger.error({ error }, "Error shutting down OpenTelemetry SDK");
     }
   }
 }

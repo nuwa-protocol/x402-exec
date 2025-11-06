@@ -1,5 +1,5 @@
 /* eslint-env node */
-import { config } from "dotenv"; // Load env vars first
+import { config } from "dotenv";
 
 import express, { Request, Response } from "express";
 import { verify, settle } from "x402/facilitator";
@@ -20,7 +20,7 @@ import {
 } from "x402/types";
 import { isSettlementMode, settleWithRouter } from "./settlement.js";
 import { initTelemetry, getLogger, traced, recordMetric, recordHistogram } from "./telemetry.js";
-import { initShutdown, shutdownMiddleware } from "./shutdown.js";
+import { initShutdown, shutdownMiddleware } from "./shutdown.js"; // Load env vars first
 config();
 
 // Initialize telemetry

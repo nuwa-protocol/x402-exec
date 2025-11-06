@@ -16,8 +16,6 @@ import {
 import { SettlementExtraError } from "./types.js";
 import { getLogger } from "./telemetry.js";
 
-const logger = getLogger();
-
 /**
  * Check if a payment request requires SettlementRouter mode
  *
@@ -45,6 +43,7 @@ export function validateSettlementRouter(
   routerAddress: string,
   allowedRouters: Record<string, string[]>,
 ): void {
+  const logger = getLogger();
   const allowedForNetwork = allowedRouters[network];
 
   if (!allowedForNetwork || allowedForNetwork.length === 0) {
@@ -116,6 +115,8 @@ export async function settleWithRouter(
   paymentRequirements: PaymentRequirements,
   allowedRouters: Record<string, string[]>,
 ): Promise<SettleResponse> {
+  const logger = getLogger();
+
   try {
     // Validate SettlementRouter address against whitelist
     if (!paymentRequirements.extra?.settlementRouter) {
