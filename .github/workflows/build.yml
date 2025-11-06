@@ -1,4 +1,4 @@
-name: Build
+name: Build and Test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     
     steps:
@@ -52,6 +52,27 @@ jobs:
         run: pnpm run build:sdk
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Run tests
+        run: pnpm -r --filter "@x402x/*" test
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Run tests with coverage
+        run: pnpm -r --filter "@x402x/*" test:coverage
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: |
+            ./typescript/packages/core/coverage/coverage-final.json
+            ./typescript/packages/express/coverage/coverage-final.json
+            ./typescript/packages/fetch/coverage/coverage-final.json
+            ./typescript/packages/hono/coverage/coverage-final.json
+            ./typescript/packages/react/coverage/coverage-final.json
+          fail_ci_if_error: false
 
       - name: Build all examples
         run: pnpm run build:examples

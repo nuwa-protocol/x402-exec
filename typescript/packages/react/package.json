@@ -18,7 +18,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src"
   },
   "keywords": [
@@ -36,10 +38,14 @@
     "@x402x/fetch": "workspace:*"
   },
   "devDependencies": {
+    "@testing-library/react": "^14.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
     "eslint": "^9.0.0",
+    "jsdom": "^23.0.0",
     "react": "^18.0.0",
+    "react-dom": "^18.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "viem": "^2.17.0",
