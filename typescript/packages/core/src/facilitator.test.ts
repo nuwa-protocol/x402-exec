@@ -1,157 +1,151 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  isSettlementMode,
-  validateSettlementRouter,
-  settleWithRouter,
-} from './facilitator';
-import type { PaymentPayload, PaymentRequirements, FacilitatorConfig } from './types';
-import { SettlementExtraError } from './types';
-import { mockAddresses } from './__tests__/fixtures';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { isSettlementMode, validateSettlementRouter, settleWithRouter } from "./facilitator";
+import type { PaymentPayload, PaymentRequirements, FacilitatorConfig } from "./types";
+import { SettlementExtraError } from "./types";
+import { mockAddresses } from "./__tests__/fixtures";
 
-describe('isSettlementMode', () => {
-  it('should return true when extra has settlementRouter', () => {
+describe("isSettlementMode", () => {
+  it("should return true when extra has settlementRouter", () => {
     const requirements = {
       extra: {
-        settlementRouter: '0x1234567890123456789012345678901234567890',
+        settlementRouter: "0x1234567890123456789012345678901234567890",
       },
     } as PaymentRequirements;
-    
+
     expect(isSettlementMode(requirements)).toBe(true);
   });
 
-  it('should return false when extra is undefined', () => {
+  it("should return false when extra is undefined", () => {
     const requirements = {} as PaymentRequirements;
-    
+
     expect(isSettlementMode(requirements)).toBe(false);
   });
 
-  it('should return false when extra exists but no settlementRouter', () => {
+  it("should return false when extra exists but no settlementRouter", () => {
     const requirements = {
       extra: {
-        name: 'USDC',
-        version: '2',
+        name: "USDC",
+        version: "2",
       },
     } as PaymentRequirements;
-    
+
     expect(isSettlementMode(requirements)).toBe(false);
   });
 
-  it('should return false when settlementRouter is empty string', () => {
+  it("should return false when settlementRouter is empty string", () => {
     const requirements = {
       extra: {
-        settlementRouter: '',
+        settlementRouter: "",
       },
     } as PaymentRequirements;
-    
+
     expect(isSettlementMode(requirements)).toBe(false);
   });
 
-  it('should return false when settlementRouter is null', () => {
+  it("should return false when settlementRouter is null", () => {
     const requirements = {
       extra: {
         settlementRouter: null,
       },
     } as PaymentRequirements;
-    
+
     expect(isSettlementMode(requirements)).toBe(false);
   });
 });
 
-describe('validateSettlementRouter', () => {
+describe("validateSettlementRouter", () => {
   const allowedRouters = {
-    'base-sepolia': [
-      '0x32431D4511e061F1133520461B07eC42afF157D6',
-      '0x1234567890123456789012345678901234567890',
+    "base-sepolia": [
+      "0x32431D4511e061F1133520461B07eC42afF157D6",
+      "0x1234567890123456789012345678901234567890",
     ],
-    'x-layer-testnet': [
-      '0x1ae0e196dc18355af3a19985faf67354213f833d',
-    ],
+    "x-layer-testnet": ["0x1ae0e196dc18355af3a19985faf67354213f833d"],
   };
 
-  it('should pass validation for whitelisted router', () => {
+  it("should pass validation for whitelisted router", () => {
     expect(() => {
       validateSettlementRouter(
-        'base-sepolia',
-        '0x32431D4511e061F1133520461B07eC42afF157D6',
-        allowedRouters
+        "base-sepolia",
+        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        allowedRouters,
       );
     }).not.toThrow();
   });
 
-  it('should pass validation regardless of case', () => {
+  it("should pass validation regardless of case", () => {
     expect(() => {
       validateSettlementRouter(
-        'base-sepolia',
-        '0x32431D4511E061F1133520461B07EC42AFF157D6', // uppercase
-        allowedRouters
+        "base-sepolia",
+        "0x32431D4511E061F1133520461B07EC42AFF157D6", // uppercase
+        allowedRouters,
       );
     }).not.toThrow();
   });
 
-  it('should reject router not in whitelist', () => {
+  it("should reject router not in whitelist", () => {
     expect(() => {
       validateSettlementRouter(
-        'base-sepolia',
-        '0x9999999999999999999999999999999999999999',
-        allowedRouters
+        "base-sepolia",
+        "0x9999999999999999999999999999999999999999",
+        allowedRouters,
       );
     }).toThrow(SettlementExtraError);
   });
 
-  it('should throw SettlementExtraError with router address in message', () => {
-    const routerAddress = '0x9999999999999999999999999999999999999999';
-    
+  it("should throw SettlementExtraError with router address in message", () => {
+    const routerAddress = "0x9999999999999999999999999999999999999999";
+
     expect(() => {
-      validateSettlementRouter('base-sepolia', routerAddress, allowedRouters);
+      validateSettlementRouter("base-sepolia", routerAddress, allowedRouters);
     }).toThrow(`Settlement router ${routerAddress} is not in whitelist`);
   });
 
-  it('should reject router for network without allowed routers', () => {
+  it("should reject router for network without allowed routers", () => {
     expect(() => {
       validateSettlementRouter(
-        'unknown-network',
-        '0x32431D4511e061F1133520461B07eC42afF157D6',
-        allowedRouters
+        "unknown-network",
+        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        allowedRouters,
       );
     }).toThrow(SettlementExtraError);
   });
 
-  it('should throw error with network name for unconfigured network', () => {
+  it("should throw error with network name for unconfigured network", () => {
     expect(() => {
       validateSettlementRouter(
-        'unknown-network',
-        '0x32431D4511e061F1133520461B07eC42afF157D6',
-        allowedRouters
+        "unknown-network",
+        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        allowedRouters,
       );
-    }).toThrow('No allowed settlement routers configured for network: unknown-network');
+    }).toThrow("No allowed settlement routers configured for network: unknown-network");
   });
 
-  it('should handle empty whitelist for network', () => {
+  it("should handle empty whitelist for network", () => {
     const emptyAllowedRouters = {
-      'base-sepolia': [],
+      "base-sepolia": [],
     };
-    
+
     expect(() => {
       validateSettlementRouter(
-        'base-sepolia',
-        '0x32431D4511e061F1133520461B07eC42afF157D6',
-        emptyAllowedRouters
+        "base-sepolia",
+        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        emptyAllowedRouters,
       );
-    }).toThrow('No allowed settlement routers configured');
+    }).toThrow("No allowed settlement routers configured");
   });
 
-  it('should handle multiple routers in whitelist', () => {
+  it("should handle multiple routers in whitelist", () => {
     expect(() => {
       validateSettlementRouter(
-        'base-sepolia',
-        '0x1234567890123456789012345678901234567890',
-        allowedRouters
+        "base-sepolia",
+        "0x1234567890123456789012345678901234567890",
+        allowedRouters,
       );
     }).not.toThrow();
   });
 });
 
-describe('settleWithRouter', () => {
+describe("settleWithRouter", () => {
   let mockWalletClient: any;
   let mockPaymentPayload: PaymentPayload;
   let mockPaymentRequirements: PaymentRequirements;
@@ -165,45 +159,46 @@ describe('settleWithRouter', () => {
     };
 
     mockPaymentPayload = {
-      scheme: 'exact',
-      network: 'base-sepolia',
+      scheme: "exact",
+      network: "base-sepolia",
       x402Version: 1,
       payload: {
-        signature: '0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890',
+        signature:
+          "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
         authorization: {
           from: mockAddresses.from,
           to: mockAddresses.hub,
-          value: '100000',
-          validAfter: '0',
-          validBefore: '1234567890',
-          nonce: '0x' + '0'.repeat(64),
+          value: "100000",
+          validAfter: "0",
+          validBefore: "1234567890",
+          nonce: "0x" + "0".repeat(64),
         },
       },
     };
 
     mockPaymentRequirements = {
-      scheme: 'exact',
-      network: 'base-sepolia',
-      maxAmountRequired: '100000',
-      resource: '/api/test',
-      description: 'Test payment',
-      mimeType: 'application/json',
-      payTo: '0x32431D4511e061F1133520461B07eC42afF157D6',
+      scheme: "exact",
+      network: "base-sepolia",
+      maxAmountRequired: "100000",
+      resource: "/api/test",
+      description: "Test payment",
+      mimeType: "application/json",
+      payTo: "0x32431D4511e061F1133520461B07eC42afF157D6",
       maxTimeoutSeconds: 300,
       asset: mockAddresses.token,
       extra: {
-        settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
-        salt: '0x' + '1'.repeat(64),
+        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+        salt: "0x" + "1".repeat(64),
         payTo: mockAddresses.payTo,
-        facilitatorFee: '10000',
+        facilitatorFee: "10000",
         hook: mockAddresses.hook,
-        hookData: '0x',
+        hookData: "0x",
       },
     };
 
     mockConfig = {
       allowedRouters: {
-        'base-sepolia': ['0x32431D4511e061F1133520461B07eC42afF157D6'],
+        "base-sepolia": ["0x32431D4511e061F1133520461B07eC42afF157D6"],
       },
     };
   });
@@ -212,84 +207,84 @@ describe('settleWithRouter', () => {
     vi.clearAllMocks();
   });
 
-  it('should successfully settle payment', async () => {
-    const mockTxHash = '0xabcd1234';
+  it("should successfully settle payment", async () => {
+    const mockTxHash = "0xabcd1234";
     mockWalletClient.writeContract.mockResolvedValue(mockTxHash);
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
-      status: 'success',
+      status: "success",
     });
 
     const result = await settleWithRouter(
       mockWalletClient,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(true);
     expect(result.transaction).toBe(mockTxHash);
-    expect(result.network).toBe('base-sepolia');
+    expect(result.network).toBe("base-sepolia");
     expect(result.payer).toBe(mockAddresses.from);
   });
 
-  it('should call writeContract with correct parameters', async () => {
-    mockWalletClient.writeContract.mockResolvedValue('0xhash');
+  it("should call writeContract with correct parameters", async () => {
+    mockWalletClient.writeContract.mockResolvedValue("0xhash");
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
-      status: 'success',
+      status: "success",
     });
 
     await settleWithRouter(
       mockWalletClient,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(mockWalletClient.writeContract).toHaveBeenCalledWith(
       expect.objectContaining({
         address: mockPaymentRequirements.extra.settlementRouter,
-        functionName: 'settleAndExecute',
+        functionName: "settleAndExecute",
         args: expect.arrayContaining([
           mockAddresses.token,
           mockAddresses.from,
-          BigInt('100000'),
-          BigInt('0'),
-          BigInt('1234567890'),
+          BigInt("100000"),
+          BigInt("0"),
+          BigInt("1234567890"),
           expect.any(String), // nonce
           expect.any(String), // signature
           mockPaymentRequirements.extra.salt,
           mockAddresses.payTo,
-          BigInt('10000'),
+          BigInt("10000"),
           mockAddresses.hook,
-          '0x',
+          "0x",
         ]),
-      })
+      }),
     );
   });
 
-  it('should return failure when transaction status is not success', async () => {
-    mockWalletClient.writeContract.mockResolvedValue('0xhash');
+  it("should return failure when transaction status is not success", async () => {
+    mockWalletClient.writeContract.mockResolvedValue("0xhash");
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
-      status: 'reverted',
+      status: "reverted",
     });
 
     const result = await settleWithRouter(
       mockWalletClient,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('invalid_transaction_state');
+    expect(result.errorReason).toBe("invalid_transaction_state");
   });
 
-  it('should fail when router is not in whitelist', async () => {
+  it("should fail when router is not in whitelist", async () => {
     const invalidRequirements = {
       ...mockPaymentRequirements,
       extra: {
         ...mockPaymentRequirements.extra,
-        settlementRouter: '0x9999999999999999999999999999999999999999',
+        settlementRouter: "0x9999999999999999999999999999999999999999",
       },
     };
 
@@ -297,14 +292,14 @@ describe('settleWithRouter', () => {
       mockWalletClient,
       mockPaymentPayload,
       invalidRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('invalid_payment_requirements');
+    expect(result.errorReason).toBe("invalid_payment_requirements");
   });
 
-  it('should fail when extra field is missing', async () => {
+  it("should fail when extra field is missing", async () => {
     const invalidRequirements = {
       ...mockPaymentRequirements,
       extra: undefined,
@@ -314,46 +309,47 @@ describe('settleWithRouter', () => {
       mockWalletClient,
       mockPaymentPayload,
       invalidRequirements as any,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('invalid_payment_requirements');
+    expect(result.errorReason).toBe("invalid_payment_requirements");
   });
 
-  it('should fail when signer lacks required methods', async () => {
+  it("should fail when signer lacks required methods", async () => {
     const invalidSigner = {}; // Missing writeContract and waitForTransactionReceipt
 
     const result = await settleWithRouter(
       invalidSigner,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('unexpected_settle_error');
+    expect(result.errorReason).toBe("unexpected_settle_error");
   });
 
-  it('should handle writeContract errors', async () => {
-    mockWalletClient.writeContract.mockRejectedValue(new Error('Transaction failed'));
+  it("should handle writeContract errors", async () => {
+    mockWalletClient.writeContract.mockRejectedValue(new Error("Transaction failed"));
 
     const result = await settleWithRouter(
       mockWalletClient,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('unexpected_settle_error');
+    expect(result.errorReason).toBe("unexpected_settle_error");
   });
 
-  it('should handle ERC-6492 wrapped signatures', async () => {
+  it("should handle ERC-6492 wrapped signatures", async () => {
     // For this test, we'll simply verify that settleWithRouter can process
     // any signature format, as parseErc6492Signature is mocked at module level
     // to return the signature as-is
-    const erc6492Signature = '0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890' as `0x${string}`;
+    const erc6492Signature =
+      "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" as `0x${string}`;
 
     const payloadWithErc6492 = {
       ...mockPaymentPayload,
@@ -363,44 +359,44 @@ describe('settleWithRouter', () => {
       },
     };
 
-    mockWalletClient.writeContract.mockResolvedValue('0xhash');
+    mockWalletClient.writeContract.mockResolvedValue("0xhash");
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
-      status: 'success',
+      status: "success",
     });
 
     const result = await settleWithRouter(
       mockWalletClient,
       payloadWithErc6492,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(true);
     expect(mockWalletClient.writeContract).toHaveBeenCalled();
   });
 
-  it('should extract payer from payload on error', async () => {
-    mockWalletClient.writeContract.mockRejectedValue(new Error('Failed'));
+  it("should extract payer from payload on error", async () => {
+    mockWalletClient.writeContract.mockRejectedValue(new Error("Failed"));
 
     const result = await settleWithRouter(
       mockWalletClient,
       mockPaymentPayload,
       mockPaymentRequirements,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.payer).toBe(mockAddresses.from);
   });
 
-  it('should handle missing settlementRouter in extra', async () => {
+  it("should handle missing settlementRouter in extra", async () => {
     const invalidRequirements = {
       ...mockPaymentRequirements,
       extra: {
-        salt: '0x' + '1'.repeat(64),
+        salt: "0x" + "1".repeat(64),
         payTo: mockAddresses.payTo,
-        facilitatorFee: '10000',
+        facilitatorFee: "10000",
         hook: mockAddresses.hook,
-        hookData: '0x',
+        hookData: "0x",
         // settlementRouter missing
       },
     };
@@ -409,23 +405,23 @@ describe('settleWithRouter', () => {
       mockWalletClient,
       mockPaymentPayload,
       invalidRequirements as any,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('invalid_payment_requirements');
+    expect(result.errorReason).toBe("invalid_payment_requirements");
   });
 
-  it('should handle missing salt in extra', async () => {
+  it("should handle missing salt in extra", async () => {
     const invalidRequirements = {
       ...mockPaymentRequirements,
       extra: {
-        settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
+        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
         // salt missing
         payTo: mockAddresses.payTo,
-        facilitatorFee: '10000',
+        facilitatorFee: "10000",
         hook: mockAddresses.hook,
-        hookData: '0x',
+        hookData: "0x",
       },
     };
 
@@ -433,11 +429,10 @@ describe('settleWithRouter', () => {
       mockWalletClient,
       mockPaymentPayload,
       invalidRequirements as any,
-      mockConfig
+      mockConfig,
     );
 
     expect(result.success).toBe(false);
-    expect(result.errorReason).toBe('invalid_payment_requirements');
+    expect(result.errorReason).toBe("invalid_payment_requirements");
   });
 });
-

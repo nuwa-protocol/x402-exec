@@ -2,24 +2,24 @@
  * Utility functions for x402x
  */
 
-import type { PaymentRequirements, SettlementExtra } from './types.js';
-import { getNetworkConfig } from './networks.js';
-import { generateSalt } from './commitment.js';
+import type { PaymentRequirements, SettlementExtra } from "./types.js";
+import { getNetworkConfig } from "./networks.js";
+import { generateSalt } from "./commitment.js";
 
 /**
  * Add settlement extension to PaymentRequirements
- * 
+ *
  * This function enriches standard x402 PaymentRequirements with settlement-specific
  * parameters in the `extra` field.
- * 
+ *
  * @param requirements - Base PaymentRequirements (standard x402)
  * @param params - Settlement parameters
  * @returns Enhanced PaymentRequirements with settlement extra
- * 
+ *
  * @example
  * ```typescript
  * import { addSettlementExtra, TransferHook, getNetworkConfig } from '@x402x/core';
- * 
+ *
  * const baseRequirements = {
  *   scheme: 'exact',
  *   network: 'base-sepolia',
@@ -28,7 +28,7 @@ import { generateSalt } from './commitment.js';
  *   payTo: '0x...',
  *   resource: '/api/payment',
  * };
- * 
+ *
  * const requirements = addSettlementExtra(baseRequirements, {
  *   hook: TransferHook.getAddress('base-sepolia'),
  *   hookData: TransferHook.encode(),
@@ -45,16 +45,16 @@ export function addSettlementExtra(
     facilitatorFee?: string;
     payTo?: string;
     salt?: string;
-  }
+  },
 ): PaymentRequirements {
   const config = getNetworkConfig(requirements.network);
-  
+
   // Preserve existing name/version from requirements.extra if they exist (from x402 official middleware)
   // Only use config values as fallback
   const existingExtra = requirements.extra || {};
   const name = existingExtra.name || config.usdc.name;
   const version = existingExtra.version || config.usdc.version;
-  
+
   const extra: SettlementExtra = {
     // USDC EIP-712 domain info (preserve existing if available)
     name,
@@ -63,11 +63,11 @@ export function addSettlementExtra(
     settlementRouter: config.settlementRouter,
     salt: params.salt || generateSalt(),
     payTo: params.payTo || requirements.payTo,
-    facilitatorFee: params.facilitatorFee || '0',
+    facilitatorFee: params.facilitatorFee || "0",
     hook: params.hook,
     hookData: params.hookData,
   };
-  
+
   return {
     ...requirements,
     // Override payTo to point to SettlementRouter
@@ -78,4 +78,3 @@ export function addSettlementExtra(
     },
   };
 }
-

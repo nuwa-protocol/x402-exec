@@ -24,38 +24,39 @@ yarn add @x402x/express
 ## Quick Start
 
 ```typescript
-import express from 'express';
-import { paymentMiddleware } from '@x402x/express';
+import express from "express";
+import { paymentMiddleware } from "@x402x/express";
 
 const app = express();
 
 // Single route with payment requirement
-app.post('/api/premium',
+app.post(
+  "/api/premium",
   paymentMiddleware(
     "0xYourRecipientAddress", // Final payment recipient
     {
-      price: "$0.10",              // 0.10 USD in USDC
-      network: "base-sepolia",     // Payment network
-      facilitatorFee: "$0.01",     // 0.01 USD facilitator fee
+      price: "$0.10", // 0.10 USD in USDC
+      network: "base-sepolia", // Payment network
+      facilitatorFee: "$0.01", // 0.01 USD facilitator fee
       config: {
         description: "Access to premium content",
-      }
+      },
     },
     {
       url: "https://your-facilitator.com", // Optional facilitator config
-    }
+    },
   ),
   (req, res) => {
     // Access verified payment context (x402x extension)
     const { payer, amount, network } = req.x402!;
-    
+
     console.log(`Received payment from ${payer}: ${amount} on ${network}`);
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: "Payment received and settled",
     });
-  }
+  },
 );
 
 app.listen(3000);
@@ -65,19 +66,17 @@ app.listen(3000);
 
 ```typescript
 // Accept payments on multiple networks
-app.post('/api/multi-network',
-  paymentMiddleware(
-    "0xYourAddress",
-    {
-      price: "$1.00",
-      network: ["base-sepolia", "base"], // Multiple networks
-      facilitatorFee: "$0.01",
-    }
-  ),
+app.post(
+  "/api/multi-network",
+  paymentMiddleware("0xYourAddress", {
+    price: "$1.00",
+    network: ["base-sepolia", "base"], // Multiple networks
+    facilitatorFee: "$0.01",
+  }),
   (req, res) => {
     const { network } = req.x402!;
     res.json({ message: `Paid on ${network}` });
-  }
+  },
 );
 ```
 
@@ -85,25 +84,27 @@ app.post('/api/multi-network',
 
 ```typescript
 // Protect multiple routes with different prices
-app.use(paymentMiddleware(
-  "0xYourAddress",
-  {
-    "/api/basic": {
-      price: "$0.01",
-      network: "base-sepolia",
+app.use(
+  paymentMiddleware(
+    "0xYourAddress",
+    {
+      "/api/basic": {
+        price: "$0.01",
+        network: "base-sepolia",
+      },
+      "/api/premium": {
+        price: "$1.00",
+        network: ["base-sepolia", "base"],
+      },
+      "/api/enterprise": {
+        price: "$10.00",
+        network: "base",
+        facilitatorFee: "$0.50",
+      },
     },
-    "/api/premium": {
-      price: "$1.00",
-      network: ["base-sepolia", "base"],
-    },
-    "/api/enterprise": {
-      price: "$10.00",
-      network: "base",
-      facilitatorFee: "$0.50",
-    }
-  },
-  facilitatorConfig
-));
+    facilitatorConfig,
+  ),
+);
 
 // Route handlers can access req.x402
 app.get("/api/basic", (req, res) => {
@@ -116,47 +117,44 @@ app.get("/api/basic", (req, res) => {
 
 ```typescript
 // Use custom hook for revenue split
-app.post('/api/referral',
-  paymentMiddleware(
-    "0xMerchantAddress",
-    {
-      price: "$0.10",
-      network: "base-sepolia",
-      hook: "0xRevenueSplitHookAddress",
-      hookData: encodeRevenueSplitData({
-        merchant: "0xMerchantAddress",
-        referrer: "0xReferrerAddress",
-        platform: "0xPlatformAddress",
-      }),
-    }
-  ),
+app.post(
+  "/api/referral",
+  paymentMiddleware("0xMerchantAddress", {
+    price: "$0.10",
+    network: "base-sepolia",
+    hook: "0xRevenueSplitHookAddress",
+    hookData: encodeRevenueSplitData({
+      merchant: "0xMerchantAddress",
+      referrer: "0xReferrerAddress",
+      platform: "0xPlatformAddress",
+    }),
+  }),
   (req, res) => {
     res.json({ message: "Revenue split executed" });
-  }
+  },
 );
 
 // Dynamic hook configuration
-app.post('/api/nft-mint',
-  paymentMiddleware(
-    "0xMerchantAddress",
-    {
-      price: "$1.00",
-      network: "base-sepolia",
-      hook: (network) => getNFTMintHookAddress(network),
-      hookData: (network) => encodeNFTMintData({
+app.post(
+  "/api/nft-mint",
+  paymentMiddleware("0xMerchantAddress", {
+    price: "$1.00",
+    network: "base-sepolia",
+    hook: (network) => getNFTMintHookAddress(network),
+    hookData: (network) =>
+      encodeNFTMintData({
         nftContract: getNFTContract(network),
         tokenId: generateTokenId(),
         merchant: "0xMerchantAddress",
       }),
-    }
-  ),
+  }),
   (req, res) => {
     const { payer } = req.x402!;
-    res.json({ 
+    res.json({
       message: "NFT minted",
       recipient: payer,
     });
-  }
+  },
 );
 ```
 
@@ -171,14 +169,14 @@ app.post('/api/payment',
   paymentMiddleware(...),
   (req: X402Request, res) => {
     const x402 = req.x402!;
-    
+
     // Access verified payment information
     console.log("Payer:", x402.payer);              // Address of payer
     console.log("Amount:", x402.amount);            // Amount in atomic units
     console.log("Network:", x402.network);          // Network used
     console.log("Payment:", x402.payment);          // Full payment payload
     console.log("Requirements:", x402.requirements); // Payment requirements
-    
+
     // Settlement information (x402x specific)
     if (x402.settlement) {
       console.log("Router:", x402.settlement.router);
@@ -186,7 +184,7 @@ app.post('/api/payment',
       console.log("Hook Data:", x402.settlement.hookData);
       console.log("Facilitator Fee:", x402.settlement.facilitatorFee);
     }
-    
+
     res.json({ success: true });
   }
 );
@@ -210,8 +208,8 @@ Creates Express middleware for x402x payment processing.
 
 ```typescript
 interface X402xRouteConfig {
-  price: string | Money;              // USD or Money object
-  network: Network | Network[];       // Single or multiple networks
+  price: string | Money; // USD or Money object
+  network: Network | Network[]; // Single or multiple networks
   hook?: string | ((network) => string);
   hookData?: string | ((network) => string);
   facilitatorFee?: string | Money | ((network) => string | Money);
@@ -235,12 +233,13 @@ interface X402xRouteConfig {
 
 ```typescript
 interface X402Context {
-  payer: Address | SolanaAddress;     // Verified payer address
-  amount: string;                     // Payment amount (atomic units)
-  network: Network;                   // Payment network
-  payment: PaymentPayload;            // Decoded payment
-  requirements: PaymentRequirements;  // Matched requirements
-  settlement?: {                      // x402x settlement info
+  payer: Address | SolanaAddress; // Verified payer address
+  amount: string; // Payment amount (atomic units)
+  network: Network; // Payment network
+  payment: PaymentPayload; // Decoded payment
+  requirements: PaymentRequirements; // Matched requirements
+  settlement?: {
+    // x402x settlement info
     router: Address;
     hook: Address;
     hookData: string;
@@ -267,10 +266,10 @@ This middleware is fully compatible with the official x402 Express middleware AP
 
 ```typescript
 // Before (x402)
-import { paymentMiddleware } from 'x402-express';
+import { paymentMiddleware } from "x402-express";
 
 // After (x402x)
-import { paymentMiddleware } from '@x402x/express';
+import { paymentMiddleware } from "@x402x/express";
 
 // Same API! 🎉
 ```

@@ -26,7 +26,7 @@ import { WagmiProvider } from 'wagmi';
 
 function PaymentButton() {
   const { pay, status, error, result } = useX402Payment();
-  
+
   const handlePay = async () => {
     try {
       const data = await pay('/api/protected-resource');
@@ -35,16 +35,16 @@ function PaymentButton() {
       console.error('Payment failed:', err);
     }
   };
-  
+
   return (
     <div>
-      <button 
-        onClick={handlePay} 
+      <button
+        onClick={handlePay}
         disabled={status === 'paying'}
       >
         {status === 'paying' ? 'Processing...' : 'Pay'}
       </button>
-      
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {result && <p>Success! {JSON.stringify(result)}</p>}
     </div>
@@ -87,6 +87,7 @@ Main hook for handling x402x payments.
 #### Properties
 
 - **`status`**: Current payment status
+
   - `'idle'`: No payment in progress
   - `'paying'`: Payment is being processed
   - `'success'`: Payment completed successfully
@@ -97,6 +98,7 @@ Main hook for handling x402x payments.
 - **`result`**: Payment result data if successful
 
 - **`pay(url, init?)`**: Function to make a payment
+
   - Returns a Promise that resolves to the response data
   - Automatically handles 402 responses
   - Uses commitment-based nonce for settlement mode
@@ -114,7 +116,7 @@ Main hook for handling x402x payments.
 ```typescript
 function BasicPayment() {
   const { pay, status } = useX402Payment();
-  
+
   return (
     <button onClick={() => pay('/api/content')}>
       {status === 'paying' ? 'Processing...' : 'Pay'}
@@ -128,7 +130,7 @@ function BasicPayment() {
 ```typescript
 function PaymentWithError() {
   const { pay, status, error } = useX402Payment();
-  
+
   const handlePay = async () => {
     try {
       await pay('/api/content');
@@ -138,7 +140,7 @@ function PaymentWithError() {
       console.error('Payment failed:', err);
     }
   };
-  
+
   return (
     <div>
       <button onClick={handlePay} disabled={status === 'paying'}>
@@ -157,7 +159,7 @@ function CustomMaxPayment() {
   const { pay } = useX402Payment({
     maxValue: BigInt(1 * 10 ** 6), // 1 USDC max
   });
-  
+
   return (
     <button onClick={() => pay('/api/premium-content')}>
       Pay (max 1 USDC)
@@ -171,13 +173,13 @@ function CustomMaxPayment() {
 ```typescript
 function PaymentWithResult() {
   const { pay, status, result } = useX402Payment();
-  
+
   return (
     <div>
       <button onClick={() => pay('/api/content')}>
         Pay
       </button>
-      
+
       {status === 'success' && result && (
         <div>
           <h3>Content Unlocked!</h3>
@@ -207,7 +209,7 @@ function PaymentApp() {
   const { pay, status, error, isConnected, address } = useX402Payment();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  
+
   if (!isConnected) {
     return (
       <div>
@@ -220,21 +222,21 @@ function PaymentApp() {
       </div>
     );
   }
-  
+
   return (
     <div>
       <p>Connected: {address}</p>
       <button onClick={() => disconnect()}>Disconnect</button>
-      
+
       <hr />
-      
-      <button 
+
+      <button
         onClick={() => pay('/api/premium-content')}
         disabled={status === 'paying'}
       >
         {status === 'paying' ? 'Processing Payment...' : 'Pay for Content'}
       </button>
-      
+
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
     </div>
   );
@@ -253,7 +255,7 @@ export default function App() {
 
 1. **Wallet Connection**: Uses wagmi's `useAccount` and `useWalletClient` hooks
 2. **Mode Detection**: Automatically detects settlement mode by checking `extra.settlementRouter`
-3. **Nonce Generation**: 
+3. **Nonce Generation**:
    - Settlement mode: Uses commitment hash (binds all parameters)
    - Standard mode: Uses random nonce (standard x402)
 4. **Payment Execution**: Signs EIP-712 authorization and retries request with payment header
@@ -273,4 +275,3 @@ export default function App() {
 ## License
 
 Apache-2.0
-

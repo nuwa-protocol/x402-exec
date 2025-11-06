@@ -19,8 +19,8 @@ npm install @x402x/fetch @x402x/core
 ## Quick Start
 
 ```typescript
-import { x402xFetch } from '@x402x/fetch';
-import { createWalletClient, custom } from 'viem';
+import { x402xFetch } from "@x402x/fetch";
+import { createWalletClient, custom } from "viem";
 
 // Create wallet client (using wagmi, viem, etc.)
 const walletClient = createWalletClient({
@@ -32,7 +32,7 @@ const walletClient = createWalletClient({
 const fetchWithPay = x402xFetch(fetch, walletClient);
 
 // Make requests - 402 responses are handled automatically
-const response = await fetchWithPay('/api/premium-content');
+const response = await fetchWithPay("/api/premium-content");
 const data = await response.json();
 ```
 
@@ -59,11 +59,7 @@ A wrapped fetch function with the same signature as the native `fetch`.
 const fetchWithPay = x402xFetch(fetch, walletClient);
 
 // With custom max value (1 USDC)
-const fetchWithPay = x402xFetch(
-  fetch,
-  walletClient,
-  BigInt(1 * 10 ** 6)
-);
+const fetchWithPay = x402xFetch(fetch, walletClient, BigInt(1 * 10 ** 6));
 ```
 
 ## How It Works
@@ -86,16 +82,16 @@ import { useWalletClient } from 'wagmi';
 
 function MyComponent() {
   const { data: walletClient } = useWalletClient();
-  
+
   const fetchData = async () => {
     if (!walletClient) return;
-    
+
     const fetchWithPay = x402xFetch(fetch, walletClient);
     const response = await fetchWithPay('/api/protected-data');
     const data = await response.json();
     console.log(data);
   };
-  
+
   return <button onClick={fetchData}>Fetch Paid Content</button>;
 }
 ```
@@ -103,26 +99,26 @@ function MyComponent() {
 ### With Error Handling
 
 ```typescript
-import { x402xFetch } from '@x402x/fetch';
+import { x402xFetch } from "@x402x/fetch";
 
 async function fetchPaidContent(walletClient) {
   const fetchWithPay = x402xFetch(fetch, walletClient);
-  
+
   try {
-    const response = await fetchWithPay('/api/content');
-    
+    const response = await fetchWithPay("/api/content");
+
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    if (error.message.includes('exceeds maximum allowed')) {
-      console.error('Payment amount too high');
-    } else if (error.message.includes('Payment already attempted')) {
-      console.error('Retry loop detected');
+    if (error.message.includes("exceeds maximum allowed")) {
+      console.error("Payment amount too high");
+    } else if (error.message.includes("Payment already attempted")) {
+      console.error("Retry loop detected");
     } else {
-      console.error('Payment failed:', error);
+      console.error("Payment failed:", error);
     }
     throw error;
   }
@@ -132,18 +128,18 @@ async function fetchPaidContent(walletClient) {
 ### Multiple Requests
 
 ```typescript
-import { x402xFetch } from '@x402x/fetch';
+import { x402xFetch } from "@x402x/fetch";
 
 async function fetchMultipleResources(walletClient) {
   const fetchWithPay = x402xFetch(fetch, walletClient);
-  
+
   // Each request is handled independently
   const [profile, posts, comments] = await Promise.all([
-    fetchWithPay('/api/profile').then(r => r.json()),
-    fetchWithPay('/api/posts').then(r => r.json()),
-    fetchWithPay('/api/comments').then(r => r.json()),
+    fetchWithPay("/api/profile").then((r) => r.json()),
+    fetchWithPay("/api/posts").then((r) => r.json()),
+    fetchWithPay("/api/comments").then((r) => r.json()),
   ]);
-  
+
   return { profile, posts, comments };
 }
 ```
@@ -151,20 +147,20 @@ async function fetchMultipleResources(walletClient) {
 ### With Custom Headers
 
 ```typescript
-import { x402xFetch } from '@x402x/fetch';
+import { x402xFetch } from "@x402x/fetch";
 
 async function fetchWithAuth(walletClient, authToken) {
   const fetchWithPay = x402xFetch(fetch, walletClient);
-  
-  const response = await fetchWithPay('/api/data', {
-    method: 'POST',
+
+  const response = await fetchWithPay("/api/data", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
     },
-    body: JSON.stringify({ query: 'some data' }),
+    body: JSON.stringify({ query: "some data" }),
   });
-  
+
   return response.json();
 }
 ```
@@ -174,11 +170,13 @@ async function fetchWithAuth(walletClient, authToken) {
 The wrapper automatically detects which mode to use:
 
 **Settlement Mode** (used when `extra.settlementRouter` exists):
+
 - Uses commitment hash as nonce
 - Binds all settlement parameters to signature
 - Supports Hooks and facilitator fees
 
 **Standard Mode** (used otherwise):
+
 - Uses random nonce
 - Standard x402 flow
 - Direct EIP-3009 transfer
@@ -197,13 +195,13 @@ The wrapper may throw the following errors:
 Full TypeScript support with type definitions included.
 
 ```typescript
-import { x402xFetch } from '@x402x/fetch';
-import type { Signer } from '@x402x/core';
+import { x402xFetch } from "@x402x/fetch";
+import type { Signer } from "@x402x/core";
 
-const fetchWithPay: (
-  input: RequestInfo,
-  init?: RequestInit
-) => Promise<Response> = x402xFetch(fetch, walletClient);
+const fetchWithPay: (input: RequestInfo, init?: RequestInit) => Promise<Response> = x402xFetch(
+  fetch,
+  walletClient,
+);
 ```
 
 ## Related Packages
@@ -215,4 +213,3 @@ const fetchWithPay: (
 ## License
 
 Apache-2.0
-

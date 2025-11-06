@@ -1,15 +1,14 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: {
-    index: 'src/index.ts',
+    index: "src/index.ts",
   },
-  format: ['cjs', 'esm'],
+  format: ["cjs", "esm"],
   dts: true,
   splitting: false,
   sourcemap: true,
   clean: true,
   treeshake: true,
-  external: ['@x402x/core', 'viem', 'x402'],
+  external: ["@x402x/core", "viem", "x402"],
 });
-

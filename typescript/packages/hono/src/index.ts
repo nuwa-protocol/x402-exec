@@ -1,19 +1,19 @@
 /**
  * x402x Hono middleware
- * 
+ *
  * Provides payment middleware for Hono-based resource servers with settlement support.
  * Compatible with x402 official middleware API with x402x extensions.
  */
 
-import type { Context } from 'hono';
-import { exact } from 'x402/schemes';
+import type { Context } from "hono";
+import { exact } from "x402/schemes";
 import {
   computeRoutePatterns,
   findMatchingPaymentRequirements,
   findMatchingRoute,
   processPriceToAtomicAmount,
   toJsonSafe,
-} from 'x402/shared';
+} from "x402/shared";
 import {
   FacilitatorConfig,
   moneySchema,
@@ -24,15 +24,15 @@ import {
   SupportedEVMNetworks,
   type Money,
   type Network,
-} from 'x402/types';
-import { useFacilitator } from 'x402/verify';
-import { addSettlementExtra, getNetworkConfig, TransferHook } from '@x402x/core';
-import type { Address } from 'viem';
-import type { Address as SolanaAddress } from '@solana/kit';
+} from "x402/types";
+import { useFacilitator } from "x402/verify";
+import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/core";
+import type { Address } from "viem";
+import type { Address as SolanaAddress } from "@solana/kit";
 
 /**
  * Payment context information available to handlers via c.get('x402')
- * 
+ *
  * This is an x402x extension that provides access to payment details
  * after successful verification, enabling secure business logic that
  * depends on the payer's identity or payment amount.
@@ -40,19 +40,19 @@ import type { Address as SolanaAddress } from '@solana/kit';
 export interface X402Context {
   /** Address of the payer (from payment signature) */
   payer: Address | SolanaAddress;
-  
+
   /** Payment amount in atomic units (e.g., USDC with 6 decimals) */
   amount: string;
-  
+
   /** Network where payment was made */
   network: Network;
-  
+
   /** Decoded payment payload */
   payment: PaymentPayload;
-  
+
   /** Matched payment requirements */
   requirements: PaymentRequirements;
-  
+
   /** Settlement information (x402x specific, undefined for standard x402) */
   settlement?: {
     /** SettlementRouter address */
@@ -70,33 +70,33 @@ export interface X402Context {
  * x402x-specific route configuration
  */
 export interface X402xRouteConfig {
-  /** 
+  /**
    * Price for the resource. Recommended format (matches x402 official middleware):
-   * - Dollar string: '$0.01', '$1.00' 
+   * - Dollar string: '$0.01', '$1.00'
    * - Number: 0.01, 1.00 (interpreted as USD)
    * - String number: '0.01', '1.00' (interpreted as USD)
    */
   price: string | Money;
-  
+
   /** Network(s) to support - can be a single network or array for multi-network support */
   network: Network | Network[];
-  
+
   /** Hook address - defaults to TransferHook for the network */
   hook?: string | ((network: Network) => string);
-  
+
   /** Encoded hook data - defaults to empty data */
   hookData?: string | ((network: Network) => string);
-  
-  /** 
+
+  /**
    * Facilitator fee. Same format as price (matches x402 official middleware):
    * - Dollar string: '$0.01', '$0.10'
    * - Number: 0.01, 0.10 (interpreted as USD)
    * - String number: '0.01', '0.10' (interpreted as USD)
-   * 
+   *
    * Defaults to '0' (no fee)
    */
   facilitatorFee?: string | Money | ((network: Network) => string | Money);
-  
+
   /** Standard x402 configuration */
   config?: {
     description?: string;
@@ -122,7 +122,7 @@ export type X402xRoutesConfig = X402xRouteConfig | Record<string, X402xRouteConf
 
 /**
  * Creates a payment middleware for Hono with x402x settlement support
- * 
+ *
  * This middleware is compatible with x402 official middleware API but adds
  * settlement extension support for executing on-chain hooks.
  *
@@ -136,9 +136,9 @@ export type X402xRoutesConfig = X402xRouteConfig | Record<string, X402xRouteConf
  * ```typescript
  * import { Hono } from 'hono';
  * import { paymentMiddleware } from '@x402x/hono';
- * 
+ *
  * const app = new Hono();
- * 
+ *
  * app.use('/api/*', paymentMiddleware(
  *   '0xRecipient...', // Final recipient
  *   {
@@ -209,9 +209,9 @@ export function paymentMiddleware(
   const x402Version = 1;
 
   // Normalize routes to per-route config
-  const isSimpleConfig = 'price' in routes && 'network' in routes;
+  const isSimpleConfig = "price" in routes && "network" in routes;
   const normalizedRoutes = isSimpleConfig
-    ? { '*': routes as X402xRouteConfig }
+    ? { "*": routes as X402xRouteConfig }
     : (routes as Record<string, X402xRouteConfig>);
 
   // Pre-compile route patterns to regex
@@ -219,50 +219,54 @@ export function paymentMiddleware(
     Object.fromEntries(
       Object.entries(normalizedRoutes).map(([pattern, config]) => [
         pattern,
-        { price: config.price, network: Array.isArray(config.network) ? config.network[0] : config.network }
-      ])
-    )
+        {
+          price: config.price,
+          network: Array.isArray(config.network) ? config.network[0] : config.network,
+        },
+      ]),
+    ),
   );
 
   return async function middleware(c: Context, next: () => Promise<void>) {
     const method = c.req.method.toUpperCase();
     const matchingRoute = findMatchingRoute(routePatterns, c.req.path, method);
-    
+
     if (!matchingRoute) {
       return next();
     }
 
     // Get the original config for this route
-    const routeKey = Object.keys(normalizedRoutes).find(pattern => {
-      const [verb, path] = pattern.includes(' ') ? pattern.split(/\s+/) : ['*', pattern];
-      if (verb !== '*' && verb.toUpperCase() !== method) return false;
+    const routeKey = Object.keys(normalizedRoutes).find((pattern) => {
+      const [verb, path] = pattern.includes(" ") ? pattern.split(/\s+/) : ["*", pattern];
+      if (verb !== "*" && verb.toUpperCase() !== method) return false;
       const regex = new RegExp(
         `^${(path || pattern)
-          .replace(/[$()+.?^{|}]/g, '\\$&')
-          .replace(/\*/g, '.*?')
-          .replace(/\[([^\]]+)\]/g, '[^/]+')
-          .replace(/\//g, '\\/')}$`,
-        'i'
+          .replace(/[$()+.?^{|}]/g, "\\$&")
+          .replace(/\*/g, ".*?")
+          .replace(/\[([^\]]+)\]/g, "[^/]+")
+          .replace(/\//g, "\\/")}$`,
+        "i",
       );
       return regex.test(c.req.path);
     });
 
-    const routeConfig = routeKey ? normalizedRoutes[routeKey] : normalizedRoutes['*'];
+    const routeConfig = routeKey ? normalizedRoutes[routeKey] : normalizedRoutes["*"];
     if (!routeConfig) {
       return next();
     }
 
-    const { price, network: networkConfig, hook, hookData, facilitatorFee, config = {} } = routeConfig;
     const {
-      description,
-      mimeType,
-      maxTimeoutSeconds,
-      resource,
-      errorMessages,
-    } = config;
+      price,
+      network: networkConfig,
+      hook,
+      hookData,
+      facilitatorFee,
+      config = {},
+    } = routeConfig;
+    const { description, mimeType, maxTimeoutSeconds, resource, errorMessages } = config;
 
     // Try to decode payment first to check if client submitted paymentRequirements
-    const payment = c.req.header('X-PAYMENT');
+    const payment = c.req.header("X-PAYMENT");
     let decodedPayment: PaymentPayload | undefined;
     let clientSubmittedRequirements: PaymentRequirements | undefined;
 
@@ -273,10 +277,10 @@ export function paymentMiddleware(
         // Use client-submitted paymentRequirements if available
         // This ensures parameters like salt remain consistent throughout the flow
         clientSubmittedRequirements = decodedPayment.paymentRequirements;
-        
+
         // Debug: log client-submitted requirements
         if (clientSubmittedRequirements) {
-          console.log('[x402x Middleware] Client submitted paymentRequirements:', {
+          console.log("[x402x Middleware] Client submitted paymentRequirements:", {
             path: c.req.path,
             network: clientSubmittedRequirements.network,
             extra: clientSubmittedRequirements.extra,
@@ -284,7 +288,7 @@ export function paymentMiddleware(
         }
       } catch (error) {
         // Decoding failed, will handle below
-        console.error('[x402x Middleware] Failed to decode payment:', error);
+        console.error("[x402x Middleware] Failed to decode payment:", error);
       }
     }
 
@@ -297,82 +301,79 @@ export function paymentMiddleware(
     } else {
       // Build PaymentRequirements for each network (first request, no payment yet)
       paymentRequirements = [];
-      
+
       // Support network array
       const networks = Array.isArray(networkConfig) ? networkConfig : [networkConfig];
-    
-    for (const network of networks) {
-      // Only support EVM networks for now
-      if (!SupportedEVMNetworks.includes(network)) {
-        continue;
-      }
 
-      const atomicAmountForAsset = processPriceToAtomicAmount(price, network);
-      if ('error' in atomicAmountForAsset) {
-        throw new Error(atomicAmountForAsset.error);
-      }
-      const { maxAmountRequired, asset } = atomicAmountForAsset;
-
-      const resourceUrl: Resource = resource || (c.req.url as Resource);
-      const x402xConfig = getNetworkConfig(network);
-
-      // Resolve hook and hookData (support function or string)
-      const resolvedHook = typeof hook === 'function' 
-        ? hook(network) 
-        : hook || TransferHook.getAddress(network);
-      
-      const resolvedHookData = typeof hookData === 'function'
-        ? hookData(network)
-        : hookData || TransferHook.encode();
-      
-      // Resolve facilitatorFee (support function or value, and process like price)
-      let resolvedFacilitatorFeeRaw = typeof facilitatorFee === 'function'
-        ? facilitatorFee(network)
-        : facilitatorFee || '0';
-      
-      // Process facilitatorFee the same way as price (support USD format)
-      let resolvedFacilitatorFee: string;
-      if (resolvedFacilitatorFeeRaw === '0') {
-        resolvedFacilitatorFee = '0';
-      } else {
-        const feeResult = processPriceToAtomicAmount(resolvedFacilitatorFeeRaw, network);
-        if ('error' in feeResult) {
-          throw new Error(`Invalid facilitatorFee: ${feeResult.error}`);
+      for (const network of networks) {
+        // Only support EVM networks for now
+        if (!SupportedEVMNetworks.includes(network)) {
+          continue;
         }
-        resolvedFacilitatorFee = feeResult.maxAmountRequired;
-      }
 
-      // Build base PaymentRequirements
-      const baseRequirements: PaymentRequirements = {
-        scheme: 'exact',
-        network,
-        maxAmountRequired,
-        resource: resourceUrl,
-        description: description || `Payment of ${maxAmountRequired} on ${network}`,
-        mimeType: mimeType || 'application/json',
-        payTo: x402xConfig.settlementRouter as Address, // Use SettlementRouter as payTo
-        maxTimeoutSeconds: maxTimeoutSeconds || 3600,
-        asset: asset.address as Address,
-        outputSchema: {
-          input: {
-            type: 'http',
-            method,
-            discoverable: true,
+        const atomicAmountForAsset = processPriceToAtomicAmount(price, network);
+        if ("error" in atomicAmountForAsset) {
+          throw new Error(atomicAmountForAsset.error);
+        }
+        const { maxAmountRequired, asset } = atomicAmountForAsset;
+
+        const resourceUrl: Resource = resource || (c.req.url as Resource);
+        const x402xConfig = getNetworkConfig(network);
+
+        // Resolve hook and hookData (support function or string)
+        const resolvedHook =
+          typeof hook === "function" ? hook(network) : hook || TransferHook.getAddress(network);
+
+        const resolvedHookData =
+          typeof hookData === "function" ? hookData(network) : hookData || TransferHook.encode();
+
+        // Resolve facilitatorFee (support function or value, and process like price)
+        let resolvedFacilitatorFeeRaw =
+          typeof facilitatorFee === "function" ? facilitatorFee(network) : facilitatorFee || "0";
+
+        // Process facilitatorFee the same way as price (support USD format)
+        let resolvedFacilitatorFee: string;
+        if (resolvedFacilitatorFeeRaw === "0") {
+          resolvedFacilitatorFee = "0";
+        } else {
+          const feeResult = processPriceToAtomicAmount(resolvedFacilitatorFeeRaw, network);
+          if ("error" in feeResult) {
+            throw new Error(`Invalid facilitatorFee: ${feeResult.error}`);
+          }
+          resolvedFacilitatorFee = feeResult.maxAmountRequired;
+        }
+
+        // Build base PaymentRequirements
+        const baseRequirements: PaymentRequirements = {
+          scheme: "exact",
+          network,
+          maxAmountRequired,
+          resource: resourceUrl,
+          description: description || `Payment of ${maxAmountRequired} on ${network}`,
+          mimeType: mimeType || "application/json",
+          payTo: x402xConfig.settlementRouter as Address, // Use SettlementRouter as payTo
+          maxTimeoutSeconds: maxTimeoutSeconds || 3600,
+          asset: asset.address as Address,
+          outputSchema: {
+            input: {
+              type: "http",
+              method,
+              discoverable: true,
+            },
           },
-        },
-        extra: 'eip712' in asset ? asset.eip712 : undefined,
-      };
+          extra: "eip712" in asset ? asset.eip712 : undefined,
+        };
 
-      // Add settlement extension
-      const requirements = addSettlementExtra(baseRequirements, {
-        hook: resolvedHook,
-        hookData: resolvedHookData,
-        facilitatorFee: resolvedFacilitatorFee,
-        payTo, // Final recipient
-      });
+        // Add settlement extension
+        const requirements = addSettlementExtra(baseRequirements, {
+          hook: resolvedHook,
+          hookData: resolvedHookData,
+          facilitatorFee: resolvedFacilitatorFee,
+          payTo, // Final recipient
+        });
 
-      paymentRequirements.push(requirements);
-    }
+        paymentRequirements.push(requirements);
+      }
     }
 
     // Check for X-PAYMENT header (payment might be undefined if decoding failed earlier)
@@ -380,34 +381,35 @@ export function paymentMiddleware(
       // No payment, return 402
       return c.json(
         {
-          error: errorMessages?.paymentRequired || 'X-PAYMENT header is required',
+          error: errorMessages?.paymentRequired || "X-PAYMENT header is required",
           accepts: paymentRequirements,
           x402Version,
         },
-        402
+        402,
       );
     }
 
     // Find matching payment requirement
     const selectedPaymentRequirements = findMatchingPaymentRequirements(
       paymentRequirements,
-      decodedPayment
+      decodedPayment,
     );
-    
+
     if (!selectedPaymentRequirements) {
       return c.json(
         {
-          error: errorMessages?.noMatchingRequirements || 'Unable to find matching payment requirements',
+          error:
+            errorMessages?.noMatchingRequirements || "Unable to find matching payment requirements",
           accepts: toJsonSafe(paymentRequirements),
           x402Version,
         },
-        402
+        402,
       );
     }
 
     // Verify payment
     const verification = await verify(decodedPayment, selectedPaymentRequirements);
-    
+
     if (!verification.isValid) {
       return c.json(
         {
@@ -416,30 +418,32 @@ export function paymentMiddleware(
           payer: verification.payer,
           x402Version,
         },
-        402
+        402,
       );
     }
 
     // Set x402 context for handler access (x402x extension)
     // Note: verification.payer is guaranteed to exist when verification.isValid is true
     if (!verification.payer) {
-      throw new Error('Payer address is missing from verification result');
+      throw new Error("Payer address is missing from verification result");
     }
-    
+
     const x402Context: X402Context = {
       payer: verification.payer as Address | SolanaAddress,
       amount: selectedPaymentRequirements.maxAmountRequired,
       network: selectedPaymentRequirements.network,
       payment: decodedPayment,
       requirements: selectedPaymentRequirements,
-      settlement: selectedPaymentRequirements.extra ? {
-        router: selectedPaymentRequirements.payTo as Address,
-        hook: (selectedPaymentRequirements.extra as any).hook as Address,
-        hookData: (selectedPaymentRequirements.extra as any).hookData as string,
-        facilitatorFee: (selectedPaymentRequirements.extra as any).facilitatorFee as string,
-      } : undefined,
+      settlement: selectedPaymentRequirements.extra
+        ? {
+            router: selectedPaymentRequirements.payTo as Address,
+            hook: (selectedPaymentRequirements.extra as any).hook as Address,
+            hookData: (selectedPaymentRequirements.extra as any).hookData as string,
+            facilitatorFee: (selectedPaymentRequirements.extra as any).facilitatorFee as string,
+          }
+        : undefined,
     };
-    c.set('x402', x402Context);
+    c.set("x402", x402Context);
 
     // Proceed with request (execute business logic)
     await next();
@@ -458,19 +462,20 @@ export function paymentMiddleware(
       const settlement = await settle(decodedPayment, selectedPaymentRequirements);
       if (settlement.success) {
         const responseHeader = settleResponseHeader(settlement);
-        res.headers.set('X-PAYMENT-RESPONSE', responseHeader);
+        res.headers.set("X-PAYMENT-RESPONSE", responseHeader);
       } else {
         throw new Error(settlement.errorReason);
       }
     } catch (error) {
       res = c.json(
         {
-          error: errorMessages?.settlementFailed ||
-            (error instanceof Error ? error.message : 'Failed to settle payment'),
+          error:
+            errorMessages?.settlementFailed ||
+            (error instanceof Error ? error.message : "Failed to settle payment"),
           accepts: paymentRequirements,
           x402Version,
         },
-        402
+        402,
       );
     }
 
@@ -479,13 +484,13 @@ export function paymentMiddleware(
 }
 
 // Re-export types for convenience
-export type { 
-  Money, 
-  Network, 
+export type {
+  Money,
+  Network,
   Resource,
   FacilitatorConfig,
   PaymentPayload,
   PaymentRequirements,
-} from 'x402/types';
-export type { Address } from 'viem';
-export type { Address as SolanaAddress } from '@solana/kit';
+} from "x402/types";
+export type { Address } from "viem";
+export type { Address as SolanaAddress } from "@solana/kit";

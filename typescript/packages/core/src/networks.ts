@@ -1,11 +1,11 @@
 /**
  * Network configuration for x402x
- * 
+ *
  * Contains deployed contract addresses and configuration for each supported network.
  */
 
-import { getUsdcChainConfigForChain } from 'x402/shared/evm';
-import type { NetworkConfig } from './types.js';
+import { getUsdcChainConfigForChain } from "x402/shared/evm";
+import type { NetworkConfig } from "./types.js";
 
 /**
  * Helper to create USDC config from x402's chain config
@@ -18,7 +18,7 @@ function createUsdcConfig(chainId: number) {
   return {
     address: chainConfig.usdcAddress as string,
     name: chainConfig.usdcName,
-    version: '2',
+    version: "2",
   };
 }
 
@@ -26,20 +26,20 @@ function createUsdcConfig(chainId: number) {
  * Network configurations for all supported networks
  */
 export const networks: Record<string, NetworkConfig> = {
-  'base-sepolia': {
+  "base-sepolia": {
     chainId: 84532,
-    settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
+    settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
     usdc: createUsdcConfig(84532),
     hooks: {
-      transfer: '0x6b486aF5A08D27153d0374BE56A1cB1676c460a8',
+      transfer: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
     },
   },
-  'x-layer-testnet': {
+  "x-layer-testnet": {
     chainId: 1952,
-    settlementRouter: '0x1ae0e196dc18355af3a19985faf67354213f833d',
+    settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
     usdc: createUsdcConfig(1952),
     hooks: {
-      transfer: '0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB',
+      transfer: "0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB",
     },
   },
   // Mainnet configurations (pending audit)
@@ -55,11 +55,11 @@ export const networks: Record<string, NetworkConfig> = {
 
 /**
  * Get network configuration by network name
- * 
+ *
  * @param network - Network name (e.g., 'base-sepolia', 'x-layer-testnet')
  * @returns Network configuration
  * @throws Error if network is not supported
- * 
+ *
  * @example
  * ```typescript
  * const config = getNetworkConfig('base-sepolia');
@@ -71,7 +71,7 @@ export function getNetworkConfig(network: string): NetworkConfig {
   if (!config) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-      `Supported networks: ${Object.keys(networks).join(', ')}`
+        `Supported networks: ${Object.keys(networks).join(", ")}`,
     );
   }
   return config;
@@ -79,10 +79,10 @@ export function getNetworkConfig(network: string): NetworkConfig {
 
 /**
  * Check if a network is supported
- * 
+ *
  * @param network - Network name to check
  * @returns True if network is supported
- * 
+ *
  * @example
  * ```typescript
  * if (isNetworkSupported('base-sepolia')) {
@@ -96,9 +96,9 @@ export function isNetworkSupported(network: string): boolean {
 
 /**
  * Get list of all supported networks
- * 
+ *
  * @returns Array of supported network names
- * 
+ *
  * @example
  * ```typescript
  * const networks = getSupportedNetworks();
@@ -108,4 +108,3 @@ export function isNetworkSupported(network: string): boolean {
 export function getSupportedNetworks(): string[] {
   return Object.keys(networks);
 }
-

@@ -1,11 +1,11 @@
 /**
  * TransferHook utilities
- * 
+ *
  * TransferHook is the simplest builtin hook that performs a direct token transfer
  * with facilitator fee support. It doesn't require any parameters.
  */
 
-import { getNetworkConfig } from '../networks.js';
+import { getNetworkConfig } from "../networks.js";
 
 /**
  * TransferHook utilities namespace
@@ -13,11 +13,11 @@ import { getNetworkConfig } from '../networks.js';
 export namespace TransferHook {
   /**
    * Encode hookData for TransferHook
-   * 
+   *
    * TransferHook doesn't require any parameters, so this always returns '0x'
-   * 
+   *
    * @returns Empty bytes ('0x')
-   * 
+   *
    * @example
    * ```typescript
    * const hookData = TransferHook.encode();
@@ -25,16 +25,16 @@ export namespace TransferHook {
    * ```
    */
   export function encode(): string {
-    return '0x';
+    return "0x";
   }
-  
+
   /**
    * Get TransferHook address for a specific network
-   * 
+   *
    * @param network - Network name (e.g., 'base-sepolia')
    * @returns TransferHook contract address
    * @throws Error if network is not supported
-   * 
+   *
    * @example
    * ```typescript
    * const address = TransferHook.getAddress('base-sepolia');
@@ -46,4 +46,3 @@ export namespace TransferHook {
     return config.hooks.transfer;
   }
 }
-

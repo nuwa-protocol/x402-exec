@@ -2,7 +2,7 @@
  * Type definitions for @x402x/core
  */
 
-import type { PaymentRequirements, PaymentPayload, SettleResponse, Signer } from 'x402/types';
+import type { PaymentRequirements, PaymentPayload, SettleResponse, Signer } from "x402/types";
 
 // Re-export x402 types for convenience
 export type { PaymentRequirements, PaymentPayload, SettleResponse, Signer };
@@ -98,7 +98,6 @@ export interface FacilitatorConfig {
 export class SettlementExtraError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SettlementExtraError';
+    this.name = "SettlementExtraError";
   }
 }
-
