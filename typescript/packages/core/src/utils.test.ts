@@ -1,35 +1,35 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { addSettlementExtra } from './utils';
-import type { PaymentRequirements } from './types';
-import { mockAddresses } from './__tests__/fixtures';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { addSettlementExtra } from "./utils";
+import type { PaymentRequirements } from "./types";
+import { mockAddresses } from "./__tests__/fixtures";
 
 // Mock the dependencies
-vi.mock('./networks', () => ({
+vi.mock("./networks", () => ({
   getNetworkConfig: vi.fn((network: string) => {
-    if (network === 'base-sepolia') {
+    if (network === "base-sepolia") {
       return {
         chainId: 84532,
-        settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
+        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
         usdc: {
-          address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-          name: 'USDC',
-          version: '2',
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          name: "USDC",
+          version: "2",
         },
         hooks: {
-          transfer: '0x6b486aF5A08D27153d0374BE56A1cB1676c460a8',
+          transfer: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
         },
       };
-    } else if (network === 'x-layer-testnet') {
+    } else if (network === "x-layer-testnet") {
       return {
         chainId: 1952,
-        settlementRouter: '0x1ae0e196dc18355af3a19985faf67354213f833d',
+        settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
         usdc: {
-          address: '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
-          name: 'USDC',
-          version: '2',
+          address: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+          name: "USDC",
+          version: "2",
         },
         hooks: {
-          transfer: '0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB',
+          transfer: "0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB",
         },
       };
     }
@@ -37,87 +37,87 @@ vi.mock('./networks', () => ({
   }),
 }));
 
-vi.mock('./commitment', () => ({
-  generateSalt: vi.fn(() => '0x' + '9'.repeat(64)),
+vi.mock("./commitment", () => ({
+  generateSalt: vi.fn(() => "0x" + "9".repeat(64)),
 }));
 
-describe('addSettlementExtra', () => {
+describe("addSettlementExtra", () => {
   let baseRequirements: PaymentRequirements;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     baseRequirements = {
-      scheme: 'exact',
-      network: 'base-sepolia',
-      maxAmountRequired: '100000',
-      resource: '/api/test',
-      description: 'Test payment',
-      mimeType: 'application/json',
+      scheme: "exact",
+      network: "base-sepolia",
+      maxAmountRequired: "100000",
+      resource: "/api/test",
+      description: "Test payment",
+      mimeType: "application/json",
       payTo: mockAddresses.payTo,
       maxTimeoutSeconds: 300,
-      asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
     };
   });
 
-  it('should add settlement extra with all required fields', () => {
+  it("should add settlement extra with all required fields", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
-      facilitatorFee: '10000',
+      hookData: "0x",
+      facilitatorFee: "10000",
       payTo: mockAddresses.payTo,
     });
 
     expect(result.extra).toBeDefined();
     expect(result.extra).toMatchObject({
-      name: 'USDC',
-      version: '2',
-      settlementRouter: '0x32431D4511e061F1133520461B07eC42afF157D6',
+      name: "USDC",
+      version: "2",
+      settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
       salt: expect.stringMatching(/^0x[0-9a-fA-F]{64}$/),
       payTo: mockAddresses.payTo,
-      facilitatorFee: '10000',
+      facilitatorFee: "10000",
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
   });
 
-  it('should override payTo to point to SettlementRouter', () => {
+  it("should override payTo to point to SettlementRouter", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
-      facilitatorFee: '10000',
+      hookData: "0x",
+      facilitatorFee: "10000",
       payTo: mockAddresses.payTo,
     });
 
-    expect(result.payTo).toBe('0x32431D4511e061F1133520461B07eC42afF157D6');
+    expect(result.payTo).toBe("0x32431D4511e061F1133520461B07eC42afF157D6");
     expect(result.payTo).not.toBe(baseRequirements.payTo);
   });
 
-  it('should auto-generate salt when not provided', () => {
+  it("should auto-generate salt when not provided", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
     expect(result.extra.salt).toMatch(/^0x[0-9a-fA-F]{64}$/);
   });
 
-  it('should use provided salt when given', () => {
-    const customSalt = '0x' + '1'.repeat(64);
-    
+  it("should use provided salt when given", () => {
+    const customSalt = "0x" + "1".repeat(64);
+
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
       salt: customSalt,
     });
 
     expect(result.extra.salt).toBe(customSalt);
   });
 
-  it('should use requirements.payTo when payTo not provided in params', () => {
+  it("should use requirements.payTo when payTo not provided in params", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
     expect(result.extra.payTo).toBe(baseRequirements.payTo);
@@ -126,90 +126,90 @@ describe('addSettlementExtra', () => {
   it('should default facilitatorFee to "0" when not provided', () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
-    expect(result.extra.facilitatorFee).toBe('0');
+    expect(result.extra.facilitatorFee).toBe("0");
   });
 
-  it('should preserve existing extra fields from requirements', () => {
+  it("should preserve existing extra fields from requirements", () => {
     const requirementsWithExtra = {
       ...baseRequirements,
       extra: {
-        customField: 'customValue',
+        customField: "customValue",
         anotherField: 123,
       },
     };
 
     const result = addSettlementExtra(requirementsWithExtra, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
     expect(result.extra).toMatchObject({
-      customField: 'customValue',
+      customField: "customValue",
       anotherField: 123,
       settlementRouter: expect.any(String),
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
   });
 
-  it('should preserve name and version from existing extra', () => {
+  it("should preserve name and version from existing extra", () => {
     const requirementsWithExtra = {
       ...baseRequirements,
       extra: {
-        name: 'Custom Token',
-        version: '3',
+        name: "Custom Token",
+        version: "3",
       },
     };
 
     const result = addSettlementExtra(requirementsWithExtra, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
-    expect(result.extra.name).toBe('Custom Token');
-    expect(result.extra.version).toBe('3');
+    expect(result.extra.name).toBe("Custom Token");
+    expect(result.extra.version).toBe("3");
   });
 
-  it('should use config values as fallback when extra fields missing', () => {
+  it("should use config values as fallback when extra fields missing", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
-    expect(result.extra.name).toBe('USDC');
-    expect(result.extra.version).toBe('2');
+    expect(result.extra.name).toBe("USDC");
+    expect(result.extra.version).toBe("2");
   });
 
-  it('should handle different networks correctly', () => {
+  it("should handle different networks correctly", () => {
     const xlayerRequirements = {
       ...baseRequirements,
-      network: 'x-layer-testnet',
+      network: "x-layer-testnet",
     };
 
     const result = addSettlementExtra(xlayerRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
-    expect(result.extra.settlementRouter).toBe('0x1ae0e196dc18355af3a19985faf67354213f833d');
-    expect(result.payTo).toBe('0x1ae0e196dc18355af3a19985faf67354213f833d');
+    expect(result.extra.settlementRouter).toBe("0x1ae0e196dc18355af3a19985faf67354213f833d");
+    expect(result.payTo).toBe("0x1ae0e196dc18355af3a19985faf67354213f833d");
   });
 
-  it('should handle empty hookData', () => {
+  it("should handle empty hookData", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
-    expect(result.extra.hookData).toBe('0x');
+    expect(result.extra.hookData).toBe("0x");
   });
 
-  it('should handle non-empty hookData', () => {
-    const hookData = '0x1234567890abcdef';
-    
+  it("should handle non-empty hookData", () => {
+    const hookData = "0x1234567890abcdef";
+
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
       hookData,
@@ -218,10 +218,10 @@ describe('addSettlementExtra', () => {
     expect(result.extra.hookData).toBe(hookData);
   });
 
-  it('should preserve all original requirements fields', () => {
+  it("should preserve all original requirements fields", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
+      hookData: "0x",
     });
 
     expect(result.scheme).toBe(baseRequirements.scheme);
@@ -234,36 +234,36 @@ describe('addSettlementExtra', () => {
     expect(result.asset).toBe(baseRequirements.asset);
   });
 
-  it('should handle zero facilitatorFee', () => {
+  it("should handle zero facilitatorFee", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
-      facilitatorFee: '0',
+      hookData: "0x",
+      facilitatorFee: "0",
     });
 
-    expect(result.extra.facilitatorFee).toBe('0');
+    expect(result.extra.facilitatorFee).toBe("0");
   });
 
-  it('should handle large facilitatorFee', () => {
+  it("should handle large facilitatorFee", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
-      facilitatorFee: '999999999999',
+      hookData: "0x",
+      facilitatorFee: "999999999999",
     });
 
-    expect(result.extra.facilitatorFee).toBe('999999999999');
+    expect(result.extra.facilitatorFee).toBe("999999999999");
   });
 
-  it('should create valid PaymentRequirements for settlement mode', () => {
+  it("should create valid PaymentRequirements for settlement mode", () => {
     const result = addSettlementExtra(baseRequirements, {
       hook: mockAddresses.hook,
-      hookData: '0x',
-      facilitatorFee: '10000',
+      hookData: "0x",
+      facilitatorFee: "10000",
       payTo: mockAddresses.payTo,
     });
 
     // Verify all required fields for settlement
-    expect(result.payTo).toBe('0x32431D4511e061F1133520461B07eC42afF157D6');
+    expect(result.payTo).toBe("0x32431D4511e061F1133520461B07eC42afF157D6");
     expect(result.extra.settlementRouter).toBeDefined();
     expect(result.extra.salt).toBeDefined();
     expect(result.extra.payTo).toBeDefined();
@@ -272,4 +272,3 @@ describe('addSettlementExtra', () => {
     expect(result.extra.hookData).toBeDefined();
   });
 });
-

@@ -1,26 +1,26 @@
 /**
  * Facilitator utilities for x402x settlement
- * 
+ *
  * Provides helper functions for facilitators to handle settlement mode payments.
  */
 
-import { parseErc6492Signature, type Address, type Hex } from 'viem';
+import { parseErc6492Signature, type Address, type Hex } from "viem";
 import type {
   PaymentPayload,
   PaymentRequirements,
   SettleResponse,
   Signer,
   FacilitatorConfig,
-} from './types.js';
-import { SettlementExtraError } from './types.js';
-import { SETTLEMENT_ROUTER_ABI } from './abi.js';
+} from "./types.js";
+import { SettlementExtraError } from "./types.js";
+import { SETTLEMENT_ROUTER_ABI } from "./abi.js";
 
 /**
  * Check if a payment request requires SettlementRouter mode
- * 
+ *
  * @param paymentRequirements - Payment requirements from 402 response
  * @returns True if settlement mode is required
- * 
+ *
  * @example
  * ```typescript
  * if (isSettlementMode(paymentRequirements)) {
@@ -36,7 +36,7 @@ export function isSettlementMode(paymentRequirements: PaymentRequirements): bool
 
 /**
  * Validate SettlementRouter address against whitelist
- * 
+ *
  * @param network - Network name
  * @param routerAddress - SettlementRouter address to validate
  * @param allowedRouters - Whitelist of allowed router addresses per network
@@ -45,32 +45,30 @@ export function isSettlementMode(paymentRequirements: PaymentRequirements): bool
 export function validateSettlementRouter(
   network: string,
   routerAddress: string,
-  allowedRouters: Record<string, string[]>
+  allowedRouters: Record<string, string[]>,
 ): void {
   const allowedForNetwork = allowedRouters[network];
-  
+
   if (!allowedForNetwork || allowedForNetwork.length === 0) {
     throw new SettlementExtraError(
-      `No allowed settlement routers configured for network: ${network}`
+      `No allowed settlement routers configured for network: ${network}`,
     );
   }
-  
+
   const normalizedRouter = routerAddress.toLowerCase();
-  const isAllowed = allowedForNetwork.some(
-    allowed => allowed.toLowerCase() === normalizedRouter
-  );
-  
+  const isAllowed = allowedForNetwork.some((allowed) => allowed.toLowerCase() === normalizedRouter);
+
   if (!isAllowed) {
     throw new SettlementExtraError(
       `Settlement router ${routerAddress} is not in whitelist for network ${network}. ` +
-      `Allowed: ${allowedForNetwork.join(', ')}`
+        `Allowed: ${allowedForNetwork.join(", ")}`,
     );
   }
 }
 
 /**
  * Parse and validate settlement extra parameters
- * 
+ *
  * @param extra - Extra field from PaymentRequirements
  * @returns Parsed settlement extra parameters
  * @throws SettlementExtraError if parameters are invalid
@@ -83,30 +81,30 @@ function parseSettlementExtra(extra: unknown): {
   hook: string;
   hookData: string;
 } {
-  if (!extra || typeof extra !== 'object') {
-    throw new SettlementExtraError('Missing or invalid extra field');
+  if (!extra || typeof extra !== "object") {
+    throw new SettlementExtraError("Missing or invalid extra field");
   }
 
   const e = extra as Record<string, unknown>;
 
   // Validate required fields
-  if (!e.settlementRouter || typeof e.settlementRouter !== 'string') {
-    throw new SettlementExtraError('Missing or invalid settlementRouter');
+  if (!e.settlementRouter || typeof e.settlementRouter !== "string") {
+    throw new SettlementExtraError("Missing or invalid settlementRouter");
   }
-  if (!e.salt || typeof e.salt !== 'string') {
-    throw new SettlementExtraError('Missing or invalid salt');
+  if (!e.salt || typeof e.salt !== "string") {
+    throw new SettlementExtraError("Missing or invalid salt");
   }
-  if (!e.payTo || typeof e.payTo !== 'string') {
-    throw new SettlementExtraError('Missing or invalid payTo');
+  if (!e.payTo || typeof e.payTo !== "string") {
+    throw new SettlementExtraError("Missing or invalid payTo");
   }
-  if (!e.facilitatorFee || typeof e.facilitatorFee !== 'string') {
-    throw new SettlementExtraError('Missing or invalid facilitatorFee');
+  if (!e.facilitatorFee || typeof e.facilitatorFee !== "string") {
+    throw new SettlementExtraError("Missing or invalid facilitatorFee");
   }
-  if (!e.hook || typeof e.hook !== 'string') {
-    throw new SettlementExtraError('Missing or invalid hook');
+  if (!e.hook || typeof e.hook !== "string") {
+    throw new SettlementExtraError("Missing or invalid hook");
   }
-  if (!e.hookData || typeof e.hookData !== 'string') {
-    throw new SettlementExtraError('Missing or invalid hookData');
+  if (!e.hookData || typeof e.hookData !== "string") {
+    throw new SettlementExtraError("Missing or invalid hookData");
   }
 
   return {
@@ -121,24 +119,24 @@ function parseSettlementExtra(extra: unknown): {
 
 /**
  * Settle payment using SettlementRouter
- * 
+ *
  * This function calls SettlementRouter.settleAndExecute which:
  * 1. Verifies the EIP-3009 authorization
  * 2. Transfers tokens from payer to Router
  * 3. Deducts facilitator fee
  * 4. Executes the Hook with remaining amount
  * 5. Ensures Router doesn't hold funds
- * 
+ *
  * @param signer - Facilitator's wallet signer (must be EVM)
  * @param paymentPayload - Payment payload with authorization and signature
  * @param paymentRequirements - Payment requirements with settlement extra
  * @param config - Facilitator configuration (whitelist)
  * @returns Settlement response
- * 
+ *
  * @example
  * ```typescript
  * import { settleWithRouter, getNetworkConfig } from '@x402x/core';
- * 
+ *
  * const config = getNetworkConfig(paymentRequirements.network);
  * const result = await settleWithRouter(
  *   signer,
@@ -156,7 +154,7 @@ export async function settleWithRouter(
   signer: Signer,
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
-  config: FacilitatorConfig
+  config: FacilitatorConfig,
 ): Promise<SettleResponse> {
   try {
     // 1. Parse settlement extra parameters
@@ -166,7 +164,7 @@ export async function settleWithRouter(
     validateSettlementRouter(
       paymentRequirements.network,
       extra.settlementRouter,
-      config.allowedRouters
+      config.allowedRouters,
     );
 
     // 3. Extract authorization data from payload
@@ -192,14 +190,16 @@ export async function settleWithRouter(
     const publicClient = signer as any;
 
     if (!walletClient.writeContract || !publicClient.waitForTransactionReceipt) {
-      throw new Error('Signer must be an EVM wallet client with writeContract and waitForTransactionReceipt methods');
+      throw new Error(
+        "Signer must be an EVM wallet client with writeContract and waitForTransactionReceipt methods",
+      );
     }
 
     // 6. Call SettlementRouter.settleAndExecute
     const tx = await walletClient.writeContract({
       address: extra.settlementRouter as Address,
       abi: SETTLEMENT_ROUTER_ABI,
-      functionName: 'settleAndExecute',
+      functionName: "settleAndExecute",
       args: [
         paymentRequirements.asset as Address,
         authorization.from as Address,
@@ -219,10 +219,10 @@ export async function settleWithRouter(
     // 7. Wait for transaction confirmation
     const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
 
-    if (receipt.status !== 'success') {
+    if (receipt.status !== "success") {
       return {
         success: false,
-        errorReason: 'invalid_transaction_state',
+        errorReason: "invalid_transaction_state",
         transaction: tx,
         network: paymentPayload.network,
         payer: authorization.from,
@@ -236,10 +236,10 @@ export async function settleWithRouter(
       payer: authorization.from,
     };
   } catch (error) {
-    console.error('Error in settleWithRouter:', error);
+    console.error("Error in settleWithRouter:", error);
 
     // Extract payer from payload if available
-    let payer = '';
+    let payer = "";
     try {
       const payload = paymentPayload.payload as {
         authorization: { from: string };
@@ -253,12 +253,11 @@ export async function settleWithRouter(
       success: false,
       errorReason:
         error instanceof SettlementExtraError
-          ? 'invalid_payment_requirements'
-          : 'unexpected_settle_error',
-      transaction: '',
+          ? "invalid_payment_requirements"
+          : "unexpected_settle_error",
+      transaction: "",
       network: paymentPayload.network,
       payer,
     };
   }
 }
-

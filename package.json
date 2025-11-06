@@ -19,9 +19,12 @@
 		"dev:server": "pnpm --filter=x402-exec-showcase-server dev",
 		"dev:client": "pnpm --filter=x402-exec-showcase-client dev",
 		"clean": "pnpm -r exec rm -rf node_modules dist",
-		"clean:build": "pnpm -r exec rm -rf dist"
+		"clean:build": "pnpm -r exec rm -rf dist",
+		"format": "pnpm --filter='./typescript/packages/**' run format",
+		"format:check": "pnpm --filter='./typescript/packages/**' run format:check"
 	},
 	"devDependencies": {
+		"prettier": "3.5.2",
 		"turbo": "^2.5.0"
 	}
 }

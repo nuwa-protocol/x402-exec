@@ -25,23 +25,23 @@ yarn add @x402x/core
 ### Resource Server (Generating PaymentRequirements)
 
 ```typescript
-import { addSettlementExtra, TransferHook, getNetworkConfig } from '@x402x/core';
+import { addSettlementExtra, TransferHook, getNetworkConfig } from "@x402x/core";
 
 // Base PaymentRequirements (standard x402)
 const baseRequirements = {
-  scheme: 'exact',
-  network: 'base-sepolia',
-  maxAmountRequired: '100000', // 0.1 USDC
-  asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+  scheme: "exact",
+  network: "base-sepolia",
+  maxAmountRequired: "100000", // 0.1 USDC
+  asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   payTo: merchantAddress,
-  resource: '/api/payment',
+  resource: "/api/payment",
 };
 
 // Add settlement extension
 const requirements = addSettlementExtra(baseRequirements, {
-  hook: TransferHook.getAddress('base-sepolia'),
+  hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(),
-  facilitatorFee: '10000', // 0.01 USDC
+  facilitatorFee: "10000", // 0.01 USDC
   payTo: merchantAddress,
 });
 
@@ -55,30 +55,31 @@ res.status(402).json({
 ### Using Express Middleware
 
 ```typescript
-import express from 'express';
-import { x402Middleware } from '@x402x/core/middleware/express';
+import express from "express";
+import { x402Middleware } from "@x402x/core/middleware/express";
 
 const app = express();
 
-app.post('/api/payment',
+app.post(
+  "/api/payment",
   x402Middleware({
-    network: 'base-sepolia',
-    amount: '100000',
-    resource: '/api/payment',
-    facilitatorFee: '10000',
+    network: "base-sepolia",
+    amount: "100000",
+    resource: "/api/payment",
+    facilitatorFee: "10000",
   }),
   (req, res) => {
     // Only runs after successful payment
     res.json({ success: true });
-  }
+  },
 );
 ```
 
 ### Facilitator Integration
 
 ```typescript
-import { settle } from 'x402/facilitator';
-import { isSettlementMode, settleWithRouter, getNetworkConfig } from '@x402x/core/facilitator';
+import { settle } from "x402/facilitator";
+import { isSettlementMode, settleWithRouter, getNetworkConfig } from "@x402x/core/facilitator";
 
 // Detect settlement mode
 if (isSettlementMode(paymentRequirements)) {
@@ -106,17 +107,17 @@ Calculate commitment hash that binds all settlement parameters.
 ```typescript
 const commitment = calculateCommitment({
   chainId: 84532,
-  hub: '0x...',
-  token: '0x...',
-  from: '0x...',
-  value: '100000',
-  validAfter: '0',
-  validBefore: '1234567890',
-  salt: '0x...',
-  payTo: '0x...',
-  facilitatorFee: '10000',
-  hook: '0x...',
-  hookData: '0x',
+  hub: "0x...",
+  token: "0x...",
+  from: "0x...",
+  value: "100000",
+  validAfter: "0",
+  validBefore: "1234567890",
+  salt: "0x...",
+  payTo: "0x...",
+  facilitatorFee: "10000",
+  hook: "0x...",
+  hookData: "0x",
 });
 ```
 
@@ -140,7 +141,7 @@ Add settlement extension to PaymentRequirements.
 Get configuration for a specific network.
 
 ```typescript
-const config = getNetworkConfig('base-sepolia');
+const config = getNetworkConfig("base-sepolia");
 // => { chainId: 84532, settlementRouter: '0x...', ... }
 ```
 
@@ -183,4 +184,3 @@ Apache-2.0
 - [GitHub Repository](https://github.com/nuwa-protocol/x402-exec)
 - [Documentation](https://github.com/nuwa-protocol/x402-exec/tree/main/docs)
 - [Examples](https://github.com/nuwa-protocol/x402-exec/tree/main/examples)
-
