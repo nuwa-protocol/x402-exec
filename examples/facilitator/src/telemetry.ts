@@ -1,12 +1,12 @@
 /**
  * Telemetry Module - OpenTelemetry and Structured Logging
- * 
+ *
  * This module provides:
  * - Structured logging using Pino
  * - OpenTelemetry tracing
  * - OpenTelemetry metrics
  * - Configuration based on environment variables
- * 
+ *
  * Based on deps/x402-rs/src/telemetry.rs implementation
  */
 
@@ -21,8 +21,17 @@ import {
 } from "@opentelemetry/semantic-conventions";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { ExpressInstrumentation } from "@opentelemetry/instrumentation-express";
-import { trace, metrics, Tracer, Meter, SpanStatusCode, context, propagation } from "@opentelemetry/api";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import {
+  trace,
+  metrics,
+  Tracer,
+  Meter,
+  SpanStatusCode,
+  context,
+  propagation,
+} from "@opentelemetry/api";
+import { PeriodicExportingMetricReader, MeterProvider } from "@opentelemetry/sdk-metrics";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 
 /**
  * Telemetry protocol type
@@ -57,13 +66,16 @@ function detectTelemetryFromEnv(): TelemetryConfig | null {
   // Parse headers
   let headers: Record<string, string> = {};
   if (otlpHeaders) {
-    headers = otlpHeaders.split(",").reduce((acc, pair) => {
-      const [key, value] = pair.split("=");
-      if (key && value) {
-        acc[key.trim()] = value.trim();
-      }
-      return acc;
-    }, {} as Record<string, string>);
+    headers = otlpHeaders.split(",").reduce(
+      (acc, pair) => {
+        const [key, value] = pair.split("=");
+        if (key && value) {
+          acc[key.trim()] = value.trim();
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
   }
 
   return {
@@ -98,6 +110,8 @@ let meter: Meter;
 
 /**
  * Initialize telemetry system
+ *
+ * @param config
  */
 export function initTelemetry(config?: Partial<TelemetryConfig>): void {
   // Detect configuration from environment
@@ -142,20 +156,23 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
         headers: finalConfig.otlpHeaders,
       });
 
-      // Create metric reader
+      // Create metric exporter and reader
+      const metricExporter = new OTLPMetricExporter({
+        url: `${finalConfig.otlpEndpoint}/v1/metrics`,
+        headers: finalConfig.otlpHeaders,
+      });
+
       const metricReader = new PeriodicExportingMetricReader({
-        exporter: new (require("@opentelemetry/exporter-metrics-otlp-http").OTLPMetricExporter)({
-          url: `${finalConfig.otlpEndpoint}/v1/metrics`,
-          headers: finalConfig.otlpHeaders,
-        }),
+        exporter: metricExporter,
         exportIntervalMillis: 30000, // 30 seconds
       });
 
-      // Initialize SDK
+      // Initialize SDK with both trace and metrics
+      // Use 'as any' to work around type incompatibility between versions
       otelSDK = new NodeSDK({
         resource,
         traceExporter,
-        metricReader,
+        metricReader: metricReader as any,
         instrumentations: [
           new HttpInstrumentation({
             ignoreIncomingRequestHook: (req) => {
@@ -174,7 +191,7 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
           protocol: finalConfig.otlpProtocol,
           endpoint: finalConfig.otlpEndpoint,
         },
-        "OpenTelemetry tracing and metrics exporter is enabled"
+        "OpenTelemetry tracing and metrics exporter is enabled",
       );
     } catch (error) {
       logger.error({ error }, "Failed to initialize OpenTelemetry");
@@ -184,8 +201,14 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
   }
 
   // Get tracer and meter
-  tracer = trace.getTracer(finalConfig.serviceName || "x402-facilitator", finalConfig.serviceVersion || "0.1.0");
-  meter = metrics.getMeter(finalConfig.serviceName || "x402-facilitator", finalConfig.serviceVersion || "0.1.0");
+  tracer = trace.getTracer(
+    finalConfig.serviceName || "x402-facilitator",
+    finalConfig.serviceVersion || "0.1.0",
+  );
+  meter = metrics.getMeter(
+    finalConfig.serviceName || "x402-facilitator",
+    finalConfig.serviceVersion || "0.1.0",
+  );
 
   logger.info("Telemetry system initialized");
 }
@@ -236,6 +259,8 @@ export async function shutdownTelemetry(): Promise<void> {
 
 /**
  * Create a child logger with additional context
+ *
+ * @param bindings
  */
 export function createChildLogger(bindings: Record<string, unknown>): pino.Logger {
   return getLogger().child(bindings);
@@ -243,11 +268,15 @@ export function createChildLogger(bindings: Record<string, unknown>): pino.Logge
 
 /**
  * Trace a function execution
+ *
+ * @param spanName
+ * @param fn
+ * @param attributes
  */
 export async function traced<T>(
   spanName: string,
   fn: (span: any) => Promise<T>,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Promise<T> {
   const span = getTracer().startSpan(spanName, {
     attributes,
@@ -271,11 +300,15 @@ export async function traced<T>(
 
 /**
  * Helper to record metric
+ *
+ * @param name
+ * @param value
+ * @param attributes
  */
 export function recordMetric(
   name: string,
   value: number,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): void {
   const counter = getMeter().createCounter(name);
   counter.add(value, attributes);
@@ -283,13 +316,16 @@ export function recordMetric(
 
 /**
  * Helper to record histogram metric
+ *
+ * @param name
+ * @param value
+ * @param attributes
  */
 export function recordHistogram(
   name: string,
   value: number,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): void {
   const histogram = getMeter().createHistogram(name);
   histogram.record(value, attributes);
 }
-

@@ -1,9 +1,9 @@
 /**
  * Structured Error Types for Facilitator
- * 
+ *
  * This module defines a hierarchy of error types for better error handling
  * and reporting throughout the facilitator.
- * 
+ *
  * Based on deps/x402-rs/src/chain/mod.rs (FacilitatorLocalError)
  */
 
@@ -31,26 +31,35 @@ export enum ErrorSeverity {
 export abstract class FacilitatorError extends Error {
   /** Error code for programmatic identification */
   public readonly code: string;
-  
+
   /** Whether this error is recoverable (can retry) */
   public readonly recoverable: boolean;
-  
+
   /** Error severity level */
   public readonly severity: ErrorSeverity;
-  
+
   /** Additional error details */
   public readonly details?: Record<string, unknown>;
-  
+
   /** Original error if wrapping another error */
   public readonly cause?: Error;
 
+  /**
+   *
+   * @param message
+   * @param code
+   * @param recoverable
+   * @param severity
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     code: string,
     recoverable: boolean,
     severity: ErrorSeverity = ErrorSeverity.ERROR,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -107,6 +116,12 @@ export abstract class FacilitatorError extends Error {
  * Configuration error - missing or invalid environment variables
  */
 export class ConfigurationError extends FacilitatorError {
+  /**
+   *
+   * @param message
+   * @param details
+   * @param cause
+   */
   constructor(message: string, details?: Record<string, unknown>, cause?: Error) {
     super(
       message,
@@ -114,7 +129,7 @@ export class ConfigurationError extends FacilitatorError {
       false, // Not recoverable - requires config fix
       ErrorSeverity.CRITICAL,
       details,
-      cause
+      cause,
     );
   }
 }
@@ -125,12 +140,20 @@ export class ConfigurationError extends FacilitatorError {
 export abstract class ValidationError extends FacilitatorError {
   public readonly payer?: string;
 
+  /**
+   *
+   * @param message
+   * @param code
+   * @param payer
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     code: string,
     payer?: string,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
     super(
       message,
@@ -138,7 +161,7 @@ export abstract class ValidationError extends FacilitatorError {
       false, // Validation errors are not recoverable - invalid input
       ErrorSeverity.WARNING,
       { ...details, payer },
-      cause
+      cause,
     );
     this.payer = payer;
   }
@@ -148,18 +171,19 @@ export abstract class ValidationError extends FacilitatorError {
  * Network mismatch error
  */
 export class NetworkMismatchError extends ValidationError {
-  constructor(
-    expected: string,
-    actual: string,
-    payer?: string,
-    details?: Record<string, unknown>
-  ) {
-    super(
-      `Network mismatch: expected ${expected}, got ${actual}`,
-      "NETWORK_MISMATCH",
-      payer,
-      { ...details, expected, actual }
-    );
+  /**
+   *
+   * @param expected
+   * @param actual
+   * @param payer
+   * @param details
+   */
+  constructor(expected: string, actual: string, payer?: string, details?: Record<string, unknown>) {
+    super(`Network mismatch: expected ${expected}, got ${actual}`, "NETWORK_MISMATCH", payer, {
+      ...details,
+      expected,
+      actual,
+    });
   }
 }
 
@@ -167,13 +191,14 @@ export class NetworkMismatchError extends ValidationError {
  * Unsupported network error
  */
 export class UnsupportedNetworkError extends ValidationError {
+  /**
+   *
+   * @param network
+   * @param payer
+   * @param details
+   */
   constructor(network: string, payer?: string, details?: Record<string, unknown>) {
-    super(
-      `Unsupported network: ${network}`,
-      "UNSUPPORTED_NETWORK",
-      payer,
-      { ...details, network }
-    );
+    super(`Unsupported network: ${network}`, "UNSUPPORTED_NETWORK", payer, { ...details, network });
   }
 }
 
@@ -181,18 +206,19 @@ export class UnsupportedNetworkError extends ValidationError {
  * Scheme mismatch error
  */
 export class SchemeMismatchError extends ValidationError {
-  constructor(
-    expected: string,
-    actual: string,
-    payer?: string,
-    details?: Record<string, unknown>
-  ) {
-    super(
-      `Scheme mismatch: expected ${expected}, got ${actual}`,
-      "SCHEME_MISMATCH",
-      payer,
-      { ...details, expected, actual }
-    );
+  /**
+   *
+   * @param expected
+   * @param actual
+   * @param payer
+   * @param details
+   */
+  constructor(expected: string, actual: string, payer?: string, details?: Record<string, unknown>) {
+    super(`Scheme mismatch: expected ${expected}, got ${actual}`, "SCHEME_MISMATCH", payer, {
+      ...details,
+      expected,
+      actual,
+    });
   }
 }
 
@@ -200,18 +226,19 @@ export class SchemeMismatchError extends ValidationError {
  * Receiver mismatch error
  */
 export class ReceiverMismatchError extends ValidationError {
-  constructor(
-    expected: string,
-    actual: string,
-    payer?: string,
-    details?: Record<string, unknown>
-  ) {
-    super(
-      `Receiver mismatch: expected ${expected}, got ${actual}`,
-      "RECEIVER_MISMATCH",
-      payer,
-      { ...details, expected, actual }
-    );
+  /**
+   *
+   * @param expected
+   * @param actual
+   * @param payer
+   * @param details
+   */
+  constructor(expected: string, actual: string, payer?: string, details?: Record<string, unknown>) {
+    super(`Receiver mismatch: expected ${expected}, got ${actual}`, "RECEIVER_MISMATCH", payer, {
+      ...details,
+      expected,
+      actual,
+    });
   }
 }
 
@@ -219,14 +246,14 @@ export class ReceiverMismatchError extends ValidationError {
  * Invalid signature error
  */
 export class InvalidSignatureError extends ValidationError {
+  /**
+   *
+   * @param payer
+   * @param details
+   * @param cause
+   */
   constructor(payer?: string, details?: Record<string, unknown>, cause?: Error) {
-    super(
-      "Invalid signature",
-      "INVALID_SIGNATURE",
-      payer,
-      details,
-      cause
-    );
+    super("Invalid signature", "INVALID_SIGNATURE", payer, details, cause);
   }
 }
 
@@ -234,12 +261,17 @@ export class InvalidSignatureError extends ValidationError {
  * Invalid timing error (authorization expired or not yet valid)
  */
 export class InvalidTimingError extends ValidationError {
+  /**
+   *
+   * @param payer
+   * @param details
+   */
   constructor(payer?: string, details?: Record<string, unknown>) {
     super(
       "Authorization timing is invalid (expired or not yet valid)",
       "INVALID_TIMING",
       payer,
-      details
+      details,
     );
   }
 }
@@ -248,18 +280,19 @@ export class InvalidTimingError extends ValidationError {
  * Insufficient value error (amount too low)
  */
 export class InsufficientValueError extends ValidationError {
-  constructor(
-    required: string,
-    actual: string,
-    payer?: string,
-    details?: Record<string, unknown>
-  ) {
-    super(
-      `Insufficient value: required ${required}, got ${actual}`,
-      "INSUFFICIENT_VALUE",
-      payer,
-      { ...details, required, actual }
-    );
+  /**
+   *
+   * @param required
+   * @param actual
+   * @param payer
+   * @param details
+   */
+  constructor(required: string, actual: string, payer?: string, details?: Record<string, unknown>) {
+    super(`Insufficient value: required ${required}, got ${actual}`, "INSUFFICIENT_VALUE", payer, {
+      ...details,
+      required,
+      actual,
+    });
   }
 }
 
@@ -267,17 +300,24 @@ export class InsufficientValueError extends ValidationError {
  * Insufficient funds error (payer balance too low)
  */
 export class InsufficientFundsError extends ValidationError {
+  /**
+   *
+   * @param required
+   * @param balance
+   * @param payer
+   * @param details
+   */
   constructor(
     required: string,
     balance: string,
     payer?: string,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
   ) {
     super(
       `Insufficient funds: required ${required}, balance ${balance}`,
       "INSUFFICIENT_FUNDS",
       payer,
-      { ...details, required, balance }
+      { ...details, required, balance },
     );
   }
 }
@@ -286,13 +326,19 @@ export class InsufficientFundsError extends ValidationError {
  * Invalid address error
  */
 export class InvalidAddressError extends ValidationError {
+  /**
+   *
+   * @param address
+   * @param details
+   * @param cause
+   */
   constructor(address: string, details?: Record<string, unknown>, cause?: Error) {
     super(
       `Invalid address: ${address}`,
       "INVALID_ADDRESS",
       undefined,
       { ...details, address },
-      cause
+      cause,
     );
   }
 }
@@ -301,21 +347,22 @@ export class InvalidAddressError extends ValidationError {
  * Settlement error base class
  */
 export abstract class SettlementError extends FacilitatorError {
+  /**
+   *
+   * @param message
+   * @param code
+   * @param recoverable
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     code: string,
     recoverable: boolean,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
-    super(
-      message,
-      code,
-      recoverable,
-      ErrorSeverity.ERROR,
-      details,
-      cause
-    );
+    super(message, code, recoverable, ErrorSeverity.ERROR, details, cause);
   }
 }
 
@@ -325,20 +372,22 @@ export abstract class SettlementError extends FacilitatorError {
 export class TransactionFailedError extends SettlementError {
   public readonly transactionHash?: string;
 
+  /**
+   *
+   * @param message
+   * @param transactionHash
+   * @param recoverable
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     transactionHash?: string,
     recoverable = false,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
-    super(
-      message,
-      "TRANSACTION_FAILED",
-      recoverable,
-      { ...details, transactionHash },
-      cause
-    );
+    super(message, "TRANSACTION_FAILED", recoverable, { ...details, transactionHash }, cause);
     this.transactionHash = transactionHash;
   }
 }
@@ -349,16 +398,18 @@ export class TransactionFailedError extends SettlementError {
 export class TransactionTimeoutError extends SettlementError {
   public readonly transactionHash?: string;
 
-  constructor(
-    message: string,
-    transactionHash?: string,
-    details?: Record<string, unknown>
-  ) {
+  /**
+   *
+   * @param message
+   * @param transactionHash
+   * @param details
+   */
+  constructor(message: string, transactionHash?: string, details?: Record<string, unknown>) {
     super(
       message,
       "TRANSACTION_TIMEOUT",
       true, // Timeout may be temporary - recoverable
-      { ...details, transactionHash }
+      { ...details, transactionHash },
     );
     this.transactionHash = transactionHash;
   }
@@ -370,20 +421,22 @@ export class TransactionTimeoutError extends SettlementError {
 export class RpcError extends SettlementError {
   public readonly rpcUrl?: string;
 
+  /**
+   *
+   * @param message
+   * @param rpcUrl
+   * @param recoverable
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     rpcUrl?: string,
     recoverable = true,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
-    super(
-      message,
-      "RPC_ERROR",
-      recoverable,
-      { ...details, rpcUrl },
-      cause
-    );
+    super(message, "RPC_ERROR", recoverable, { ...details, rpcUrl }, cause);
     this.rpcUrl = rpcUrl;
   }
 }
@@ -392,17 +445,19 @@ export class RpcError extends SettlementError {
  * Nonce error (nonce too low, already used, etc.)
  */
 export class NonceError extends SettlementError {
-  constructor(
-    message: string,
-    details?: Record<string, unknown>,
-    cause?: Error
-  ) {
+  /**
+   *
+   * @param message
+   * @param details
+   * @param cause
+   */
+  constructor(message: string, details?: Record<string, unknown>, cause?: Error) {
     super(
       message,
       "NONCE_ERROR",
       true, // Can retry with new nonce
       details,
-      cause
+      cause,
     );
   }
 }
@@ -411,13 +466,19 @@ export class NonceError extends SettlementError {
  * Gas estimation error
  */
 export class GasEstimationError extends SettlementError {
+  /**
+   *
+   * @param message
+   * @param details
+   * @param cause
+   */
   constructor(message: string, details?: Record<string, unknown>, cause?: Error) {
     super(
       message,
       "GAS_ESTIMATION_ERROR",
       false, // Usually indicates contract call will fail
       details,
-      cause
+      cause,
     );
   }
 }
@@ -429,20 +490,29 @@ export class ContractCallError extends SettlementError {
   public readonly contractAddress?: string;
   public readonly functionName?: string;
 
+  /**
+   *
+   * @param message
+   * @param contractAddress
+   * @param functionName
+   * @param recoverable
+   * @param details
+   * @param cause
+   */
   constructor(
     message: string,
     contractAddress?: string,
     functionName?: string,
     recoverable = false,
     details?: Record<string, unknown>,
-    cause?: Error
+    cause?: Error,
   ) {
     super(
       message,
       "CONTRACT_CALL_ERROR",
       recoverable,
       { ...details, contractAddress, functionName },
-      cause
+      cause,
     );
     this.contractAddress = contractAddress;
     this.functionName = functionName;
@@ -453,20 +523,21 @@ export class ContractCallError extends SettlementError {
  * Decode error (unable to decode transaction data)
  */
 export class DecodingError extends FacilitatorError {
+  /**
+   *
+   * @param message
+   * @param details
+   * @param cause
+   */
   constructor(message: string, details?: Record<string, unknown>, cause?: Error) {
-    super(
-      message,
-      "DECODING_ERROR",
-      false,
-      ErrorSeverity.ERROR,
-      details,
-      cause
-    );
+    super(message, "DECODING_ERROR", false, ErrorSeverity.ERROR, details, cause);
   }
 }
 
 /**
  * Helper function to classify unknown errors
+ *
+ * @param error
  */
 export function classifyError(error: unknown): FacilitatorError {
   if (error instanceof FacilitatorError) {
@@ -478,7 +549,9 @@ export function classifyError(error: unknown): FacilitatorError {
 
     // Classify by message content
     if (message.includes("timeout")) {
-      return new TransactionTimeoutError(error.message, undefined, { originalError: error.message });
+      return new TransactionTimeoutError(error.message, undefined, {
+        originalError: error.message,
+      });
     }
 
     if (message.includes("nonce") || message.includes("already known")) {
@@ -486,7 +559,9 @@ export function classifyError(error: unknown): FacilitatorError {
     }
 
     if (message.includes("insufficient funds") || message.includes("insufficient balance")) {
-      return new InsufficientFundsError("unknown", "unknown", undefined, { originalError: error.message });
+      return new InsufficientFundsError("unknown", "unknown", undefined, {
+        originalError: error.message,
+      });
     }
 
     if (message.includes("gas")) {
@@ -498,27 +573,31 @@ export function classifyError(error: unknown): FacilitatorError {
     }
 
     // Generic transaction error
-    return new TransactionFailedError(error.message, undefined, false, { originalError: error.message }, error);
+    return new TransactionFailedError(
+      error.message,
+      undefined,
+      false,
+      { originalError: error.message },
+      error,
+    );
   }
 
   // Unknown error type
-  return new TransactionFailedError(
-    String(error),
-    undefined,
-    false,
-    { originalError: String(error) }
-  );
+  return new TransactionFailedError(String(error), undefined, false, {
+    originalError: String(error),
+  });
 }
 
 /**
  * Helper to determine if error should trigger retry
+ *
+ * @param error
  */
 export function shouldRetry(error: unknown): boolean {
   if (error instanceof FacilitatorError) {
     return error.recoverable;
   }
-  
+
   // Unknown errors - don't retry
   return false;
 }
-

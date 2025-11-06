@@ -1,9 +1,9 @@
 /**
  * Graceful Shutdown Handler
- * 
+ *
  * This module provides graceful shutdown handling for the facilitator service,
  * ensuring that in-flight requests are completed before process termination.
- * 
+ *
  * Based on deps/x402-rs/src/sig_down.rs implementation
  */
 
@@ -18,10 +18,10 @@ const logger = getLogger();
 export interface ShutdownConfig {
   /** Maximum time to wait for graceful shutdown in milliseconds */
   timeoutMs: number;
-  
+
   /** Signals to handle */
   signals: NodeJS.Signals[];
-  
+
   /** Cleanup handlers to run during shutdown */
   cleanupHandlers: Array<() => Promise<void>>;
 }
@@ -46,12 +46,18 @@ export class GracefulShutdown {
   private activeRequests = 0;
   private requestsCompleted = 0;
 
+  /**
+   *
+   * @param config
+   */
   constructor(config: Partial<ShutdownConfig> = {}) {
     this.config = { ...DEFAULT_SHUTDOWN_CONFIG, ...config };
   }
 
   /**
    * Register HTTP server for graceful shutdown
+   *
+   * @param server
    */
   public registerServer(server: Server): void {
     this.server = server;
@@ -59,15 +65,18 @@ export class GracefulShutdown {
     // Track active requests
     server.on("request", (req, res) => {
       this.activeRequests++;
-      
+
       res.on("finish", () => {
         this.activeRequests--;
         this.requestsCompleted++;
-        
-        logger.debug({
-          activeRequests: this.activeRequests,
-          requestsCompleted: this.requestsCompleted,
-        }, "Request completed");
+
+        logger.debug(
+          {
+            activeRequests: this.activeRequests,
+            requestsCompleted: this.requestsCompleted,
+          },
+          "Request completed",
+        );
       });
     });
 
@@ -76,6 +85,8 @@ export class GracefulShutdown {
 
   /**
    * Add cleanup handler
+   *
+   * @param handler
    */
   public addCleanupHandler(handler: () => Promise<void>): void {
     this.config.cleanupHandlers.push(handler);
@@ -110,10 +121,13 @@ export class GracefulShutdown {
       });
     });
 
-    logger.info({
-      signals: this.config.signals,
-      timeout: this.config.timeoutMs,
-    }, "Graceful shutdown initialized");
+    logger.info(
+      {
+        signals: this.config.signals,
+        timeout: this.config.timeoutMs,
+      },
+      "Graceful shutdown initialized",
+    );
   }
 
   /**
@@ -130,10 +144,13 @@ export class GracefulShutdown {
     const shutdownStart = Date.now();
 
     this.shutdownPromise = (async () => {
-      logger.info({
-        activeRequests: this.activeRequests,
-        timeoutMs: this.config.timeoutMs,
-      }, "Starting graceful shutdown");
+      logger.info(
+        {
+          activeRequests: this.activeRequests,
+          timeoutMs: this.config.timeoutMs,
+        },
+        "Starting graceful shutdown",
+      );
 
       // Stop accepting new connections
       if (this.server) {
@@ -149,39 +166,51 @@ export class GracefulShutdown {
       // Wait for active requests to complete (with timeout)
       const requestWaitStart = Date.now();
       const checkInterval = 100; // Check every 100ms
-      
+
       while (this.activeRequests > 0) {
         const elapsed = Date.now() - requestWaitStart;
-        
+
         if (elapsed >= this.config.timeoutMs) {
-          logger.warn({
-            activeRequests: this.activeRequests,
-            elapsed,
-          }, "Shutdown timeout reached, forcing shutdown");
+          logger.warn(
+            {
+              activeRequests: this.activeRequests,
+              elapsed,
+            },
+            "Shutdown timeout reached, forcing shutdown",
+          );
           break;
         }
 
-        logger.debug({
-          activeRequests: this.activeRequests,
-          elapsed,
-        }, "Waiting for active requests to complete");
+        logger.debug(
+          {
+            activeRequests: this.activeRequests,
+            elapsed,
+          },
+          "Waiting for active requests to complete",
+        );
 
         await new Promise((resolve) => setTimeout(resolve, checkInterval));
       }
 
       const requestWaitDuration = Date.now() - requestWaitStart;
-      
+
       if (this.activeRequests === 0) {
-        logger.info({
-          duration: requestWaitDuration,
-          requestsCompleted: this.requestsCompleted,
-        }, "All requests completed");
+        logger.info(
+          {
+            duration: requestWaitDuration,
+            requestsCompleted: this.requestsCompleted,
+          },
+          "All requests completed",
+        );
       }
 
       // Run cleanup handlers
-      logger.info({
-        handlers: this.config.cleanupHandlers.length,
-      }, "Running cleanup handlers");
+      logger.info(
+        {
+          handlers: this.config.cleanupHandlers.length,
+        },
+        "Running cleanup handlers",
+      );
 
       for (const handler of this.config.cleanupHandlers) {
         try {
@@ -199,11 +228,14 @@ export class GracefulShutdown {
       }
 
       const shutdownDuration = Date.now() - shutdownStart;
-      
-      logger.info({
-        duration: shutdownDuration,
-        requestsCompleted: this.requestsCompleted,
-      }, "Graceful shutdown complete");
+
+      logger.info(
+        {
+          duration: shutdownDuration,
+          requestsCompleted: this.requestsCompleted,
+        },
+        "Graceful shutdown complete",
+      );
 
       process.exit(0);
     })();
@@ -233,6 +265,8 @@ let shutdownManager: GracefulShutdown | null = null;
 
 /**
  * Initialize global shutdown manager
+ *
+ * @param config
  */
 export function initShutdown(config?: Partial<ShutdownConfig>): GracefulShutdown {
   if (shutdownManager) {
@@ -242,7 +276,7 @@ export function initShutdown(config?: Partial<ShutdownConfig>): GracefulShutdown
 
   shutdownManager = new GracefulShutdown(config);
   shutdownManager.init();
-  
+
   return shutdownManager;
 }
 
@@ -258,6 +292,10 @@ export function getShutdownManager(): GracefulShutdown {
 
 /**
  * Express middleware to reject requests during shutdown
+ *
+ * @param req
+ * @param res
+ * @param next
  */
 export function shutdownMiddleware(req: any, res: any, next: any): void {
   if (shutdownManager?.isShutdown()) {
@@ -270,4 +308,3 @@ export function shutdownMiddleware(req: any, res: any, next: any): void {
   }
   next();
 }
-

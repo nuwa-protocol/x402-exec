@@ -1,6 +1,5 @@
 /* eslint-env node */
-import { config } from "dotenv";
-config(); // Load env vars first
+import { config } from "dotenv"; // Load env vars first
 
 import express, { Request, Response } from "express";
 import { verify, settle } from "x402/facilitator";
@@ -22,6 +21,7 @@ import {
 import { isSettlementMode, settleWithRouter } from "./settlement.js";
 import { initTelemetry, getLogger, traced, recordMetric, recordHistogram } from "./telemetry.js";
 import { initShutdown, shutdownMiddleware } from "./shutdown.js";
+config();
 
 // Initialize telemetry
 initTelemetry();
@@ -80,7 +80,7 @@ type SettleRequest = {
 
 /**
  * GET /health - Health check (liveness probe)
- * 
+ *
  * This endpoint is used by container orchestrators (like Kubernetes)
  * to determine if the service is alive and should continue running.
  * Returns 200 if the service is running.
@@ -95,7 +95,7 @@ app.get("/health", (req: Request, res: Response) => {
 
 /**
  * GET /ready - Readiness check
- * 
+ *
  * This endpoint is used by container orchestrators to determine if
  * the service is ready to accept traffic. Checks that all required
  * components are initialized and operational.
@@ -105,17 +105,18 @@ app.get("/ready", async (req: Request, res: Response) => {
   let allHealthy = true;
 
   // Check private keys are loaded
-  checks.privateKeys = EVM_PRIVATE_KEY || SVM_PRIVATE_KEY
-    ? { status: "ok" }
-    : { status: "error", message: "No private keys configured" };
-  
+  checks.privateKeys =
+    EVM_PRIVATE_KEY || SVM_PRIVATE_KEY
+      ? { status: "ok" }
+      : { status: "error", message: "No private keys configured" };
+
   if (checks.privateKeys.status === "error") {
     allHealthy = false;
   }
 
   // Check settlement router whitelist configured
   const hasRouters = Object.values(ALLOWED_SETTLEMENT_ROUTERS).some(
-    routers => routers.length > 0
+    (routers) => routers.length > 0,
   );
   checks.settlementRouterWhitelist = hasRouters
     ? { status: "ok" }
@@ -125,7 +126,7 @@ app.get("/ready", async (req: Request, res: Response) => {
   checks.shutdown = shutdownManager.isShutdown()
     ? { status: "error", message: "Shutdown in progress" }
     : { status: "ok" };
-  
+
   if (checks.shutdown.status === "error") {
     allHealthy = false;
   }
@@ -138,7 +139,7 @@ app.get("/ready", async (req: Request, res: Response) => {
   };
 
   const status = allHealthy ? 200 : 503;
-  
+
   res.status(status).json({
     status: allHealthy ? "ready" : "not_ready",
     timestamp: new Date().toISOString(),
@@ -182,14 +183,17 @@ app.post("/verify", async (req: Request, res: Response) => {
 
     // verify
     const startTime = Date.now();
-    logger.info({
-      network: paymentRequirements.network,
-      extra: paymentRequirements.extra,
-    }, 'Verifying payment...');
-    
+    logger.info(
+      {
+        network: paymentRequirements.network,
+        extra: paymentRequirements.extra,
+      },
+      "Verifying payment...",
+    );
+
     const valid = await verify(client, paymentPayload, paymentRequirements, x402Config);
     const duration = Date.now() - startTime;
-    
+
     // Record metrics
     recordMetric("facilitator.verify.total", 1, {
       network: paymentRequirements.network,
@@ -198,28 +202,37 @@ app.post("/verify", async (req: Request, res: Response) => {
     recordHistogram("facilitator.verify.duration_ms", duration, {
       network: paymentRequirements.network,
     });
-    
-    logger.info({
-      isValid: valid.isValid,
-      payer: valid.payer,
-      invalidReason: valid.invalidReason,
-      duration_ms: duration,
-    }, 'Verification result');
-    
-    if (!valid.isValid) {
-      logger.warn({
-        invalidReason: valid.invalidReason,
+
+    logger.info(
+      {
+        isValid: valid.isValid,
         payer: valid.payer,
-      }, 'Verification failed');
+        invalidReason: valid.invalidReason,
+        duration_ms: duration,
+      },
+      "Verification result",
+    );
+
+    if (!valid.isValid) {
+      logger.warn(
+        {
+          invalidReason: valid.invalidReason,
+          payer: valid.payer,
+        },
+        "Verification failed",
+      );
     }
-    
+
     res.json(valid);
   } catch (error) {
     logger.error({ error }, "Verify error");
     recordMetric("facilitator.verify.errors", 1, {
       error_type: error instanceof Error ? error.name : "unknown",
     });
-    res.status(400).json({ error: "Invalid request", details: error instanceof Error ? error.message : String(error) });
+    res.status(400).json({
+      error: "Invalid request",
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -312,15 +325,18 @@ app.post("/settle", async (req: Request, res: Response) => {
     }
 
     const startTime = Date.now();
-    
+
     // Check if this is a Settlement Router payment
     if (isSettlementMode(paymentRequirements)) {
-      logger.info({
-        router: paymentRequirements.extra?.settlementRouter,
-        hook: paymentRequirements.extra?.hook,
-        facilitatorFee: paymentRequirements.extra?.facilitatorFee,
-        salt: paymentRequirements.extra?.salt,
-      }, "Settlement Router mode detected");
+      logger.info(
+        {
+          router: paymentRequirements.extra?.settlementRouter,
+          hook: paymentRequirements.extra?.hook,
+          facilitatorFee: paymentRequirements.extra?.facilitatorFee,
+          salt: paymentRequirements.extra?.salt,
+        },
+        "Settlement Router mode detected",
+      );
 
       // Ensure this is an EVM network (Settlement Router is EVM-only)
       if (!SupportedEVMNetworks.includes(paymentRequirements.network)) {
@@ -331,20 +347,21 @@ app.post("/settle", async (req: Request, res: Response) => {
         // Settle using SettlementRouter with whitelist validation
         const response = await traced(
           "settle.settlementRouter",
-          async () => settleWithRouter(
-            signer,
-            paymentPayload,
-            paymentRequirements,
-            ALLOWED_SETTLEMENT_ROUTERS,
-          ),
+          async () =>
+            settleWithRouter(
+              signer,
+              paymentPayload,
+              paymentRequirements,
+              ALLOWED_SETTLEMENT_ROUTERS,
+            ),
           {
             network: paymentRequirements.network,
             router: paymentRequirements.extra?.settlementRouter || "",
-          }
+          },
         );
-        
+
         const duration = Date.now() - startTime;
-        
+
         // Record metrics
         recordMetric("facilitator.settle.total", 1, {
           network: paymentRequirements.network,
@@ -355,17 +372,20 @@ app.post("/settle", async (req: Request, res: Response) => {
           network: paymentRequirements.network,
           mode: "settlementRouter",
         });
-        
-        logger.info({
-          transaction: response.transaction,
-          success: response.success,
-          duration_ms: duration,
-        }, "Settlement successful");
-        
+
+        logger.info(
+          {
+            transaction: response.transaction,
+            success: response.success,
+            duration_ms: duration,
+          },
+          "Settlement successful",
+        );
+
         res.json(response);
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         logger.error({ error, duration_ms: duration }, "Settlement failed");
         recordMetric("facilitator.settle.errors", 1, {
           network: paymentRequirements.network,
@@ -384,11 +404,11 @@ app.post("/settle", async (req: Request, res: Response) => {
           async () => settle(signer, paymentPayload, paymentRequirements, x402Config),
           {
             network: paymentRequirements.network,
-          }
+          },
         );
-        
+
         const duration = Date.now() - startTime;
-        
+
         // Record metrics
         recordMetric("facilitator.settle.total", 1, {
           network: paymentRequirements.network,
@@ -399,12 +419,12 @@ app.post("/settle", async (req: Request, res: Response) => {
           network: paymentRequirements.network,
           mode: "standard",
         });
-        
+
         logger.info({ duration_ms: duration }, "Standard settlement successful");
         res.json(response);
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         logger.error({ error, duration_ms: duration }, "Standard settlement failed");
         recordMetric("facilitator.settle.errors", 1, {
           network: paymentRequirements.network,
@@ -416,7 +436,7 @@ app.post("/settle", async (req: Request, res: Response) => {
     }
   } catch (error) {
     logger.error({ error }, "Settle error");
-    res.status(400).json({ 
+    res.status(400).json({
       error: `Settlement failed: ${error instanceof Error ? error.message : String(error)}`,
       details: error instanceof Error ? error.stack : undefined,
     });
@@ -425,17 +445,20 @@ app.post("/settle", async (req: Request, res: Response) => {
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
-  logger.info({
-    port: PORT,
-    features: {
-      standard_settlement: true,
-      settlement_router: true,
-      security_whitelist: true,
-      graceful_shutdown: true,
+  logger.info(
+    {
+      port: PORT,
+      features: {
+        standard_settlement: true,
+        settlement_router: true,
+        security_whitelist: true,
+        graceful_shutdown: true,
+      },
+      whitelist: ALLOWED_SETTLEMENT_ROUTERS,
     },
-    whitelist: ALLOWED_SETTLEMENT_ROUTERS,
-  }, `x402-exec Facilitator listening at http://localhost:${PORT}`);
-  
+    `x402-exec Facilitator listening at http://localhost:${PORT}`,
+  );
+
   logger.info("Features:");
   logger.info("  - Standard x402 settlement: ✓");
   logger.info("  - SettlementRouter support: ✓");

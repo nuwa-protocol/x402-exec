@@ -1,6 +1,6 @@
 /**
  * Retry Mechanism with Exponential Backoff
- * 
+ *
  * This module provides utilities for retrying operations with exponential backoff,
  * with special handling for blockchain/RPC operations.
  */
@@ -16,22 +16,22 @@ const logger = getLogger();
 export interface RetryConfig {
   /** Maximum number of retry attempts */
   maxAttempts: number;
-  
+
   /** Initial delay in milliseconds */
   initialDelayMs: number;
-  
+
   /** Maximum delay in milliseconds */
   maxDelayMs: number;
-  
+
   /** Backoff multiplier */
   backoffMultiplier: number;
-  
+
   /** Add random jitter to prevent thundering herd */
   jitter: boolean;
-  
+
   /** Timeout per attempt in milliseconds */
   timeoutMs?: number;
-  
+
   /** Custom retry predicate (return true to retry) */
   shouldRetry?: (error: unknown, attempt: number) => boolean;
 }
@@ -72,28 +72,30 @@ export const TX_CONFIRM_RETRY_CONFIG: RetryConfig = {
 
 /**
  * Calculate delay with exponential backoff
+ *
+ * @param attempt
+ * @param config
  */
-function calculateDelay(
-  attempt: number,
-  config: RetryConfig
-): number {
+function calculateDelay(attempt: number, config: RetryConfig): number {
   const exponentialDelay = config.initialDelayMs * Math.pow(config.backoffMultiplier, attempt - 1);
   let delay = Math.min(exponentialDelay, config.maxDelayMs);
-  
+
   if (config.jitter) {
     // Add ±25% jitter
     const jitterFactor = 0.75 + Math.random() * 0.5;
     delay *= jitterFactor;
   }
-  
+
   return Math.floor(delay);
 }
 
 /**
  * Sleep for specified milliseconds
+ *
+ * @param ms
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -107,15 +109,19 @@ export interface RetryContext {
 
 /**
  * Execute function with retry logic
+ *
+ * @param fn
+ * @param config
+ * @param operationName
  */
 export async function withRetry<T>(
   fn: (context: RetryContext) => Promise<T>,
   config: Partial<RetryConfig> = {},
-  operationName = "operation"
+  operationName = "operation",
 ): Promise<T> {
   const finalConfig: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
   const startTime = Date.now();
-  
+
   let lastError: unknown;
   const context: RetryContext = {
     attempt: 0,
@@ -125,82 +131,101 @@ export async function withRetry<T>(
   for (let attempt = 1; attempt <= finalConfig.maxAttempts; attempt++) {
     context.attempt = attempt;
     context.totalElapsed = Date.now() - startTime;
-    
+
     // Check global timeout
     if (finalConfig.timeoutMs && context.totalElapsed >= finalConfig.timeoutMs) {
-      logger.warn({
-        operation: operationName,
-        attempt,
-        totalElapsed: context.totalElapsed,
-        timeout: finalConfig.timeoutMs,
-      }, "Retry timeout exceeded");
+      logger.warn(
+        {
+          operation: operationName,
+          attempt,
+          totalElapsed: context.totalElapsed,
+          timeout: finalConfig.timeoutMs,
+        },
+        "Retry timeout exceeded",
+      );
       break;
     }
 
     try {
-      logger.debug({
-        operation: operationName,
-        attempt,
-        maxAttempts: finalConfig.maxAttempts,
-      }, "Attempting operation");
-
-      const result = await fn(context);
-      
-      if (attempt > 1) {
-        logger.info({
+      logger.debug(
+        {
           operation: operationName,
           attempt,
-          totalElapsed: context.totalElapsed,
-        }, "Operation succeeded after retry");
+          maxAttempts: finalConfig.maxAttempts,
+        },
+        "Attempting operation",
+      );
+
+      const result = await fn(context);
+
+      if (attempt > 1) {
+        logger.info(
+          {
+            operation: operationName,
+            attempt,
+            totalElapsed: context.totalElapsed,
+          },
+          "Operation succeeded after retry",
+        );
       }
-      
+
       return result;
     } catch (error) {
       lastError = error;
       context.lastError = error;
 
       const isLastAttempt = attempt >= finalConfig.maxAttempts;
-      const willRetry = !isLastAttempt && (
-        finalConfig.shouldRetry 
-          ? finalConfig.shouldRetry(error, attempt)
-          : shouldRetry(error)
-      );
+      const willRetry =
+        !isLastAttempt &&
+        (finalConfig.shouldRetry ? finalConfig.shouldRetry(error, attempt) : shouldRetry(error));
 
       if (error instanceof FacilitatorError) {
         error.log();
       } else {
-        logger.error({
-          error,
-          operation: operationName,
-          attempt,
-        }, "Operation failed");
+        logger.error(
+          {
+            error,
+            operation: operationName,
+            attempt,
+          },
+          "Operation failed",
+        );
       }
 
       if (!willRetry) {
         if (isLastAttempt) {
-          logger.error({
-            operation: operationName,
-            totalAttempts: attempt,
-            totalElapsed: context.totalElapsed,
-          }, "Max retry attempts reached");
+          logger.error(
+            {
+              operation: operationName,
+              totalAttempts: attempt,
+              totalElapsed: context.totalElapsed,
+            },
+            "Max retry attempts reached",
+          );
         } else {
-          logger.warn({
-            operation: operationName,
-            attempt,
-            error: error instanceof Error ? error.message : String(error),
-          }, "Error not recoverable, aborting retries");
+          logger.warn(
+            {
+              operation: operationName,
+              attempt,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            "Error not recoverable, aborting retries",
+          );
         }
         break;
       }
 
       const delay = calculateDelay(attempt, finalConfig);
-      logger.info({
-        operation: operationName,
-        attempt,
-        nextAttempt: attempt + 1,
-        delay,
-        error: error instanceof Error ? error.message : String(error),
-      }, "Retrying operation after delay");
+      logger.info(
+        {
+          operation: operationName,
+          attempt,
+          nextAttempt: attempt + 1,
+          delay,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "Retrying operation after delay",
+      );
 
       await sleep(delay);
     }
@@ -212,31 +237,33 @@ export async function withRetry<T>(
 
 /**
  * Wrap an async function with retry logic
+ *
+ * @param fn
+ * @param config
+ * @param operationName
  */
 export function retryable<T extends (...args: any[]) => Promise<any>>(
   fn: T,
   config: Partial<RetryConfig> = {},
-  operationName?: string
+  operationName?: string,
 ): T {
   const wrappedFn = async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> => {
-    return withRetry(
-      async () => fn(...args),
-      config,
-      operationName || fn.name || "anonymous"
-    );
+    return withRetry(async () => fn(...args), config, operationName || fn.name || "anonymous");
   };
-  
+
   return wrappedFn as T;
 }
 
 /**
  * Retry decorator for class methods
+ *
+ * @param config
  */
 export function Retry(config: Partial<RetryConfig> = {}) {
   return function (
     target: any,
     propertyKey: string,
-    descriptor: PropertyDescriptor
+    descriptor: PropertyDescriptor,
   ): PropertyDescriptor {
     const originalMethod = descriptor.value;
 
@@ -244,7 +271,7 @@ export function Retry(config: Partial<RetryConfig> = {}) {
       return withRetry(
         async () => originalMethod.apply(this, args),
         config,
-        `${target.constructor.name}.${propertyKey}`
+        `${target.constructor.name}.${propertyKey}`,
       );
     };
 
@@ -254,29 +281,26 @@ export function Retry(config: Partial<RetryConfig> = {}) {
 
 /**
  * Utility: Retry RPC call with appropriate config
+ *
+ * @param fn
+ * @param operationName
  */
 export async function retryRpcCall<T>(
   fn: () => Promise<T>,
-  operationName = "RPC call"
+  operationName = "RPC call",
 ): Promise<T> {
-  return withRetry(
-    async () => fn(),
-    RPC_RETRY_CONFIG,
-    operationName
-  );
+  return withRetry(async () => fn(), RPC_RETRY_CONFIG, operationName);
 }
 
 /**
  * Utility: Retry transaction confirmation with appropriate config
+ *
+ * @param fn
+ * @param operationName
  */
 export async function retryTxConfirmation<T>(
   fn: () => Promise<T>,
-  operationName = "Transaction confirmation"
+  operationName = "Transaction confirmation",
 ): Promise<T> {
-  return withRetry(
-    async () => fn(),
-    TX_CONFIRM_RETRY_CONFIG,
-    operationName
-  );
+  return withRetry(async () => fn(), TX_CONFIRM_RETRY_CONFIG, operationName);
 }
-
