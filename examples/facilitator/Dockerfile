@@ -17,14 +17,10 @@ COPY . .
 # Install all dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build dependencies in order
-# 1. Build x402 dependencies first
-RUN pnpm run build:x402
-
-# 2. Build x402x SDK packages (required by examples)
+# 1. Build x402x SDK packages (required by examples)
 RUN pnpm run build:sdk
 
-# 3. Build both example services
+# 2. Build both example services
 RUN pnpm --filter='@nuwa-ai/facilitator' build
 RUN pnpm --filter=x402-exec-showcase-server build
 
