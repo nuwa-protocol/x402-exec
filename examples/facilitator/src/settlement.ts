@@ -7,14 +7,11 @@
  * Now simplified using @x402x/core SDK.
  */
 
-import { parseErc6492Signature, type Address, type Hex } from "viem";
 import type { PaymentPayload, PaymentRequirements, SettleResponse, Signer } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import { 
   isSettlementMode as isSettlementModeCore,
   settleWithRouter as settleWithRouterCore,
-  validateSettlementRouter as validateSettlementRouterCore,
-  SETTLEMENT_ROUTER_ABI
 } from "@x402x/core";
 import { SettlementExtraError } from "./types.js";
 

@@ -13,7 +13,6 @@ import type {
   FacilitatorConfig,
 } from './types.js';
 import { SettlementExtraError } from './types.js';
-import { getNetworkConfig } from './networks.js';
 import { SETTLEMENT_ROUTER_ABI } from './abi.js';
 
 /**

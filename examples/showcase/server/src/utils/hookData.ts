@@ -73,6 +73,24 @@ export function encodeRewardData(config: RewardConfig): string {
 }
 
 /**
+ * Decodes NFT mint configuration from hookData
+ * @param hookData Hex-encoded hook data
+ * @returns Decoded mint configuration
+ */
+export function decodeNFTMintData(hookData: string): MintConfig {
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+  const [decoded] = abiCoder.decode(
+    ['tuple(address nftContract, uint256 tokenId, address merchant)'],
+    hookData
+  );
+  return {
+    nftContract: decoded[0],
+    tokenId: Number(decoded[1]),
+    merchant: decoded[2],
+  };
+}
+
+/**
  * Validates Ethereum address format
  * @param address Address to validate
  * @returns true if valid

@@ -35,11 +35,9 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   'x-layer-testnet': {
-    chainId: 195,
+    chainId: 1952,
     settlementRouter: '0x1ae0e196dc18355af3a19985faf67354213f833d',
-    // Note: X-Layer Testnet (chainId: 195) not yet in x402 config
-    // Using chainId 196 (X-Layer Mainnet) as fallback for now
-    usdc: createUsdcConfig(196),
+    usdc: createUsdcConfig(1952),
     hooks: {
       transfer: '0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB',
     },

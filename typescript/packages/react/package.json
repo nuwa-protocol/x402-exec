@@ -32,6 +32,7 @@
   "author": "Nuwa Protocol",
   "license": "Apache-2.0",
   "dependencies": {
+    "@x402x/core": "workspace:*",
     "@x402x/fetch": "workspace:*"
   },
   "devDependencies": {
@@ -41,11 +42,13 @@
     "react": "^18.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
+    "viem": "^2.17.0",
     "vitest": "^1.0.0",
     "wagmi": "^2.0.0"
   },
   "peerDependencies": {
     "react": "^18.0.0",
+    "viem": "^2.0.0",
     "wagmi": "^2.0.0"
   }
 }

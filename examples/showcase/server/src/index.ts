@@ -20,7 +20,7 @@ import * as transferWithHook from './scenarios/transfer-with-hook.js';
 import * as referral from './scenarios/referral.js';
 import * as nft from './scenarios/nft.js';
 import * as reward from './scenarios/reward.js';
-import { encodeRevenueSplitData, encodeRewardData, encodeNFTMintData } from './utils/hookData.js';
+import { encodeRevenueSplitData, encodeRewardData, encodeNFTMintData, decodeNFTMintData } from './utils/hookData.js';
 
 // Extend Hono Context to include x402 data
 declare module 'hono' {
@@ -251,9 +251,19 @@ app.post('/api/nft-minting/payment',
     const network = x402.network;
     const networkConfig = appConfig.networks[network];
     
+    // Decode tokenId from hookData
+    let tokenId: number;
+    try {
+      const mintConfig = decodeNFTMintData(x402.settlement!.hookData);
+      tokenId = mintConfig.tokenId;
+    } catch (error) {
+      console.error('[NFT Minting] Failed to decode hookData:', error);
+      tokenId = 0; // Fallback
+    }
+    
     console.log('[NFT Minting] Payment completed successfully');
     console.log(`[NFT Minting] Network: ${network}`);
-    console.log(`[NFT Minting] NFT will be minted to payer: ${recipientAddress}`);
+    console.log(`[NFT Minting] NFT #${tokenId} will be minted to payer: ${recipientAddress}`);
     
     return c.json({
       message: 'Payment successful, NFT minted to payer',
@@ -261,7 +271,7 @@ app.post('/api/nft-minting/payment',
       network,
       nftDetails: {
         recipient: recipientAddress,
-        tokenId: Math.floor(Math.random() * 1000000), // In production, get from hook event
+        tokenId,
         collection: networkConfig.nftMintHookAddress,
       },
     });
