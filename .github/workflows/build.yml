@@ -48,6 +48,11 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=6144
           TURBO_CONCURRENCY: 2
 
+      - name: Build x402x SDK
+        run: pnpm run build:sdk
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
       - name: Build all examples
         run: pnpm run build:examples
         env:
