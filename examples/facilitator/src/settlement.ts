@@ -45,11 +45,11 @@ export function validateSettlementRouter(
   allowedRouters: Record<string, string[]>,
 ): void {
   const logger = getLogger();
-  
+
   try {
     // Use core validation logic
     validateSettlementRouterCore(network, routerAddress, allowedRouters);
-    
+
     // Log success
     logger.info(
       {
@@ -99,7 +99,7 @@ export async function settleWithRouter(
   allowedRouters: Record<string, string[]>,
 ): Promise<SettleResponse> {
   const logger = getLogger();
-  
+
   try {
     // Ensure signer is EVM signer
     if (!isEvmSignerWallet(signer)) {
@@ -115,12 +115,9 @@ export async function settleWithRouter(
     );
 
     // Use @x402x/core's settleWithRouter (includes validation)
-    const result = await settleWithRouterCore(
-      signer as any,
-      paymentPayload,
-      paymentRequirements,
-      { allowedRouters },
-    );
+    const result = await settleWithRouterCore(signer as any, paymentPayload, paymentRequirements, {
+      allowedRouters,
+    });
 
     logger.info(
       {

@@ -21,16 +21,8 @@ import {
 } from "@opentelemetry/semantic-conventions";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { ExpressInstrumentation } from "@opentelemetry/instrumentation-express";
-import {
-  trace,
-  metrics,
-  Tracer,
-  Meter,
-  SpanStatusCode,
-  context,
-  propagation,
-} from "@opentelemetry/api";
-import { PeriodicExportingMetricReader, MeterProvider } from "@opentelemetry/sdk-metrics";
+import { trace, metrics, Tracer, Meter, SpanStatusCode, context } from "@opentelemetry/api";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 
 /**

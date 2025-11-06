@@ -9,6 +9,7 @@
 ### ✅ 阶段 1: 可观测性和日志
 
 #### 1. 结构化日志 (Pino)
+
 - **文件**: `src/telemetry.ts`, 所有模块
 - **功能**:
   - 开发环境: 彩色的格式化日志
@@ -17,6 +18,7 @@
   - 上下文信息: service name, version, environment
 
 #### 2. OpenTelemetry 集成
+
 - **文件**: `src/telemetry.ts`
 - **功能**:
   - 完整的 OTLP 导出器支持 (HTTP/gRPC)
@@ -25,6 +27,7 @@
   - 兼容 Honeycomb, Jaeger 等后端
 
 #### 3. 分布式追踪
+
 - **实现位置**: `src/index.ts`, `src/settlement.ts`
 - **追踪的操作**:
   - HTTP 请求 (自动)
@@ -33,6 +36,7 @@
   - 标准 settlement 调用
 
 #### 4. 业务指标
+
 - **实现位置**: `src/index.ts`
 - **指标类型**:
   - Counter: 请求总数、成功/失败计数
@@ -42,6 +46,7 @@
 ### ✅ 阶段 2: 错误处理和可靠性
 
 #### 5. 结构化错误类型
+
 - **文件**: `src/errors.ts`
 - **错误层次**:
   ```
@@ -68,6 +73,7 @@
   - 自动日志记录
 
 #### 6. 智能重试机制
+
 - **文件**: `src/retry.ts`
 - **重试策略**:
   - **RPC 调用**: 5 次尝试, 500ms-10s, 指数退避
@@ -83,6 +89,7 @@
 ### ✅ 阶段 5: 运维和部署
 
 #### 7. 优雅关闭
+
 - **文件**: `src/shutdown.ts`, `src/index.ts`
 - **功能**:
   - SIGTERM/SIGINT 信号处理
@@ -93,6 +100,7 @@
 - **集成**: 自动追踪活跃请求，提供中间件
 
 #### 8. Health Check 端点
+
 - **文件**: `src/index.ts`
 - **端点**:
   - `GET /health`: Liveness probe (进程存活)
@@ -140,6 +148,7 @@
 ## 配置示例
 
 ### 开发环境
+
 ```env
 EVM_PRIVATE_KEY=0x...
 LOG_LEVEL=debug
@@ -147,6 +156,7 @@ NODE_ENV=development
 ```
 
 ### 生产环境
+
 ```env
 EVM_PRIVATE_KEY=0x...
 LOG_LEVEL=info
@@ -163,43 +173,46 @@ OTEL_SERVICE_DEPLOYMENT=production
 
 ## 生产就绪标准
 
-| 标准 | 状态 | 实现 |
-|------|------|------|
-| 结构化日志 | ✅ | Pino with JSON output |
-| 分布式追踪 | ✅ | OpenTelemetry + OTLP |
-| 业务指标 | ✅ | Success rate, latency, errors |
-| 错误分类 | ✅ | 类型化错误层次 |
-| 重试机制 | ✅ | 指数退避 + jitter |
-| 优雅关闭 | ✅ | SIGTERM/SIGINT handler |
-| Health Checks | ✅ | /health + /ready |
-| Kubernetes 就绪 | ✅ | Probes + graceful shutdown |
+| 标准            | 状态 | 实现                          |
+| --------------- | ---- | ----------------------------- |
+| 结构化日志      | ✅   | Pino with JSON output         |
+| 分布式追踪      | ✅   | OpenTelemetry + OTLP          |
+| 业务指标        | ✅   | Success rate, latency, errors |
+| 错误分类        | ✅   | 类型化错误层次                |
+| 重试机制        | ✅   | 指数退避 + jitter             |
+| 优雅关闭        | ✅   | SIGTERM/SIGINT handler        |
+| Health Checks   | ✅   | /health + /ready              |
+| Kubernetes 就绪 | ✅   | Probes + graceful shutdown    |
 
 ## 与 Rust 实现对比
 
-| 功能 | TypeScript (本实现) | Rust (x402-rs) |
-|------|---------------------|----------------|
-| 结构化日志 | Pino | tracing + tracing-subscriber |
-| OpenTelemetry | @opentelemetry/sdk-node | opentelemetry-otlp |
-| 优雅关闭 | 自定义 GracefulShutdown | sig_down.rs + CancellationToken |
-| 错误处理 | 类型化错误类 | FacilitatorLocalError enum |
-| 重试机制 | 自定义 withRetry | (需要添加) |
-| Health Checks | /health + /ready | /health (get_health) |
+| 功能          | TypeScript (本实现)     | Rust (x402-rs)                  |
+| ------------- | ----------------------- | ------------------------------- |
+| 结构化日志    | Pino                    | tracing + tracing-subscriber    |
+| OpenTelemetry | @opentelemetry/sdk-node | opentelemetry-otlp              |
+| 优雅关闭      | 自定义 GracefulShutdown | sig_down.rs + CancellationToken |
+| 错误处理      | 类型化错误类            | FacilitatorLocalError enum      |
+| 重试机制      | 自定义 withRetry        | (需要添加)                      |
+| Health Checks | /health + /ready        | /health (get_health)            |
 
 ## 下一步建议
 
 根据计划文档，以下改进可以在后续实施：
 
 ### 阶段 3: 性能优化 (当流量增大时)
+
 - Provider 连接池
 - 并发控制 (p-limit)
 - 响应缓存
 
 ### 阶段 4: 安全性增强 (当开放公网访问时)
+
 - Rate limiting (express-rate-limit)
 - 输入深度验证
 - 密钥管理集成 (AWS KMS, Vault)
 
 ### 阶段 6: 监控和告警 (当系统稳定后)
+
 - Grafana dashboard
 - 告警规则
 - 日志聚合 (ELK/Loki)
@@ -213,4 +226,3 @@ OTEL_SERVICE_DEPLOYMENT=production
 ✅ **可运维性** - Health checks, K8s 兼容
 
 所有改进都遵循业界最佳实践，并参考了成熟的 Rust 实现。facilitator 现在已经具备在生产环境中部署和运行的能力。
-

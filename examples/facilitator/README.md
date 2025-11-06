@@ -56,7 +56,7 @@ The facilitator automatically detects the settlement mode based on the presence 
 
 ### 🌐 Multi-Network Support
 
-- **EVM Networks**: 
+- **EVM Networks**:
   - Base Sepolia (testnet), Base (mainnet)
   - X-Layer Mainnet (Chain ID: 196)
   - X-Layer Testnet (Chain ID: 1952)
@@ -135,6 +135,7 @@ The server will start on http://localhost:3000
 For security, the facilitator only accepts SettlementRouter addresses that are explicitly configured in environment variables. This prevents malicious resource servers from specifying arbitrary contract addresses.
 
 **Startup Log Example:**
+
 ```
 x402-exec Facilitator listening at http://localhost:3000
   - Standard x402 settlement: ✓
@@ -149,12 +150,14 @@ SettlementRouter Whitelist:
 ```
 
 **Security Benefits:**
+
 - 🛡️ **Prevents malicious contracts**: Only trusted SettlementRouter addresses are accepted
 - 🔍 **Network isolation**: Each network has its own whitelist
 - 📝 **Audit trail**: All validation attempts are logged
 - ❌ **Clear rejections**: Detailed error messages for invalid addresses
 
 **Adding New Networks:**
+
 1. Deploy SettlementRouter contract on the new network
 2. Add the address to your `.env` file using the correct naming convention
 3. Restart the facilitator to load the new configuration
@@ -166,6 +169,7 @@ SettlementRouter Whitelist:
 Health check endpoint for liveness probes (e.g., Kubernetes).
 
 **Response Example:**
+
 ```json
 {
   "status": "ok",
@@ -177,11 +181,13 @@ Health check endpoint for liveness probes (e.g., Kubernetes).
 ### GET /ready
 
 Readiness check endpoint for readiness probes. Validates that:
+
 - Private keys are configured
 - SettlementRouter whitelist is configured
 - Service is not shutting down
 
 **Response Example (Ready):**
+
 ```json
 {
   "status": "ready",
@@ -196,6 +202,7 @@ Readiness check endpoint for readiness probes. Validates that:
 ```
 
 **Response Example (Not Ready):**
+
 ```json
 {
   "status": "not_ready",
@@ -214,6 +221,7 @@ Readiness check endpoint for readiness probes. Validates that:
 Returns the payment kinds that the facilitator supports.
 
 **Response Example:**
+
 ```json
 {
   "kinds": [
@@ -241,6 +249,7 @@ Returns the payment kinds that the facilitator supports.
 Verifies an x402 payment payload without executing it.
 
 **Request Body:**
+
 ```typescript
 {
   "paymentPayload": PaymentPayload,
@@ -249,6 +258,7 @@ Verifies an x402 payment payload without executing it.
 ```
 
 **Response:**
+
 ```typescript
 {
   "isValid": boolean,
@@ -261,6 +271,7 @@ Verifies an x402 payment payload without executing it.
 Settles an x402 payment. Automatically detects and routes between standard and SettlementRouter modes.
 
 **Request Body:**
+
 ```typescript
 {
   "paymentPayload": PaymentPayload,
@@ -269,6 +280,7 @@ Settles an x402 payment. Automatically detects and routes between standard and S
 ```
 
 **Response:**
+
 ```typescript
 {
   "success": boolean,
@@ -284,6 +296,7 @@ Settles an x402 payment. Automatically detects and routes between standard and S
 ### What is SettlementRouter?
 
 SettlementRouter is an extended settlement framework that enables:
+
 - **Atomic Operations**: Payment verification + business logic in one transaction
 - **Hook Execution**: Custom on-chain logic executed after payment
 - **Facilitator Fees**: Built-in fee mechanism for permissionless facilitators
@@ -315,14 +328,14 @@ When detected, the facilitator calls `SettlementRouter.settleAndExecute()` inste
 
 ### Settlement Extra Parameters
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `settlementRouter` | address | SettlementRouter contract address |
-| `salt` | bytes32 | Unique identifier for idempotency (32 bytes hex) |
-| `payTo` | address | Final recipient address (for transparency) |
-| `facilitatorFee` | uint256 | Facilitator fee amount in token's smallest unit |
-| `hook` | address | Hook contract address (address(0) = no hook) |
-| `hookData` | bytes | Encoded hook parameters |
+| Field              | Type    | Description                                      |
+| ------------------ | ------- | ------------------------------------------------ |
+| `settlementRouter` | address | SettlementRouter contract address                |
+| `salt`             | bytes32 | Unique identifier for idempotency (32 bytes hex) |
+| `payTo`            | address | Final recipient address (for transparency)       |
+| `facilitatorFee`   | uint256 | Facilitator fee amount in token's smallest unit  |
+| `hook`             | address | Hook contract address (address(0) = no hook)     |
+| `hookData`         | bytes   | Encoded hook parameters                          |
 
 ### Example Flow
 
@@ -350,6 +363,7 @@ See [contracts/examples/](../../contracts/examples/) for Hook implementations.
 ### Test with curl
 
 Standard payment:
+
 ```bash
 curl -X POST http://localhost:3000/settle \
   -H "Content-Type: application/json" \
@@ -360,6 +374,7 @@ curl -X POST http://localhost:3000/settle \
 ```
 
 SettlementRouter payment:
+
 ```bash
 curl -X POST http://localhost:3000/settle \
   -H "Content-Type: application/json" \
@@ -423,16 +438,17 @@ curl -X POST http://localhost:3000/settle \
 
 The facilitator handles various error scenarios:
 
-| Error | Cause | Response |
-|-------|-------|----------|
-| `invalid_payment_requirements` | Missing/invalid extra parameters or **untrusted SettlementRouter address** | 400 with error details |
-| `invalid_network` | Unsupported network | 400 with error details |
-| `invalid_transaction_state` | Transaction reverted | Settlement response with error |
-| `unexpected_settle_error` | Unexpected error during settlement | Settlement response with error |
+| Error                          | Cause                                                                      | Response                       |
+| ------------------------------ | -------------------------------------------------------------------------- | ------------------------------ |
+| `invalid_payment_requirements` | Missing/invalid extra parameters or **untrusted SettlementRouter address** | 400 with error details         |
+| `invalid_network`              | Unsupported network                                                        | 400 with error details         |
+| `invalid_transaction_state`    | Transaction reverted                                                       | Settlement response with error |
+| `unexpected_settle_error`      | Unexpected error during settlement                                         | Settlement response with error |
 
 ### Security Error Examples
 
 **Untrusted SettlementRouter:**
+
 ```json
 {
   "error": "Invalid request: Settlement router 0x1234... is not in whitelist for network base-sepolia. Allowed addresses: 0x32431D4511e061F1133520461B07eC42afF157D6"
@@ -440,6 +456,7 @@ The facilitator handles various error scenarios:
 ```
 
 **Unconfigured Network:**
+
 ```json
 {
   "error": "Invalid request: No allowed settlement routers configured for network: base. Please configure environment variables for this network."
@@ -460,6 +477,7 @@ The facilitator uses Pino for structured JSON logging with the following feature
 - **Context**: All logs include service name, version, and environment
 
 Configure logging:
+
 ```env
 LOG_LEVEL=info  # or debug, warn, error
 NODE_ENV=production  # disables pretty printing
@@ -470,6 +488,7 @@ NODE_ENV=production  # disables pretty printing
 Enable distributed tracing and metrics by setting OTLP environment variables:
 
 **Honeycomb Example:**
+
 ```env
 OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io:443
 OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=YOUR_API_KEY
@@ -480,12 +499,14 @@ OTEL_SERVICE_DEPLOYMENT=production
 ```
 
 **Jaeger Example:**
+
 ```env
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
 **Available Metrics:**
+
 - Request counts by endpoint and status
 - Settlement success/failure rates by network and mode
 - Latency histograms (P50, P95, P99)
@@ -493,6 +514,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 - Active request counts
 
 **Available Traces:**
+
 - HTTP request spans with method, URL, status
 - Settlement operation spans with network, mode, transaction hash
 - Verification spans with validation details
@@ -508,32 +530,32 @@ metadata:
   name: x402-facilitator
 spec:
   containers:
-  - name: facilitator
-    image: your-registry/x402-facilitator:latest
-    ports:
-    - containerPort: 3000
-    env:
-    - name: EVM_PRIVATE_KEY
-      valueFrom:
-        secretKeyRef:
-          name: facilitator-secrets
-          key: evm-private-key
-    livenessProbe:
-      httpGet:
-        path: /health
-        port: 3000
-      initialDelaySeconds: 10
-      periodSeconds: 30
-    readinessProbe:
-      httpGet:
-        path: /ready
-        port: 3000
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    lifecycle:
-      preStop:
-        exec:
-          command: ["/bin/sh", "-c", "sleep 15"]
+    - name: facilitator
+      image: your-registry/x402-facilitator:latest
+      ports:
+        - containerPort: 3000
+      env:
+        - name: EVM_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: facilitator-secrets
+              key: evm-private-key
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 3000
+        initialDelaySeconds: 10
+        periodSeconds: 30
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 3000
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      lifecycle:
+        preStop:
+          exec:
+            command: ["/bin/sh", "-c", "sleep 15"]
 ```
 
 ### Graceful Shutdown
@@ -553,6 +575,7 @@ This ensures zero request drops during rolling updates or scaling operations.
 The facilitator includes production-grade error handling:
 
 **Error Classification:**
+
 - `ConfigurationError` - Missing/invalid config (not recoverable)
 - `ValidationError` - Invalid payment data (not recoverable)
 - `SettlementError` - Transaction/RPC errors (may be recoverable)
@@ -560,6 +583,7 @@ The facilitator includes production-grade error handling:
 - `NonceError` - Nonce conflicts (recoverable with retry)
 
 **Retry Policies:**
+
 - **RPC Calls**: 5 attempts, exponential backoff (500ms - 10s)
 - **Transaction Confirmation**: 60 attempts, slow growth (2s - 5s), 2min timeout
 - **Jitter**: Random ±25% to prevent thundering herd
@@ -569,10 +593,12 @@ The facilitator includes production-grade error handling:
 For production use, consider:
 
 1. **Use Production Facilitators**:
+
    - Testnet: https://x402.org/facilitator
    - Production: https://api.cdp.coinbase.com/platform/v2/x402
 
 2. **Security Considerations**:
+
    - Secure private key storage (e.g., AWS KMS, HashiCorp Vault)
    - Rate limiting to prevent abuse
    - Request validation and sanitization
@@ -596,10 +622,10 @@ For production use, consider:
 ### Integration Guides
 
 If you're extending an existing facilitator in another language:
+
 - See the [Facilitator Developer Guide](../../contracts/docs/facilitator_guide.md) for step-by-step integration instructions
 - This TypeScript implementation serves as a reference for any language
 
 ## License
 
 Apache-2.0 - see [LICENSE](../../LICENSE) for details
-
