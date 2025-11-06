@@ -83,17 +83,20 @@ app.get('/api/direct-payment/info', (c) => {
   return c.json(info);
 });
 
-// Direct payment doesn't use settlement extension - manual handling for demo comparison
+// Direct payment uses standard x402 without settlement extension
 app.post('/api/direct-payment/payment', async (c) => {
   console.log('[Direct Payment] Received payment request');
   const body = await c.req.json().catch(() => ({}));
   const network = c.req.query('network') || body.network || appConfig.defaultNetwork;
   
-  const payment = c.req.header('X-PAYMENT');
-  if (!payment) {
+  // Get full URL for resource field (required by x402 spec)
+  const fullUrl = c.req.url;
+  
+  const paymentHeader = c.req.header('X-PAYMENT');
+  if (!paymentHeader) {
     // Return 402 with direct payment requirements
     const requirements = directPayment.generateDirectPayment({
-      resource: '/api/direct-payment/payment',
+      resource: fullUrl,
       network,
     });
     return c.json({
@@ -103,14 +106,91 @@ app.post('/api/direct-payment/payment', async (c) => {
     }, 402);
   }
   
-  // For direct payment demo, we accept the payment without full verification
-  // This is for comparison purposes to show traditional x402 vs x402x
-  console.log('[Direct Payment] Payment received (simplified verification for demo)');
-  return c.json({
-    message: 'Direct payment scenario - demonstrates traditional x402 without settlement extension',
-    scenario: 'direct-payment',
-    note: 'Payment goes directly to resource server',
-  });
+  try {
+    // Parse payment payload from X-PAYMENT header
+    const paymentPayload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString('utf-8'));
+    
+    // Generate payment requirements for verification
+    const paymentRequirements = directPayment.generateDirectPayment({
+      resource: fullUrl,
+      network: paymentPayload.network || network,
+    });
+    
+    console.log('[Direct Payment] Verifying payment with facilitator...');
+    
+    // Step 1: Verify payment with facilitator
+    const verifyResponse = await fetch(`${appConfig.facilitatorUrl}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentPayload,
+        paymentRequirements,
+      }),
+    });
+    
+    if (!verifyResponse.ok) {
+      const error = await verifyResponse.text();
+      console.error('[Direct Payment] Verification failed:', error);
+      return c.json({ error: 'Payment verification failed', details: error }, 400);
+    }
+    
+    const verifyResult = await verifyResponse.json() as { isValid: boolean; invalidReason?: string };
+    
+    if (!verifyResult.isValid) {
+      console.error('[Direct Payment] Payment is invalid:', verifyResult.invalidReason);
+      return c.json({
+        error: 'Invalid payment',
+        reason: verifyResult.invalidReason,
+      }, 400);
+    }
+    
+    console.log('[Direct Payment] Payment verified, settling...');
+    
+    // Step 2: Settle payment with facilitator (standard x402 - no SettlementRouter)
+    const settleResponse = await fetch(`${appConfig.facilitatorUrl}/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentPayload,
+        paymentRequirements,
+      }),
+    });
+    
+    if (!settleResponse.ok) {
+      const error = await settleResponse.text();
+      console.error('[Direct Payment] Settlement failed:', error);
+      return c.json({ error: 'Payment settlement failed', details: error }, 500);
+    }
+    
+    const settleResult = await settleResponse.json() as { success: boolean; errorReason?: string; transaction: string; payer: string; network: string };
+    
+    if (!settleResult.success) {
+      console.error('[Direct Payment] Settlement unsuccessful:', settleResult.errorReason);
+      return c.json({
+        error: 'Settlement failed',
+        reason: settleResult.errorReason,
+      }, 500);
+    }
+    
+    console.log('[Direct Payment] Payment settled successfully');
+    console.log(`[Direct Payment] Transaction: ${settleResult.transaction}`);
+    console.log(`[Direct Payment] Payer: ${settleResult.payer}`);
+    
+    return c.json({
+      message: 'Direct payment successful - standard x402 without settlement extension',
+      scenario: 'direct-payment',
+      network: settleResult.network,
+      transaction: settleResult.transaction,
+      payer: settleResult.payer,
+      note: 'Payment went directly to resource server using transferWithAuthorization',
+    });
+  } catch (error) {
+    console.error('[Direct Payment] Error:', error);
+    return c.json({
+      error: 'Payment processing failed',
+      details: error instanceof Error ? error.message : String(error),
+    }, 500);
+  }
 });
 
 // ===== Scenario 2: Transfer with Hook =====
