@@ -259,8 +259,16 @@ BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
 X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
 
 # Native token prices (update periodically)
+# ETH: https://www.coingecko.com/en/coins/ethereum
+# OKB: https://www.coingecko.com/en/coins/okb
 BASE_SEPOLIA_ETH_PRICE=3000
 X_LAYER_TESTNET_ETH_PRICE=50
+
+# Dynamic token pricing (enabled by default)
+TOKEN_PRICE_ENABLED=true
+TOKEN_PRICE_CACHE_TTL=3600
+TOKEN_PRICE_UPDATE_INTERVAL=600
+# COINGECKO_API_KEY=your_api_key_here  # Optional, for higher rate limits
 ```
 
 **For Testing with Static Prices:**
@@ -315,6 +323,79 @@ GAS_PRICE_STRATEGY=dynamic
 - USD: 0.00002 OKB × $50 = $0.001
 - With safety (1.5x): $0.001 × 1.5 = $0.0015
 - USDC: 1,500 (0.0015 USDC with 6 decimals)
+```
+
+#### Native Token Price Management
+
+The facilitator supports both **static** and **dynamic** token pricing strategies:
+
+**Current Implementation**: Dynamic pricing enabled by default with CoinGecko API integration.
+
+##### Configuration Options:
+
+**1. Dynamic Pricing (Recommended, Default)**
+
+Automatically fetch real-time token prices from CoinGecko API:
+
+```env
+# Enable dynamic pricing (default: true)
+TOKEN_PRICE_ENABLED=true
+
+# Cache TTL (default: 3600 seconds = 1 hour)
+TOKEN_PRICE_CACHE_TTL=3600
+
+# Background update interval (default: 600 seconds = 10 minutes)
+TOKEN_PRICE_UPDATE_INTERVAL=600
+
+# Optional: CoinGecko Pro API key for higher rate limits
+# Free tier: 50 calls/minute
+# Pro tier: 500 calls/minute ($129/month)
+COINGECKO_API_KEY=your_api_key_here
+```
+
+**2. Static Pricing (Fallback)**
+
+Use fixed prices configured via environment variables:
+
+```env
+# Disable dynamic pricing
+TOKEN_PRICE_ENABLED=false
+
+# Set static prices (updated manually)
+BASE_SEPOLIA_ETH_PRICE=3000  # $3000/ETH
+X_LAYER_TESTNET_ETH_PRICE=50 # $50/OKB
+```
+
+##### Price Sources:
+
+- **CoinGecko**: https://www.coingecko.com/ (default for dynamic pricing)
+  - ETH: https://www.coingecko.com/en/coins/ethereum
+  - OKB: https://www.coingecko.com/en/coins/okb
+- **CoinMarketCap**: https://coinmarketcap.com/ (alternative)
+- **DEX Aggregators**: On-chain price feeds
+
+##### Advantages of Dynamic Pricing:
+
+✅ **Auto-updated** - No manual intervention required  
+✅ **Real-time** - Reflects market prices (with 10-minute updates)  
+✅ **Cached** - Minimal API calls, excellent performance  
+✅ **Fallback** - Uses static prices if API fails  
+✅ **Free** - Works with CoinGecko free tier
+
+##### Impact of Outdated Prices (Static Mode):
+
+- **If price is too LOW**: Facilitator charges insufficient fees (loses money on gas)
+- **If price is too HIGH**: Facilitator charges excessive fees (poor UX, users go elsewhere)
+- **Recommendation**: Use dynamic pricing or update static prices weekly with 1.5x safety multiplier
+
+##### Custom Coin IDs:
+
+If needed, override default CoinGecko coin IDs:
+
+```env
+# Defaults (usually no need to change):
+# BASE_SEPOLIA_COIN_ID=ethereum
+# X_LAYER_TESTNET_COIN_ID=okb
 ```
 
 #### Adding New Hooks to Whitelist

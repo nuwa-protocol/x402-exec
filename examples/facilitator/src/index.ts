@@ -12,6 +12,7 @@ import { initShutdown } from "./shutdown.js";
 import { createMemoryCache, createTokenCache, type TokenCache } from "./cache/index.js";
 import { createApp } from "./app.js";
 import { startGasPriceUpdater } from "./dynamic-gas-price.js";
+import { startTokenPriceUpdater } from "./token-price.js";
 
 // Initialize telemetry first
 initTelemetry();
@@ -78,6 +79,17 @@ async function main() {
       "Gas price strategy configuration",
     );
 
+    // Log token price configuration
+    logger.info(
+      {
+        enabled: config.tokenPrice.enabled,
+        cacheTTL: config.tokenPrice.cacheTTL,
+        updateInterval: config.tokenPrice.updateInterval,
+        hasApiKey: !!config.tokenPrice.apiKey,
+      },
+      "Token price configuration",
+    );
+
     // Start gas price updater if not static strategy
     let stopGasPriceUpdater: (() => void) | undefined;
     if (config.dynamicGasPrice.strategy !== "static") {
@@ -105,6 +117,33 @@ async function main() {
       logger.info("Using static gas price configuration (no background updater)");
     }
 
+    // Start token price updater if enabled
+    let stopTokenPriceUpdater: (() => void) | undefined;
+    if (config.tokenPrice.enabled) {
+      logger.info(
+        {
+          networks: config.network.evmNetworks,
+          updateInterval: config.tokenPrice.updateInterval,
+        },
+        "Starting background token price updater",
+      );
+
+      stopTokenPriceUpdater = startTokenPriceUpdater(
+        config.network.evmNetworks,
+        config.gasCost.nativeTokenPrice,
+        config.tokenPrice,
+      );
+
+      // Register cleanup on shutdown
+      shutdownManager.addCleanupHandler(async () => {
+        if (stopTokenPriceUpdater) {
+          stopTokenPriceUpdater();
+        }
+      });
+    } else {
+      logger.info("Using static token prices (no background updater)");
+    }
+
     // Initialize account pools
     const poolManager = await createPoolManager(
       config.evmPrivateKeys,
@@ -125,6 +164,7 @@ async function main() {
         x402Config: config.x402Config,
         gasCost: config.gasCost,
         dynamicGasPrice: config.dynamicGasPrice,
+        tokenPrice: config.tokenPrice,
       },
       requestBodyLimit: config.server.requestBodyLimit,
       rateLimitConfig: config.rateLimit,

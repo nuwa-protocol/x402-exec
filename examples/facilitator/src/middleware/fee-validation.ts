@@ -11,6 +11,7 @@ import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { isSettlementMode } from "../settlement.js";
 import { getNetworkConfig } from "@x402x/core";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
+import type { TokenPriceConfig } from "../token-price.js";
 
 const logger = getLogger();
 
@@ -19,11 +20,13 @@ const logger = getLogger();
  *
  * @param config - Gas cost configuration
  * @param dynamicConfig - Dynamic gas price configuration
+ * @param tokenPriceConfig - Token price configuration
  * @returns Express middleware function
  */
 export function createFeeValidationMiddleware(
   config: GasCostConfig,
   dynamicConfig: DynamicGasPriceConfig,
+  tokenPriceConfig: TokenPriceConfig,
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -79,6 +82,7 @@ export function createFeeValidationMiddleware(
           tokenDecimals,
           config,
           dynamicConfig,
+          tokenPriceConfig,
         );
       } catch (error) {
         logger.error({ error, network, hook }, "Failed to calculate minimum facilitator fee");

@@ -15,6 +15,7 @@ import { evm } from "x402/types";
 import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x402x/core";
 import type { GasCostConfig } from "./gas-cost.js";
 import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
+import type { TokenPriceConfig } from "./token-price.js";
 import { baseSepolia } from "viem/chains";
 import type { Chain } from "viem";
 
@@ -78,6 +79,7 @@ export interface AppConfig {
   evmPrivateKeys: string[];
   gasCost: GasCostConfig;
   dynamicGasPrice: DynamicGasPriceConfig;
+  tokenPrice: TokenPriceConfig;
 }
 
 /**
@@ -424,6 +426,36 @@ function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
 }
 
 /**
+ * Parse token price configuration from environment variables
+ *
+ * @returns Token price configuration object
+ */
+function parseTokenPriceConfig(): TokenPriceConfig {
+  const supportedNetworks = getSupportedNetworks();
+
+  // Token price enabled by default (unless explicitly disabled)
+  const enabled = process.env.TOKEN_PRICE_ENABLED !== "false";
+
+  // Parse custom coin IDs
+  const coinIds: Record<string, string> = {};
+  for (const network of supportedNetworks) {
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_COIN_ID`;
+    const coinId = process.env[envVarName];
+    if (coinId) {
+      coinIds[network] = coinId;
+    }
+  }
+
+  return {
+    enabled,
+    cacheTTL: parseInt(process.env.TOKEN_PRICE_CACHE_TTL || "3600"), // 1 hour
+    updateInterval: parseInt(process.env.TOKEN_PRICE_UPDATE_INTERVAL || "600"), // 10 minutes
+    apiKey: process.env.COINGECKO_API_KEY,
+    coinIds,
+  };
+}
+
+/**
  * Load and parse all application configuration
  *
  * @returns Complete application configuration object
@@ -440,5 +472,6 @@ export function loadConfig(): AppConfig {
     evmPrivateKeys: loadEvmPrivateKeys(),
     gasCost: parseGasCostConfig(),
     dynamicGasPrice: parseDynamicGasPriceConfig(),
+    tokenPrice: parseTokenPriceConfig(),
   };
 }

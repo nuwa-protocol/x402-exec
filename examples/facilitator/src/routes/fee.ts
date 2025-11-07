@@ -9,6 +9,7 @@ import { getLogger, traced, recordMetric } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { getNetworkConfig } from "@x402x/core";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
+import type { TokenPriceConfig } from "../token-price.js";
 
 const logger = getLogger();
 
@@ -18,6 +19,7 @@ const logger = getLogger();
 export interface FeeRouteDependencies {
   gasCost: GasCostConfig;
   dynamicGasPrice: DynamicGasPriceConfig;
+  tokenPrice: TokenPriceConfig;
 }
 
 /**
@@ -79,6 +81,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
               tokenDecimals,
               deps.gasCost,
               deps.dynamicGasPrice,
+              deps.tokenPrice,
             ),
           { network, hook },
         );

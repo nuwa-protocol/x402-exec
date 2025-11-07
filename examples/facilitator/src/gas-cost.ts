@@ -8,6 +8,7 @@
 import { getLogger } from "./telemetry.js";
 import { getNetworkConfig } from "@x402x/core";
 import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
+import { getTokenPrice, type TokenPriceConfig } from "./token-price.js";
 
 const logger = getLogger();
 
@@ -155,17 +156,22 @@ export function validateGasLimit(gasLimit: number, config: GasCostConfig): void 
  * @param nativeAmount - Amount in native token (e.g., ETH)
  * @param network - Network name
  * @param config - Gas cost configuration
+ * @param tokenPriceConfig - Optional token price configuration for dynamic pricing
  * @returns USD amount as string
  */
-export function convertNativeToUsd(
+export async function convertNativeToUsd(
   nativeAmount: string,
   network: string,
   config: GasCostConfig,
-): string {
-  const nativePrice = config.nativeTokenPrice[network];
-  if (!nativePrice) {
+  tokenPriceConfig?: TokenPriceConfig,
+): Promise<string> {
+  const staticPrice = config.nativeTokenPrice[network];
+  if (!staticPrice) {
     throw new Error(`No native token price configured for network ${network}`);
   }
+
+  // Get price (dynamic or static)
+  const nativePrice = await getTokenPrice(network, staticPrice, tokenPriceConfig);
 
   const usdAmount = parseFloat(nativeAmount) * nativePrice;
   // Use higher precision (6 decimals) to avoid rounding small amounts to zero
@@ -192,6 +198,7 @@ export function convertUsdToToken(usdAmount: string, decimals: number): string {
  * @param tokenDecimals - Token decimals (e.g., 6 for USDC)
  * @param config - Gas cost configuration
  * @param dynamicConfig - Optional dynamic gas price configuration
+ * @param tokenPriceConfig - Optional token price configuration
  * @returns Fee calculation result
  * @throws Error if hook is not allowed or calculation fails
  */
@@ -201,6 +208,7 @@ export async function calculateMinFacilitatorFee(
   tokenDecimals: number,
   config: GasCostConfig,
   dynamicConfig?: DynamicGasPriceConfig,
+  tokenPriceConfig?: TokenPriceConfig,
 ): Promise<FeeCalculationResult> {
   // Check if validation is enabled
   if (!config.enabled) {
@@ -241,8 +249,8 @@ export async function calculateMinFacilitatorFee(
   // Use higher precision (18 decimals) to preserve small values
   const gasCostNative = (Number(gasCostWei) / Math.pow(10, 18)).toString();
 
-  // Convert to USD
-  const gasCostUSD = convertNativeToUsd(gasCostNative, network, config);
+  // Convert to USD (with dynamic or static token price)
+  const gasCostUSD = await convertNativeToUsd(gasCostNative, network, config, tokenPriceConfig);
 
   // Apply safety multiplier
   const finalCostUSD = (parseFloat(gasCostUSD) * config.safetyMultiplier).toFixed(6);
@@ -266,7 +274,9 @@ export async function calculateMinFacilitatorFee(
   );
 
   // Format gasCostNative for display (up to 18 decimals, remove trailing zeros)
-  const gasCostNativeFormatted = parseFloat(gasCostNative).toFixed(18).replace(/\.?0+$/, "");
+  const gasCostNativeFormatted = parseFloat(gasCostNative)
+    .toFixed(18)
+    .replace(/\.?0+$/, "");
 
   return {
     minFacilitatorFee,
