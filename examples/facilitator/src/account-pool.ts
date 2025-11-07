@@ -1,0 +1,388 @@
+/**
+ * Account Pool Module
+ *
+ * Manages multiple facilitator accounts for parallel transaction processing
+ * with per-account serial queues to avoid nonce conflicts.
+ *
+ * Key features:
+ * - Multiple accounts working in parallel
+ * - Each account processes transactions serially (queue with concurrency=1)
+ * - Round-robin account selection for load distribution
+ * - Cached signer instances for performance
+ * - Zero nonce conflicts within each account
+ */
+
+import pLimit from "p-limit";
+import type { Signer } from "x402/types";
+import { createSigner } from "x402/types";
+import { getLogger, recordMetric } from "./telemetry.js";
+
+const logger = getLogger();
+
+/**
+ * Account pool configuration
+ */
+export interface AccountPoolConfig {
+  /** Account selection strategy */
+  strategy?: "round_robin" | "random";
+  /** Enable detailed logging */
+  verbose?: boolean;
+}
+
+/**
+ * Account information
+ */
+export interface AccountInfo {
+  address: string;
+  queueDepth: number;
+  totalProcessed: number;
+}
+
+/**
+ * Internal account structure
+ */
+interface Account {
+  address: string;
+  signer: Signer;
+  queue: ReturnType<typeof pLimit>;
+  processed: number;
+}
+
+/**
+ * Account pool for managing multiple facilitator accounts
+ */
+export class AccountPool {
+  private accounts: Account[] = [];
+  private roundRobinIndex = 0;
+  private strategy: "round_robin" | "random";
+  private network: string;
+
+  /**
+   * Create an account pool
+   *
+   * @param privateKeys - Array of private keys
+   * @param network - Network name (e.g., "base-sepolia", "solana-devnet")
+   * @param config - Optional configuration
+   */
+  private constructor(network: string, strategy: "round_robin" | "random") {
+    this.network = network;
+    this.strategy = strategy;
+  }
+
+  /**
+   * Create an account pool (async factory method)
+   */
+  static async create(
+    privateKeys: string[],
+    network: string,
+    config?: AccountPoolConfig,
+  ): Promise<AccountPool> {
+    if (privateKeys.length === 0) {
+      throw new Error("At least one private key is required");
+    }
+
+    const strategy = config?.strategy || "round_robin";
+    const pool = new AccountPool(network, strategy);
+
+    logger.info(
+      {
+        accountCount: privateKeys.length,
+        network,
+        strategy,
+      },
+      "Initializing account pool",
+    );
+
+    // Create accounts with serial queues
+    for (let i = 0; i < privateKeys.length; i++) {
+      try {
+        // Await the signer creation (it returns a Promise for SVM)
+        const signer = await Promise.resolve(createSigner(network, privateKeys[i]));
+
+        // Get address from signer
+        let address = "";
+        if ("account" in signer && signer.account) {
+          address = signer.account.address;
+        } else if ("address" in signer) {
+          address = (signer as any).address;
+        }
+
+        const account: Account = {
+          address,
+          signer,
+          queue: pLimit(1), // Serial queue (concurrency = 1)
+          processed: 0,
+        };
+
+        pool.accounts.push(account);
+
+        logger.info(
+          {
+            index: i,
+            address: account.address,
+            network,
+          },
+          "Account initialized",
+        );
+      } catch (error) {
+        logger.error(
+          {
+            index: i,
+            error,
+          },
+          "Failed to initialize account",
+        );
+        throw error;
+      }
+    }
+
+    logger.info(
+      {
+        totalAccounts: pool.accounts.length,
+        strategy,
+      },
+      "Account pool initialized",
+    );
+
+    return pool;
+  }
+
+  /**
+   * Execute a function with an automatically selected account
+   *
+   * The function will be queued in the selected account's serial queue,
+   * ensuring that transactions from the same account are processed in order
+   * without nonce conflicts.
+   *
+   * @param fn - Function to execute with the signer
+   * @returns Result from the function
+   */
+  async execute<T>(fn: (signer: Signer) => Promise<T>): Promise<T> {
+    const account = this.selectAccount();
+
+    logger.debug(
+      {
+        address: account.address,
+        queueDepth: account.queue.activeCount + account.queue.pendingCount,
+        strategy: this.strategy,
+      },
+      "Selected account for execution",
+    );
+
+    // Record queue depth metric
+    recordMetric(
+      "facilitator.account.queue_depth",
+      account.queue.activeCount + account.queue.pendingCount,
+      {
+        account: account.address,
+        network: this.network,
+      },
+    );
+
+    // Execute in account's serial queue
+    const result = await account.queue(async () => {
+      const startTime = Date.now();
+
+      try {
+        const result = await fn(account.signer);
+        account.processed++;
+
+        const duration = Date.now() - startTime;
+
+        logger.debug(
+          {
+            address: account.address,
+            duration_ms: duration,
+            totalProcessed: account.processed,
+          },
+          "Account execution completed",
+        );
+
+        // Record metrics
+        recordMetric("facilitator.account.tx_count", 1, {
+          account: account.address,
+          network: this.network,
+          success: "true",
+        });
+
+        return result;
+      } catch (error) {
+        const duration = Date.now() - startTime;
+
+        logger.error(
+          {
+            address: account.address,
+            duration_ms: duration,
+            error,
+          },
+          "Account execution failed",
+        );
+
+        // Record error metric
+        recordMetric("facilitator.account.tx_count", 1, {
+          account: account.address,
+          network: this.network,
+          success: "false",
+        });
+
+        throw error;
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * Get information about all accounts
+   */
+  getAccountsInfo(): AccountInfo[] {
+    return this.accounts.map((acc) => ({
+      address: acc.address,
+      queueDepth: acc.queue.activeCount + acc.queue.pendingCount,
+      totalProcessed: acc.processed,
+    }));
+  }
+
+  /**
+   * Get the number of accounts in the pool
+   */
+  getAccountCount(): number {
+    return this.accounts.length;
+  }
+
+  /**
+   * Get total number of transactions processed across all accounts
+   */
+  getTotalProcessed(): number {
+    return this.accounts.reduce((sum, acc) => sum + acc.processed, 0);
+  }
+
+  /**
+   * Select an account based on the configured strategy
+   */
+  private selectAccount(): Account {
+    if (this.strategy === "round_robin") {
+      const account = this.accounts[this.roundRobinIndex];
+      this.roundRobinIndex = (this.roundRobinIndex + 1) % this.accounts.length;
+      return account;
+    } else {
+      // Random selection
+      const index = Math.floor(Math.random() * this.accounts.length);
+      return this.accounts[index];
+    }
+  }
+}
+
+/**
+ * Load private keys from environment variables
+ *
+ * Supports three formats (in priority order):
+ * 1. EVM_PRIVATE_KEYS - Comma-separated keys (recommended)
+ * 2. EVM_PRIVATE_KEY_1, EVM_PRIVATE_KEY_2, ... - Numbered keys
+ * 3. EVM_PRIVATE_KEY - Single key (backward compatibility)
+ *
+ * @returns Array of private keys
+ */
+export function loadEvmPrivateKeys(): string[] {
+  // 1. Try comma-separated format
+  const keysStr = process.env.EVM_PRIVATE_KEYS;
+  if (keysStr) {
+    const keys = keysStr
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    if (keys.length > 0) {
+      logger.info({ count: keys.length }, "Loaded EVM private keys from EVM_PRIVATE_KEYS");
+      return keys;
+    }
+  }
+
+  // 2. Try numbered format
+  const keys: string[] = [];
+  let i = 1;
+  while (true) {
+    const key = process.env[`EVM_PRIVATE_KEY_${i}`];
+    if (!key) break;
+    keys.push(key);
+    i++;
+  }
+  if (keys.length > 0) {
+    logger.info({ count: keys.length }, "Loaded EVM private keys from EVM_PRIVATE_KEY_*");
+    return keys;
+  }
+
+  // 3. Try single key format (backward compatibility)
+  const singleKey = process.env.EVM_PRIVATE_KEY;
+  if (singleKey) {
+    logger.info("Loaded single EVM private key from EVM_PRIVATE_KEY");
+    return [singleKey];
+  }
+
+  throw new Error(
+    "No EVM private keys configured. Set EVM_PRIVATE_KEYS, EVM_PRIVATE_KEY_*, or EVM_PRIVATE_KEY",
+  );
+}
+
+/**
+ * Load SVM private keys from environment variables
+ *
+ * Supports three formats (in priority order):
+ * 1. SVM_PRIVATE_KEYS - Comma-separated keys (recommended)
+ * 2. SVM_PRIVATE_KEY_1, SVM_PRIVATE_KEY_2, ... - Numbered keys
+ * 3. SVM_PRIVATE_KEY - Single key (backward compatibility)
+ *
+ * @returns Array of private keys, or empty array if none configured
+ */
+export function loadSvmPrivateKeys(): string[] {
+  // 1. Try comma-separated format
+  const keysStr = process.env.SVM_PRIVATE_KEYS;
+  if (keysStr) {
+    const keys = keysStr
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    if (keys.length > 0) {
+      logger.info({ count: keys.length }, "Loaded SVM private keys from SVM_PRIVATE_KEYS");
+      return keys;
+    }
+  }
+
+  // 2. Try numbered format
+  const keys: string[] = [];
+  let i = 1;
+  while (true) {
+    const key = process.env[`SVM_PRIVATE_KEY_${i}`];
+    if (!key) break;
+    keys.push(key);
+    i++;
+  }
+  if (keys.length > 0) {
+    logger.info({ count: keys.length }, "Loaded SVM private keys from SVM_PRIVATE_KEY_*");
+    return keys;
+  }
+
+  // 3. Try single key format (backward compatibility)
+  const singleKey = process.env.SVM_PRIVATE_KEY;
+  if (singleKey) {
+    logger.info("Loaded single SVM private key from SVM_PRIVATE_KEY");
+    return [singleKey];
+  }
+
+  // SVM keys are optional
+  return [];
+}
+
+/**
+ * Create account pool from environment variables
+ *
+ * @param network - Network name
+ * @param config - Optional configuration
+ * @returns Account pool instance
+ */
+export async function createAccountPoolFromEnv(
+  network: string,
+  config?: AccountPoolConfig,
+): Promise<AccountPool> {
+  const evmKeys = loadEvmPrivateKeys();
+  return AccountPool.create(evmKeys, network, config);
+}
