@@ -1,22 +1,18 @@
-# Railway deployment configuration for x402-exec Showcase Server
-# Uses pre-built Docker images from GitHub Container Registry
-# 
-# DEPLOYMENT STEPS:
-# 1. In Railway Dashboard, create a new service
-# 2. Choose "Deploy from Docker Image"
-# 3. Use image: ghcr.io/nuwa-protocol/facilitator:latest
-# 4. Set environment variable: SERVICE_NAME=showcase-server
-# 5. Set other required environment variables (FACILITATOR_URL, etc.)
+[phases.setup]
+nixPkgs = ["nodejs_20", "corepack"]
 
-# Note: No build configuration needed when using pre-built images
+[phases.install]
+cmds = [
+  "corepack enable",
+  "corepack prepare pnpm@10.7.0 --activate",
+  "pnpm install --frozen-lockfile"
+]
 
-[deploy]
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+[phases.build]
+cmds = [
+  "pnpm run build:server"
+]
 
-[env]
-SERVICE_NAME = "showcase-server"
-# Required: FACILITATOR_URL - URL of the facilitator service
-# Optional: PORT - Port number (defaults to 3000)
-# Optional: NODE_ENV - Environment mode (production, development)
+[start]
+cmd = "cd examples/showcase/server && pnpm start"
 

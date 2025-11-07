@@ -78,3 +78,17 @@ jobs:
         run: pnpm run build:examples
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Test facilitator
+        working-directory: examples/facilitator
+        run: pnpm run test:coverage
+        env:
+          NODE_ENV: test
+
+      - name: Upload facilitator coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./examples/facilitator/coverage/lcov.info
+          flags: facilitator
+          name: facilitator-coverage
+          fail_ci_if_error: false
