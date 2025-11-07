@@ -183,7 +183,30 @@ app.get("/health", (req: Request, res: Response) => {
  * GET /ready - Readiness check with account pool health checks
  */
 app.get("/ready", async (req: Request, res: Response) => {
-  const checks: Record<string, any> = {};
+  const checks: Record<
+    string,
+    | { status: string; message?: string }
+    | { evm: number; svm: number; status: string }
+    | {
+        evm: Array<{
+          network: string;
+          accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
+        }>;
+        svm: Array<{
+          network: string;
+          accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
+        }>;
+        status: string;
+      }
+    | {
+        enabled: boolean;
+        hits?: number;
+        misses?: number;
+        keys?: number;
+        hitRate?: string;
+        status: string;
+      }
+  > = {};
   let allHealthy = true;
 
   // Check private keys are loaded

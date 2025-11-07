@@ -7,7 +7,6 @@
 
 import type { CacheInterface } from "./interface.js";
 import { getLogger } from "../telemetry.js";
-import type { ConnectedClient } from "x402/types";
 
 const logger = getLogger();
 
@@ -28,6 +27,12 @@ export class TokenCache {
   private cache: CacheInterface;
   private config: Required<TokenCacheConfig>;
 
+  /**
+   * Create a new token cache instance
+   *
+   * @param cache - Cache implementation to use
+   * @param config - Optional cache configuration
+   */
   constructor(cache: CacheInterface, config?: TokenCacheConfig) {
     this.cache = cache;
     this.config = {
@@ -98,6 +103,9 @@ export class TokenCache {
 
   /**
    * Invalidate token version cache
+   *
+   * @param network - Network name
+   * @param asset - Token contract address
    */
   invalidateVersion(network: string, asset: string): void {
     const key = this.makeVersionKey(network, asset);
@@ -107,6 +115,9 @@ export class TokenCache {
 
   /**
    * Invalidate token metadata cache
+   *
+   * @param network - Network name
+   * @param asset - Token contract address
    */
   invalidateMetadata(network: string, asset: string): void {
     const key = this.makeMetadataKey(network, asset);
@@ -124,20 +135,43 @@ export class TokenCache {
 
   /**
    * Get cache statistics
+   *
+   * @returns Cache statistics (hits, misses, keys, etc.)
    */
   getStats() {
     return this.cache.getStats();
   }
 
+  /**
+   * Generate cache key for token version
+   *
+   * @param network - Network name
+   * @param asset - Token contract address
+   * @returns Cache key string
+   */
   private makeVersionKey(network: string, asset: string): string {
     return `version:${network}:${asset.toLowerCase()}`;
   }
 
+  /**
+   * Generate cache key for token metadata
+   *
+   * @param network - Network name
+   * @param asset - Token contract address
+   * @returns Cache key string
+   */
   private makeMetadataKey(network: string, asset: string): string {
     return `metadata:${network}:${asset.toLowerCase()}`;
   }
 }
 
+/**
+ * Create a new token cache instance
+ *
+ * @param cache - Cache implementation to use
+ * @param config - Optional cache configuration
+ * @returns New TokenCache instance
+ */
 export function createTokenCache(cache: CacheInterface, config?: TokenCacheConfig): TokenCache {
   return new TokenCache(cache, config);
 }
