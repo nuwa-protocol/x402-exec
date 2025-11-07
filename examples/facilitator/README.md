@@ -191,13 +191,60 @@ Malicious Resource Servers could specify Hooks that consume excessive gas, causi
 
 - Calculates minimum required `facilitatorFee` based on gas costs
 - Rejects transactions with insufficient fees
-- Considers: gas limit, gas price, native token price, safety multiplier
+- Considers: gas limit, gas price (dynamic or static), native token price, safety multiplier
+- Supports three gas price strategies: static, dynamic, and hybrid
+
+#### Gas Price Strategies
+
+The facilitator supports three strategies for obtaining gas prices:
+
+**1. Static** (Manual Configuration)
+
+- Uses fixed gas price values from environment variables
+- Best for: Testing, stable networks, or when you want predictable fees
+- Configuration: Set `*_TARGET_GAS_PRICE` for each network
+- Pros: Fast (<1ms), reliable, predictable
+- Cons: Requires manual updates, may not reflect market changes
+
+**2. Dynamic** (Real-time Query)
+
+- Queries gas price from RPC on every calculation
+- Best for: Maximum accuracy when performance is not critical
+- Configuration: Set `GAS_PRICE_STRATEGY=dynamic` + RPC URLs
+- Pros: Real-time accuracy
+- Cons: Slower (100-200ms per request), depends on RPC availability
+
+**3. Hybrid** (Recommended, Default)
+
+- Background thread updates cached gas prices periodically
+- Falls back to static config if RPC fails
+- Best for: Production use - combines speed and accuracy
+- Configuration: Automatically enabled if no `*_TARGET_GAS_PRICE` is set
+- Pros: Fast (<1ms), accurate, reliable fallback
+- Cons: Slightly more complex setup
+
+**Default Behavior:**
+
+- If any `*_TARGET_GAS_PRICE` is set → Uses **static** strategy
+- Otherwise → Uses **hybrid** strategy (fetches from chain)
 
 #### Configuration
 
-**Enable Security** (Recommended for Production):
+**For Production (Hybrid Strategy - Recommended):**
 
 ```env
+# Gas price strategy (hybrid is default)
+# GAS_PRICE_STRATEGY=hybrid
+
+# RPC URLs for dynamic gas price fetching
+
+# BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+# X_LAYER_TESTNET_RPC_URL=https://testrpc.xlayer.tech
+
+# Cache configuration
+GAS_PRICE_CACHE_TTL=300          # 5 minutes
+GAS_PRICE_UPDATE_INTERVAL=60     # 1 minute
+
 # Enable Hook whitelist (default: false, enable for production)
 HOOK_WHITELIST_ENABLED=true
 
@@ -210,39 +257,65 @@ GAS_COST_MAX_GAS_LIMIT=500000
 # Add trusted Hooks to whitelist
 BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
 X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
+
+# Native token prices (update periodically)
+BASE_SEPOLIA_ETH_PRICE=3000
+X_LAYER_TESTNET_ETH_PRICE=50
 ```
 
-**Disable for Testing** (Development Only):
+**For Testing with Static Prices:**
 
 ```env
+# Manually set gas prices (forces static strategy)
+BASE_SEPOLIA_TARGET_GAS_PRICE=1000000000   # 1 gwei
+X_LAYER_TESTNET_TARGET_GAS_PRICE=100000000 # 0.1 gwei
+
 # ⚠️ Warning: Only for development/testing
 HOOK_WHITELIST_ENABLED=false
 GAS_COST_VALIDATION_ENABLED=false
+```
+
+**For Maximum Accuracy (Dynamic Strategy):**
+
+```env
+# Force dynamic strategy (queries RPC every time)
+GAS_PRICE_STRATEGY=dynamic
+
+# RPC URLs (auto from viem chains default value, optional override)
+# BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+# X_LAYER_TESTNET_RPC_URL=https://testrpc.xlayer.tech
 ```
 
 #### Fee Calculation Formula
 
 ```
 1. Total Gas = BASE_LIMIT (150k) + HOOK_OVERHEAD (50k-100k)
-2. Gas Cost (Native Token) = Total Gas × Gas Price
-3. Gas Cost (USD) = Native Token Amount × Token Price
-4. Fee Required (USD) = Gas Cost × Safety Multiplier (1.5x)
-5. Fee (USDC) = USD Amount × 10^6
+2. Gas Price = From chain (hybrid/dynamic) OR config (static)
+3. Gas Cost (Native Token) = Total Gas × Gas Price
+4. Gas Cost (USD) = Native Token Amount × Token Price
+5. Fee Required (USD) = Gas Cost × Safety Multiplier (1.5x)
+6. Fee (USDC) = USD Amount × 10^6
 ```
 
-**Example** (Base Sepolia + TransferHook):
+**Example (Hybrid Strategy on Base Sepolia):**
 
-- Gas: 200,000 × 1 gwei = 0.0002 ETH
-- USD: 0.0002 ETH × $3,000 = $0.600000
-- With safety (1.5x): $0.600000 × 1.5 = $0.900000
-- USDC: 900,000 (0.0009 USDC with 6 decimals)
+```
+- Gas Price: 1.5 gwei (fetched from chain)
+- Gas: 200,000 × 1.5 gwei = 0.0003 ETH
+- USD: 0.0003 ETH × $3,000 = $0.900
+- With safety (1.5x): $0.900 × 1.5 = $1.350
+- USDC: 1,350,000 (1.35 USDC with 6 decimals)
+```
 
-**Example** (X-Layer Testnet + TransferHook):
+**Example (Static Strategy on X-Layer Testnet):**
 
+```
+- Gas Price: 0.1 gwei (from config)
 - Gas: 200,000 × 0.1 gwei = 0.00002 OKB
-- USD: 0.00002 OKB × $50 = $0.001000
-- With safety (1.5x): $0.001000 × 1.5 = $0.001500
+- USD: 0.00002 OKB × $50 = $0.001
+- With safety (1.5x): $0.001 × 1.5 = $0.0015
 - USDC: 1,500 (0.0015 USDC with 6 decimals)
+```
 
 #### Adding New Hooks to Whitelist
 

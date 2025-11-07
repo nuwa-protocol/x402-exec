@@ -110,6 +110,12 @@ describe("E2E: Facilitator Server", () => {
         hookWhitelistEnabled: false,
         allowedHooks: {},
       },
+      dynamicGasPrice: {
+        strategy: "static" as const,
+        cacheTTL: 300,
+        updateInterval: 60,
+        rpcUrls: {},
+      },
     };
 
     app = createApp({

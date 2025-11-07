@@ -15,6 +15,7 @@ import { createFeeRoutes, FeeRouteDependencies } from "./fee.js";
 import { createHookValidationMiddleware } from "../middleware/hook-validation.js";
 import { createFeeValidationMiddleware } from "../middleware/fee-validation.js";
 import type { GasCostConfig } from "../gas-cost.js";
+import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 
 /**
  * All dependencies required by routes
@@ -26,6 +27,7 @@ export interface RoutesDependencies
     SupportedRouteDependencies,
     FeeRouteDependencies {
   gasCost: GasCostConfig;
+  dynamicGasPrice: DynamicGasPriceConfig;
 }
 
 /**
@@ -50,7 +52,7 @@ export function registerRoutes(
 ): void {
   // Create validation middleware
   const hookValidation = createHookValidationMiddleware(deps.gasCost);
-  const feeValidation = createFeeValidationMiddleware(deps.gasCost);
+  const feeValidation = createFeeValidationMiddleware(deps.gasCost, deps.dynamicGasPrice);
 
   // Health check routes (no rate limiting)
   const healthRoutes = createHealthRoutes(deps);

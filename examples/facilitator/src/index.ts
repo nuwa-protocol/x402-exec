@@ -11,6 +11,7 @@ import { initTelemetry, getLogger } from "./telemetry.js";
 import { initShutdown } from "./shutdown.js";
 import { createMemoryCache, createTokenCache, type TokenCache } from "./cache/index.js";
 import { createApp } from "./app.js";
+import { startGasPriceUpdater } from "./dynamic-gas-price.js";
 
 // Initialize telemetry first
 initTelemetry();
@@ -66,6 +67,44 @@ async function main() {
       "Rate limiting configuration",
     );
 
+    // Log gas price strategy
+    logger.info(
+      {
+        strategy: config.dynamicGasPrice.strategy,
+        cacheTTL: config.dynamicGasPrice.cacheTTL,
+        updateInterval: config.dynamicGasPrice.updateInterval,
+        rpcConfigured: Object.keys(config.dynamicGasPrice.rpcUrls).length,
+      },
+      "Gas price strategy configuration",
+    );
+
+    // Start gas price updater if not static strategy
+    let stopGasPriceUpdater: (() => void) | undefined;
+    if (config.dynamicGasPrice.strategy !== "static") {
+      logger.info(
+        {
+          strategy: config.dynamicGasPrice.strategy,
+          networks: config.network.evmNetworks,
+        },
+        "Starting background gas price updater",
+      );
+
+      stopGasPriceUpdater = startGasPriceUpdater(
+        config.network.evmNetworks,
+        config.gasCost,
+        config.dynamicGasPrice,
+      );
+
+      // Register cleanup on shutdown
+      shutdownManager.addCleanupHandler(async () => {
+        if (stopGasPriceUpdater) {
+          stopGasPriceUpdater();
+        }
+      });
+    } else {
+      logger.info("Using static gas price configuration (no background updater)");
+    }
+
     // Initialize account pools
     const poolManager = await createPoolManager(
       config.evmPrivateKeys,
@@ -85,6 +124,7 @@ async function main() {
         allowedSettlementRouters: config.allowedSettlementRouters,
         x402Config: config.x402Config,
         gasCost: config.gasCost,
+        dynamicGasPrice: config.dynamicGasPrice,
       },
       requestBodyLimit: config.server.requestBodyLimit,
       rateLimitConfig: config.rateLimit,
@@ -117,6 +157,7 @@ async function main() {
       logger.info(`  - Token cache: ${config.cache.enabled ? "✓" : "✗"}`);
       logger.info(`  - Rate limiting: ${config.rateLimit.enabled ? "✓" : "✗"}`);
       logger.info(`  - Request body limit: ${config.server.requestBodyLimit}`);
+      logger.info(`  - Gas price strategy: ${config.dynamicGasPrice.strategy}`);
       logger.info("  - Standard x402 settlement: ✓");
       logger.info("  - SettlementRouter support: ✓");
       logger.info("  - Security whitelist: ✓");

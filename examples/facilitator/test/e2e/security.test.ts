@@ -67,6 +67,12 @@ describe("Security Features E2E", () => {
           hookWhitelistEnabled: false,
           allowedHooks: {},
         },
+        dynamicGasPrice: {
+          strategy: "static" as const,
+          cacheTTL: 300,
+          updateInterval: 60,
+          rpcUrls: {},
+        },
       },
       requestBodyLimit: "100kb", // Small limit for testing
       rateLimitConfig,

@@ -11,8 +11,12 @@
 
 import { config as loadEnv } from "dotenv";
 import type { X402Config } from "x402/types";
+import { evm } from "x402/types";
 import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x402x/core";
 import type { GasCostConfig } from "./gas-cost.js";
+import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
+import { baseSepolia } from "viem/chains";
+import type { Chain } from "viem";
 
 // Load environment variables
 loadEnv();
@@ -73,6 +77,7 @@ export interface AppConfig {
   x402Config?: X402Config;
   evmPrivateKeys: string[];
   gasCost: GasCostConfig;
+  dynamicGasPrice: DynamicGasPriceConfig;
 }
 
 /**
@@ -312,7 +317,7 @@ function parseGasCostConfig(): GasCostConfig {
     custom: parseInt(process.env.GAS_COST_HOOK_CUSTOM_OVERHEAD || "100000"),
   };
 
-  // Parse network gas prices
+  // Parse network gas prices (used as fallback for dynamic strategy)
   const networkGasPrice: Record<string, string> = {};
   for (const network of supportedNetworks) {
     const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_TARGET_GAS_PRICE`;
@@ -364,6 +369,61 @@ function parseGasCostConfig(): GasCostConfig {
 }
 
 /**
+ * Parse dynamic gas price configuration from environment variables
+ *
+ * @returns Dynamic gas price configuration object
+ */
+function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
+  const supportedNetworks = getSupportedNetworks();
+
+  // Determine strategy:
+  // - If any network has explicit TARGET_GAS_PRICE set, use static
+  // - Otherwise, use hybrid (dynamic with static fallback)
+  let hasExplicitGasPrice = false;
+  for (const network of supportedNetworks) {
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_TARGET_GAS_PRICE`;
+    if (process.env[envVarName]) {
+      hasExplicitGasPrice = true;
+      break;
+    }
+  }
+
+  // Allow explicit strategy override
+  const strategyEnv = process.env.GAS_PRICE_STRATEGY as "static" | "dynamic" | "hybrid" | undefined;
+  const strategy = strategyEnv || (hasExplicitGasPrice ? "static" : "hybrid");
+
+  // Map of network names to viem chains
+  const viemChains: Record<string, Chain> = {
+    "base-sepolia": baseSepolia,
+    "x-layer-testnet": evm.xLayerTestnet,
+  };
+
+  // Parse RPC URLs for each network
+  const rpcUrls: Record<string, string> = {};
+  for (const network of supportedNetworks) {
+    // First check environment variable
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_RPC_URL`;
+    const rpcUrl = process.env[envVarName];
+    if (rpcUrl) {
+      rpcUrls[network] = rpcUrl;
+    } else {
+      // Try to get from viem chain definition
+      const chain = viemChains[network];
+      if (chain?.rpcUrls?.default?.http?.[0]) {
+        rpcUrls[network] = chain.rpcUrls.default.http[0];
+      }
+    }
+  }
+
+  return {
+    strategy,
+    cacheTTL: parseInt(process.env.GAS_PRICE_CACHE_TTL || "300"), // 5 minutes
+    updateInterval: parseInt(process.env.GAS_PRICE_UPDATE_INTERVAL || "60"), // 1 minute
+    rpcUrls,
+  };
+}
+
+/**
  * Load and parse all application configuration
  *
  * @returns Complete application configuration object
@@ -379,5 +439,6 @@ export function loadConfig(): AppConfig {
     x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),
     gasCost: parseGasCostConfig(),
+    dynamicGasPrice: parseDynamicGasPriceConfig(),
   };
 }

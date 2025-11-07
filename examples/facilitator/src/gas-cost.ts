@@ -7,6 +7,7 @@
 
 import { getLogger } from "./telemetry.js";
 import { getNetworkConfig } from "@x402x/core";
+import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 
 const logger = getLogger();
 
@@ -190,15 +191,17 @@ export function convertUsdToToken(usdAmount: string, decimals: number): string {
  * @param hook - Hook address
  * @param tokenDecimals - Token decimals (e.g., 6 for USDC)
  * @param config - Gas cost configuration
+ * @param dynamicConfig - Optional dynamic gas price configuration
  * @returns Fee calculation result
  * @throws Error if hook is not allowed or calculation fails
  */
-export function calculateMinFacilitatorFee(
+export async function calculateMinFacilitatorFee(
   network: string,
   hook: string,
   tokenDecimals: number,
   config: GasCostConfig,
-): FeeCalculationResult {
+  dynamicConfig?: DynamicGasPriceConfig,
+): Promise<FeeCalculationResult> {
   // Check if validation is enabled
   if (!config.enabled) {
     return {
@@ -228,17 +231,15 @@ export function calculateMinFacilitatorFee(
   const gasLimit = getGasLimit(network, hook, config);
   const hookType = getHookType(network, hook);
 
-  // Get gas price
-  const gasPrice = config.networkGasPrice[network];
-  if (!gasPrice) {
-    throw new Error(`No gas price configured for network ${network}`);
-  }
+  // Get gas price (dynamic or static)
+  const gasPrice = await getGasPrice(network, config, dynamicConfig);
 
   // Calculate gas cost in Wei
   const gasCostWei = BigInt(gasLimit) * BigInt(gasPrice);
 
   // Convert to native token (divide by 10^18)
-  const gasCostNative = (Number(gasCostWei) / Math.pow(10, 18)).toFixed(6);
+  // Use higher precision (18 decimals) to preserve small values
+  const gasCostNative = (Number(gasCostWei) / Math.pow(10, 18)).toString();
 
   // Convert to USD
   const gasCostUSD = convertNativeToUsd(gasCostNative, network, config);
@@ -264,13 +265,16 @@ export function calculateMinFacilitatorFee(
     "Calculated minimum facilitator fee",
   );
 
+  // Format gasCostNative for display (up to 18 decimals, remove trailing zeros)
+  const gasCostNativeFormatted = parseFloat(gasCostNative).toFixed(18).replace(/\.?0+$/, "");
+
   return {
     minFacilitatorFee,
     minFacilitatorFeeUSD: finalCostUSD,
     gasLimit,
     maxGasLimit: config.maxGasLimit,
     gasPrice,
-    gasCostNative,
+    gasCostNative: gasCostNativeFormatted,
     gasCostUSD,
     safetyMultiplier: config.safetyMultiplier,
     finalCostUSD,

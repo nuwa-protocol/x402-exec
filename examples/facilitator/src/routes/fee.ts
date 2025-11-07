@@ -8,6 +8,7 @@ import { Router, Request, Response } from "express";
 import { getLogger, traced, recordMetric } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { getNetworkConfig } from "@x402x/core";
+import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 
 const logger = getLogger();
 
@@ -16,6 +17,7 @@ const logger = getLogger();
  */
 export interface FeeRouteDependencies {
   gasCost: GasCostConfig;
+  dynamicGasPrice: DynamicGasPriceConfig;
 }
 
 /**
@@ -70,7 +72,14 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
       try {
         feeCalculation = await traced(
           "fee.calculate",
-          async () => calculateMinFacilitatorFee(network, hook, tokenDecimals, deps.gasCost),
+          async () =>
+            calculateMinFacilitatorFee(
+              network,
+              hook,
+              tokenDecimals,
+              deps.gasCost,
+              deps.dynamicGasPrice,
+            ),
           { network, hook },
         );
       } catch (error) {

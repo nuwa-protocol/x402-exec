@@ -10,6 +10,7 @@ import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { isSettlementMode } from "../settlement.js";
 import { getNetworkConfig } from "@x402x/core";
+import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 
 const logger = getLogger();
 
@@ -17,10 +18,14 @@ const logger = getLogger();
  * Create fee validation middleware
  *
  * @param config - Gas cost configuration
+ * @param dynamicConfig - Dynamic gas price configuration
  * @returns Express middleware function
  */
-export function createFeeValidationMiddleware(config: GasCostConfig) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function createFeeValidationMiddleware(
+  config: GasCostConfig,
+  dynamicConfig: DynamicGasPriceConfig,
+) {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Skip if validation is disabled
       if (!config.enabled) {
@@ -68,7 +73,13 @@ export function createFeeValidationMiddleware(config: GasCostConfig) {
       // Calculate minimum required fee
       let feeCalculation;
       try {
-        feeCalculation = calculateMinFacilitatorFee(network, hook, tokenDecimals, config);
+        feeCalculation = await calculateMinFacilitatorFee(
+          network,
+          hook,
+          tokenDecimals,
+          config,
+          dynamicConfig,
+        );
       } catch (error) {
         logger.error({ error, network, hook }, "Failed to calculate minimum facilitator fee");
         return res.status(400).json({
