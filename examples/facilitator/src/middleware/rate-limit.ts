@@ -31,10 +31,10 @@ export interface RateLimitConfig {
  * @param config - Rate limiting configuration
  * @returns Express rate limiting middleware
  */
-export function createVerifyRateLimiter(config: RateLimitConfig): RateLimitRequestHandler {
+export function createVerifyRateLimiter(config: RateLimitConfig): any {
   if (!config.enabled) {
     // Return a no-op middleware when disabled
-    return (req, res, next) => next();
+    return (req: any, res: any, next: any) => next();
   }
 
   return rateLimit({
@@ -76,10 +76,10 @@ export function createVerifyRateLimiter(config: RateLimitConfig): RateLimitReque
  * @param config - Rate limiting configuration
  * @returns Express rate limiting middleware
  */
-export function createSettleRateLimiter(config: RateLimitConfig): RateLimitRequestHandler {
+export function createSettleRateLimiter(config: RateLimitConfig): any {
   if (!config.enabled) {
     // Return a no-op middleware when disabled
-    return (req, res, next) => next();
+    return (req: any, res: any, next: any) => next();
   }
 
   return rateLimit({

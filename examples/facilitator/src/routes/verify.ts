@@ -21,6 +21,7 @@ import {
 } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
+import type { RequestHandler } from "express";
 
 const logger = getLogger();
 
@@ -45,11 +46,15 @@ export interface VerifyRouteDependencies {
  *
  * @param deps - Dependencies for verify routes
  * @param rateLimiter - Rate limiting middleware
+ * @param hookValidation - Hook whitelist validation middleware
+ * @param feeValidation - Fee validation middleware
  * @returns Express Router with verify endpoints
  */
 export function createVerifyRoutes(
   deps: VerifyRouteDependencies,
   rateLimiter: RateLimitRequestHandler,
+  hookValidation?: RequestHandler,
+  feeValidation?: RequestHandler,
 ): Router {
   const router = Router();
 
@@ -68,9 +73,13 @@ export function createVerifyRoutes(
   });
 
   /**
-   * POST /verify - Verify x402 payment payload (with rate limiting)
+   * POST /verify - Verify x402 payment payload (with rate limiting and validation)
    */
-  router.post("/verify", rateLimiter, async (req: Request, res: Response) => {
+  const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
+  if (hookValidation) middlewares.push(hookValidation);
+  if (feeValidation) middlewares.push(feeValidation);
+
+  router.post("/verify", ...(middlewares as any), async (req: Request, res: Response) => {
     try {
       const body: VerifyRequest = req.body;
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);

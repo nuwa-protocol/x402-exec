@@ -11,6 +11,10 @@ import { createHealthRoutes, HealthRouteDependencies } from "./health.js";
 import { createVerifyRoutes, VerifyRouteDependencies } from "./verify.js";
 import { createSettleRoutes, SettleRouteDependencies } from "./settle.js";
 import { createSupportedRoutes, SupportedRouteDependencies } from "./supported.js";
+import { createFeeRoutes, FeeRouteDependencies } from "./fee.js";
+import { createHookValidationMiddleware } from "../middleware/hook-validation.js";
+import { createFeeValidationMiddleware } from "../middleware/fee-validation.js";
+import type { GasCostConfig } from "../gas-cost.js";
 
 /**
  * All dependencies required by routes
@@ -19,14 +23,17 @@ export interface RoutesDependencies
   extends HealthRouteDependencies,
     VerifyRouteDependencies,
     SettleRouteDependencies,
-    SupportedRouteDependencies {}
+    SupportedRouteDependencies,
+    FeeRouteDependencies {
+  gasCost: GasCostConfig;
+}
 
 /**
  * Rate limiters for specific routes
  */
 export interface RateLimiters {
-  verifyRateLimiter: RateLimitRequestHandler;
-  settleRateLimiter: RateLimitRequestHandler;
+  verifyRateLimiter: any;
+  settleRateLimiter: any;
 }
 
 /**
@@ -41,17 +48,35 @@ export function registerRoutes(
   deps: RoutesDependencies,
   rateLimiters: RateLimiters,
 ): void {
+  // Create validation middleware
+  const hookValidation = createHookValidationMiddleware(deps.gasCost);
+  const feeValidation = createFeeValidationMiddleware(deps.gasCost);
+
   // Health check routes (no rate limiting)
   const healthRoutes = createHealthRoutes(deps);
   app.use(healthRoutes);
 
-  // Verify routes (with rate limiting)
-  const verifyRoutes = createVerifyRoutes(deps, rateLimiters.verifyRateLimiter);
+  // Verify routes (with rate limiting and validation)
+  const verifyRoutes = createVerifyRoutes(
+    deps,
+    rateLimiters.verifyRateLimiter,
+    hookValidation,
+    feeValidation,
+  );
   app.use(verifyRoutes);
 
-  // Settle routes (with rate limiting)
-  const settleRoutes = createSettleRoutes(deps, rateLimiters.settleRateLimiter);
+  // Settle routes (with rate limiting and validation)
+  const settleRoutes = createSettleRoutes(
+    deps,
+    rateLimiters.settleRateLimiter,
+    hookValidation,
+    feeValidation,
+  );
   app.use(settleRoutes);
+
+  // Fee query routes (no rate limiting)
+  const feeRoutes = createFeeRoutes(deps);
+  app.use(feeRoutes);
 
   // Supported payment kinds routes (no rate limiting)
   const supportedRoutes = createSupportedRoutes(deps);

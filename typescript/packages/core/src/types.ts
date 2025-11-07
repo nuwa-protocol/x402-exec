@@ -90,6 +90,10 @@ export interface SettlementExtra {
 export interface FacilitatorConfig {
   /** Allowed SettlementRouter addresses per network */
   allowedRouters: Record<string, string[]>;
+  /** Allowed Hook addresses per network (optional, for security) */
+  allowedHooks?: Record<string, string[]>;
+  /** Maximum gas limit for settlement transactions (optional, for security) */
+  maxGasLimit?: number;
 }
 
 /**

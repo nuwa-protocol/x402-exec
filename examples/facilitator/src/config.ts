@@ -12,6 +12,7 @@
 import { config as loadEnv } from "dotenv";
 import type { X402Config } from "x402/types";
 import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x402x/core";
+import type { GasCostConfig } from "./gas-cost.js";
 
 // Load environment variables
 loadEnv();
@@ -71,6 +72,7 @@ export interface AppConfig {
   allowedSettlementRouters: Record<string, string[]>;
   x402Config?: X402Config;
   evmPrivateKeys: string[];
+  gasCost: GasCostConfig;
 }
 
 /**
@@ -253,6 +255,115 @@ function loadEvmPrivateKeys(): string[] {
 }
 
 /**
+ * Parse Hook whitelist from environment variables
+ *
+ * @returns Record mapping network names to allowed Hook addresses
+ */
+function parseAllowedHooks(): Record<string, string[]> {
+  const supportedNetworks = getSupportedNetworks();
+  const hooks: Record<string, string[]> = {};
+
+  for (const network of supportedNetworks) {
+    const addresses: string[] = [];
+
+    // Try to get from environment variable
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_ALLOWED_HOOKS`;
+    const envValue = process.env[envVarName];
+
+    if (envValue) {
+      // Support comma-separated list
+      addresses.push(
+        ...envValue
+          .split(",")
+          .map((addr) => addr.trim())
+          .filter(Boolean),
+      );
+    } else {
+      // Fallback to default hooks from network config
+      try {
+        if (isNetworkSupported(network)) {
+          const networkConfig = getNetworkConfig(network);
+          if (networkConfig.hooks?.transfer) {
+            addresses.push(networkConfig.hooks.transfer);
+          }
+        }
+      } catch {
+        // Network not configured, skip
+      }
+    }
+
+    hooks[network] = addresses.filter(Boolean);
+  }
+
+  return hooks;
+}
+
+/**
+ * Parse gas cost configuration from environment variables
+ *
+ * @returns Gas cost configuration object
+ */
+function parseGasCostConfig(): GasCostConfig {
+  const supportedNetworks = getSupportedNetworks();
+
+  // Parse hook gas overhead
+  const hookGasOverhead: Record<string, number> = {
+    transfer: parseInt(process.env.GAS_COST_HOOK_TRANSFER_OVERHEAD || "50000"),
+    custom: parseInt(process.env.GAS_COST_HOOK_CUSTOM_OVERHEAD || "100000"),
+  };
+
+  // Parse network gas prices
+  const networkGasPrice: Record<string, string> = {};
+  for (const network of supportedNetworks) {
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_TARGET_GAS_PRICE`;
+    const gasPrice = process.env[envVarName];
+    if (gasPrice) {
+      networkGasPrice[network] = gasPrice;
+    } else {
+      // Default gas prices for common networks (testnets have low gas prices)
+      if (network.includes("sepolia")) {
+        networkGasPrice[network] = "1000000000"; // 1 gwei for Sepolia testnets
+      } else if (network.includes("testnet")) {
+        networkGasPrice[network] = "100000000"; // 0.1 gwei for other testnets (very cheap)
+      } else {
+        networkGasPrice[network] = "1000000000"; // 1 gwei default for mainnets
+      }
+    }
+  }
+
+  // Parse native token prices
+  const nativeTokenPrice: Record<string, number> = {};
+  for (const network of supportedNetworks) {
+    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_ETH_PRICE`;
+    const price = process.env[envVarName];
+    if (price) {
+      nativeTokenPrice[network] = parseFloat(price);
+    } else {
+      // Default prices (conservative estimates)
+      if (network.includes("base")) {
+        nativeTokenPrice[network] = 3000; // ETH price
+      } else if (network.includes("x-layer")) {
+        nativeTokenPrice[network] = 50; // OKB price
+      } else {
+        nativeTokenPrice[network] = 100; // Generic default
+      }
+    }
+  }
+
+  return {
+    enabled: process.env.GAS_COST_VALIDATION_ENABLED !== "false", // Enabled by default
+    baseGasLimit: parseInt(process.env.GAS_COST_BASE_LIMIT || "150000"),
+    hookGasOverhead,
+    safetyMultiplier: parseFloat(process.env.GAS_COST_SAFETY_MULTIPLIER || "1.5"),
+    networkGasPrice,
+    nativeTokenPrice,
+    maxGasLimit: parseInt(process.env.GAS_COST_MAX_GAS_LIMIT || "500000"),
+    hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true", // Disabled by default
+    allowedHooks: parseAllowedHooks(),
+  };
+}
+
+/**
  * Load and parse all application configuration
  *
  * @returns Complete application configuration object
@@ -267,5 +378,6 @@ export function loadConfig(): AppConfig {
     allowedSettlementRouters: parseAllowedSettlementRouters(),
     x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),
+    gasCost: parseGasCostConfig(),
   };
 }

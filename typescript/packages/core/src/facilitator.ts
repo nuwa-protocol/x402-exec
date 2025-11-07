@@ -214,6 +214,8 @@ export async function settleWithRouter(
         extra.hook as Address,
         extra.hookData as Hex,
       ],
+      // Add gas limit if configured (for security against malicious hooks)
+      ...(config.maxGasLimit ? { gas: BigInt(config.maxGasLimit) } : {}),
     });
 
     // 7. Wait for transaction confirmation

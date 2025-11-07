@@ -11,7 +11,6 @@ import { initTelemetry, getLogger } from "./telemetry.js";
 import { initShutdown } from "./shutdown.js";
 import { createMemoryCache, createTokenCache, type TokenCache } from "./cache/index.js";
 import { createApp } from "./app.js";
-import { logRateLimitConfig } from "./middleware/rate-limit.js";
 
 // Initialize telemetry first
 initTelemetry();
@@ -57,7 +56,15 @@ if (config.cache.enabled) {
 async function main() {
   try {
     // Log rate limiting configuration
-    logRateLimitConfig(config.rateLimit);
+    logger.info(
+      {
+        enabled: config.rateLimit.enabled,
+        verifyMax: config.rateLimit.verifyMax,
+        settleMax: config.rateLimit.settleMax,
+        windowMs: config.rateLimit.windowMs,
+      },
+      "Rate limiting configuration",
+    );
 
     // Initialize account pools
     const poolManager = await createPoolManager(
@@ -77,6 +84,7 @@ async function main() {
         tokenCache,
         allowedSettlementRouters: config.allowedSettlementRouters,
         x402Config: config.x402Config,
+        gasCost: config.gasCost,
       },
       requestBodyLimit: config.server.requestBodyLimit,
       rateLimitConfig: config.rateLimit,

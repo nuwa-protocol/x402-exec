@@ -40,7 +40,7 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
         kinds.push({
           x402Version: 1,
           scheme: "exact",
-          network,
+          network: network as any, // Type assertion for dynamic networks
         });
       }
     }

@@ -24,6 +24,18 @@ This is a **production-grade** implementation of an x402 facilitator service wit
   - Request body size limits (default: 1MB)
   - Zod schema validation for all inputs
   - Sanitized error messages (no internal detail leaks)
+- **Hook Whitelist Security** 🆕: Protection against malicious Hook gas attacks
+  - Only pre-approved Hooks are accepted
+  - Network-specific Hook whitelists
+  - Prevents unknown/malicious contracts from draining facilitator funds
+- **Gas Limit Protection** 🆕: Maximum gas limit enforcement
+  - Configurable gas limit cap per transaction (default: 500k)
+  - Prevents excessive gas consumption even from whitelisted Hooks
+  - Additional safety layer against gas attacks
+- **Facilitator Fee Validation** 🆕: Ensures profitability
+  - Automatic minimum fee calculation based on gas costs
+  - Validates fees cover transaction costs before execution
+  - Prevents facilitator from accepting unprofitable settlements
 - **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
 - **Case-Insensitive Matching**: Address validation works regardless of case
@@ -148,6 +160,100 @@ pnpm dev
 The server will start on http://localhost:3000
 
 ## Security Configuration
+
+### Hook Whitelist & Gas Attack Protection 🆕
+
+The facilitator implements multi-layer security against malicious Hook gas attacks:
+
+#### Security Threat
+
+Malicious Resource Servers could specify Hooks that consume excessive gas, causing:
+
+1. **Financial Loss**: Facilitator pays gas costs but `facilitatorFee` is insufficient
+2. **Resource Drain**: Signed authorizations wasted on unprofitable transactions
+3. **Service Degradation**: Facilitator funds depleted
+
+#### Multi-Layer Defense
+
+**Layer 1: Hook Whitelist** (Primary Defense)
+
+- Only pre-approved, audited Hooks are accepted
+- Configured per network via environment variables
+- Default: Automatically includes official TransferHook
+
+**Layer 2: Gas Limit Cap** (Secondary Defense)
+
+- Maximum gas limit enforced per transaction (default: 500k)
+- Protects even against whitelisted Hook issues
+- Configurable via `GAS_COST_MAX_GAS_LIMIT`
+
+**Layer 3: Fee Validation** (Financial Protection)
+
+- Calculates minimum required `facilitatorFee` based on gas costs
+- Rejects transactions with insufficient fees
+- Considers: gas limit, gas price, native token price, safety multiplier
+
+#### Configuration
+
+**Enable Security** (Recommended for Production):
+
+```env
+# Enable Hook whitelist (default: false, enable for production)
+HOOK_WHITELIST_ENABLED=true
+
+# Enable fee validation (default: true)
+GAS_COST_VALIDATION_ENABLED=true
+
+# Maximum gas limit per transaction
+GAS_COST_MAX_GAS_LIMIT=500000
+
+# Add trusted Hooks to whitelist
+BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
+X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
+```
+
+**Disable for Testing** (Development Only):
+
+```env
+# ⚠️ Warning: Only for development/testing
+HOOK_WHITELIST_ENABLED=false
+GAS_COST_VALIDATION_ENABLED=false
+```
+
+#### Fee Calculation Formula
+
+```
+1. Total Gas = BASE_LIMIT (150k) + HOOK_OVERHEAD (50k-100k)
+2. Gas Cost (Native Token) = Total Gas × Gas Price
+3. Gas Cost (USD) = Native Token Amount × Token Price
+4. Fee Required (USD) = Gas Cost × Safety Multiplier (1.5x)
+5. Fee (USDC) = USD Amount × 10^6
+```
+
+**Example** (Base Sepolia + TransferHook):
+
+- Gas: 200,000 × 1 gwei = 0.0002 ETH
+- USD: 0.0002 ETH × $3,000 = $0.600000
+- With safety (1.5x): $0.600000 × 1.5 = $0.900000
+- USDC: 900,000 (0.0009 USDC with 6 decimals)
+
+**Example** (X-Layer Testnet + TransferHook):
+
+- Gas: 200,000 × 0.1 gwei = 0.00002 OKB
+- USD: 0.00002 OKB × $50 = $0.001000
+- With safety (1.5x): $0.001000 × 1.5 = $0.001500
+- USDC: 1,500 (0.0015 USDC with 6 decimals)
+
+#### Adding New Hooks to Whitelist
+
+1. **Audit the Hook contract** thoroughly
+2. Test on testnet extensively
+3. Add address to environment variable:
+   ```env
+   BASE_SEPOLIA_ALLOWED_HOOKS=0xHook1,0xHook2,0xHook3
+   ```
+4. Restart facilitator to load new configuration
+5. Verify with `/min-facilitator-fee?network=base-sepolia&hook=0xHook1`
 
 ### SettlementRouter Whitelist
 
@@ -309,6 +415,69 @@ Settles an x402 payment. Automatically detects and routes between standard and S
   "errorReason"?: string
 }
 ```
+
+**Security Validations:**
+
+- Hook whitelist check (if SettlementRouter mode)
+- Gas limit validation (max: 500k)
+- Facilitator fee minimum requirement check
+
+### GET /min-facilitator-fee 🆕
+
+Query minimum facilitator fee for a specific network and hook. Resource Servers should call this endpoint to determine appropriate `facilitatorFee` values.
+
+**Query Parameters:**
+
+- `network` (required): Network name (e.g., `base-sepolia`)
+- `hook` (required): Hook contract address
+
+**Response Example (Hook allowed):**
+
+```json
+{
+  "network": "base-sepolia",
+  "hook": "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
+  "hookAllowed": true,
+  "minFacilitatorFee": "45000000",
+  "minFacilitatorFeeUSD": "45.00",
+  "breakdown": {
+    "gasLimit": 200000,
+    "maxGasLimit": 500000,
+    "gasPrice": "50000000000",
+    "gasCostNative": "0.01",
+    "gasCostUSD": "30.00",
+    "safetyMultiplier": 1.5,
+    "finalCostUSD": "45.00"
+  },
+  "token": {
+    "address": "0x036CbD...",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "prices": {
+    "nativeToken": "3000.00",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+**Response Example (Hook not allowed):**
+
+```json
+{
+  "network": "base-sepolia",
+  "hook": "0xmalicious...",
+  "hookAllowed": false,
+  "error": "Hook not in whitelist"
+}
+```
+
+**Integration Guide for Resource Servers:**
+
+1. Before generating PaymentRequirements, query this endpoint
+2. Use returned `minFacilitatorFee` as `facilitatorFee` in the PaymentRequirements
+3. Cache the result for 5-10 minutes to reduce API calls
+4. Handle `hookAllowed: false` responses appropriately
 
 ## SettlementRouter Integration
 

@@ -49,6 +49,24 @@ describe("Security Features E2E", () => {
           "base-sepolia": ["0x32431D4511e061F1133520461B07eC42afF157D6"],
         },
         x402Config: undefined,
+        gasCost: {
+          enabled: false, // Disable gas cost validation for tests
+          baseGasLimit: 150000,
+          hookGasOverhead: {
+            transfer: 50000,
+            custom: 100000,
+          },
+          safetyMultiplier: 1.5,
+          networkGasPrice: {
+            "base-sepolia": "50000000000",
+          },
+          nativeTokenPrice: {
+            "base-sepolia": 3000,
+          },
+          maxGasLimit: 500000,
+          hookWhitelistEnabled: false,
+          allowedHooks: {},
+        },
       },
       requestBodyLimit: "100kb", // Small limit for testing
       rateLimitConfig,

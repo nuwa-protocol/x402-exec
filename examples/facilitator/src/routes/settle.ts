@@ -22,6 +22,7 @@ import { isSettlementMode, settleWithRouter } from "../settlement.js";
 import { getLogger, traced, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import { isStandardX402Allowed } from "../config.js";
+import type { RequestHandler } from "express";
 
 const logger = getLogger();
 
@@ -47,11 +48,15 @@ export interface SettleRouteDependencies {
  *
  * @param deps - Dependencies for settle routes
  * @param rateLimiter - Rate limiting middleware
+ * @param hookValidation - Hook whitelist validation middleware
+ * @param feeValidation - Fee validation middleware
  * @returns Express Router with settle endpoints
  */
 export function createSettleRoutes(
   deps: SettleRouteDependencies,
   rateLimiter: RateLimitRequestHandler,
+  hookValidation?: RequestHandler,
+  feeValidation?: RequestHandler,
 ): Router {
   const router = Router();
 
@@ -79,7 +84,11 @@ export function createSettleRoutes(
    *
    * The mode is automatically detected based on the presence of extra.settlementRouter
    */
-  router.post("/settle", rateLimiter, async (req: Request, res: Response) => {
+  const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
+  if (hookValidation) middlewares.push(hookValidation);
+  if (feeValidation) middlewares.push(feeValidation);
+
+  router.post("/settle", ...(middlewares as any), async (req: Request, res: Response) => {
     try {
       const body: SettleRequest = req.body;
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
