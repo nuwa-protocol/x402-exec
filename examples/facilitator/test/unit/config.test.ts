@@ -4,8 +4,23 @@
  * Tests configuration parsing and validation
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loadConfig } from "../../src/config.js";
+
+// Mock @x402x/core to return test networks
+vi.mock("@x402x/core", () => ({
+  getSupportedNetworks: vi.fn(() => ["base-sepolia", "base", "x-layer-testnet", "x-layer"]),
+  getNetworkConfig: vi.fn((network: string) => {
+    const configs: Record<string, any> = {
+      "base-sepolia": { settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6" },
+      "x-layer-testnet": { settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d" },
+    };
+    return configs[network] || {};
+  }),
+  isNetworkSupported: vi.fn((network: string) =>
+    ["base-sepolia", "base", "x-layer-testnet", "x-layer"].includes(network),
+  ),
+}));
 
 describe("config", () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -133,39 +148,6 @@ describe("config", () => {
         "0x0000000000000000000000000000000000000000000000000000000000000001",
       );
     });
-
-    it("should load single SVM private key", () => {
-      process.env.EVM_PRIVATE_KEY =
-        "0x0000000000000000000000000000000000000000000000000000000000000001";
-      process.env.SVM_PRIVATE_KEY = "svm-key-1";
-
-      const config = loadConfig();
-
-      expect(config.svmPrivateKeys).toHaveLength(1);
-      expect(config.svmPrivateKeys[0]).toBe("svm-key-1");
-    });
-
-    it("should load numbered SVM private keys", () => {
-      process.env.EVM_PRIVATE_KEY =
-        "0x0000000000000000000000000000000000000000000000000000000000000001";
-      process.env.SVM_PRIVATE_KEY_1 = "svm-key-1";
-      process.env.SVM_PRIVATE_KEY_2 = "svm-key-2";
-
-      const config = loadConfig();
-
-      expect(config.svmPrivateKeys).toHaveLength(2);
-      expect(config.svmPrivateKeys[0]).toBe("svm-key-1");
-      expect(config.svmPrivateKeys[1]).toBe("svm-key-2");
-    });
-
-    it("should return empty array for missing SVM keys", () => {
-      process.env.EVM_PRIVATE_KEY =
-        "0x0000000000000000000000000000000000000000000000000000000000000001";
-
-      const config = loadConfig();
-
-      expect(config.svmPrivateKeys).toHaveLength(0);
-    });
   });
 
   describe("settlement router whitelist", () => {
@@ -201,6 +183,8 @@ describe("config", () => {
 
       const config = loadConfig();
 
+      // When env var is empty string, the network should have an empty array
+      expect(config.allowedSettlementRouters["base"]).toBeDefined();
       expect(config.allowedSettlementRouters["base"]).toHaveLength(0);
     });
   });
@@ -216,27 +200,6 @@ describe("config", () => {
       expect(config.network.evmNetworks).toContain("base");
       expect(config.network.evmNetworks).toContain("x-layer-testnet");
       expect(config.network.evmNetworks).toContain("x-layer");
-    });
-
-    it("should configure SVM networks", () => {
-      process.env.EVM_PRIVATE_KEY =
-        "0x0000000000000000000000000000000000000000000000000000000000000001";
-
-      const config = loadConfig();
-
-      expect(config.network.svmNetworks).toContain("solana-devnet");
-      expect(config.network.svmNetworks).toContain("solana-mainnet");
-    });
-
-    it("should load SVM RPC URL", () => {
-      process.env.EVM_PRIVATE_KEY =
-        "0x0000000000000000000000000000000000000000000000000000000000000001";
-      process.env.SVM_RPC_URL = "https://api.devnet.solana.com";
-
-      const config = loadConfig();
-
-      expect(config.network.svmRpcUrl).toBe("https://api.devnet.solana.com");
-      expect(config.x402Config?.svmConfig?.rpcUrl).toBe("https://api.devnet.solana.com");
     });
   });
 });

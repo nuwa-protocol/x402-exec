@@ -16,9 +16,7 @@ import {
   PaymentPayloadSchema,
   createConnectedClient,
   SupportedEVMNetworks,
-  SupportedSVMNetworks,
-  Signer,
-  ConnectedClient,
+  type ConnectedClient,
   type X402Config,
 } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
@@ -78,30 +76,13 @@ export function createVerifyRoutes(
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
       const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
 
-      // use the correct client/signer based on the requested network
-      // svm verify requires a Signer because it signs & simulates the txn
-      let client: Signer | ConnectedClient;
-      if (SupportedEVMNetworks.includes(paymentRequirements.network)) {
-        client = createConnectedClient(paymentRequirements.network);
-      } else if (SupportedSVMNetworks.includes(paymentRequirements.network)) {
-        // Use account pool for SVM if available
-        const pool = deps.poolManager.getPool(paymentRequirements.network);
-        if (pool) {
-          // Get a signer from the pool (will use round-robin/random selection)
-          // For verify, we don't need serial execution, so we can just get the first signer
-          const accountsInfo = pool.getAccountsInfo();
-          if (accountsInfo.length > 0) {
-            // Create a temporary signer for verification
-            client = await pool.execute(async (signer) => signer);
-          } else {
-            throw new Error("No SVM accounts available");
-          }
-        } else {
-          throw new Error(`No account pool for network: ${paymentRequirements.network}`);
-        }
-      } else {
-        throw new Error("Invalid network");
+      // Verify that this is an EVM network
+      if (!SupportedEVMNetworks.includes(paymentRequirements.network)) {
+        throw new Error("Invalid network. Only EVM networks are supported.");
       }
+
+      // Create connected client for EVM network
+      const client: ConnectedClient = createConnectedClient(paymentRequirements.network);
 
       // verify
       const startTime = Date.now();

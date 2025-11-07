@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PoolManager, createPoolManager } from "../../src/pool-manager.js";
+import { createPoolManager } from "../../src/pool-manager.js";
 import { AccountPool } from "../../src/account-pool.js";
 
 // Mock AccountPool
@@ -31,63 +31,36 @@ describe("pool-manager", () => {
 
   describe("PoolManager", () => {
     describe("initialization", () => {
-      it("should initialize with EVM keys only", async () => {
+      it("should initialize with EVM keys", async () => {
         const manager = await createPoolManager(
           ["0xevm1", "0xevm2"],
-          [],
           {
             evmNetworks: ["base-sepolia", "x-layer-testnet"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
 
         expect(manager.getEvmAccountCount()).toBe(2);
-        expect(manager.getSvmAccountCount()).toBe(0);
       });
 
-      it("should initialize with SVM keys only", async () => {
+      it("should initialize without keys", async () => {
         const manager = await createPoolManager(
           [],
-          ["svm1", "svm2", "svm3"],
           {
-            evmNetworks: [],
-            svmNetworks: ["solana-devnet"],
-            svmRpcUrl: "https://api.devnet.solana.com",
+            evmNetworks: ["base-sepolia"],
           },
           { strategy: "round_robin" },
         );
 
         expect(manager.getEvmAccountCount()).toBe(0);
-        expect(manager.getSvmAccountCount()).toBe(3);
-      });
-
-      it("should initialize with both EVM and SVM keys", async () => {
-        const manager = await createPoolManager(
-          ["0xevm1"],
-          ["svm1"],
-          {
-            evmNetworks: ["base-sepolia"],
-            svmNetworks: ["solana-devnet"],
-            svmRpcUrl: "https://api.devnet.solana.com",
-          },
-          { strategy: "round_robin" },
-        );
-
-        expect(manager.getEvmAccountCount()).toBe(1);
-        expect(manager.getSvmAccountCount()).toBe(1);
-        expect(manager.hasAccounts()).toBe(true);
+        expect(manager.hasAccounts()).toBe(false);
       });
 
       it("should create pools for each EVM network", async () => {
         const manager = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia", "x-layer-testnet"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
@@ -103,41 +76,14 @@ describe("pool-manager", () => {
           expect.anything(),
         );
       });
-
-      it("should create pools for each SVM network", async () => {
-        const manager = await createPoolManager(
-          [],
-          ["svm1"],
-          {
-            evmNetworks: [],
-            svmNetworks: ["solana-devnet", "solana-mainnet"],
-            svmRpcUrl: "https://api.devnet.solana.com",
-          },
-          { strategy: "round_robin" },
-        );
-
-        expect(AccountPool.create).toHaveBeenCalledWith(
-          ["svm1"],
-          "solana-devnet",
-          expect.anything(),
-        );
-        expect(AccountPool.create).toHaveBeenCalledWith(
-          ["svm1"],
-          "solana-mainnet",
-          expect.anything(),
-        );
-      });
     });
 
     describe("pool access", () => {
       it("should get pool for specific network", async () => {
         const manager = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
@@ -149,11 +95,8 @@ describe("pool-manager", () => {
       it("should return undefined for unknown network", async () => {
         const manager = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
@@ -165,11 +108,8 @@ describe("pool-manager", () => {
       it("should get EVM account pools", async () => {
         const manager = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia", "x-layer-testnet"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
@@ -179,34 +119,14 @@ describe("pool-manager", () => {
         expect(evmPools.has("base-sepolia")).toBe(true);
         expect(evmPools.has("x-layer-testnet")).toBe(true);
       });
-
-      it("should get SVM account pools", async () => {
-        const manager = await createPoolManager(
-          [],
-          ["svm1"],
-          {
-            evmNetworks: [],
-            svmNetworks: ["solana-devnet"],
-            svmRpcUrl: "https://api.devnet.solana.com",
-          },
-          { strategy: "round_robin" },
-        );
-
-        const svmPools = manager.getSvmAccountPools();
-        expect(svmPools.size).toBe(1);
-        expect(svmPools.has("solana-devnet")).toBe(true);
-      });
     });
 
     describe("statistics", () => {
       it("should return EVM account count", async () => {
         const manager = await createPoolManager(
           ["0xevm1", "0xevm2", "0xevm3"],
-          [],
           {
             evmNetworks: ["base-sepolia"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
@@ -214,68 +134,45 @@ describe("pool-manager", () => {
         expect(manager.getEvmAccountCount()).toBe(3);
       });
 
-      it("should return SVM account count", async () => {
-        const manager = await createPoolManager(
-          [],
-          ["svm1", "svm2"],
-          {
-            evmNetworks: [],
-            svmNetworks: ["solana-devnet"],
-            svmRpcUrl: "https://api.devnet.solana.com",
-          },
-          { strategy: "round_robin" },
-        );
-
-        expect(manager.getSvmAccountCount()).toBe(2);
-      });
-
       it("should check if has accounts", async () => {
-        const withAccounts = await createPoolManager(
+        const managerWithAccounts = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
 
-        expect(withAccounts.hasAccounts()).toBe(true);
+        expect(managerWithAccounts.hasAccounts()).toBe(true);
 
-        const withoutAccounts = await createPoolManager(
-          [],
+        const managerWithoutAccounts = await createPoolManager(
           [],
           {
             evmNetworks: [],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
 
-        expect(withoutAccounts.hasAccounts()).toBe(false);
+        expect(managerWithoutAccounts.hasAccounts()).toBe(false);
       });
     });
 
     describe("error handling", () => {
       it("should handle pool creation failures gracefully", async () => {
-        // Mock one pool creation to fail
-        vi.mocked(AccountPool.create).mockRejectedValueOnce(new Error("Failed to create pool"));
+        // Mock AccountPool.create to throw error
+        vi.mocked(AccountPool.create).mockRejectedValueOnce(new Error("Pool creation failed"));
 
-        // Should not throw, just skip failed pool
         const manager = await createPoolManager(
           ["0xevm1"],
-          [],
           {
             evmNetworks: ["base-sepolia", "x-layer-testnet"],
-            svmNetworks: [],
-            svmRpcUrl: "",
           },
           { strategy: "round_robin" },
         );
 
+        // Should still initialize but skip failed pools
         expect(manager).toBeDefined();
+        expect(manager.getEvmAccountCount()).toBe(1);
       });
     });
   });

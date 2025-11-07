@@ -324,55 +324,6 @@ export function loadEvmPrivateKeys(): string[] {
 }
 
 /**
- * Load SVM private keys from environment variables
- *
- * Supports three formats (in priority order):
- * 1. SVM_PRIVATE_KEYS - Comma-separated keys (recommended)
- * 2. SVM_PRIVATE_KEY_1, SVM_PRIVATE_KEY_2, ... - Numbered keys
- * 3. SVM_PRIVATE_KEY - Single key (backward compatibility)
- *
- * @returns Array of private keys, or empty array if none configured
- */
-export function loadSvmPrivateKeys(): string[] {
-  // 1. Try comma-separated format
-  const keysStr = process.env.SVM_PRIVATE_KEYS;
-  if (keysStr) {
-    const keys = keysStr
-      .split(",")
-      .map((k) => k.trim())
-      .filter(Boolean);
-    if (keys.length > 0) {
-      logger.info({ count: keys.length }, "Loaded SVM private keys from SVM_PRIVATE_KEYS");
-      return keys;
-    }
-  }
-
-  // 2. Try numbered format
-  const keys: string[] = [];
-  let i = 1;
-  while (true) {
-    const key = process.env[`SVM_PRIVATE_KEY_${i}`];
-    if (!key) break;
-    keys.push(key);
-    i++;
-  }
-  if (keys.length > 0) {
-    logger.info({ count: keys.length }, "Loaded SVM private keys from SVM_PRIVATE_KEY_*");
-    return keys;
-  }
-
-  // 3. Try single key format (backward compatibility)
-  const singleKey = process.env.SVM_PRIVATE_KEY;
-  if (singleKey) {
-    logger.info("Loaded single SVM private key from SVM_PRIVATE_KEY");
-    return [singleKey];
-  }
-
-  // SVM keys are optional
-  return [];
-}
-
-/**
  * Create account pool from environment variables
  *
  * @param network - Network name

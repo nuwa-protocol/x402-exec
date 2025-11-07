@@ -5,6 +5,7 @@
  */
 
 import type { PaymentRequirements, PaymentPayload, Signer } from "x402/types";
+import { vi } from "vitest";
 
 /**
  * Create a mock EVM signer
@@ -16,19 +17,6 @@ export function createMockEvmSigner(
     account: {
       address,
     },
-    signMessage: vi.fn(),
-    signTransaction: vi.fn(),
-    sendTransaction: vi.fn(),
-  } as any;
-}
-
-/**
- * Create a mock SVM signer
- */
-export function createMockSvmSigner(address = "11111111111111111111111111111111"): Signer {
-  return {
-    address,
-    publicKey: address,
     signMessage: vi.fn(),
     signTransaction: vi.fn(),
     sendTransaction: vi.fn(),

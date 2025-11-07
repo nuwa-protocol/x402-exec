@@ -25,9 +25,7 @@ describe("routes/health", () => {
         getActiveRequestCount: vi.fn(() => 0),
       } as any,
       evmAccountPools: new Map([["base-sepolia", mockPool as any]]),
-      svmAccountPools: new Map(),
       evmAccountCount: 1,
-      svmAccountCount: 0,
       tokenCache: {
         getStats: vi.fn(() => ({
           hits: 100,
@@ -72,13 +70,11 @@ describe("routes/health", () => {
 
       expect(response.body.checks.accounts).toBeDefined();
       expect(response.body.checks.accounts.evm).toBe(1);
-      expect(response.body.checks.accounts.svm).toBe(0);
       expect(response.body.checks.accounts.status).toBe("ok");
     });
 
     it("should return error when no accounts configured", async () => {
       mockDeps.evmAccountCount = 0;
-      mockDeps.svmAccountCount = 0;
 
       const response = await request(app).get("/ready");
 

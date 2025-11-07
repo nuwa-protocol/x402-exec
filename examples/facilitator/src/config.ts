@@ -11,6 +11,7 @@
 
 import { config as loadEnv } from "dotenv";
 import type { X402Config } from "x402/types";
+import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x402x/core";
 
 // Load environment variables
 loadEnv();
@@ -37,8 +38,6 @@ export interface AccountPoolConfig {
  */
 export interface NetworkConfig {
   evmNetworks: string[];
-  svmNetworks: string[];
-  svmRpcUrl: string;
 }
 
 /**
@@ -72,7 +71,6 @@ export interface AppConfig {
   allowedSettlementRouters: Record<string, string[]>;
   x402Config?: X402Config;
   evmPrivateKeys: string[];
-  svmPrivateKeys: string[];
 }
 
 /**
@@ -100,12 +98,14 @@ function parseAccountPoolConfig(): AccountPoolConfig {
 
 /**
  * Parse network configuration from environment variables
+ * Uses x402x core to get supported networks dynamically
  */
 function parseNetworkConfig(): NetworkConfig {
+  // Get supported networks from x402x core
+  const supportedNetworks = getSupportedNetworks();
+
   return {
-    evmNetworks: ["base-sepolia", "base", "x-layer-testnet", "x-layer"],
-    svmNetworks: ["solana-devnet", "solana-mainnet"],
-    svmRpcUrl: process.env.SVM_RPC_URL || "",
+    evmNetworks: supportedNetworks,
   };
 }
 
@@ -134,28 +134,73 @@ function parseRateLimitConfig(): RateLimitConfig {
 
 /**
  * Parse SettlementRouter whitelist from environment variables
+ * Priority: Environment variables > x402x core default configuration
  */
 function parseAllowedSettlementRouters(): Record<string, string[]> {
-  return {
-    "base-sepolia": [
-      process.env.BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS ||
-        "0x32431D4511e061F1133520461B07eC42afF157D6",
-    ],
-    base: [process.env.BASE_SETTLEMENT_ROUTER_ADDRESS || ""].filter(Boolean),
-    "x-layer-testnet": [
-      process.env.X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS ||
-        "0x1ae0e196dc18355af3a19985faf67354213f833d",
-    ],
-    "x-layer": [process.env.X_LAYER_SETTLEMENT_ROUTER_ADDRESS || ""].filter(Boolean),
-  };
+  const supportedNetworks = getSupportedNetworks();
+  const routers: Record<string, string[]> = {};
+
+  for (const network of supportedNetworks) {
+    const addresses: string[] = [];
+
+    // 1. Try to get from environment variable
+    const envVarName = networkToEnvVar(network);
+    const envAddress = process.env[envVarName];
+
+    if (envAddress) {
+      addresses.push(envAddress);
+    } else {
+      // 2. Fallback to x402x core configuration
+      try {
+        if (isNetworkSupported(network)) {
+          const networkConfig = getNetworkConfig(network);
+          if (networkConfig.settlementRouter) {
+            addresses.push(networkConfig.settlementRouter);
+          }
+        }
+      } catch (error) {
+        // Network not configured in x402x core, skip
+      }
+    }
+
+    routers[network] = addresses.filter(Boolean);
+  }
+
+  return routers;
+}
+
+/**
+ * Convert network name to environment variable name
+ * e.g., "base-sepolia" -> "BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS"
+ */
+function networkToEnvVar(network: string): string {
+  return `${network.toUpperCase().replace(/-/g, "_")}_SETTLEMENT_ROUTER_ADDRESS`;
 }
 
 /**
  * Parse X402 configuration from environment variables
  */
 function parseX402Config(): X402Config | undefined {
-  const svmRpcUrl = process.env.SVM_RPC_URL;
-  return svmRpcUrl ? { svmConfig: { rpcUrl: svmRpcUrl } } : undefined;
+  // Currently no X402 config needed for EVM-only setup
+  return undefined;
+}
+
+/**
+ * Check if a network is a testnet based on its name
+ * Testnets typically contain: sepolia, testnet, fuji, amoy, etc.
+ */
+export function isTestnet(network: string): boolean {
+  const testnetKeywords = ["sepolia", "testnet", "fuji", "amoy", "goerli"];
+  return testnetKeywords.some((keyword) => network.toLowerCase().includes(keyword));
+}
+
+/**
+ * Check if standard x402 settlement is allowed for a given network
+ * Mainnet networks disable standard x402 due to lack of API key protection
+ * Only SettlementRouter (x402x) mode is allowed on mainnet
+ */
+export function isStandardX402Allowed(network: string): boolean {
+  return isTestnet(network);
 }
 
 /**
@@ -183,30 +228,6 @@ function loadEvmPrivateKeys(): string[] {
 }
 
 /**
- * Load SVM private keys from environment variables
- */
-function loadSvmPrivateKeys(): string[] {
-  const keys: string[] = [];
-
-  // Load from SVM_PRIVATE_KEY_1, SVM_PRIVATE_KEY_2, etc.
-  for (let i = 1; i <= 100; i++) {
-    const key = process.env[`SVM_PRIVATE_KEY_${i}`];
-    if (key) {
-      keys.push(key);
-    } else {
-      break; // Stop at first missing key
-    }
-  }
-
-  // Fallback to single SVM_PRIVATE_KEY
-  if (keys.length === 0 && process.env.SVM_PRIVATE_KEY) {
-    keys.push(process.env.SVM_PRIVATE_KEY);
-  }
-
-  return keys;
-}
-
-/**
  * Load and parse all application configuration
  */
 export function loadConfig(): AppConfig {
@@ -219,6 +240,5 @@ export function loadConfig(): AppConfig {
     allowedSettlementRouters: parseAllowedSettlementRouters(),
     x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),
-    svmPrivateKeys: loadSvmPrivateKeys(),
   };
 }

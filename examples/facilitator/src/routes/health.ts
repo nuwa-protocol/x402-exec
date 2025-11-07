@@ -17,9 +17,7 @@ import type { GracefulShutdown } from "../shutdown.js";
 export interface HealthRouteDependencies {
   shutdownManager: GracefulShutdown;
   evmAccountPools: Map<string, AccountPool>;
-  svmAccountPools: Map<string, AccountPool>;
   evmAccountCount: number;
-  svmAccountCount: number;
   tokenCache?: TokenCache;
   allowedSettlementRouters: Record<string, string[]>;
 }
@@ -51,13 +49,9 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
     const checks: Record<
       string,
       | { status: string; message?: string }
-      | { evm: number; svm: number; status: string }
+      | { evm: number; status: string }
       | {
           evm: Array<{
-            network: string;
-            accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
-          }>;
-          svm: Array<{
             network: string;
             accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
           }>;
@@ -77,8 +71,7 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
     // Check private keys are loaded
     checks.accounts = {
       evm: deps.evmAccountCount,
-      svm: deps.svmAccountCount,
-      status: deps.evmAccountCount > 0 || deps.svmAccountCount > 0 ? "ok" : "error",
+      status: deps.evmAccountCount > 0 ? "ok" : "error",
     };
 
     if (checks.accounts.status === "error") {
@@ -102,25 +95,8 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
       });
     }
 
-    const svmAccountsInfo: Array<{
-      network: string;
-      accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
-    }> = [];
-    for (const [network, pool] of deps.svmAccountPools.entries()) {
-      const accounts = pool.getAccountsInfo();
-      svmAccountsInfo.push({
-        network,
-        accounts: accounts.map((acc) => ({
-          address: acc.address,
-          queueDepth: acc.queueDepth,
-          totalProcessed: acc.totalProcessed,
-        })),
-      });
-    }
-
     checks.accountPools = {
       evm: evmAccountsInfo,
-      svm: svmAccountsInfo,
       status: "ok",
     };
 

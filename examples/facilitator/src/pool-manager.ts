@@ -16,17 +16,15 @@ const logger = getLogger();
  */
 export class PoolManager {
   private evmAccountPools: Map<string, AccountPool> = new Map();
-  private svmAccountPools: Map<string, AccountPool> = new Map();
 
   constructor(
     private evmPrivateKeys: string[],
-    private svmPrivateKeys: string[],
     private networkConfig: NetworkConfig,
     private accountPoolConfig: AccountPoolConfig,
   ) {}
 
   /**
-   * Initialize all account pools for EVM and SVM networks
+   * Initialize all account pools for EVM networks
    */
   async initialize(): Promise<void> {
     // Initialize EVM account pools
@@ -44,28 +42,11 @@ export class PoolManager {
       }
     }
 
-    // Initialize SVM account pools
-    if (this.svmPrivateKeys.length > 0) {
-      for (const network of this.networkConfig.svmNetworks) {
-        try {
-          const pool = await AccountPool.create(this.svmPrivateKeys, network, {
-            strategy: this.accountPoolConfig.strategy,
-          });
-          this.svmAccountPools.set(network, pool);
-          logger.info({ network, accounts: pool.getAccountCount() }, "SVM account pool created");
-        } catch (error) {
-          logger.warn({ network, error }, "Failed to create SVM account pool for network");
-        }
-      }
-    }
-
     // Log account pool summary
     logger.info(
       {
         evmAccounts: this.evmPrivateKeys.length,
-        svmAccounts: this.svmPrivateKeys.length,
         evmNetworks: Array.from(this.evmAccountPools.keys()),
-        svmNetworks: Array.from(this.svmAccountPools.keys()),
         strategy: this.accountPoolConfig.strategy,
       },
       "Account pools initialized",
@@ -79,7 +60,7 @@ export class PoolManager {
    * @returns AccountPool if available, undefined otherwise
    */
   getPool(network: string): AccountPool | undefined {
-    return this.evmAccountPools.get(network) || this.svmAccountPools.get(network);
+    return this.evmAccountPools.get(network);
   }
 
   /**
@@ -90,13 +71,6 @@ export class PoolManager {
   }
 
   /**
-   * Get all SVM account pools
-   */
-  getSvmAccountPools(): Map<string, AccountPool> {
-    return this.svmAccountPools;
-  }
-
-  /**
    * Get total number of EVM accounts
    */
   getEvmAccountCount(): number {
@@ -104,17 +78,10 @@ export class PoolManager {
   }
 
   /**
-   * Get total number of SVM accounts
-   */
-  getSvmAccountCount(): number {
-    return this.svmPrivateKeys.length;
-  }
-
-  /**
    * Check if any accounts are configured
    */
   hasAccounts(): boolean {
-    return this.evmPrivateKeys.length > 0 || this.svmPrivateKeys.length > 0;
+    return this.evmPrivateKeys.length > 0;
   }
 }
 
@@ -122,18 +89,16 @@ export class PoolManager {
  * Create and initialize a pool manager
  *
  * @param evmPrivateKeys - Array of EVM private keys
- * @param svmPrivateKeys - Array of SVM private keys
  * @param networkConfig - Network configuration
  * @param accountPoolConfig - Account pool configuration
  * @returns Initialized PoolManager
  */
 export async function createPoolManager(
   evmPrivateKeys: string[],
-  svmPrivateKeys: string[],
   networkConfig: NetworkConfig,
   accountPoolConfig: AccountPoolConfig,
 ): Promise<PoolManager> {
-  const manager = new PoolManager(evmPrivateKeys, svmPrivateKeys, networkConfig, accountPoolConfig);
+  const manager = new PoolManager(evmPrivateKeys, networkConfig, accountPoolConfig);
   await manager.initialize();
   return manager;
 }

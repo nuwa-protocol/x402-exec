@@ -1,7 +1,7 @@
 /**
  * Mock Signers
  *
- * Mock implementations of EVM and SVM signers for testing
+ * Mock implementations of EVM signers for testing
  */
 
 import type { Signer } from "x402/types";
@@ -37,41 +37,6 @@ export function createMockEvmSigner(options?: {
     account: {
       address,
     },
-    signMessage,
-    signTransaction: vi.fn(),
-    sendTransaction,
-  } as any;
-}
-
-/**
- * Create a mock SVM signer with configurable behavior
- */
-export function createMockSvmSigner(options?: {
-  address?: string;
-  signMessageResolve?: any;
-  signMessageReject?: Error;
-  sendTransactionResolve?: string;
-  sendTransactionReject?: Error;
-}): Signer {
-  const address = options?.address || "11111111111111111111111111111111";
-
-  const signMessage = vi.fn();
-  if (options?.signMessageReject) {
-    signMessage.mockRejectedValue(options.signMessageReject);
-  } else {
-    signMessage.mockResolvedValue(options?.signMessageResolve || "signature");
-  }
-
-  const sendTransaction = vi.fn();
-  if (options?.sendTransactionReject) {
-    sendTransaction.mockRejectedValue(options.sendTransactionReject);
-  } else {
-    sendTransaction.mockResolvedValue(options?.sendTransactionResolve || "txhash");
-  }
-
-  return {
-    address,
-    publicKey: address,
     signMessage,
     signTransaction: vi.fn(),
     sendTransaction,

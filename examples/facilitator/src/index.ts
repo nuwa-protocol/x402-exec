@@ -62,7 +62,6 @@ async function main() {
     // Initialize account pools
     const poolManager = await createPoolManager(
       config.evmPrivateKeys,
-      config.svmPrivateKeys,
       config.network,
       config.accountPool,
     );
@@ -74,9 +73,7 @@ async function main() {
         shutdownManager,
         poolManager,
         evmAccountPools: poolManager.getEvmAccountPools(),
-        svmAccountPools: poolManager.getSvmAccountPools(),
         evmAccountCount: poolManager.getEvmAccountCount(),
-        svmAccountCount: poolManager.getSvmAccountCount(),
         tokenCache,
         allowedSettlementRouters: config.allowedSettlementRouters,
         x402Config: config.x402Config,
@@ -91,12 +88,8 @@ async function main() {
         {
           port: config.server.port,
           features: {
-            multi_account:
-              poolManager.getEvmAccountCount() > 1 || poolManager.getSvmAccountCount() > 1,
-            account_count: {
-              evm: poolManager.getEvmAccountCount(),
-              svm: poolManager.getSvmAccountCount(),
-            },
+            multi_account: poolManager.getEvmAccountCount() > 1,
+            account_count: poolManager.getEvmAccountCount(),
             cache_enabled: config.cache.enabled,
             rate_limiting: config.rateLimit.enabled,
             request_body_limit: config.server.requestBodyLimit,
@@ -111,12 +104,8 @@ async function main() {
       );
 
       logger.info("Features:");
-      logger.info(
-        `  - Multi-account mode: ${poolManager.getEvmAccountCount() > 1 || poolManager.getSvmAccountCount() > 1 ? "✓" : "✗"}`,
-      );
-      logger.info(
-        `  - Account count: EVM=${poolManager.getEvmAccountCount()}, SVM=${poolManager.getSvmAccountCount()}`,
-      );
+      logger.info(`  - Multi-account mode: ${poolManager.getEvmAccountCount() > 1 ? "✓" : "✗"}`);
+      logger.info(`  - Account count: ${poolManager.getEvmAccountCount()}`);
       logger.info(`  - Token cache: ${config.cache.enabled ? "✓" : "✗"}`);
       logger.info(`  - Rate limiting: ${config.rateLimit.enabled ? "✓" : "✗"}`);
       logger.info(`  - Request body limit: ${config.server.requestBodyLimit}`);

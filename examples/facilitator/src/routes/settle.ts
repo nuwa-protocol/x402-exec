@@ -21,6 +21,7 @@ import {
 import { isSettlementMode, settleWithRouter } from "../settlement.js";
 import { getLogger, traced, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
+import { isStandardX402Allowed } from "../config.js";
 
 const logger = getLogger();
 
@@ -174,6 +175,14 @@ export function createSettleRoutes(
             },
             "Standard settlement mode",
           );
+
+          // Check if standard x402 is allowed on this network
+          if (!isStandardX402Allowed(paymentRequirements.network)) {
+            throw new Error(
+              "Standard x402 settlement is not supported on mainnet. " +
+                "Please use SettlementRouter (x402x) mode with facilitatorFee for security.",
+            );
+          }
 
           try {
             // Settle using standard x402 flow
