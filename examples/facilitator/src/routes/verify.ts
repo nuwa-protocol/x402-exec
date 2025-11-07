@@ -155,4 +155,3 @@ export function createVerifyRoutes(deps: VerifyRouteDependencies): Router {
 
   return router;
 }
-

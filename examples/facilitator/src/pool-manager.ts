@@ -137,4 +137,3 @@ export async function createPoolManager(
   await manager.initialize();
   return manager;
 }
-

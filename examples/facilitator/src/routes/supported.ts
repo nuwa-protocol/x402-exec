@@ -78,4 +78,3 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
 
   return router;
 }
-

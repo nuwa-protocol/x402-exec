@@ -196,4 +196,3 @@ export function loadConfig(): AppConfig {
     svmPrivateKeys: loadSvmPrivateKeys(),
   };
 }
-

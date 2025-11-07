@@ -231,4 +231,3 @@ export function createSettleRoutes(deps: SettleRouteDependencies): Router {
 
   return router;
 }
-

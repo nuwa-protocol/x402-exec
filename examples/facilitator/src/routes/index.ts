@@ -43,4 +43,3 @@ export function registerRoutes(app: Express, deps: RoutesDependencies): void {
   const supportedRoutes = createSupportedRoutes(deps);
   app.use(supportedRoutes);
 }
-

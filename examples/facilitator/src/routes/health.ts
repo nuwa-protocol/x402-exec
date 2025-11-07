@@ -180,4 +180,3 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
 
   return router;
 }
-
