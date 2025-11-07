@@ -75,6 +75,8 @@ export interface AppConfig {
 
 /**
  * Parse cache configuration from environment variables
+ *
+ * @returns Cache configuration object
  */
 function parseCacheConfig(): CacheConfig {
   return {
@@ -87,6 +89,8 @@ function parseCacheConfig(): CacheConfig {
 
 /**
  * Parse account pool configuration from environment variables
+ *
+ * @returns Account pool configuration object
  */
 function parseAccountPoolConfig(): AccountPoolConfig {
   const strategy = process.env.ACCOUNT_SELECTION_STRATEGY || "round_robin";
@@ -99,6 +103,8 @@ function parseAccountPoolConfig(): AccountPoolConfig {
 /**
  * Parse network configuration from environment variables
  * Uses x402x core to get supported networks dynamically
+ *
+ * @returns Network configuration object
  */
 function parseNetworkConfig(): NetworkConfig {
   // Get supported networks from x402x core
@@ -111,6 +117,8 @@ function parseNetworkConfig(): NetworkConfig {
 
 /**
  * Parse server configuration from environment variables
+ *
+ * @returns Server configuration object
  */
 function parseServerConfig(): ServerConfig {
   return {
@@ -122,6 +130,8 @@ function parseServerConfig(): ServerConfig {
 
 /**
  * Parse rate limiting configuration from environment variables
+ *
+ * @returns Rate limiting configuration object
  */
 function parseRateLimitConfig(): RateLimitConfig {
   return {
@@ -135,6 +145,8 @@ function parseRateLimitConfig(): RateLimitConfig {
 /**
  * Parse SettlementRouter whitelist from environment variables
  * Priority: Environment variables > x402x core default configuration
+ *
+ * @returns Record mapping network names to allowed SettlementRouter addresses
  */
 function parseAllowedSettlementRouters(): Record<string, string[]> {
   const supportedNetworks = getSupportedNetworks();
@@ -158,7 +170,7 @@ function parseAllowedSettlementRouters(): Record<string, string[]> {
             addresses.push(networkConfig.settlementRouter);
           }
         }
-      } catch (error) {
+      } catch {
         // Network not configured in x402x core, skip
       }
     }
@@ -172,6 +184,9 @@ function parseAllowedSettlementRouters(): Record<string, string[]> {
 /**
  * Convert network name to environment variable name
  * e.g., "base-sepolia" -> "BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS"
+ *
+ * @param network - Network name to convert
+ * @returns Environment variable name for the network
  */
 function networkToEnvVar(network: string): string {
   return `${network.toUpperCase().replace(/-/g, "_")}_SETTLEMENT_ROUTER_ADDRESS`;
@@ -179,6 +194,8 @@ function networkToEnvVar(network: string): string {
 
 /**
  * Parse X402 configuration from environment variables
+ *
+ * @returns X402 configuration object or undefined if not configured
  */
 function parseX402Config(): X402Config | undefined {
   // Currently no X402 config needed for EVM-only setup
@@ -188,6 +205,9 @@ function parseX402Config(): X402Config | undefined {
 /**
  * Check if a network is a testnet based on its name
  * Testnets typically contain: sepolia, testnet, fuji, amoy, etc.
+ *
+ * @param network - Network name to check
+ * @returns True if the network is a testnet, false otherwise
  */
 export function isTestnet(network: string): boolean {
   const testnetKeywords = ["sepolia", "testnet", "fuji", "amoy", "goerli"];
@@ -198,6 +218,9 @@ export function isTestnet(network: string): boolean {
  * Check if standard x402 settlement is allowed for a given network
  * Mainnet networks disable standard x402 due to lack of API key protection
  * Only SettlementRouter (x402x) mode is allowed on mainnet
+ *
+ * @param network - Network name to check
+ * @returns True if standard x402 settlement is allowed, false otherwise
  */
 export function isStandardX402Allowed(network: string): boolean {
   return isTestnet(network);
@@ -205,6 +228,8 @@ export function isStandardX402Allowed(network: string): boolean {
 
 /**
  * Load EVM private keys from environment variables
+ *
+ * @returns Array of EVM private keys
  */
 function loadEvmPrivateKeys(): string[] {
   const keys: string[] = [];
@@ -229,6 +254,8 @@ function loadEvmPrivateKeys(): string[] {
 
 /**
  * Load and parse all application configuration
+ *
+ * @returns Complete application configuration object
  */
 export function loadConfig(): AppConfig {
   return {
