@@ -47,6 +47,17 @@ export interface NetworkConfig {
 export interface ServerConfig {
   port: number;
   shutdownTimeoutMs: number;
+  requestBodyLimit: string;
+}
+
+/**
+ * Rate limiting configuration
+ */
+export interface RateLimitConfig {
+  enabled: boolean;
+  verifyMax: number;
+  settleMax: number;
+  windowMs: number;
 }
 
 /**
@@ -57,6 +68,7 @@ export interface AppConfig {
   accountPool: AccountPoolConfig;
   network: NetworkConfig;
   server: ServerConfig;
+  rateLimit: RateLimitConfig;
   allowedSettlementRouters: Record<string, string[]>;
   x402Config?: X402Config;
   evmPrivateKeys: string[];
@@ -104,6 +116,19 @@ function parseServerConfig(): ServerConfig {
   return {
     port: parseInt(process.env.PORT || "3000"),
     shutdownTimeoutMs: 30000, // 30 seconds
+    requestBodyLimit: process.env.REQUEST_BODY_LIMIT || "1mb",
+  };
+}
+
+/**
+ * Parse rate limiting configuration from environment variables
+ */
+function parseRateLimitConfig(): RateLimitConfig {
+  return {
+    enabled: process.env.RATE_LIMIT_ENABLED !== "false", // Enabled by default
+    verifyMax: parseInt(process.env.RATE_LIMIT_VERIFY_MAX || "100"),
+    settleMax: parseInt(process.env.RATE_LIMIT_SETTLE_MAX || "20"),
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"), // 1 minute
   };
 }
 
@@ -190,6 +215,7 @@ export function loadConfig(): AppConfig {
     accountPool: parseAccountPoolConfig(),
     network: parseNetworkConfig(),
     server: parseServerConfig(),
+    rateLimit: parseRateLimitConfig(),
     allowedSettlementRouters: parseAllowedSettlementRouters(),
     x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),

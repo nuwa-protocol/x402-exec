@@ -11,6 +11,7 @@ import { initTelemetry, getLogger } from "./telemetry.js";
 import { initShutdown } from "./shutdown.js";
 import { createMemoryCache, createTokenCache, type TokenCache } from "./cache/index.js";
 import { createApp } from "./app.js";
+import { logRateLimitConfig } from "./middleware/rate-limit.js";
 
 // Initialize telemetry first
 initTelemetry();
@@ -55,6 +56,9 @@ if (config.cache.enabled) {
  */
 async function main() {
   try {
+    // Log rate limiting configuration
+    logRateLimitConfig(config.rateLimit);
+
     // Initialize account pools
     const poolManager = await createPoolManager(
       config.evmPrivateKeys,
@@ -64,16 +68,21 @@ async function main() {
     );
 
     // Create Express app with all routes
-    const app = createApp(shutdownManager, {
+    const app = createApp({
       shutdownManager,
-      poolManager,
-      evmAccountPools: poolManager.getEvmAccountPools(),
-      svmAccountPools: poolManager.getSvmAccountPools(),
-      evmAccountCount: poolManager.getEvmAccountCount(),
-      svmAccountCount: poolManager.getSvmAccountCount(),
-      tokenCache,
-      allowedSettlementRouters: config.allowedSettlementRouters,
-      x402Config: config.x402Config,
+      routesDeps: {
+        shutdownManager,
+        poolManager,
+        evmAccountPools: poolManager.getEvmAccountPools(),
+        svmAccountPools: poolManager.getSvmAccountPools(),
+        evmAccountCount: poolManager.getEvmAccountCount(),
+        svmAccountCount: poolManager.getSvmAccountCount(),
+        tokenCache,
+        allowedSettlementRouters: config.allowedSettlementRouters,
+        x402Config: config.x402Config,
+      },
+      requestBodyLimit: config.server.requestBodyLimit,
+      rateLimitConfig: config.rateLimit,
     });
 
     // Start server
@@ -89,6 +98,8 @@ async function main() {
               svm: poolManager.getSvmAccountCount(),
             },
             cache_enabled: config.cache.enabled,
+            rate_limiting: config.rateLimit.enabled,
+            request_body_limit: config.server.requestBodyLimit,
             standard_settlement: true,
             settlement_router: true,
             security_whitelist: true,
@@ -107,6 +118,8 @@ async function main() {
         `  - Account count: EVM=${poolManager.getEvmAccountCount()}, SVM=${poolManager.getSvmAccountCount()}`,
       );
       logger.info(`  - Token cache: ${config.cache.enabled ? "✓" : "✗"}`);
+      logger.info(`  - Rate limiting: ${config.rateLimit.enabled ? "✓" : "✗"}`);
+      logger.info(`  - Request body limit: ${config.server.requestBodyLimit}`);
       logger.info("  - Standard x402 settlement: ✓");
       logger.info("  - SettlementRouter support: ✓");
       logger.info("  - Security whitelist: ✓");

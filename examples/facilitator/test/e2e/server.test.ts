@@ -94,7 +94,17 @@ describe("E2E: Facilitator Server", () => {
       x402Config: undefined,
     };
 
-    app = createApp(mockShutdownManager as any, routesDeps);
+    app = createApp({
+      shutdownManager: mockShutdownManager as any,
+      routesDeps,
+      requestBodyLimit: "1mb",
+      rateLimitConfig: {
+        enabled: false, // Disable rate limiting for tests
+        verifyMax: 100,
+        settleMax: 20,
+        windowMs: 60000,
+      },
+    });
   });
 
   describe("Health Check Endpoints", () => {

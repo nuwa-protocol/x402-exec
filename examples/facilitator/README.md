@@ -14,6 +14,16 @@ This is a **production-grade** implementation of an x402 facilitator service wit
 
 ### 🔒 Security Features
 
+- **Rate Limiting**: Protection against DoS/DDoS attacks
+  - Per-endpoint rate limits (configurable via environment variables)
+  - `/verify`: 100 req/min per IP (default)
+  - `/settle`: 20 req/min per IP (default)
+  - Health/monitoring endpoints unlimited
+  - Returns HTTP 429 with `Retry-After` header when exceeded
+- **Input Validation**: Deep validation beyond TypeScript types
+  - Request body size limits (default: 1MB)
+  - Zod schema validation for all inputs
+  - Sanitized error messages (no internal detail leaks)
 - **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
 - **Case-Insensitive Matching**: Address validation works regardless of case
@@ -107,6 +117,15 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Testnet SettlementRou
 
 # Server port (default: 3000)
 PORT=3000
+
+# Rate Limiting (生产环境推荐启用)
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_VERIFY_MAX=100  # verify 端点每分钟最大请求数
+RATE_LIMIT_SETTLE_MAX=20   # settle 端点每分钟最大请求数
+RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
+
+# Input Validation
+REQUEST_BODY_LIMIT=1mb     # 请求体大小限制
 
 # Logging level (default: info)
 LOG_LEVEL=info
@@ -465,6 +484,76 @@ The facilitator handles various error scenarios:
 
 ## Production Deployment
 
+### Security Hardening
+
+The facilitator includes production-grade security features enabled by default:
+
+#### Rate Limiting
+
+Protects against DoS/DDoS attacks and API abuse:
+
+**Configuration:**
+
+```env
+# Enable/disable rate limiting (default: true)
+RATE_LIMIT_ENABLED=true
+
+# Limits per IP address per time window
+RATE_LIMIT_VERIFY_MAX=100  # /verify endpoint
+RATE_LIMIT_SETTLE_MAX=20   # /settle endpoint
+RATE_LIMIT_WINDOW_MS=60000 # Time window (1 minute)
+```
+
+**Behavior:**
+
+- Returns HTTP 429 when limit exceeded
+- Includes `RateLimit-*` headers in responses
+- Includes `Retry-After` header when rate limited
+- Monitoring endpoints (`/health`, `/ready`, `/supported`) are unlimited
+
+**Development vs Production:**
+
+- Development: Can disable with `RATE_LIMIT_ENABLED=false`
+- Production: **Keep enabled** to prevent abuse
+
+#### Input Validation
+
+Multiple layers of protection:
+
+**Request Body Size Limits:**
+
+```env
+REQUEST_BODY_LIMIT=1mb  # Prevents memory exhaustion attacks
+```
+
+**Schema Validation:**
+
+- All inputs validated with Zod schemas
+- Type checking beyond TypeScript
+- Automatic rejection of malformed requests
+
+**Error Sanitization:**
+
+- No internal error details leaked to clients
+- Stack traces never exposed in responses
+- Clear, actionable error messages for legitimate issues
+
+#### Secret Management (Roadmap)
+
+Current implementation uses environment variables for private keys. For production:
+
+**Recommended for Production:**
+
+- AWS KMS for AWS deployments
+- HashiCorp Vault for multi-cloud
+- Kubernetes Secrets for K8s environments
+
+**Current (Development/Testing):**
+
+- Environment variables (`.env` file)
+- **Never commit `.env` to version control**
+- Use separate keys for dev/staging/prod
+
 ### Observability
 
 #### Structured Logging
@@ -592,23 +681,34 @@ The facilitator includes production-grade error handling:
 
 For production use, consider:
 
-1. **Use Production Facilitators**:
+1. **Security Configuration**:
 
-   - Testnet: https://x402.org/facilitator
-   - Production: https://api.cdp.coinbase.com/platform/v2/x402
+   - **Enable rate limiting** (default: enabled)
+   - Set appropriate request body limits (default: 1MB)
+   - Review and adjust rate limits based on expected traffic
+   - Monitor rate limit metrics to detect attacks
 
-2. **Security Considerations**:
+2. **Secret Management**:
 
-   - Secure private key storage (e.g., AWS KMS, HashiCorp Vault)
-   - Rate limiting to prevent abuse
-   - Request validation and sanitization
-   - HTTPS/TLS for all connections
+   - Use production-grade secret management (KMS/Vault)
+   - Never store private keys in environment variables for production
+   - Rotate keys regularly
+   - Use different keys for different environments
 
-3. **Monitoring**:
-   - Track settlement success rates
-   - Monitor gas usage
-   - Alert on failed settlements
-   - Log all transactions for reconciliation
+3. **Network Security**:
+
+   - Use HTTPS/TLS for all connections
+   - Configure proper CORS policies
+   - Deploy behind a WAF (Web Application Firewall)
+   - Use private networks for internal communication
+
+4. **Monitoring**:
+   - Track settlement success rates (target: >99%)
+   - Monitor P99 latency (target: <30s)
+   - Alert on high error rates
+   - Monitor rate limit hits (may indicate attacks)
+   - Track request sizes to detect anomalies
+   - Log all transactions for reconciliation and auditing
 
 ## Further Reading
 

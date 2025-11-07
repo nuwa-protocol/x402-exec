@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import type { RateLimitRequestHandler } from "express-rate-limit";
 import { settle } from "x402/facilitator";
 import {
   PaymentRequirementsSchema,
@@ -14,7 +15,6 @@ import {
   type PaymentPayload,
   PaymentPayloadSchema,
   SupportedEVMNetworks,
-  SupportedSVMNetworks,
   type Signer,
   type X402Config,
 } from "x402/types";
@@ -45,9 +45,13 @@ export interface SettleRouteDependencies {
  * Create settle routes
  *
  * @param deps - Dependencies for settle routes
+ * @param rateLimiter - Rate limiting middleware
  * @returns Express Router with settle endpoints
  */
-export function createSettleRoutes(deps: SettleRouteDependencies): Router {
+export function createSettleRoutes(
+  deps: SettleRouteDependencies,
+  rateLimiter: RateLimitRequestHandler,
+): Router {
   const router = Router();
 
   /**
@@ -66,7 +70,7 @@ export function createSettleRoutes(deps: SettleRouteDependencies): Router {
   });
 
   /**
-   * POST /settle - Settle x402 payment using account pool
+   * POST /settle - Settle x402 payment using account pool (with rate limiting)
    *
    * This endpoint supports two settlement modes:
    * 1. Standard mode: Direct token transfer using ERC-3009
@@ -74,7 +78,7 @@ export function createSettleRoutes(deps: SettleRouteDependencies): Router {
    *
    * The mode is automatically detected based on the presence of extra.settlementRouter
    */
-  router.post("/settle", async (req: Request, res: Response) => {
+  router.post("/settle", rateLimiter, async (req: Request, res: Response) => {
     try {
       const body: SettleRequest = req.body;
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
@@ -222,10 +226,44 @@ export function createSettleRoutes(deps: SettleRouteDependencies): Router {
       res.json(result);
     } catch (error) {
       logger.error({ error }, "Settle error");
-      res.status(400).json({
-        error: `Settlement failed: ${error instanceof Error ? error.message : String(error)}`,
-        details: error instanceof Error ? error.stack : undefined,
-      });
+
+      // Distinguish between validation errors and other errors
+      if (error instanceof Error && error.name === "ZodError") {
+        // Input validation error - safe to return details
+        res.status(400).json({
+          error: "Invalid request payload",
+          message: "Request validation failed. Please check your input format.",
+        });
+      } else if (error instanceof Error) {
+        // Other errors - sanitize error messages
+        const message = error.message.toLowerCase();
+        if (message.includes("network")) {
+          res.status(400).json({
+            error: "Invalid network",
+            message: "The specified network is not supported.",
+          });
+        } else if (message.includes("account pool") || message.includes("no account")) {
+          res.status(503).json({
+            error: "Service unavailable",
+            message: "Settlement service is temporarily unavailable. Please try again later.",
+          });
+        } else if (message.includes("settlement router") || message.includes("whitelist")) {
+          res.status(400).json({
+            error: "Invalid settlement router",
+            message: "The specified settlement router is not authorized.",
+          });
+        } else {
+          res.status(500).json({
+            error: "Settlement failed",
+            message: "Unable to complete settlement. Please try again later.",
+          });
+        }
+      } else {
+        res.status(500).json({
+          error: "Internal error",
+          message: "An unexpected error occurred. Please try again later.",
+        });
+      }
     }
   });
 
