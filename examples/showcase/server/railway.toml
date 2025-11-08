@@ -1,10 +1,10 @@
+providers = ["node"]
+
 [phases.setup]
-nixPkgs = ["nodejs_20", "corepack"]
+nixPkgs = ['nodejs', 'pnpm']
 
 [phases.install]
 cmds = [
-  "corepack enable",
-  "corepack prepare pnpm@10.7.0 --activate",
   "pnpm install --frozen-lockfile"
 ]
 
