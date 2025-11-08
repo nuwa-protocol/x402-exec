@@ -1,6 +1,33 @@
-# x402-exec Facilitator Example
+# X402 Facilitator
 
-This is a **production-grade** implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. It demonstrates how to build a facilitator that supports both standard x402 payments and extended settlement flows with Hook-based business logic.
+**Production-ready** implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. The facilitator supports both standard x402 payments and extended settlement flows with Hook-based business logic.
+
+## Installation
+
+### As a Package
+
+Install via npm:
+
+```bash
+npm install @x402x/facilitator
+```
+
+Or via pnpm:
+
+```bash
+pnpm add @x402x/facilitator
+```
+
+### As a Service
+
+Run using Docker:
+
+```bash
+docker pull nuwa-protocol/facilitator:latest
+docker run -p 3000:3000 --env-file .env nuwa-protocol/facilitator:latest
+```
+
+Or clone and run from source (see [Development](#development) section below).
 
 ## Features
 
@@ -93,13 +120,15 @@ The facilitator automatically detects the settlement mode based on the presence 
 - A valid Ethereum private key
 - Base Sepolia testnet ETH for transaction fees
 
-### Installation
+### Development Setup
 
-From the project root:
+Clone the repository and install dependencies:
 
 ```bash
-cd examples/facilitator
+git clone https://github.com/nuwa-protocol/x402-exec.git
+cd x402-exec
 pnpm install
+cd facilitator
 ```
 
 ### Configuration
@@ -153,11 +182,20 @@ LOG_LEVEL=info
 
 ### Running the Facilitator
 
+#### Development Mode
+
 ```bash
 pnpm dev
 ```
 
-The server will start on http://localhost:3000
+#### Production Mode
+
+```bash
+pnpm build
+pnpm start
+```
+
+The server will start on http://localhost:3000 (or the port specified in your `.env` file)
 
 ## Security Configuration
 
@@ -943,7 +981,7 @@ metadata:
 spec:
   containers:
     - name: facilitator
-      image: your-registry/x402-facilitator:latest
+      image: nuwa-protocol/facilitator:latest
       ports:
         - containerPort: 3000
       env:

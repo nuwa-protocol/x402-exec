@@ -72,15 +72,10 @@ jobs:
             ./typescript/packages/fetch/coverage/coverage-final.json
             ./typescript/packages/hono/coverage/coverage-final.json
             ./typescript/packages/react/coverage/coverage-final.json
+            ./facilitator/coverage/coverage-final.json
           fail_ci_if_error: false
 
       - name: Build all examples
         run: pnpm run build:examples
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Test facilitator
-        working-directory: examples/facilitator
-        run: pnpm run test
-        env:
-          NODE_ENV: test

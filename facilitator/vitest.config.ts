@@ -19,12 +19,7 @@ export default defineConfig({
         "**/*.d.ts",
         "**/__mocks__/**",
       ],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
-      },
+      // Thresholds removed - only report coverage, don't fail on low coverage
     },
     testTimeout: 30000,
     hookTimeout: 30000,

@@ -1,7 +1,7 @@
 {
-  "name": "@nuwa-ai/facilitator",
-  "version": "0.1.0",
-  "description": "X402 Facilitator - A reference implementation for x402 payment facilitation",
+  "name": "@x402x/facilitator",
+  "version": "1.0.0",
+  "description": "X402 Facilitator - Production-ready implementation for x402 payment facilitation with SettlementRouter support",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -31,14 +31,15 @@
     "payment",
     "facilitator",
     "blockchain",
-    "settlement"
+    "settlement",
+    "x402-exec"
   ],
   "author": "Nuwa Protocol",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/nuwa-protocol/x402-exec.git",
-    "directory": "examples/facilitator"
+    "directory": "facilitator"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

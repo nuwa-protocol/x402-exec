@@ -9,6 +9,10 @@ node_modules/
 dist/
 build/
 
+# Test coverage
+coverage/
+*.lcov
+
 # Logs
 *.log
 npm-debug.log*
