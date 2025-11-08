@@ -137,13 +137,81 @@ function getPendingFees(address facilitator, address token) external view return
 function claimFees(address[] calldata tokens) external
 ```
 
-**Description**: Batch claim accumulated fees for multiple tokens
+**Description**: Batch claim accumulated fees for multiple tokens (convenience method)
 
 **Parameters**:
 - `tokens`: Array of token addresses to claim fees for
 
 **Events**:
 - `FeesClaimed(address facilitator, address token, uint256 amount)` - Emitted for each token with non-zero balance
+
+**Note**: Fees are sent to msg.sender (the facilitator). Only transfers non-zero amounts. Uses CEI pattern for security.
+
+#### `setFeeOperator`
+
+```solidity
+function setFeeOperator(address operator, bool approved) external
+```
+
+**Description**: Authorize or revoke an operator to claim fees on behalf of the facilitator. Similar to ERC721's `setApprovalForAll` pattern.
+
+**Parameters**:
+- `operator`: Address to grant/revoke operator status
+- `approved`: `true` to approve, `false` to revoke
+
+**Events**:
+- `FeeOperatorSet(address facilitator, address operator, bool approved)`
+
+**Errors**:
+- `InvalidOperator()`: Operator address is zero
+
+**Use Cases**:
+- Batch collection of fees from multiple facilitator addresses
+- Delegating fee management to governance contracts
+- Multi-signature wallet management
+
+#### `isFeeOperator`
+
+```solidity
+function isFeeOperator(address facilitator, address operator) external view returns (bool)
+```
+
+**Description**: Check if an address is an approved operator for a facilitator
+
+**Parameters**:
+- `facilitator`: The facilitator address
+- `operator`: The operator address to check
+
+**Returns**:
+- `bool`: Whether the operator is approved
+
+#### `claimFeesFor`
+
+```solidity
+function claimFeesFor(
+    address facilitator,
+    address[] calldata tokens,
+    address recipient
+) external
+```
+
+**Description**: Claim accumulated fees on behalf of a facilitator (requires operator approval or being the facilitator)
+
+**Parameters**:
+- `facilitator`: The facilitator whose fees to claim
+- `tokens`: Array of token addresses to claim
+- `recipient`: Address to receive the fees (if `address(0)`, sends to facilitator)
+
+**Events**:
+- `FeesClaimed(address facilitator, address token, uint256 amount)` - Emitted for each token with non-zero balance
+
+**Errors**:
+- `Unauthorized()`: Caller is not the facilitator or an approved operator
+
+**Authorization**:
+- Facilitator can always claim their own fees
+- Approved operators can claim on behalf of the facilitator
+- Operators can specify custom recipient addresses
 
 **Note**: Only transfers non-zero amounts. Uses CEI pattern for security.
 
@@ -164,6 +232,14 @@ mapping(address => mapping(address => uint256)) public pendingFees
 ```
 
 **Description**: Accumulated facilitator fees (facilitator => token => amount)
+
+#### `feeOperators`
+
+```solidity
+mapping(address => mapping(address => bool)) public feeOperators
+```
+
+**Description**: Operator approvals for fee claims (facilitator => operator => approved)
 
 ### Execution Flow
 
@@ -265,6 +341,76 @@ const isSettled = await settlementRouter.isSettled(contextKey);
 console.log('Is settled:', isSettled);
 ```
 
+#### Claim Facilitator Fees
+
+```typescript
+// Simple claim: facilitator claims their own fees
+const tokens = [USDC_ADDRESS, USDT_ADDRESS];
+const tx = await settlementRouter.claimFees(tokens);
+await tx.wait();
+console.log('Fees claimed');
+```
+
+#### Set Fee Operator
+
+```typescript
+// Facilitator authorizes an operator to claim fees
+const operatorAddress = '0x...';
+const tx = await settlementRouter.setFeeOperator(operatorAddress, true);
+await tx.wait();
+console.log('Operator approved');
+
+// Check if operator is approved
+const isApproved = await settlementRouter.isFeeOperator(
+  facilitatorAddress,
+  operatorAddress
+);
+console.log('Is approved:', isApproved);
+```
+
+#### Batch Collection Scenario
+
+```typescript
+// Operator collects fees from multiple facilitator addresses
+const mainAddress = '0x...';
+const facilitatorAddresses = ['0x...', '0x...', '0x...'];
+const tokens = [USDC_ADDRESS];
+
+// Each facilitator must approve mainAddress first
+// (only done once per facilitator)
+
+// Operator collects to main address
+for (const facilitator of facilitatorAddresses) {
+  const tx = await settlementRouter.claimFeesFor(
+    facilitator,
+    tokens,
+    mainAddress  // All fees go to mainAddress
+  );
+  await tx.wait();
+}
+console.log('All fees collected to main address');
+```
+
+#### Governance Contract Scenario
+
+```typescript
+// Facilitator delegates fee management to governance contract
+const governanceContract = '0x...';
+const tx = await settlementRouter.setFeeOperator(governanceContract, true);
+await tx.wait();
+
+// Now governance contract can claim fees to treasury
+// (called by governance contract)
+const treasuryAddress = '0x...';
+const claimTx = await settlementRouter.claimFeesFor(
+  facilitatorAddress,
+  tokens,
+  treasuryAddress
+);
+await claimTx.wait();
+console.log('Fees claimed to treasury via governance');
+```
+
 ### Event Listening
 
 ```typescript
@@ -287,6 +433,24 @@ settlementRouter.on('HookExecuted', (contextKey, hook, returnData, event) => {
     txHash: event.transactionHash
   });
 });
+
+settlementRouter.on('FeeOperatorSet', (facilitator, operator, approved, event) => {
+  console.log('Fee operator changed:', {
+    facilitator,
+    operator,
+    approved,
+    txHash: event.transactionHash
+  });
+});
+
+settlementRouter.on('FeesClaimed', (facilitator, token, amount, event) => {
+  console.log('Fees claimed:', {
+    facilitator,
+    token,
+    amount: amount.toString(),
+    txHash: event.transactionHash
+  });
+});
 ```
 
 ### Error Handling
@@ -304,6 +468,10 @@ try {
     console.error('Hook did not consume all funds');
   } else if (error.message.includes('HookExecutionFailed')) {
     console.error('Hook execution failed:', error);
+  } else if (error.message.includes('InvalidOperator')) {
+    console.error('Cannot set zero address as operator');
+  } else if (error.message.includes('Unauthorized')) {
+    console.error('Not authorized to claim fees for this facilitator');
   } else {
     console.error('Unknown error:', error);
   }
@@ -327,6 +495,14 @@ forge verify-contract <address> SettlementRouter \
 - [ ] Bug bounty
 
 ### Changelog
+
+#### v1.1.0 (Current)
+- Added fee operator authorization mechanism
+- New functions: `setFeeOperator`, `isFeeOperator`, `claimFeesFor`
+- Enables batch collection of fees from multiple facilitator addresses
+- Supports delegation of fee management to governance contracts
+- New events: `FeeOperatorSet`
+- New errors: `InvalidOperator`, `Unauthorized`
 
 #### v1.0.0 (To be released)
 - Initial version

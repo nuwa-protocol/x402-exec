@@ -33,6 +33,10 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
     /// @dev facilitator => token => amount
     mapping(address => mapping(address => uint256)) public pendingFees;
     
+    /// @notice Operator approval for fee claims
+    /// @dev facilitator => operator => approved
+    mapping(address => mapping(address => bool)) public feeOperators;
+    
     // ===== Error Definitions =====
     
     error AlreadySettled(bytes32 contextKey);
@@ -40,6 +44,8 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
     error TransferFailed(address token, uint256 expected, uint256 actual);
     error RouterShouldNotHoldFunds(address token, uint256 balance);
     error HookExecutionFailed(address hook, bytes reason);
+    error InvalidOperator();
+    error Unauthorized();
     
     // ===== Core Functions =====
     
@@ -217,6 +223,59 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
                 
                 // Emit event
                 emit FeesClaimed(msg.sender, token, amount);
+            }
+        }
+    }
+    
+    // ===== Fee Operator Methods =====
+    
+    /**
+     * @inheritdoc ISettlementRouter
+     */
+    function setFeeOperator(address operator, bool approved) external {
+        if (operator == address(0)) {
+            revert InvalidOperator();
+        }
+        feeOperators[msg.sender][operator] = approved;
+        emit FeeOperatorSet(msg.sender, operator, approved);
+    }
+    
+    /**
+     * @inheritdoc ISettlementRouter
+     */
+    function isFeeOperator(address facilitator, address operator) external view returns (bool) {
+        return feeOperators[facilitator][operator];
+    }
+    
+    /**
+     * @inheritdoc ISettlementRouter
+     */
+    function claimFeesFor(
+        address facilitator,
+        address[] calldata tokens,
+        address recipient
+    ) external nonReentrant {
+        // Check authorization: must be facilitator or approved operator
+        if (msg.sender != facilitator && !feeOperators[facilitator][msg.sender]) {
+            revert Unauthorized();
+        }
+        
+        // Default recipient is facilitator
+        address to = recipient == address(0) ? facilitator : recipient;
+        
+        // Claim logic (same as before)
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 amount = pendingFees[facilitator][token];
+            if (amount > 0) {
+                // Clear pending fees first (CEI pattern)
+                pendingFees[facilitator][token] = 0;
+                
+                // Transfer fees to recipient
+                IERC20(token).safeTransfer(to, amount);
+                
+                // Emit event
+                emit FeesClaimed(facilitator, token, amount);
             }
         }
     }

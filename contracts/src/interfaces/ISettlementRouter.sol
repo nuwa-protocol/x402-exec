@@ -67,6 +67,18 @@ interface ISettlementRouter {
         uint256 amount
     );
     
+    /**
+     * @notice Operator approval changed event
+     * @param facilitator Facilitator address
+     * @param operator Operator address
+     * @param approved Whether approved or revoked
+     */
+    event FeeOperatorSet(
+        address indexed facilitator,
+        address indexed operator,
+        bool approved
+    );
+    
     // ===== Core Methods =====
     
     /**
@@ -145,5 +157,36 @@ interface ISettlementRouter {
      * @param tokens Array of token addresses to claim fees for
      */
     function claimFees(address[] calldata tokens) external;
+    
+    /**
+     * @notice Set operator approval for claiming fees
+     * @dev Allows operator to claim fees on behalf of the facilitator.
+     *      Similar to ERC721's setApprovalForAll pattern.
+     * @param operator Address to grant/revoke operator status
+     * @param approved Whether to approve or revoke
+     */
+    function setFeeOperator(address operator, bool approved) external;
+    
+    /**
+     * @notice Check if an address is an approved operator
+     * @param facilitator The facilitator address
+     * @param operator The operator address to check
+     * @return Whether the operator is approved
+     */
+    function isFeeOperator(address facilitator, address operator) external view returns (bool);
+    
+    /**
+     * @notice Claim accumulated fees on behalf of a facilitator
+     * @dev Caller must be the facilitator or an approved operator.
+     *      Allows specifying a custom recipient address for flexible fee management.
+     * @param facilitator The facilitator whose fees to claim
+     * @param tokens Array of token addresses to claim
+     * @param recipient Address to receive the fees (if zero, sends to facilitator)
+     */
+    function claimFeesFor(
+        address facilitator,
+        address[] calldata tokens,
+        address recipient
+    ) external;
 }
 
