@@ -235,8 +235,10 @@ contract TransferHookTest is Test {
     
     function testTransferWithOptionalHookData() public {
         bytes32 salt = bytes32(uint256(4));
-        // Hook ignores data, but it can be present for metadata
-        bytes memory hookData = abi.encode("order-123", "memo");
+        // Now that we support distributed transfer, empty data means simple transfer
+        // If data has any content, it will be interpreted as Split[]
+        // So for simple transfer with metadata, we should use empty data
+        bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
         bytes32 nonce = calculateCommitment(
@@ -252,7 +254,7 @@ contract TransferHookTest is Test {
             hookData
         );
         
-        // Execute settlement with hookData
+        // Execute settlement with empty hookData (simple transfer)
         vm.prank(facilitator);
         router.settleAndExecute(
             address(token),
@@ -269,7 +271,7 @@ contract TransferHookTest is Test {
             hookData
         );
         
-        // Verify transfer succeeded despite having hookData
+        // Verify transfer succeeded
         assertEq(token.balanceOf(merchant), AMOUNT - FACILITATOR_FEE);
     }
     
@@ -638,5 +640,510 @@ contract TransferHookTest is Test {
         assertEq(token.balanceOf(recipient1), AMOUNT);
         assertEq(token.balanceOf(recipient2), AMOUNT);
     }
+    
+    // ===== Distributed Transfer Tests =====
+    
+    event DistributedTransfer(
+        bytes32 indexed contextKey,
+        uint256 totalAmount,
+        uint256 recipientCount
+    );
+    
+    function testDistributedTransfer50Percent() public {
+        bytes32 salt = bytes32(uint256(300));
+        address recipient1 = makeAddr("recipient1");
+        
+        // Create split: recipient1 gets 50% (5000 bips)
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({
+            recipient: recipient1,
+            bips: 5000  // 50%
+        });
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,  // payTo gets remaining 50%
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        uint256 netAmount = AMOUNT - FACILITATOR_FEE;
+        uint256 expectedRecipient1 = netAmount * 5000 / 10000;  // 50%
+        uint256 expectedMerchant = netAmount - expectedRecipient1;  // remaining
+        
+        // Execute settlement
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Verify distribution
+        assertEq(token.balanceOf(recipient1), expectedRecipient1);
+        assertEq(token.balanceOf(merchant), expectedMerchant);
+    }
+    
+    function testDistributedTransfer100Percent() public {
+        bytes32 salt = bytes32(uint256(301));
+        address recipient1 = makeAddr("recipient1");
+        
+        // Create split: recipient1 gets 100% (10000 bips)
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({
+            recipient: recipient1,
+            bips: 10000  // 100%
+        });
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,  // payTo gets 0
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        uint256 netAmount = AMOUNT - FACILITATOR_FEE;
+        
+        // Execute settlement
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Verify distribution: recipient1 gets all, merchant gets 0
+        assertEq(token.balanceOf(recipient1), netAmount);
+        assertEq(token.balanceOf(merchant), 0);
+    }
+    
+    function testDistributedTransferMultipleRecipients() public {
+        bytes32 salt = bytes32(uint256(302));
+        address recipient1 = makeAddr("recipient1");
+        address recipient2 = makeAddr("recipient2");
+        address recipient3 = makeAddr("recipient3");
+        
+        // Create splits: 30%, 20%, 10% = 60%, merchant gets remaining 40%
+        TransferHook.Split[] memory splits = new TransferHook.Split[](3);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 3000});  // 30%
+        splits[1] = TransferHook.Split({recipient: recipient2, bips: 2000});  // 20%
+        splits[2] = TransferHook.Split({recipient: recipient3, bips: 1000});  // 10%
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        uint256 netAmount = AMOUNT - FACILITATOR_FEE;
+        uint256 expectedRecipient1 = netAmount * 3000 / 10000;
+        uint256 expectedRecipient2 = netAmount * 2000 / 10000;
+        uint256 expectedRecipient3 = netAmount * 1000 / 10000;
+        uint256 expectedMerchant = netAmount - expectedRecipient1 - expectedRecipient2 - expectedRecipient3;
+        
+        // Execute settlement
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Verify distribution
+        assertEq(token.balanceOf(recipient1), expectedRecipient1);
+        assertEq(token.balanceOf(recipient2), expectedRecipient2);
+        assertEq(token.balanceOf(recipient3), expectedRecipient3);
+        assertEq(token.balanceOf(merchant), expectedMerchant);
+    }
+    
+    function testDistributedTransferEmitsEvents() public {
+        bytes32 salt = bytes32(uint256(303));
+        address recipient1 = makeAddr("recipient1");
+        
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 5000});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        uint256 netAmount = AMOUNT - FACILITATOR_FEE;
+        uint256 splitAmount = netAmount * 5000 / 10000;
+        uint256 remainingAmount = netAmount - splitAmount;
+        
+        // Expect Transfer events for each recipient
+        vm.expectEmit(true, true, false, true);
+        emit Transfer(contextKey, recipient1, splitAmount);
+        
+        vm.expectEmit(true, true, false, true);
+        emit Transfer(contextKey, merchant, remainingAmount);
+        
+        // Expect DistributedTransfer summary event (2 recipients: recipient1 + merchant)
+        vm.expectEmit(true, false, false, true);
+        emit DistributedTransfer(contextKey, netAmount, 2);
+        
+        // Execute settlement
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    // ===== Distributed Transfer Error Cases =====
+    
+    function testDistributedTransferRevertsOnEmptySplits() public {
+        bytes32 salt = bytes32(uint256(400));
+        
+        TransferHook.Split[] memory splits = new TransferHook.Split[](0);
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert with HookExecutionFailed wrapping EmptySplits
+        vm.prank(facilitator);
+        vm.expectRevert();  // Expecting any revert since Router wraps the error
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    function testDistributedTransferRevertsOnTotalBipsExceed() public {
+        bytes32 salt = bytes32(uint256(401));
+        address recipient1 = makeAddr("recipient1");
+        address recipient2 = makeAddr("recipient2");
+        
+        // Create splits totaling > 100%
+        TransferHook.Split[] memory splits = new TransferHook.Split[](2);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 6000});
+        splits[1] = TransferHook.Split({recipient: recipient2, bips: 5000});  // total 11000 > 10000
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert with HookExecutionFailed
+        vm.prank(facilitator);
+        vm.expectRevert();  // Expecting any revert since Router wraps the error
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    function testDistributedTransferRevertsOnZeroAddress() public {
+        bytes32 salt = bytes32(uint256(402));
+        
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: address(0), bips: 5000});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert with HookExecutionFailed
+        vm.prank(facilitator);
+        vm.expectRevert();  // Expecting any revert since Router wraps the error
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    function testDistributedTransferRevertsOnZeroBips() public {
+        bytes32 salt = bytes32(uint256(403));
+        address recipient1 = makeAddr("recipient1");
+        
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 0});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert with HookExecutionFailed
+        vm.prank(facilitator);
+        vm.expectRevert();  // Expecting any revert since Router wraps the error
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    // ===== Precision Tests =====
+    
+    function testDistributedTransferPrecision() public {
+        bytes32 salt = bytes32(uint256(500));
+        address recipient1 = makeAddr("recipient1");
+        address recipient2 = makeAddr("recipient2");
+        
+        // Test with amounts that might have precision issues
+        // 33.33% + 33.33% = 66.66%, merchant gets 33.34% (remainder)
+        TransferHook.Split[] memory splits = new TransferHook.Split[](2);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 3333});
+        splits[1] = TransferHook.Split({recipient: recipient2, bips: 3333});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            0,
+            address(transferHook),
+            hookData
+        );
+        
+        // Execute settlement
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            0,
+            address(transferHook),
+            hookData
+        );
+        
+        // Verify total equals exactly AMOUNT (no rounding loss)
+        uint256 total = token.balanceOf(recipient1) + token.balanceOf(recipient2) + token.balanceOf(merchant);
+        assertEq(total, AMOUNT, "Total should equal original amount");
+        
+        // Verify merchant received the remainder (handles precision)
+        uint256 expectedRecipient1 = AMOUNT * 3333 / 10000;
+        uint256 expectedRecipient2 = AMOUNT * 3333 / 10000;
+        uint256 expectedMerchant = AMOUNT - expectedRecipient1 - expectedRecipient2;
+        
+        assertEq(token.balanceOf(recipient1), expectedRecipient1);
+        assertEq(token.balanceOf(recipient2), expectedRecipient2);
+        assertEq(token.balanceOf(merchant), expectedMerchant);
+    }
+    
+    // ===== Gas Cost Tests for Distributed Transfer =====
+    
+    function testGasCostDistributedTransfer() public {
+        bytes32 salt = bytes32(uint256(600));
+        address recipient1 = makeAddr("recipient1");
+        
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 5000});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            merchant,
+            0,
+            address(transferHook),
+            hookData
+        );
+        
+        // Measure gas
+        uint256 gasBefore = gasleft();
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            merchant,
+            0,
+            address(transferHook),
+            hookData
+        );
+        uint256 gasUsed = gasBefore - gasleft();
+        
+        // Log gas usage for reference
+        console.log("Gas used for distributed transfer (2 recipients):", gasUsed);
+    }
 }
+
 
