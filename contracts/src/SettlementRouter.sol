@@ -46,6 +46,7 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
     error HookExecutionFailed(address hook, bytes reason);
     error InvalidOperator();
     error Unauthorized();
+    error InsufficientBalanceForRecovery(address token, uint256 required, uint256 available);
     
     // ===== Core Functions =====
     
@@ -115,23 +116,36 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
         // 6. Record balance before transfer (to handle direct transfers to Router)
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         
-        // 7. Call token.transferWithAuthorization
-        // Note: signature verification and nonce check are done by token contract
-        IERC3009(token).transferWithAuthorization(
-            from,
-            address(this),  // Funds enter Router first
-            value,
-            validAfter,
-            validBefore,
-            nonce,
-            signature
-        );
+        // 7. Check if nonce is already used in token contract (recovery detection)
+        bool nonceAlreadyUsed = IERC3009(token).authorizationState(from, nonce);
         
-        // 8. Verify balance increment (ensure transfer success)
-        uint256 balanceAfter = IERC20(token).balanceOf(address(this));
-        uint256 received = balanceAfter - balanceBefore;
-        if (received < value) {
-            revert TransferFailed(token, value, received);
+        if (!nonceAlreadyUsed) {
+            // 7a. Normal flow: Call token.transferWithAuthorization
+            // Note: signature verification and nonce check are done by token contract
+            IERC3009(token).transferWithAuthorization(
+                from,
+                address(this),  // Funds enter Router first
+                value,
+                validAfter,
+                validBefore,
+                nonce,
+                signature
+            );
+            
+            // 8. Verify balance increment (ensure transfer success)
+            uint256 balanceAfter = IERC20(token).balanceOf(address(this));
+            uint256 received = balanceAfter - balanceBefore;
+            if (received < value) {
+                revert TransferFailed(token, value, received);
+            }
+        } else {
+            // 7b. Recovery flow: nonce already used, funds should be in Router
+            // Verify Router has sufficient balance to process this transaction
+            // Note: balanceBefore may include these funds plus other funds
+            if (balanceBefore < value) {
+                revert InsufficientBalanceForRecovery(token, value, balanceBefore);
+            }
+            // Note: Don't update balanceAfter, funds are already here
         }
         
         // 9. Accumulate facilitator fee
@@ -169,7 +183,17 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
         // 11. Ensure Router only holds accumulated fees (balance should be pre-transfer + fees)
         // This allows the Router to work even if someone directly transfers tokens to it
         uint256 balanceFinal = IERC20(token).balanceOf(address(this));
-        uint256 expectedBalance = balanceBefore + facilitatorFee;
+        uint256 expectedBalance;
+        if (!nonceAlreadyUsed) {
+            // Normal mode: balanceFinal = balanceBefore + facilitatorFee
+            expectedBalance = balanceBefore + facilitatorFee;
+        } else {
+            // Recovery mode: balanceFinal = balanceBefore - hookAmount + 0
+            //                            = balanceBefore - (value - facilitatorFee)
+            //                            = balanceBefore - value + facilitatorFee
+            expectedBalance = balanceBefore - value + facilitatorFee;
+        }
+        
         if (balanceFinal != expectedBalance) {
             revert RouterShouldNotHoldFunds(token, balanceFinal > expectedBalance ? balanceFinal - expectedBalance : expectedBalance - balanceFinal);
         }

@@ -1482,4 +1482,253 @@ contract SettlementRouterTest is Test {
         router.claimFees(tokens);
         assertEq(router.getPendingFees(facilitator, address(token)), 0);
     }
+    
+    // ===== Recovery Mode Tests =====
+    
+    function testRecoveryAfterDirectTransfer() public {
+        // Scenario: Malicious facilitator directly calls transferWithAuthorization
+        // Then good facilitator or user calls settleAndExecute to complete business logic
+        
+        bytes32 salt = bytes32(uint256(500));
+        address payTo = merchant;
+        uint256 facilitatorFee = 10000;
+        bytes memory hookData = abi.encode(merchant);
+        bytes memory signature = "mock_signature";
+        
+        // Calculate commitment
+        bytes32 nonce = calculateCommitment(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        // 1. Malicious facilitator directly calls transferWithAuthorization
+        token.transferWithAuthorization(
+            payer, address(router), AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature
+        );
+        
+        // Verify: Funds in Router but no business logic executed
+        assertEq(token.balanceOf(address(router)), AMOUNT);
+        assertEq(token.balanceOf(merchant), 0);
+        
+        // Verify: nonce is used
+        assertTrue(token.authorizationState(payer, nonce));
+        
+        // Verify: contextKey not settled
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        assertFalse(router.isSettled(contextKey));
+        
+        // 2. Good facilitator calls settleAndExecute (recovery flow)
+        router.settleAndExecute(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        // Verify: Business logic executed
+        assertEq(token.balanceOf(merchant), AMOUNT - facilitatorFee);
+        assertEq(token.balanceOf(address(router)), facilitatorFee); // Only holds fee
+        assertTrue(router.isSettled(contextKey));
+        
+        // Verify: Facilitator received fee
+        assertEq(router.getPendingFees(address(this), address(token)), facilitatorFee);
+    }
+    
+    function testRecoveryModeStillValidatesCommitment() public {
+        bytes32 salt = bytes32(uint256(501));
+        address payTo = merchant;
+        uint256 facilitatorFee = 10000;
+        bytes memory hookData = abi.encode(merchant);
+        bytes memory signature = "mock_signature";
+        
+        // Calculate correct commitment
+        bytes32 correctNonce = calculateCommitment(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        // Malicious facilitator uses wrong nonce for direct transfer
+        bytes32 wrongNonce = bytes32(uint256(999));
+        token.transferWithAuthorization(
+            payer, address(router), AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            wrongNonce, signature
+        );
+        
+        // Try to recover with correct parameters but wrong nonce - should fail
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SettlementRouter.InvalidCommitment.selector,
+                correctNonce,
+                wrongNonce
+            )
+        );
+        
+        router.settleAndExecute(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            wrongNonce, signature,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+    }
+    
+    function testRecoveryFailsWithInsufficientBalance() public {
+        bytes32 salt = bytes32(uint256(502));
+        address payTo = merchant;
+        uint256 facilitatorFee = 10000;
+        bytes memory hookData = abi.encode(merchant);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        // Direct transfer but only half the amount
+        token.transferWithAuthorization(
+            payer, address(router), AMOUNT / 2,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature
+        );
+        
+        // Try to recover full amount - should fail
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SettlementRouter.InsufficientBalanceForRecovery.selector,
+                address(token),
+                AMOUNT,
+                AMOUNT / 2
+            )
+        );
+        
+        router.settleAndExecute(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+    }
+    
+    function testCannotCallTwiceAfterRecovery() public {
+        bytes32 salt = bytes32(uint256(503));
+        address payTo = merchant;
+        uint256 facilitatorFee = 10000;
+        bytes memory hookData = abi.encode(merchant);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        // Direct transfer
+        token.transferWithAuthorization(
+            payer, address(router), AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature
+        );
+        
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        
+        // First recovery call
+        router.settleAndExecute(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+        
+        assertTrue(router.isSettled(contextKey));
+        
+        // Mint more tokens for second attempt
+        token.mint(payer, AMOUNT);
+        
+        // Second call should fail due to AlreadySettled
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SettlementRouter.AlreadySettled.selector,
+                contextKey
+            )
+        );
+        
+        router.settleAndExecute(
+            address(token), payer, AMOUNT,
+            VALID_AFTER, VALID_BEFORE,
+            nonce, signature,
+            salt, payTo, facilitatorFee,
+            address(simpleHook), hookData
+        );
+    }
+    
+    function testNormalFlowUnaffectedByRecoveryLogic() public {
+        // Verify normal flow still works after adding recovery logic
+        // This is essentially the same as testSettleAndExecuteWithSimpleHook
+        bytes32 salt = bytes32(uint256(504));
+        address payTo = merchant;
+        uint256 facilitatorFee = 10000;
+        bytes memory signature = "mock_signature";
+        bytes memory hookData = abi.encode(merchant);
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            payTo,
+            facilitatorFee,
+            address(simpleHook),
+            hookData
+        );
+        
+        bytes32 contextKey = router.calculateContextKey(payer, address(token), nonce);
+        
+        // Verify nonce is NOT used before calling settleAndExecute
+        assertFalse(token.authorizationState(payer, nonce));
+        
+        // Execute settlement (normal flow, not recovery)
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            payTo,
+            facilitatorFee,
+            address(simpleHook),
+            hookData
+        );
+        
+        // Verify state
+        assertTrue(router.isSettled(contextKey));
+        
+        // Verify balances
+        assertEq(token.balanceOf(address(router)), facilitatorFee); // Hub holds only fee
+        assertEq(token.balanceOf(merchant), AMOUNT - facilitatorFee); // Merchant received funds
+        assertEq(token.balanceOf(payer), 9 * AMOUNT); // Payer balance decreased
+        
+        // Verify nonce is now used
+        assertTrue(token.authorizationState(payer, nonce));
+        
+        // Verify facilitator fee
+        assertEq(router.getPendingFees(address(this), address(token)), facilitatorFee);
+    }
 }

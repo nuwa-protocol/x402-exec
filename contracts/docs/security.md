@@ -101,6 +101,134 @@ The protocol now uses a **commitment hash** mechanism to bind all business param
 | **Resource Server compromise** | Resource Server's private system is hacked, generates malicious parameters | Out of scope for smart contract layer. Requires operational security measures. |
 | **Client wallet compromise** | User's private key is stolen | Out of scope. Standard wallet security applies. |
 
+## Direct Transfer Attack Prevention
+
+### Attack Vector
+
+A malicious facilitator could bypass the normal settlement flow by directly calling the ERC-3009 token's `transferWithAuthorization` method:
+
+```solidity
+USDC.transferWithAuthorization(
+    from,           // User
+    routerAddress,  // Router
+    value,
+    validAfter,
+    validBefore,
+    nonce,          // Any value
+    signature       // User's signature
+)
+```
+
+This attack would:
+1. Transfer user funds into the Router contract
+2. Mark the nonce as used in the token contract
+3. **Not execute any business logic** (no Hook call)
+4. Lock funds in Router without completing the user's intended transaction
+
+### Defense Mechanism
+
+The Router automatically detects and recovers from this attack by checking the nonce state before attempting the transfer:
+
+**Detection Flow**:
+1. Before calling `transferWithAuthorization`, query `token.authorizationState(from, nonce)`
+2. If `false`: Normal flow - call `transferWithAuthorization` then execute business logic
+3. If `true`: Recovery flow - skip transfer (funds already in Router), directly execute business logic
+
+**Recovery Flow**:
+```
+Normal: settleAndExecute → transferWithAuthorization → Hook → Complete
+Attack: Direct transfer → (funds locked)
+Recover: settleAndExecute → (detect nonce used) → Hook → Complete
+```
+
+**Key Protection**: Even in recovery mode, the Router still validates:
+- ✅ Commitment hash matches nonce (prevents parameter tampering)
+- ✅ Sufficient balance available in Router
+- ✅ All business logic executes correctly
+- ✅ Facilitator receives their fee
+
+### Security Properties
+
+| Property | Status | Details |
+|----------|--------|---------|
+| User intent fulfilled | ✅ | Payment and business logic always execute together |
+| Funds cannot be locked | ✅ | Recovery flow completes the transaction |
+| Commitment protection | ✅ | Even in recovery, parameters must match signed commitment |
+| Facilitator incentive | ✅ | Facilitator still receives fee for completing transaction |
+| No benefit to attacker | ✅ | Attack provides no financial gain |
+| Gas overhead | ✅ | ~2.6k gas per transaction (one view call) |
+
+### Example Scenarios
+
+**Scenario 1: Attack Detected and Recovered**
+```
+1. User signs commitment for 100 USDC payment
+2. Attacker calls transferWithAuthorization directly
+   → 100 USDC enters Router, nonce marked as used
+3. Good facilitator calls settleAndExecute
+   → Detects nonce already used
+   → Verifies commitment (prevents wrong parameters)
+   → Executes Hook with 99 USDC (after 1 USDC fee)
+   → Facilitator receives 1 USDC fee
+   → User's business intent fulfilled ✅
+```
+
+**Scenario 2: Normal Flow Unaffected**
+```
+1. User signs commitment
+2. Facilitator calls settleAndExecute first
+   → Detects nonce not used
+   → Normal flow: transferWithAuthorization + Hook
+   → Complete ✅
+```
+
+### Gas Cost Analysis
+
+| Operation | Gas Cost | Notes |
+|-----------|----------|-------|
+| Nonce check | ~2.6k | One external view call to token contract |
+| Normal flow | Same | No change to existing operations |
+| Recovery flow | -21k | Saves `transferWithAuthorization` gas |
+
+**Net Impact**: 
+- Normal transactions: +2.6k gas (~1-2% increase)
+- Recovery transactions: -18k gas (cheaper than normal)
+
+### Implementation Details
+
+The recovery logic is integrated directly into `settleAndExecute`:
+
+```solidity
+// Check nonce state
+bool nonceAlreadyUsed = IERC3009(token).authorizationState(from, nonce);
+
+if (!nonceAlreadyUsed) {
+    // Normal flow: transfer then execute
+    IERC3009(token).transferWithAuthorization(...);
+    // Verify transfer succeeded
+} else {
+    // Recovery flow: verify funds available, then execute
+    require(balanceBefore >= value);
+    // Continue to Hook execution
+}
+
+// Both flows converge here: deduct fee, call Hook, verify balances
+```
+
+### Design Rationale
+
+**Why not a separate rescue function?**
+- Integrated solution provides seamless user experience
+- Facilitators don't need to handle special cases
+- Automatic retry works: if first call fails, second call recovers
+- Single API is simpler for SDK developers
+
+**Why check nonce every time?**
+- Cost is minimal (~2.6k gas)
+- Provides complete protection
+- No additional user action required
+- Makes attack completely ineffective
+
 ## Facilitator Fee Mechanism
 
 ### Design
