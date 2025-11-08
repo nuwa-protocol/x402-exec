@@ -340,6 +340,135 @@ contract TransferHookTest is Test {
         );
     }
     
+    function testRevertsOnZeroPayToInSimpleMode() public {
+        bytes32 salt = bytes32(uint256(1000));
+        bytes memory hookData = "";
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            address(0),  // Zero address as payTo
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert due to zero address
+        vm.prank(facilitator);
+        vm.expectRevert();
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            address(0),  // Zero address as payTo
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    function testRevertsOnZeroPayToInDistributedMode() public {
+        bytes32 salt = bytes32(uint256(1001));
+        address recipient1 = makeAddr("recipient1");
+        
+        // Split: recipient1 gets 50%, payTo should get 50% but is zero address
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 5000});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            address(0),  // Zero address as payTo
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Expect revert due to zero address payTo (receives remaining 50%)
+        vm.prank(facilitator);
+        vm.expectRevert();
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            address(0),  // Zero address as payTo
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+    }
+    
+    function testAllowsZeroPayToWhenFullyDistributed() public {
+        bytes32 salt = bytes32(uint256(1002));
+        address recipient1 = makeAddr("recipient1");
+        address dummyPayTo = makeAddr("dummyPayTo");  // Use valid address
+        
+        // Split: recipient1 gets 100%, payTo gets 0 but must be valid address
+        TransferHook.Split[] memory splits = new TransferHook.Split[](1);
+        splits[0] = TransferHook.Split({recipient: recipient1, bips: 10000});
+        
+        bytes memory hookData = abi.encode(splits);
+        bytes memory signature = "mock_signature";
+        
+        bytes32 nonce = calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            salt,
+            dummyPayTo,  // Valid address even though receives nothing
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        uint256 netAmount = AMOUNT - FACILITATOR_FEE;
+        
+        // Should succeed with valid payTo even though it receives 0 (100% distributed)
+        vm.prank(facilitator);
+        router.settleAndExecute(
+            address(token),
+            payer,
+            AMOUNT,
+            VALID_AFTER,
+            VALID_BEFORE,
+            nonce,
+            signature,
+            salt,
+            dummyPayTo,  // Valid address
+            FACILITATOR_FEE,
+            address(transferHook),
+            hookData
+        );
+        
+        // Verify recipient1 received all, dummyPayTo received nothing
+        assertEq(token.balanceOf(recipient1), netAmount);
+        assertEq(token.balanceOf(dummyPayTo), 0);
+    }
+    
     function testRouterCanExecute() public view {
         // Verify router address is set correctly
         assertEq(transferHook.settlementRouter(), address(router));

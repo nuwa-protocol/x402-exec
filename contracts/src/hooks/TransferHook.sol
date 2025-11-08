@@ -149,6 +149,11 @@ contract TransferHook is ISettlementHook {
         address /* facilitator */,
         bytes calldata data
     ) external onlyRouter returns (bytes memory) {
+        // Validate payTo address upfront
+        if (payTo == address(0)) {
+            revert InvalidRecipient(address(0));
+        }
+        
         // Mode 1: Simple Transfer (backward compatible)
         if (data.length == 0) {
             return _executeSimpleTransfer(contextKey, token, amount, payTo);
@@ -191,7 +196,7 @@ contract TransferHook is ISettlementHook {
      * @param amount Total amount to distribute
      * @param payTo Primary recipient (receives remainder)
      * @param data Encoded Split[] array
-     * @return Encoded tuple of (recipientCount, totalAmount)
+     * @return Encoded tuple of (recipientCount, amount)
      */
     function _executeDistributedTransfer(
         bytes32 contextKey,
