@@ -5,8 +5,10 @@ packages:
   # X402x SDK packages
   - 'typescript/packages/*'
   
+  # Facilitator (Production-ready component)
+  - 'facilitator'
+  
   # Examples (use npm alias for x402, but managed in workspace for convenience)
-  - 'examples/facilitator'
   - 'examples/showcase/server'
   - 'examples/showcase/client'
 

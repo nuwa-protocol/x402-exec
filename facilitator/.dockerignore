@@ -1,0 +1,69 @@
+# Dependencies
+node_modules
+dist
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings
+
+# Test coverage
+coverage
+.nyc_output
+
+# Build artifacts (keep only source for Docker build)
+dist
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation (not needed in runtime)
+*.md
+docs/
+
+# Test files (not needed in runtime)
+test/
+tests/
+**/*.test.ts
+**/*.spec.ts
+vitest.config.ts
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Contracts and other unrelated directories (when building from root)
+contracts/
+web/
+examples/showcase/
+
+# Lock files and configs (copied separately)
+.npmrc
+.yarnrc
+

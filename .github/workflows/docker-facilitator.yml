@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'examples/facilitator/**'
-      - 'examples/showcase/server/**'
+      - 'facilitator/**'
+      - 'typescript/packages/**'
       - '.github/workflows/docker-facilitator.yml'
-      # Note: No need to rebuild on deps/x402 changes since examples use @x402x/x402 from npm
+      # Note: x402 packages installed via npm alias, no need to monitor deps/x402
   pull_request:
     branches: [main]
     paths:
-      - 'examples/facilitator/**'
-      - 'examples/showcase/server/**'
+      - 'facilitator/**'
+      - 'typescript/packages/**'
       - '.github/workflows/docker-facilitator.yml'
 
 env:
@@ -59,7 +59,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./examples/facilitator/Dockerfile
+          file: ./facilitator/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

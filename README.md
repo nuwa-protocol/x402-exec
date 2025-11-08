@@ -95,8 +95,8 @@ x402-exec/
 │   ├── script/                     # Deployment scripts
 │   ├── test/                       # Contract tests
 │   └── docs/                       # Contract documentation
+├── facilitator/                    # Production-ready facilitator service
 ├── examples/
-│   ├── facilitator/                # SettlementRouter-enabled facilitator
 │   └── showcase/                   # Full-stack demo application
 └── docs/                           # Project documentation
 ```
@@ -161,11 +161,11 @@ cd contracts
 
 ### Facilitator Integration
 
-The facilitator automatically supports both:
+The facilitator is a production-ready service that automatically supports both:
 - **Standard x402 payments**: Direct ERC-3009 transfers
 - **SettlementRouter payments**: Extended settlement with Hook execution
 
-See the [Facilitator README](./examples/facilitator/README.md) for complete setup guide and running instructions, or the [Facilitator Developer Guide](./contracts/docs/facilitator_guide.md) for extending your own facilitator.
+See the [Facilitator README](./facilitator/README.md) for installation, deployment, and configuration guide, or the [Facilitator Developer Guide](./contracts/docs/facilitator_guide.md) for extending your own facilitator.
 
 ### Live Demo
 
@@ -223,16 +223,16 @@ Example deployments for testing and reference:
   Interactive demo with 3 payment scenarios (referral split, NFT mint, loyalty rewards)
 
 - **Example Facilitator**: [https://facilitator.x402x.dev](https://facilitator.x402x.dev)  
-  Reference facilitator implementation (see [Facilitator Guide](./examples/facilitator/README.md))
+  Reference facilitator implementation (see [Facilitator Guide](./facilitator/README.md))
 
-> 💡 **Note**: These are example deployments. For production use, deploy your own facilitator and configure it according to your needs.
+> 💡 **Note**: These are example deployments. For production use, deploy your own facilitator using the [Facilitator package](./facilitator/) and configure it according to your needs.
 
 ## 📖 Documentation
 
 ### For Developers
 
 - **[Built-in Hooks Guide](./contracts/docs/builtin_hooks.md)** - Using TransferHook and other built-in Hooks
-- **[Facilitator Example & Setup](./examples/facilitator/README.md)** - Complete TypeScript implementation with setup guide
+- **[Facilitator Setup & Deployment](./facilitator/README.md)** - Complete setup guide for production deployment
 - **[Facilitator Developer Guide](./contracts/docs/facilitator_guide.md)** - Language-agnostic integration guide for extending your facilitator
 - **[Hook Development Guide](./contracts/docs/hook_guide.md)** - Build custom Hooks for business logic
 - **[Contract API Documentation](./contracts/docs/api.md)** - SettlementRouter contract interface
