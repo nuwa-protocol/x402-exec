@@ -188,9 +188,9 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
             // Normal mode: balanceFinal = balanceBefore + facilitatorFee
             expectedBalance = balanceBefore + facilitatorFee;
         } else {
-            // Recovery mode: balanceFinal = balanceBefore - hookAmount + 0
-            //                            = balanceBefore - (value - facilitatorFee)
-            //                            = balanceBefore - value + facilitatorFee
+            // Recovery mode (no incoming transfer): balanceFinal = balanceBefore - hookAmount
+            //                                                     = balanceBefore - (value - facilitatorFee)
+            //                                                     = balanceBefore - value + facilitatorFee
             expectedBalance = balanceBefore - value + facilitatorFee;
         }
         
