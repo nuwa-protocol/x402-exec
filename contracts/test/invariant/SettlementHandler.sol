@@ -31,6 +31,7 @@ contract SettlementHandler is Test {
     uint256 public ghost_totalFeesAccumulated;
     uint256 public ghost_totalFeesClaimed;
     uint256 public ghost_totalTokensSettled;
+    uint256 public ghost_totalTokensMinted; // Track tokens minted to payers
     mapping(address => uint256) public ghost_payerBalanceDecrease;
     mapping(address => uint256) public ghost_merchantBalanceIncrease;
     
@@ -64,8 +65,10 @@ contract SettlementHandler is Test {
         // Ensure payer has tokens
         uint256 payerBalance = token.balanceOf(payer);
         if (payerBalance < amount) {
+            uint256 mintAmount = amount - payerBalance + 1_000_000;
             vm.prank(address(this));
-            token.mint(payer, amount - payerBalance + 1_000_000);
+            token.mint(payer, mintAmount);
+            ghost_totalTokensMinted += mintAmount; // Track minted tokens
         }
         
         // Ensure payer has approved router

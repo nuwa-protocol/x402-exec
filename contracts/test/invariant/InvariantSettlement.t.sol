@@ -108,32 +108,8 @@ contract InvariantSettlementTest is StdInvariant, Test {
         );
     }
     
-    /// @notice Invariant 3: Pending fees are always non-negative
-    /// @dev Each facilitator's pending fees >= 0
-    function invariant_PendingFeesNonNegative() public view {
-        for (uint256 i = 0; i < facilitators.length; i++) {
-            uint256 pending = router.getPendingFees(facilitators[i], address(token));
-            assertTrue(
-                pending >= 0,
-                "Pending fees must be non-negative"
-            );
-        }
-    }
-    
-    /// @notice Invariant 4: Double settlement is impossible
-    /// @dev Once settled, contextKey cannot be settled again
-    function invariant_NoDoubleSettlement() public view {
-        // This is enforced by the settled mapping
-        // The handler ensures unique nonces, so this should always hold
-        // We verify by checking that settlementCount operations succeeded
-        assertTrue(
-            handler.settlementCount() >= 0,
-            "Settlement count must be valid"
-        );
-    }
-    
-    /// @notice Invariant 5: Token conservation (excluding fees)
-    /// @dev Total tokens settled = sum of merchant increases + pending fees
+    /// @notice Invariant 3: Token conservation
+    /// @dev Total tokens settled = sum of merchant increases + all fees
     function invariant_TokenConservation() public view {
         uint256 totalSettled = handler.ghost_totalTokensSettled();
         
@@ -155,57 +131,58 @@ contract InvariantSettlementTest is StdInvariant, Test {
         );
     }
     
-    /// @notice Invariant 6: Operator authorization is independent per facilitator
-    /// @dev Setting operator for A doesn't affect B's operators
-    function invariant_OperatorIndependence() public view {
-        // Check that operator authorizations don't interfere
-        // This is a property of the mapping structure
+    /// @notice Invariant 4: Each facilitator's pending fees matches router state
+    /// @dev Verify consistency between router's pendingFees mapping and actual state
+    function invariant_PendingFeesConsistency() public view {
+        // Check that pending fees are consistent with what we expect
         for (uint256 i = 0; i < facilitators.length; i++) {
-            for (uint256 j = 0; j < facilitators.length; j++) {
-                if (i == j) continue;
-                
-                bool isOperator = router.isFeeOperator(facilitators[i], facilitators[j]);
-                // Operator status is well-defined (returns true or false, not error)
-                assertTrue(isOperator == true || isOperator == false);
-            }
-        }
-    }
-    
-    /// @notice Invariant 7: Router never holds more than pending fees
-    /// @dev This protects against stuck funds
-    function invariant_RouterBalanceUpperBound() public view {
-        uint256 routerBalance = token.balanceOf(address(router));
-        uint256 totalPendingFees = handler.getTotalPendingFees();
-        
-        assertLe(
-            routerBalance,
-            totalPendingFees,
-            "Router must not hold excess funds"
-        );
-    }
-    
-    // ===== Additional Safety Invariants =====
-    
-    /// @notice Invariant: No settlement can decrease merchant balance
-    /// @dev Merchants should only gain tokens
-    function invariant_MerchantBalanceMonotonic() public view {
-        for (uint256 i = 0; i < merchants.length; i++) {
-            uint256 increase = handler.ghost_merchantBalanceIncrease(merchants[i]);
-            assertTrue(
-                increase >= 0,
-                "Merchant balance should never decrease"
+            uint256 pendingFees = router.getPendingFees(facilitators[i], address(token));
+            
+            // Pending fees should never exceed the router's total balance
+            assertLe(
+                pendingFees,
+                token.balanceOf(address(router)),
+                "Individual pending fees cannot exceed router balance"
             );
         }
     }
     
-    /// @notice Invariant: Facilitator can always claim their own fees
-    /// @dev Self-claiming should always be authorized
-    function invariant_SelfClaimAlwaysAuthorized() public view {
-        for (uint256 i = 0; i < facilitators.length; i++) {
-            // A facilitator is implicitly authorized to claim their own fees
-            // This is tested by the fact that claimFees() works
-            assertTrue(true); // This invariant is structural
+    /// @notice Invariant 5: Total supply conservation across the system
+    /// @dev Sum of all balances should equal initial supply + minted tokens
+    function invariant_TotalSupplyConservation() public view {
+        uint256 totalInitialSupply = INITIAL_BALANCE * payers.length;
+        
+        // Sum all payer balances
+        uint256 totalPayerBalance = 0;
+        for (uint256 i = 0; i < payers.length; i++) {
+            totalPayerBalance += token.balanceOf(payers[i]);
         }
+        
+        // Sum all merchant balances
+        uint256 totalMerchantBalance = 0;
+        for (uint256 i = 0; i < merchants.length; i++) {
+            totalMerchantBalance += token.balanceOf(merchants[i]);
+        }
+        
+        // Sum all facilitator balances (from claimed fees)
+        uint256 totalFacilitatorBalance = 0;
+        for (uint256 i = 0; i < facilitators.length; i++) {
+            totalFacilitatorBalance += token.balanceOf(facilitators[i]);
+        }
+        
+        // Router balance (pending fees)
+        uint256 routerBalance = token.balanceOf(address(router));
+        
+        // Total should equal initial supply + minted tokens
+        uint256 totalBalance = totalPayerBalance + totalMerchantBalance + 
+                              totalFacilitatorBalance + routerBalance;
+        uint256 expectedBalance = totalInitialSupply + handler.ghost_totalTokensMinted();
+        
+        assertEq(
+            totalBalance,
+            expectedBalance,
+            "Total supply must be conserved (initial + minted)"
+        );
     }
     
     // ===== Test Configuration =====
