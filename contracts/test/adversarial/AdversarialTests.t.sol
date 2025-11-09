@@ -41,35 +41,6 @@ contract AdversarialTests is Test {
         token.approve(address(router), type(uint256).max);
     }
     
-    function calculateCommitment(
-        address tokenAddr,
-        address from,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 facilitatorFee,
-        address hookAddr,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            tokenAddr,
-            from,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            facilitatorFee,
-            hookAddr,
-            keccak256(hookData)
-        ));
-    }
-    
     // ===== Reentrancy Protection Tests =====
     
     /// @dev Test: Double settlement with same nonce should be prevented
@@ -77,7 +48,7 @@ contract AdversarialTests is Test {
         uint256 amount = 1_000_000;
         bytes32 salt = bytes32(uint256(1));
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -144,7 +115,7 @@ contract AdversarialTests is Test {
         uint256 amount = 1_000_000;
         bytes32 salt = bytes32(uint256(2));
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -189,7 +160,7 @@ contract AdversarialTests is Test {
         uint256 amount = 1_000_000;
         bytes32 salt = bytes32(uint256(3));
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -238,7 +209,7 @@ contract AdversarialTests is Test {
         bytes32 salt = bytes32(uint256(4));
         
         // Create commitment with original amount
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             originalAmount,
@@ -276,7 +247,7 @@ contract AdversarialTests is Test {
         bytes32 salt = bytes32(uint256(5));
         
         // Create commitment with original recipient
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -316,7 +287,7 @@ contract AdversarialTests is Test {
         bytes32 salt = bytes32(uint256(6));
         
         // Create commitment with original fee
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -357,7 +328,7 @@ contract AdversarialTests is Test {
         bytes32 salt2 = bytes32(uint256(8));
         
         // Same parameters, different salts produce different nonces
-        bytes32 nonce1 = calculateCommitment(
+        bytes32 nonce1 = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -370,7 +341,7 @@ contract AdversarialTests is Test {
             ""
         );
         
-        bytes32 nonce2 = calculateCommitment(
+        bytes32 nonce2 = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -438,7 +409,7 @@ contract AdversarialTests is Test {
         uint256 amount = 1_000_000;
         bytes32 salt = bytes32(uint256(9));
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(malToken),
             payer,
             amount,
@@ -478,7 +449,7 @@ contract AdversarialTests is Test {
         uint256 fee = 10_000;
         bytes32 salt = bytes32(uint256(10));
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -530,7 +501,7 @@ contract AdversarialTests is Test {
         bytes32 salt = bytes32(uint256(11));
         uint256 validBefore = block.timestamp + 1 hours;
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -571,7 +542,7 @@ contract AdversarialTests is Test {
         bytes32 salt = bytes32(uint256(12));
         uint256 validAfter = block.timestamp + 1 hours;
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,

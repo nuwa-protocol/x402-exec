@@ -56,36 +56,6 @@ contract SettlementRouterTest is Test {
         uint256 amount
     );
     
-    // Helper function to calculate commitment hash
-    function calculateCommitment(
-        address token,
-        address from,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 facilitatorFee,
-        address hook,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            token,
-            from,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            facilitatorFee,
-            hook,
-            keccak256(hookData)
-        ));
-    }
-    
     function setUp() public {
         // Deploy contracts
         router = new SettlementRouter();
@@ -132,7 +102,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         
         // Calculate commitment (which becomes the nonce)
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -191,7 +161,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -255,7 +225,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = "";
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -312,7 +282,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = "";
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -371,7 +341,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(splits);
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -427,7 +397,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(splits);
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -475,7 +445,7 @@ contract SettlementRouterTest is Test {
         token.mint(poorPayer, AMOUNT / 2); // Only half the amount
         
         // Calculate commitment nonce
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             poorPayer,
             AMOUNT,
@@ -516,7 +486,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -557,7 +527,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate correct commitment
-        bytes32 correctNonce = calculateCommitment(
+        bytes32 correctNonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -605,7 +575,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with original value
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -621,7 +591,7 @@ contract SettlementRouterTest is Test {
         // Try to use different value (tampered)
         uint256 tamperedValue = AMOUNT * 2;
         
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             tamperedValue,
@@ -666,7 +636,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with simpleHook
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -680,7 +650,7 @@ contract SettlementRouterTest is Test {
         );
         
         // Try to use different hook (tampered)
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -725,7 +695,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with original hookData
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -741,7 +711,7 @@ contract SettlementRouterTest is Test {
         // Try to use different hookData (tampered)
         bytes memory tamperedHookData = abi.encode(platform);
         
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -786,7 +756,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with original fee
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -802,7 +772,7 @@ contract SettlementRouterTest is Test {
         // Try to use different fee (tampered)
         uint256 tamperedFee = 50000;
         
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -847,7 +817,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with original payTo
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -863,7 +833,7 @@ contract SettlementRouterTest is Test {
         // Try to use different payTo (tampered)
         address tamperedPayTo = platform;
         
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -908,7 +878,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment with original salt
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -924,7 +894,7 @@ contract SettlementRouterTest is Test {
         // Try to use different salt (tampered)
         bytes32 tamperedSalt = bytes32(uint256(999));
         
-        bytes32 expectedCommitment = calculateCommitment(
+        bytes32 expectedCommitment = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -972,7 +942,7 @@ contract SettlementRouterTest is Test {
         address facilitator = address(this);
         
         // Calculate commitment
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1028,7 +998,7 @@ contract SettlementRouterTest is Test {
         address facilitator = address(this);
         
         // First settlement with token1
-        bytes32 nonce1 = calculateCommitment(
+        bytes32 nonce1 = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1057,7 +1027,7 @@ contract SettlementRouterTest is Test {
         );
         
         // Second settlement with token2
-        bytes32 nonce2 = calculateCommitment(
+        bytes32 nonce2 = router.calculateCommitment(
             address(token2),
             payer,
             AMOUNT,
@@ -1136,7 +1106,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         address facilitator = address(this);
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1179,7 +1149,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1224,7 +1194,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1266,7 +1236,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1314,7 +1284,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1359,7 +1329,7 @@ contract SettlementRouterTest is Test {
         bytes32 salt1 = bytes32(uint256(400));
         bytes32 salt2 = bytes32(uint256(401));
         
-        bytes32 nonce1 = calculateCommitment(
+        bytes32 nonce1 = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1372,7 +1342,7 @@ contract SettlementRouterTest is Test {
             hookData
         );
         
-        bytes32 nonce2 = calculateCommitment(
+        bytes32 nonce2 = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1438,7 +1408,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         address facilitator = address(this);
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1496,7 +1466,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate commitment
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token), payer, AMOUNT,
             VALID_AFTER, VALID_BEFORE,
             salt, payTo, facilitatorFee,
@@ -1547,7 +1517,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         
         // Calculate correct commitment
-        bytes32 correctNonce = calculateCommitment(
+        bytes32 correctNonce = router.calculateCommitment(
             address(token), payer, AMOUNT,
             VALID_AFTER, VALID_BEFORE,
             salt, payTo, facilitatorFee,
@@ -1587,7 +1557,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token), payer, AMOUNT,
             VALID_AFTER, VALID_BEFORE,
             salt, payTo, facilitatorFee,
@@ -1627,7 +1597,7 @@ contract SettlementRouterTest is Test {
         bytes memory hookData = abi.encode(merchant);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token), payer, AMOUNT,
             VALID_AFTER, VALID_BEFORE,
             salt, payTo, facilitatorFee,
@@ -1683,7 +1653,7 @@ contract SettlementRouterTest is Test {
         bytes memory signature = "mock_signature";
         bytes memory hookData = abi.encode(merchant);
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,

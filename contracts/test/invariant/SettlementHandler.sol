@@ -79,7 +79,7 @@ contract SettlementHandler is Test {
         
         // Generate unique nonce
         bytes32 salt = keccak256(abi.encodePacked(settlementCount++, block.timestamp));
-        bytes32 nonce = _calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             amount,
@@ -187,35 +187,6 @@ contract SettlementHandler is Test {
     }
     
     // ===== Helper Functions =====
-    
-    function _calculateCommitment(
-        address tokenAddr,
-        address from,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 facilitatorFee,
-        address hookAddr,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            tokenAddr,
-            from,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            facilitatorFee,
-            hookAddr,
-            keccak256(hookData)
-        ));
-    }
     
     // ===== View Functions for Testing =====
     

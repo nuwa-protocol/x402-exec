@@ -35,34 +35,23 @@ contract StressTests is Test {
         token.approve(address(router), type(uint256).max);
     }
     
-    function calculateCommitment(
-        uint256 value,
-        uint256 feeAmount,
-        bytes32 salt
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            address(token),
-            payer,
-            value,
-            uint256(0),
-            type(uint256).max,
-            salt,
-            merchant,
-            feeAmount,
-            address(hook),
-            keccak256("")
-        ));
-    }
-    
     // ===== Amount Boundary Tests =====
     
     /// @notice Test: Minimum amount (1 wei)
     function testStress_MinimumAmount() public {
         bytes32 salt = bytes32(uint256(1));
-        bytes32 nonce = calculateCommitment(1, 0, salt);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            1,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            ""
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(
@@ -87,7 +76,18 @@ contract StressTests is Test {
     function testStress_LargeAmount() public {
         uint256 largeAmount = 1_000_000_000_000_000; // 1 billion tokens (18 decimals)
         bytes32 salt = bytes32(uint256(2));
-        bytes32 nonce = calculateCommitment(largeAmount, 0, salt);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            largeAmount,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            ""
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(
@@ -113,7 +113,18 @@ contract StressTests is Test {
         uint256 amount = 10_000;
         uint256 fee = 9_999; // 99.99%
         bytes32 salt = bytes32(uint256(3));
-        bytes32 nonce = calculateCommitment(amount, fee, salt);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            amount,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            fee,
+            address(hook),
+            ""
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(
@@ -146,7 +157,18 @@ contract StressTests is Test {
         
         for (uint256 i = 0; i < count; i++) {
             bytes32 salt = bytes32(i + 100);
-            bytes32 nonce = calculateCommitment(amount, 0, salt);
+            bytes32 nonce = router.calculateCommitment(
+                address(token),
+                payer,
+                amount,
+                0,
+                type(uint256).max,
+                salt,
+                merchant,
+                0,
+                address(hook),
+                ""
+            );
             
             vm.prank(facilitator);
             router.settleAndExecute(
@@ -180,7 +202,18 @@ contract StressTests is Test {
         
         for (uint256 i = 0; i < count; i++) {
             bytes32 salt = bytes32(i + 200);
-            bytes32 nonce = calculateCommitment(amount, fee, salt);
+            bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            amount,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            fee,
+            address(hook),
+            ""
+        );
             
             vm.prank(facilitator);
             router.settleAndExecute(
@@ -414,7 +447,18 @@ contract StressTests is Test {
             
             // Accumulate fees for this facilitator
             bytes32 salt = bytes32(i + 600);
-            bytes32 nonce = calculateCommitment(10_000, 100, salt);
+            bytes32 nonce = router.calculateCommitment(
+                address(token),
+                payer,
+                10_000,
+                0,
+                type(uint256).max,
+                salt,
+                merchant,
+                100,
+                address(hook),
+                ""
+            );
             
             vm.prank(fac);
             router.settleAndExecute(

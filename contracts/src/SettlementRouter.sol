@@ -81,10 +81,7 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
         bytes calldata hookData
     ) external nonReentrant {
         // 1. Calculate commitment hash from all parameters
-        bytes32 commitment = keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(this),  // Router address (cross-router replay protection)
+        bytes32 commitment = calculateCommitment(
             token,
             from,
             value,
@@ -94,8 +91,8 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
             payTo,
             facilitatorFee,
             hook,
-            keccak256(hookData)
-        ));
+            hookData
+        );
         
         // 2. Verify nonce equals commitment (prevents parameter tampering)
         if (nonce != commitment) {
@@ -220,6 +217,38 @@ contract SettlementRouter is ISettlementRouter, ReentrancyGuard {
         bytes32 nonce
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(from, token, nonce));
+    }
+    
+    /**
+     * @inheritdoc ISettlementRouter
+     */
+    function calculateCommitment(
+        address token,
+        address from,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 salt,
+        address payTo,
+        uint256 facilitatorFee,
+        address hook,
+        bytes calldata hookData
+    ) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            "X402/settle/v1",
+            block.chainid,
+            address(this),  // Router address (cross-router replay protection)
+            token,
+            from,
+            value,
+            validAfter,
+            validBefore,
+            salt,
+            payTo,
+            facilitatorFee,
+            hook,
+            keccak256(hookData)
+        ));
     }
     
     // ===== Facilitator Fee Methods =====

@@ -40,35 +40,23 @@ contract GasBenchmarks is Test {
         token.approve(address(router), type(uint256).max);
     }
     
-    function calculateCommitment(
-        uint256 value,
-        uint256 feeAmount,
-        bytes32 salt,
-        address hookAddr
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            address(token),
-            payer,
-            value,
-            uint256(0),
-            type(uint256).max,
-            salt,
-            merchant,
-            feeAmount,
-            hookAddr,
-            keccak256("")
-        ));
-    }
-    
     // ===== Basic Settlement Gas Benchmarks =====
     
     /// @notice Benchmark: Simple settlement without fee
     function testGas_SettleWithoutFee() public {
         bytes32 salt = bytes32(uint256(1));
-        bytes32 nonce = calculateCommitment(AMOUNT, 0, salt, address(hook));
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            ""
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -94,7 +82,18 @@ contract GasBenchmarks is Test {
     /// @notice Benchmark: Settlement with facilitator fee
     function testGas_SettleWithFee() public {
         bytes32 salt = bytes32(uint256(2));
-        bytes32 nonce = calculateCommitment(AMOUNT, FEE, salt, address(hook));
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            FEE,
+            address(hook),
+            ""
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -120,7 +119,18 @@ contract GasBenchmarks is Test {
     /// @notice Benchmark: Settlement without hook (direct transfer)
     function testGas_SettleWithoutHook() public {
         bytes32 salt = bytes32(uint256(3));
-        bytes32 nonce = calculateCommitment(AMOUNT, FEE, salt, address(hook));
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            FEE,
+            address(hook),
+            ""
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -231,7 +241,18 @@ contract GasBenchmarks is Test {
         
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(20));
-        bytes32 nonce = _calculateCommitmentWithData(AMOUNT, 0, salt, address(hook), hookData);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            hookData
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -266,7 +287,18 @@ contract GasBenchmarks is Test {
         
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(21));
-        bytes32 nonce = _calculateCommitmentWithData(AMOUNT, 0, salt, address(hook), hookData);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            hookData
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -301,7 +333,18 @@ contract GasBenchmarks is Test {
         
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(22));
-        bytes32 nonce = _calculateCommitmentWithData(AMOUNT, 0, salt, address(hook), hookData);
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            hookData
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -330,7 +373,18 @@ contract GasBenchmarks is Test {
     function testGas_RecoveryModeSettlement() public {
         // First do normal settlement
         bytes32 salt = bytes32(uint256(30));
-        bytes32 nonce = calculateCommitment(AMOUNT, 0, salt, address(hook));
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            0,
+            address(hook),
+            ""
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(
@@ -374,7 +428,18 @@ contract GasBenchmarks is Test {
     // ===== Helper Functions =====
     
     function _settlementWithFee(bytes32 salt, uint256 fee) internal {
-        bytes32 nonce = calculateCommitment(AMOUNT, fee, salt, address(hook));
+        bytes32 nonce = router.calculateCommitment(
+            address(token),
+            payer,
+            AMOUNT,
+            0,
+            type(uint256).max,
+            salt,
+            merchant,
+            fee,
+            address(hook),
+            ""
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(
@@ -391,30 +456,6 @@ contract GasBenchmarks is Test {
             address(hook),
             ""
         );
-    }
-    
-    function _calculateCommitmentWithData(
-        uint256 value,
-        uint256 feeAmount,
-        bytes32 salt,
-        address hookAddr,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            address(token),
-            payer,
-            value,
-            uint256(0),
-            type(uint256).max,
-            salt,
-            merchant,
-            feeAmount,
-            hookAddr,
-            keccak256(hookData)
-        ));
     }
 }
 

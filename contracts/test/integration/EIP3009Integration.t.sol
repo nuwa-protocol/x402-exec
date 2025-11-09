@@ -40,33 +40,6 @@ contract EIP3009Integration is Test {
         token.mint(payer, 100_000_000);
     }
     
-    function calculateCommitment(
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 feeAmount,
-        address hookAddr,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            address(token),
-            payer,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            feeAmount,
-            hookAddr,
-            keccak256(hookData)
-        ));
-    }
-    
     /// @notice Generate EIP-3009 authorization signature
     function signTransferAuthorization(
         address from,
@@ -111,7 +84,9 @@ contract EIP3009Integration is Test {
         bytes32 salt = bytes32(uint256(1));
         
         // Calculate commitment (this will also be the EIP-3009 nonce!)
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,
@@ -160,7 +135,9 @@ contract EIP3009Integration is Test {
     function testIntegration_SignatureWithFee() public {
         bytes32 salt = bytes32(uint256(2));
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,
@@ -206,7 +183,9 @@ contract EIP3009Integration is Test {
     function testIntegration_InvalidSignatureFails() public {
         bytes32 salt = bytes32(uint256(3));
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,
@@ -251,7 +230,9 @@ contract EIP3009Integration is Test {
     function testIntegration_WrongSignerFails() public {
         bytes32 salt = bytes32(uint256(13));
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,
@@ -298,7 +279,9 @@ contract EIP3009Integration is Test {
         bytes32 salt = bytes32(uint256(4));
         uint256 validBefore = block.timestamp + 1 hours;
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             validBefore,
@@ -345,7 +328,9 @@ contract EIP3009Integration is Test {
     function testIntegration_ReusedNonceFails() public {
         bytes32 salt = bytes32(uint256(5));
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,
@@ -415,7 +400,9 @@ contract EIP3009Integration is Test {
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(6));
         
-        bytes32 commitment = calculateCommitment(
+        bytes32 commitment = router.calculateCommitment(
+            address(token),
+            payer,
             AMOUNT,
             0,
             type(uint256).max,

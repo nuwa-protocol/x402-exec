@@ -141,6 +141,36 @@ interface ISettlementRouter {
         bytes32 nonce
     ) external pure returns (bytes32);
     
+    /**
+     * @notice Calculate commitment hash from settlement parameters
+     * @dev This is the hash that must be used as the nonce in EIP-3009 authorization.
+     *      All settlement parameters are included to prevent tampering.
+     * 
+     * @param token Token contract address
+     * @param from Payer address
+     * @param value Amount (atomic units)
+     * @param validAfter EIP-3009 valid after timestamp
+     * @param validBefore EIP-3009 expiration timestamp
+     * @param salt Unique identifier (32 bytes)
+     * @param payTo Final recipient address
+     * @param facilitatorFee Facilitator fee amount
+     * @param hook Hook contract address
+     * @param hookData Hook parameters (encoded)
+     * @return commitment The calculated commitment hash
+     */
+    function calculateCommitment(
+        address token,
+        address from,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 salt,
+        address payTo,
+        uint256 facilitatorFee,
+        address hook,
+        bytes calldata hookData
+    ) external view returns (bytes32);
+    
     // ===== Facilitator Fee Methods =====
     
     /**

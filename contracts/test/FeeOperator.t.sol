@@ -41,43 +41,13 @@ contract FeeOperatorTest is Test {
         uint256 amount
     );
     
-    // Helper function to calculate commitment hash
-    function calculateCommitment(
-        address tokenAddr,
-        address from,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 facilitatorFee,
-        address hook,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            tokenAddr,
-            from,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            facilitatorFee,
-            hook,
-            keccak256(hookData)
-        ));
-    }
-    
     // Helper to accumulate fees for a facilitator
     function accumulateFees(address tokenAddr, address fac, uint256 fee, uint256 saltNum) internal {
         bytes32 salt = bytes32(saltNum);
         bytes memory signature = "mock_signature";
         bytes memory hookData = abi.encode(merchant);
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             tokenAddr,
             payer,
             AMOUNT,

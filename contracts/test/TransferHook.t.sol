@@ -42,36 +42,6 @@ contract TransferHookTest is Test {
         uint256 facilitatorFee
     );
     
-    // Helper function to calculate commitment hash
-    function calculateCommitment(
-        address tokenAddr,
-        address from,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 salt,
-        address payTo,
-        uint256 facilitatorFee,
-        address hook,
-        bytes memory hookData
-    ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
-            tokenAddr,
-            from,
-            value,
-            validAfter,
-            validBefore,
-            salt,
-            payTo,
-            facilitatorFee,
-            hook,
-            keccak256(hookData)
-        ));
-    }
-    
     function setUp() public {
         // Deploy contracts
         router = new SettlementRouter();
@@ -110,7 +80,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -150,7 +120,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -199,7 +169,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -241,7 +211,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -282,7 +252,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -345,7 +315,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -388,7 +358,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -432,7 +402,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -482,7 +452,7 @@ contract TransferHookTest is Test {
         bytes memory signature = "mock_signature";
         uint256 netAmount = AMOUNT - FACILITATOR_FEE;
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -523,7 +493,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -567,7 +537,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -614,7 +584,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             fullAmount,
@@ -657,7 +627,7 @@ contract TransferHookTest is Test {
             bytes memory hookData = "";
             bytes memory signature = "mock_signature";
             
-            bytes32 nonce = calculateCommitment(
+            bytes32 nonce = router.calculateCommitment(
                 address(token),
                 payer,
                 AMOUNT,
@@ -705,7 +675,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = "";
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce1 = calculateCommitment(
+        bytes32 nonce1 = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -736,7 +706,7 @@ contract TransferHookTest is Test {
         
         // Transfer 2
         bytes32 salt2 = bytes32(uint256(201));
-        bytes32 nonce2 = calculateCommitment(
+        bytes32 nonce2 = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -792,7 +762,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -845,7 +815,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -897,7 +867,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -950,7 +920,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1006,7 +976,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1051,7 +1021,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1092,7 +1062,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1134,7 +1104,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1182,7 +1152,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
@@ -1238,7 +1208,7 @@ contract TransferHookTest is Test {
         bytes memory hookData = abi.encode(splits);
         bytes memory signature = "mock_signature";
         
-        bytes32 nonce = calculateCommitment(
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
             AMOUNT,
