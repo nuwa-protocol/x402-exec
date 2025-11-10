@@ -371,7 +371,8 @@ export function paymentMiddleware(
           }
           resolvedFacilitatorFee = feeResult.maxAmountRequired;
           businessAmount = baseAmount;
-          maxAmountRequired = baseAmount;
+          // Total = business price + static facilitator fee
+          maxAmountRequired = (BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)).toString();
         }
 
         // Build base PaymentRequirements
