@@ -61,6 +61,23 @@ vi.mock("@x402x/core", () => ({
     getAddress: vi.fn(() => "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8"),
     encode: vi.fn(() => "0x"),
   },
+  calculateFacilitatorFee: vi.fn(() =>
+    Promise.resolve({
+      network: "base-sepolia",
+      hook: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
+      hookData: "0x",
+      hookAllowed: true,
+      facilitatorFee: "10000", // 0.01 USDC in atomic units
+      facilitatorFeeUSD: "0.010000",
+      calculatedAt: new Date().toISOString(),
+      validitySeconds: 60,
+      token: {
+        address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        symbol: "USDC",
+        decimals: 6,
+      },
+    }),
+  ),
 }));
 
 import { useFacilitator } from "x402/verify";

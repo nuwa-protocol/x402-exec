@@ -212,6 +212,8 @@ describe("settleWithRouter", () => {
     mockWalletClient.writeContract.mockResolvedValue(mockTxHash);
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
       status: "success",
+      gasUsed: BigInt(100000),
+      effectiveGasPrice: BigInt(1000000000), // 1 gwei
     });
 
     const result = await settleWithRouter(
@@ -231,6 +233,8 @@ describe("settleWithRouter", () => {
     mockWalletClient.writeContract.mockResolvedValue("0xhash");
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
       status: "success",
+      gasUsed: BigInt(100000),
+      effectiveGasPrice: BigInt(1000000000), // 1 gwei
     });
 
     await settleWithRouter(
@@ -362,6 +366,8 @@ describe("settleWithRouter", () => {
     mockWalletClient.writeContract.mockResolvedValue("0xhash");
     mockWalletClient.waitForTransactionReceipt.mockResolvedValue({
       status: "success",
+      gasUsed: BigInt(100000),
+      effectiveGasPrice: BigInt(1000000000), // 1 gwei
     });
 
     const result = await settleWithRouter(

@@ -1,6 +1,6 @@
 # @x402x/hono
 
-Hono middleware for x402x settlement framework - easily add 402 payment gates to your Hono routes.
+Hono middleware for x402x settlement framework - easily add 402 payment gates to your Hono routes with dynamic facilitator fee calculation.
 
 ## Installation
 
@@ -12,60 +12,107 @@ npm install @x402x/hono @x402x/core
 
 - 🚀 Drop-in middleware for Hono routes
 - 🔐 Automatic settlement mode support
-- 💰 Configurable facilitator fees
-- 🎯 Zero configuration for basic usage
+- 💰 **Dynamic facilitator fee calculation** - automatically queries current gas prices
+- 🎯 Zero configuration for basic usage with automatic fee
 - 🔌 Works with builtin or custom hooks
 - ⚡ Edge runtime compatible
+- ⏱️ Built-in caching for fee calculations
 
 ## Quick Start
 
 ```typescript
 import { Hono } from "hono";
-import { x402Middleware } from "@x402x/hono";
+import { paymentMiddleware } from "@x402x/hono";
 
 const app = new Hono();
 
-// Add payment gate to a route
-app.post(
-  "/api/premium-content",
-  x402Middleware({
-    network: "base-sepolia",
-    amount: "100000", // 0.1 USDC
-    resource: "/api/premium-content",
-    facilitatorFee: "10000", // 0.01 USDC
-  }),
-  (c) => {
-    // This handler only runs after successful payment
-    return c.json({
-      content: "Here is your premium content!",
-      timestamp: Date.now(),
-    });
-  },
+// Add payment gate with automatic fee calculation
+app.use(
+  "/api/premium",
+  paymentMiddleware(
+    "0xRecipient...", // Your recipient address
+    {
+      price: "$0.10", // Business price (facilitator fee auto-calculated)
+      network: "base-sepolia",
+    },
+    { url: "https://facilitator.x402x.dev" }, // Facilitator for verify/settle/fee
+  ),
 );
+
+app.post("/api/premium", (c) => {
+  return c.json({ content: "Premium content!" });
+});
 
 export default app;
 ```
 
+## Key Concepts
+
+### Business Price vs Total Price
+
+When using **dynamic fee calculation** (recommended):
+
+- `price`: Your business/API price (what you charge for the service)
+- **Facilitator fee**: Automatically calculated based on current gas prices
+- **Total price**: `price + facilitator fee` (shown to users in 402 response)
+
+Example:
+
+```typescript
+{
+  price: '$0.10',  // Your API charges $0.10
+  // facilitatorFee auto-calculated (e.g., $0.02 based on current gas)
+  // Total shown to user: $0.12
+}
+```
+
+### Static vs Dynamic Fees
+
+**Dynamic (Recommended)**:
+
+```typescript
+{
+  price: '$0.10',
+  // facilitatorFee not configured → auto-calculated
+}
+```
+
+**Static (Legacy/Special Cases)**:
+
+```typescript
+{
+  price: '$0.10',
+  facilitatorFee: '$0.02',  // Fixed fee
+}
+```
+
 ## API Reference
 
-### `x402Middleware(options)`
+### `paymentMiddleware(payTo, routes, facilitator?)`
 
 Creates a Hono middleware that returns 402 responses with payment requirements.
 
 #### Parameters
 
-**`options`**: Configuration object with the following properties:
+**`payTo`** (required): Final recipient address for payments
 
-- **`network`** (required): Network name (e.g., `'base-sepolia'`, `'x-layer-testnet'`)
-- **`amount`** (required): Payment amount in token's smallest unit (e.g., `'100000'` = 0.1 USDC)
-- **`resource`** (required): Resource path (e.g., `'/api/payment'`)
-- **`token`** (optional): Token address (defaults to USDC for the network)
+**`routes`** (required): Route configuration object:
+
+- **`price`**: Business price (e.g., `'$0.10'`, `'0.1'`)
+- **`network`**: Network name or array (e.g., `'base-sepolia'`, `['base-sepolia', 'polygon']`)
+- **`facilitatorFee`** (optional):
+  - Not set or `"auto"`: Dynamic calculation (recommended)
+  - String/Money: Static fee (e.g., `'$0.01'`)
 - **`hook`** (optional): Hook address (defaults to TransferHook)
 - **`hookData`** (optional): Encoded hook data (defaults to `'0x'`)
-- **`facilitatorFee`** (optional): Facilitator fee amount (defaults to `'0'`)
-- **`payTo`** (optional): Final recipient address
-- **`description`** (optional): Payment description
-- **`maxTimeoutSeconds`** (optional): Maximum timeout (defaults to 3600)
+- **`config`** (optional): Additional settings (description, timeout, etc.)
+
+**`facilitator`** (optional but recommended): Facilitator configuration
+
+- **`url`**: Facilitator service URL (e.g., `'https://facilitator.x402x.dev'`)
+- **`createAuthHeaders`**: Optional auth header function
+
+**Note**: Facilitator config is required for dynamic fee calculation and for verify/settle operations.
 
 #### Returns
 
@@ -73,73 +120,83 @@ Hono middleware function compatible with Hono v4+
 
 ## Examples
 
-### Basic Payment Gate
+### Basic with Auto Fee (Recommended)
 
 ```typescript
 import { Hono } from "hono";
-import { x402Middleware } from "@x402x/hono";
+import { paymentMiddleware } from "@x402x/hono";
 
 const app = new Hono();
 
-app.get(
+app.use(
   "/api/data",
-  x402Middleware({
-    network: "base-sepolia",
-    amount: "50000", // 0.05 USDC
-    resource: "/api/data",
-  }),
-  (c) => c.json({ data: "Secret data" }),
+  paymentMiddleware(
+    "0xYourAddress...",
+    {
+      price: "$0.05", // Your business price
+      network: "base-sepolia",
+      // facilitatorFee auto-calculated
+    },
+    { url: "https://facilitator.x402x.dev" },
+  ),
+);
+
+app.get("/api/data", (c) => c.json({ data: "Protected data" }));
+```
+
+### Multi-Route Configuration
+
+```typescript
+app.use(
+  paymentMiddleware(
+    "0xYourAddress...",
+    {
+      "/api/basic": {
+        price: "$0.01",
+        network: "base-sepolia",
+      },
+      "POST /api/premium": {
+        price: "$0.10",
+        network: "base-sepolia",
+      },
+    },
+    { url: "https://facilitator.x402x.dev" },
+  ),
 );
 ```
 
-### With Custom Description
+### Multi-Network Support
 
 ```typescript
-app.post(
-  "/api/generate-report",
-  x402Middleware({
-    network: "base-sepolia",
-    amount: "200000", // 0.2 USDC
-    resource: "/api/generate-report",
-    description: "Generate custom analytics report",
-    facilitatorFee: "20000", // 0.02 USDC
-  }),
-  async (c) => {
-    const body = await c.req.json();
-    const report = await generateReport(body);
-    return c.json({ report });
-  },
+app.use(
+  "/api/data",
+  paymentMiddleware(
+    "0xYourAddress...",
+    {
+      price: "$0.10",
+      network: ["base-sepolia", "polygon", "arbitrum"],
+      // Fee calculated for each network
+    },
+    { url: "https://facilitator.x402x.dev" },
+  ),
 );
 ```
 
-### Multiple Payment Tiers
+### Static Fee (Legacy Mode)
 
 ```typescript
-import { Hono } from "hono";
-import { x402Middleware } from "@x402x/hono";
-
-const app = new Hono();
-
-// Basic tier - 0.01 USDC
-app.get(
-  "/api/basic",
-  x402Middleware({
-    network: "base-sepolia",
-    amount: "10000",
-    resource: "/api/basic",
-  }),
-  (c) => c.json({ tier: "basic", content: "..." }),
-);
-
-// Premium tier - 0.1 USDC
-app.get(
-  "/api/premium",
-  x402Middleware({
-    network: "base-sepolia",
-    amount: "100000",
-    resource: "/api/premium",
-  }),
-  (c) => c.json({ tier: "premium", content: "..." }),
+// Use when you want fixed fee (not recommended)
+app.use(
+  "/api/data",
+  paymentMiddleware(
+    "0xYourAddress...",
+    {
+      price: "$0.10",
+      network: "base-sepolia",
+      facilitatorFee: "$0.02", // Fixed fee
+    },
+    { url: "https://facilitator.x402x.dev" },
+  ),
 );
 ```
 

@@ -26,7 +26,13 @@ import {
   type Network,
 } from "x402/types";
 import { useFacilitator } from "x402/verify";
-import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/core";
+import {
+  addSettlementExtra,
+  getNetworkConfig,
+  TransferHook,
+  calculateFacilitatorFee,
+  type FeeCalculationResult,
+} from "@x402x/core";
 import type { Address } from "viem";
 import type { Address as SolanaAddress } from "@solana/kit";
 
@@ -87,15 +93,10 @@ export interface X402xRouteConfig {
   /** Encoded hook data - defaults to empty data */
   hookData?: string | ((network: Network) => string);
 
-  /**
-   * Facilitator fee. Same format as price (matches x402 official middleware):
-   * - Dollar string: '$0.01', '$0.10'
-   * - Number: 0.01, 0.10 (interpreted as USD)
-   * - String number: '0.01', '0.10' (interpreted as USD)
-   *
-   * Defaults to '0' (no fee)
-   */
-  facilitatorFee?: string | Money | ((network: Network) => string | Money);
+  // facilitatorFee supports two modes:
+  // 1. Not configured or "auto" (default) -> query from facilitator automatically
+  // 2. Configured with specific value -> use static fee (backward compatible)
+  facilitatorFee?: "auto" | string | Money | ((network: Network) => string | Money);
 
   /** Standard x402 configuration */
   config?: {
@@ -315,7 +316,7 @@ export function paymentMiddleware(
         if ("error" in atomicAmountForAsset) {
           throw new Error(atomicAmountForAsset.error);
         }
-        const { maxAmountRequired, asset } = atomicAmountForAsset;
+        const { maxAmountRequired: baseAmount, asset } = atomicAmountForAsset;
 
         const resourceUrl: Resource = resource || (c.req.url as Resource);
         const x402xConfig = getNetworkConfig(network);
@@ -327,20 +328,70 @@ export function paymentMiddleware(
         const resolvedHookData =
           typeof hookData === "function" ? hookData(network) : hookData || TransferHook.encode();
 
-        // Resolve facilitatorFee (support function or value, and process like price)
+        // Resolve facilitatorFee (support function or value)
+        // If not configured or "auto", query from facilitator dynamically
         let resolvedFacilitatorFeeRaw =
-          typeof facilitatorFee === "function" ? facilitatorFee(network) : facilitatorFee || "0";
+          typeof facilitatorFee === "function" ? facilitatorFee(network) : facilitatorFee;
 
-        // Process facilitatorFee the same way as price (support USD format)
         let resolvedFacilitatorFee: string;
-        if (resolvedFacilitatorFeeRaw === "0") {
+        let businessAmount: string;
+        let maxAmountRequired: string;
+
+        // Check if we should dynamically query fee
+        if (resolvedFacilitatorFeeRaw === undefined || resolvedFacilitatorFeeRaw === "auto") {
+          // Dynamic fee calculation
+          if (!facilitator?.url) {
+            throw new Error(
+              `Facilitator URL required for dynamic fee calculation. ` +
+                `Please provide facilitator config in paymentMiddleware() or set static facilitatorFee.`,
+            );
+          }
+
+          try {
+            const feeResult = await calculateFacilitatorFee(
+              facilitator.url,
+              network,
+              resolvedHook,
+              resolvedHookData,
+            );
+            resolvedFacilitatorFee = feeResult.facilitatorFee;
+
+            // When using dynamic fee, price is business price only
+            // Total = business price + facilitator fee
+            businessAmount = baseAmount;
+            maxAmountRequired = (
+              BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)
+            ).toString();
+
+            console.log("[x402x Middleware] Dynamic fee calculated:", {
+              network,
+              hook: resolvedHook,
+              businessAmount,
+              facilitatorFee: resolvedFacilitatorFee,
+              totalAmount: maxAmountRequired,
+              feeUSD: feeResult.facilitatorFeeUSD,
+            });
+          } catch (error) {
+            console.error("[x402x Middleware] Failed to calculate dynamic fee:", error);
+            throw new Error(
+              `Failed to query facilitator fee: ${error instanceof Error ? error.message : "Unknown error"}`,
+            );
+          }
+        } else if (resolvedFacilitatorFeeRaw === "0" || resolvedFacilitatorFeeRaw === 0) {
+          // Explicitly set to 0
           resolvedFacilitatorFee = "0";
+          businessAmount = baseAmount;
+          maxAmountRequired = baseAmount;
         } else {
+          // Static fee configuration
           const feeResult = processPriceToAtomicAmount(resolvedFacilitatorFeeRaw, network);
           if ("error" in feeResult) {
             throw new Error(`Invalid facilitatorFee: ${feeResult.error}`);
           }
           resolvedFacilitatorFee = feeResult.maxAmountRequired;
+          businessAmount = baseAmount;
+          // Total = business price + static facilitator fee
+          maxAmountRequired = (BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)).toString();
         }
 
         // Build base PaymentRequirements
@@ -364,13 +415,21 @@ export function paymentMiddleware(
           extra: "eip712" in asset ? asset.eip712 : undefined,
         };
 
-        // Add settlement extension
+        // Add settlement extension with both business amount and facilitator fee
         const requirements = addSettlementExtra(baseRequirements, {
           hook: resolvedHook,
           hookData: resolvedHookData,
           facilitatorFee: resolvedFacilitatorFee,
           payTo, // Final recipient
         });
+
+        // Add extra field to track business amount separately (optional, for transparency)
+        if (resolvedFacilitatorFeeRaw === undefined || resolvedFacilitatorFeeRaw === "auto") {
+          requirements.extra = {
+            ...requirements.extra,
+            businessAmount,
+          };
+        }
 
         paymentRequirements.push(requirements);
       }

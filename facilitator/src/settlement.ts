@@ -13,6 +13,8 @@ import {
   isSettlementMode as isSettlementModeCore,
   validateSettlementRouter as validateSettlementRouterCore,
   settleWithRouter as settleWithRouterCore,
+  type GasMetrics,
+  type SettleResponseWithMetrics,
 } from "@x402x/core";
 import { SettlementExtraError } from "./types.js";
 import { getLogger } from "./telemetry.js";
@@ -89,7 +91,8 @@ export function validateSettlementRouter(
  * @param paymentPayload - The payment payload with authorization and signature
  * @param paymentRequirements - The payment requirements with settlement extra parameters
  * @param allowedRouters - Whitelist of allowed SettlementRouter addresses per network
- * @returns SettleResponse indicating success or failure
+ * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
+ * @returns SettleResponse indicating success or failure with gas metrics
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
 export async function settleWithRouter(
@@ -97,7 +100,8 @@ export async function settleWithRouter(
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
   allowedRouters: Record<string, string[]>,
-): Promise<SettleResponse> {
+  nativeTokenPrices?: Record<string, number>,
+): Promise<SettleResponseWithMetrics> {
   const logger = getLogger();
 
   try {
@@ -119,14 +123,83 @@ export async function settleWithRouter(
       allowedRouters,
     });
 
-    logger.info(
-      {
-        transaction: result.transaction,
-        payer: result.payer,
-        success: result.success,
-      },
-      "SettlementRouter transaction confirmed",
-    );
+    // Enhance gas metrics with actual native token price if available
+    if (result.success && result.gasMetrics && nativeTokenPrices) {
+      const network = paymentRequirements.network;
+      const nativePrice = nativeTokenPrices[network];
+
+      if (nativePrice && nativePrice > 0) {
+        // Recalculate USD values with actual token price
+        const actualGasCostNative = parseFloat(result.gasMetrics.actualGasCostNative);
+        const actualGasCostUSD = (actualGasCostNative * nativePrice).toFixed(6);
+        const facilitatorFeeUSD = result.gasMetrics.facilitatorFeeUSD;
+        const profitUSD = (parseFloat(facilitatorFeeUSD) - parseFloat(actualGasCostUSD)).toFixed(6);
+        const profitMarginPercent =
+          parseFloat(facilitatorFeeUSD) > 0
+            ? ((parseFloat(profitUSD) / parseFloat(facilitatorFeeUSD)) * 100).toFixed(2)
+            : "0.00";
+
+        // Update gas metrics
+        result.gasMetrics.actualGasCostUSD = actualGasCostUSD;
+        result.gasMetrics.profitUSD = profitUSD;
+        result.gasMetrics.profitMarginPercent = profitMarginPercent;
+        result.gasMetrics.profitable = parseFloat(profitUSD) >= 0;
+        result.gasMetrics.nativeTokenPriceUSD = nativePrice.toFixed(2);
+      }
+    }
+
+    // Log settlement success with gas metrics
+    if (result.success && result.gasMetrics) {
+      const metrics = result.gasMetrics;
+
+      logger.info(
+        {
+          transaction: result.transaction,
+          payer: result.payer,
+          network: paymentRequirements.network,
+          hook: paymentRequirements.extra?.hook,
+          gasMetrics: {
+            gasUsed: metrics.gasUsed,
+            effectiveGasPrice: metrics.effectiveGasPrice,
+            actualGasCostNative: metrics.actualGasCostNative,
+            actualGasCostUSD: metrics.actualGasCostUSD,
+            facilitatorFee: metrics.facilitatorFee,
+            facilitatorFeeUSD: metrics.facilitatorFeeUSD,
+            profitUSD: metrics.profitUSD,
+            profitMarginPercent: metrics.profitMarginPercent,
+            profitable: metrics.profitable,
+          },
+        },
+        "SettlementRouter transaction confirmed with gas metrics",
+      );
+
+      // Warn if unprofitable
+      if (!metrics.profitable) {
+        const lossPercent = Math.abs(parseFloat(metrics.profitMarginPercent));
+        logger.warn(
+          {
+            transaction: result.transaction,
+            network: paymentRequirements.network,
+            hook: metrics.hook,
+            facilitatorFeeUSD: metrics.facilitatorFeeUSD,
+            actualGasCostUSD: metrics.actualGasCostUSD,
+            lossUSD: metrics.profitUSD,
+            lossPercent: `${lossPercent}%`,
+          },
+          "⚠️ UNPROFITABLE SETTLEMENT: Facilitator fee did not cover gas costs",
+        );
+      }
+    } else {
+      // Log without gas metrics (fallback)
+      logger.info(
+        {
+          transaction: result.transaction,
+          payer: result.payer,
+          success: result.success,
+        },
+        "SettlementRouter transaction confirmed",
+      );
+    }
 
     return result;
   } catch (error) {

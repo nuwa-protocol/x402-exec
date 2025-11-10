@@ -1,6 +1,6 @@
 /**
  * Transfer with Hook Scenario
- * UI for basic x402x settlement using TransferHook with facilitator fee
+ * UI for basic x402x settlement using TransferHook with dynamic facilitator fee
  * Entry-level scenario demonstrating Hook architecture and facilitator incentives
  */
 
@@ -46,7 +46,7 @@ export function TransferWithHook({}: TransferWithHookProps) {
 
       <div className="scenario-description">
         <p>
-          Pay <strong>$0.11 USDC</strong> ($0.1 to merchant + $0.01 facilitator fee) using <code>TransferHook</code> - the simplest x402x settlement.
+          Pay <strong>$0.1 USDC</strong> to merchant + <strong>dynamic facilitator fee</strong> using <code>TransferHook</code> - the simplest x402x settlement.
         </p>
         
         <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#e8f9f0', borderRadius: '8px', border: '1px solid #b3e5d3' }}>
@@ -54,7 +54,7 @@ export function TransferWithHook({}: TransferWithHookProps) {
           <ul style={{ margin: '10px 0', paddingLeft: '20px', fontSize: '14px', lineHeight: '1.8' }}>
             <li><strong>✅ SettlementRouter</strong> - Programmable settlement framework</li>
             <li><strong>✅ TransferHook</strong> - Built-in hook for simple transfers</li>
-            <li><strong>✅ Facilitator Fee</strong> - Reward the facilitator ($0.01)</li>
+            <li><strong>✅ Dynamic Facilitator Fee</strong> - Automatically calculated based on gas costs and network conditions</li>
             <li><strong>✅ Commitment Hash</strong> - Cryptographic parameter verification</li>
           </ul>
           <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#555' }}>
@@ -65,13 +65,17 @@ export function TransferWithHook({}: TransferWithHookProps) {
         <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#fff9e6', borderRadius: '8px', border: '1px solid #ffe4a3' }}>
           <h4 style={{ margin: '0 0 10px 0', color: '#d97706' }}>🔧 How It Works</h4>
           <ol style={{ margin: '10px 0', paddingLeft: '20px', fontSize: '14px', lineHeight: '1.8' }}>
-            <li>Client signs payment authorization for <strong>$0.11 USDC</strong></li>
+            <li>Server queries facilitator for recommended fee (based on current gas prices)</li>
+            <li>Client signs payment authorization for <strong>$0.1 + dynamic fee</strong></li>
             <li>Facilitator submits to <code>SettlementRouter.settleAndExecute()</code></li>
-            <li>Router deducts <strong>$0.01 facilitator fee</strong></li>
+            <li>Router deducts the <strong>facilitator fee</strong> to cover gas costs</li>
             <li>Router calls <code>TransferHook.execute()</code> with remaining <strong>$0.1</strong></li>
             <li>TransferHook transfers <strong>$0.1</strong> to merchant</li>
             <li>Facilitator claims accumulated fees later via <code>claimFees()</code></li>
           </ol>
+          <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#555' }}>
+            💡 The facilitator fee covers gas costs and ensures the facilitator can profitably process transactions regardless of network congestion.
+          </p>
         </div>
       </div>
 
@@ -80,14 +84,14 @@ export function TransferWithHook({}: TransferWithHookProps) {
           onClick={() => setShowPaymentDialog(true)}
           className="btn-pay"
         >
-          Select Payment Method & Pay $0.11 USDC
+          Select Payment Method & Pay $0.1 USDC + Dynamic Fee
         </button>
       </div>
 
       <PaymentStatus
         status={status}
         error={error}
-        successMessage="Payment processed using TransferHook! Facilitator earned $0.01 fee."
+        successMessage="Payment processed using TransferHook! Facilitator earned dynamic fee."
       />
 
       {/* Debug Panel - shows payment flow details */}
@@ -117,8 +121,8 @@ export function TransferWithHook({}: TransferWithHookProps) {
           <div style={{ marginBottom: '15px', fontSize: '14px', lineHeight: '1.8' }}>
             <div><strong>📊 Settlement Summary:</strong></div>
             <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-              <li>Merchant received: <strong>$0.1 USDC</strong></li>
-              <li>Facilitator earned: <strong>$0.01 USDC</strong> (claimable)</li>
+              <li>Merchant received: <strong>$0.1 USDC</strong> (business amount)</li>
+              <li>Facilitator earned: <strong>Dynamic fee</strong> (claimable, covers gas costs)</li>
               <li>Hook used: <code>TransferHook</code></li>
               <li>Gas overhead: ~8k gas (~16% more than direct transfer)</li>
             </ul>

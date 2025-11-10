@@ -23,6 +23,7 @@ import { getLogger, traced, recordMetric, recordHistogram } from "../telemetry.j
 import type { PoolManager } from "../pool-manager.js";
 import { isStandardX402Allowed } from "../config.js";
 import type { RequestHandler } from "express";
+import type { GasCostConfig } from "../gas-cost.js";
 
 const logger = getLogger();
 
@@ -41,6 +42,7 @@ export interface SettleRouteDependencies {
   poolManager: PoolManager;
   allowedSettlementRouters: Record<string, string[]>;
   x402Config?: X402Config;
+  gasCost?: GasCostConfig; // Optional gas cost config for metrics
 }
 
 /**
@@ -133,6 +135,7 @@ export function createSettleRoutes(
                   paymentPayload,
                   paymentRequirements,
                   deps.allowedSettlementRouters,
+                  deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
                 ),
               {
                 network: paymentRequirements.network,
@@ -153,6 +156,44 @@ export function createSettleRoutes(
               mode: "settlementRouter",
             });
 
+            // Record gas metrics if available
+            if (response.success && response.gasMetrics) {
+              const metrics = response.gasMetrics;
+
+              recordHistogram("facilitator.settlement.gas_used", parseInt(metrics.gasUsed), {
+                network: paymentRequirements.network,
+                hook: metrics.hook,
+              });
+
+              recordHistogram(
+                "facilitator.settlement.gas_cost_usd",
+                parseFloat(metrics.actualGasCostUSD),
+                {
+                  network: paymentRequirements.network,
+                  hook: metrics.hook,
+                },
+              );
+
+              recordHistogram(
+                "facilitator.settlement.facilitator_fee_usd",
+                parseFloat(metrics.facilitatorFeeUSD),
+                {
+                  network: paymentRequirements.network,
+                  hook: metrics.hook,
+                },
+              );
+
+              recordHistogram("facilitator.settlement.profit_usd", parseFloat(metrics.profitUSD), {
+                network: paymentRequirements.network,
+                hook: metrics.hook,
+              });
+
+              recordMetric("facilitator.settlement.profitable", metrics.profitable ? 1 : 0, {
+                network: paymentRequirements.network,
+                hook: metrics.hook,
+              });
+            }
+
             logger.info(
               {
                 transaction: response.transaction,
@@ -163,7 +204,14 @@ export function createSettleRoutes(
               "SettlementRouter settlement successful",
             );
 
-            return response;
+            // Return standard SettleResponse without gas metrics (internal use only)
+            return {
+              success: response.success,
+              transaction: response.transaction,
+              network: response.network,
+              payer: response.payer,
+              errorReason: response.errorReason,
+            };
           } catch (error) {
             const duration = Date.now() - startTime;
 
