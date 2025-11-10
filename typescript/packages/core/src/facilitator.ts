@@ -16,6 +16,193 @@ import { SettlementExtraError } from "./types.js";
 import { SETTLEMENT_ROUTER_ABI } from "./abi.js";
 
 /**
+ * Result of facilitator fee calculation
+ */
+export interface FeeCalculationResult {
+  network: string;
+  hook: string;
+  hookData?: string;
+  hookAllowed: boolean;
+
+  // Main result - recommended facilitator fee
+  facilitatorFee: string; // Atomic units
+  facilitatorFeeUSD: string; // USD value
+
+  // Detailed breakdown
+  breakdown: {
+    baseGasCost: string;
+    gasLimit: number;
+    maxGasLimit: number;
+    gasPrice: string;
+    gasCostNative: string;
+    gasCostUSD: string;
+    safetyMultiplier: number;
+    finalCostUSD: string;
+  };
+
+  // Metadata
+  calculatedAt: string; // ISO 8601 timestamp
+  validitySeconds: number; // Validity period
+
+  token: {
+    address: string;
+    symbol: string;
+    decimals: number;
+  };
+
+  prices: {
+    nativeToken: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * Simple in-memory cache for fee calculations
+ */
+class FeeCache {
+  private cache: Map<string, { result: FeeCalculationResult; expiresAt: number }> = new Map();
+  private ttlMs: number;
+
+  constructor(ttlSeconds: number = 60) {
+    this.ttlMs = ttlSeconds * 1000;
+  }
+
+  private getCacheKey(network: string, hook: string, hookData?: string): string {
+    return `${network}:${hook}:${hookData || ""}`;
+  }
+
+  get(network: string, hook: string, hookData?: string): FeeCalculationResult | null {
+    const key = this.getCacheKey(network, hook, hookData);
+    const cached = this.cache.get(key);
+
+    if (!cached) {
+      return null;
+    }
+
+    if (Date.now() > cached.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return cached.result;
+  }
+
+  set(result: FeeCalculationResult): void {
+    const key = this.getCacheKey(result.network, result.hook, result.hookData);
+    this.cache.set(key, {
+      result,
+      expiresAt: Date.now() + this.ttlMs,
+    });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Global cache instance
+const feeCache = new FeeCache(60);
+
+/**
+ * Calculate recommended facilitator fee by querying the facilitator service
+ *
+ * @param facilitatorUrl - Facilitator service base URL
+ * @param network - Network name
+ * @param hook - Hook contract address
+ * @param hookData - Optional encoded hook parameters
+ * @param useCache - Whether to use caching (default: true)
+ * @returns Fee calculation result with sufficient safety margin
+ *
+ * @example
+ * ```typescript
+ * const feeResult = await calculateFacilitatorFee(
+ *   'https://facilitator.x402x.dev',
+ *   'base-sepolia',
+ *   '0x1234...',
+ *   '0x'
+ * );
+ * console.log(`Recommended fee: ${feeResult.facilitatorFee} (${feeResult.facilitatorFeeUSD} USD)`);
+ * ```
+ */
+export async function calculateFacilitatorFee(
+  facilitatorUrl: string,
+  network: string,
+  hook: string,
+  hookData?: string,
+  useCache: boolean = true,
+): Promise<FeeCalculationResult> {
+  // Check cache first
+  if (useCache) {
+    const cached = feeCache.get(network, hook, hookData);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  // Remove trailing slash from URL
+  const baseUrl = facilitatorUrl.endsWith("/") ? facilitatorUrl.slice(0, -1) : facilitatorUrl;
+
+  // Build query parameters
+  const params = new URLSearchParams({
+    network,
+    hook,
+  });
+
+  if (hookData) {
+    params.append("hookData", hookData);
+  }
+
+  // Query facilitator service
+  const url = `${baseUrl}/calculate-fee?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(3000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Facilitator fee calculation failed: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+
+    const result: FeeCalculationResult = await response.json();
+
+    // Validate response
+    if (!result.facilitatorFee || !result.network || !result.hook) {
+      throw new Error("Invalid response from facilitator service");
+    }
+
+    // Cache the result
+    if (useCache) {
+      feeCache.set(result);
+    }
+
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to calculate facilitator fee: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Clear the fee calculation cache
+ *
+ * Useful for testing or forcing fresh calculations
+ */
+export function clearFeeCache(): void {
+  feeCache.clear();
+}
+
+/**
  * Check if a payment request requires SettlementRouter mode
  *
  * @param paymentRequirements - Payment requirements from 402 response

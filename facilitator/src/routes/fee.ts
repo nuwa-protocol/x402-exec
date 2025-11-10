@@ -32,13 +32,14 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
   const router = Router();
 
   /**
-   * GET /min-facilitator-fee?network={network}&hook={hook}
+   * GET /calculate-fee?network={network}&hook={hook}&hookData={hookData}
    *
-   * Query minimum facilitator fee for a specific network and hook
+   * Calculate recommended facilitator fee for a specific network, hook, and optional hookData.
+   * The returned fee has sufficient safety margin to ensure settlement will succeed.
    */
-  router.get("/min-facilitator-fee", async (req: Request, res: Response) => {
+  router.get("/calculate-fee", async (req: Request, res: Response) => {
     try {
-      const { network, hook } = req.query;
+      const { network, hook, hookData } = req.query;
 
       // Validate required parameters
       if (!network || typeof network !== "string") {
@@ -52,6 +53,14 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         return res.status(400).json({
           error: "Invalid request",
           message: "Missing or invalid 'hook' query parameter",
+        });
+      }
+
+      // hookData is optional, validate if provided
+      if (hookData !== undefined && typeof hookData !== "string") {
+        return res.status(400).json({
+          error: "Invalid request",
+          message: "Invalid 'hookData' query parameter (must be hex string)",
         });
       }
 
@@ -123,14 +132,21 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
       // Get token info
       const networkConfig = getNetworkConfig(network);
 
-      // Return successful response
+      // Calculate fee validity period (60 seconds recommended)
+      const validitySeconds = 60;
+      const calculatedAt = new Date().toISOString();
+
+      // Return successful response with new field names
       const response = {
         network,
         hook,
+        hookData: hookData || undefined,
         hookAllowed: feeCalculation.hookAllowed,
-        minFacilitatorFee: feeCalculation.minFacilitatorFee,
-        minFacilitatorFeeUSD: feeCalculation.minFacilitatorFeeUSD,
+        // Main result - recommended facilitator fee
+        facilitatorFee: feeCalculation.minFacilitatorFee,
+        facilitatorFeeUSD: feeCalculation.minFacilitatorFeeUSD,
         breakdown: {
+          baseGasCost: feeCalculation.gasCostUSD,
           gasLimit: feeCalculation.gasLimit,
           maxGasLimit: feeCalculation.maxGasLimit,
           gasPrice: feeCalculation.gasPrice,
@@ -139,6 +155,9 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
           safetyMultiplier: feeCalculation.safetyMultiplier,
           finalCostUSD: feeCalculation.finalCostUSD,
         },
+        // Metadata
+        calculatedAt,
+        validitySeconds,
         token: {
           address: networkConfig.usdc.address,
           symbol: "USDC",
@@ -146,7 +165,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         },
         prices: {
           nativeToken: deps.gasCost.nativeTokenPrice[network]?.toFixed(2) || "0.00",
-          timestamp: new Date().toISOString(),
+          timestamp: calculatedAt,
         },
       };
 
@@ -154,18 +173,20 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         {
           network,
           hook,
-          minFacilitatorFee: response.minFacilitatorFee,
-          minFacilitatorFeeUSD: response.minFacilitatorFeeUSD,
+          hookData,
+          facilitatorFee: response.facilitatorFee,
+          facilitatorFeeUSD: response.facilitatorFeeUSD,
+          validitySeconds,
         },
-        "Minimum facilitator fee calculated",
+        "Facilitator fee calculated",
       );
 
       res.json(response);
     } catch (error) {
-      logger.error({ error }, "Error in min-facilitator-fee endpoint");
+      logger.error({ error }, "Error in calculate-fee endpoint");
       res.status(500).json({
         error: "Internal error",
-        message: "Failed to calculate minimum facilitator fee",
+        message: "Failed to calculate facilitator fee",
       });
     }
   });

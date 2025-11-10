@@ -56,7 +56,15 @@ export { TransferHook } from "./hooks/index.js";
 export { addSettlementExtra } from "./utils.js";
 
 // Export facilitator utilities
-export { isSettlementMode, settleWithRouter, validateSettlementRouter } from "./facilitator.js";
+export {
+  isSettlementMode,
+  settleWithRouter,
+  validateSettlementRouter,
+  calculateFacilitatorFee,
+  clearFeeCache,
+} from "./facilitator.js";
+
+export type { FeeCalculationResult } from "./facilitator.js";
 
 // Export ABI
 export { SETTLEMENT_ROUTER_ABI } from "./abi.js";

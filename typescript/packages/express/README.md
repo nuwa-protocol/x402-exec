@@ -10,6 +10,8 @@ Express middleware for the x402x settlement framework. Provides full x402 paymen
 - ✅ **Custom Settlement Hooks**: Configure hook contracts for programmable settlement
 - ✅ **Dollar-Denominated Pricing**: Simple USD-based price configuration
 - ✅ **Facilitator Integration**: Built-in facilitator support for payment processing
+- ✅ **Dynamic Fee Calculation**: Automatically queries current gas prices for facilitator fees
+- ✅ **Built-in Caching**: Caches fee calculations for better performance
 
 ## Installation
 
@@ -29,21 +31,21 @@ import { paymentMiddleware } from "@x402x/express";
 
 const app = express();
 
-// Single route with payment requirement
+// Single route with automatic fee calculation (recommended)
 app.post(
   "/api/premium",
   paymentMiddleware(
     "0xYourRecipientAddress", // Final payment recipient
     {
-      price: "$0.10", // 0.10 USD in USDC
+      price: "$0.10", // Your business price (0.10 USD)
       network: "base-sepolia", // Payment network
-      facilitatorFee: "$0.01", // 0.01 USD facilitator fee
+      // facilitatorFee auto-calculated based on gas prices
       config: {
         description: "Access to premium content",
       },
     },
     {
-      url: "https://your-facilitator.com", // Optional facilitator config
+      url: "https://facilitator.x402x.dev", // Facilitator for verify/settle/fee
     },
   ),
   (req, res) => {
@@ -60,6 +62,21 @@ app.post(
 );
 
 app.listen(3000);
+```
+
+### Key Concepts
+
+When using **dynamic fee calculation** (recommended):
+- `price`: Your business/API price (what you charge for the service)
+- **Facilitator fee**: Automatically calculated based on current gas prices
+- **Total price**: `price + facilitator fee` (shown to users in 402 response)
+
+For **static fee** (legacy mode), explicitly set `facilitatorFee`:
+```typescript
+{
+  price: "$0.10",
+  facilitatorFee: "$0.02",  // Fixed fee
+}
 ```
 
 ## Multi-Network Support
