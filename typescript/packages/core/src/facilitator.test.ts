@@ -3,6 +3,7 @@ import { isSettlementMode, validateSettlementRouter, settleWithRouter } from "./
 import type { PaymentPayload, PaymentRequirements, FacilitatorConfig } from "./types";
 import { SettlementExtraError } from "./types";
 import { mockAddresses } from "./__tests__/fixtures";
+import { networks } from "./networks";
 
 describe("isSettlementMode", () => {
   it("should return true when extra has settlementRouter", () => {
@@ -56,17 +57,17 @@ describe("isSettlementMode", () => {
 describe("validateSettlementRouter", () => {
   const allowedRouters = {
     "base-sepolia": [
-      "0x32431D4511e061F1133520461B07eC42afF157D6",
+      networks["base-sepolia"].settlementRouter,
       "0x1234567890123456789012345678901234567890",
     ],
-    "x-layer-testnet": ["0x1ae0e196dc18355af3a19985faf67354213f833d"],
+    "x-layer-testnet": [networks["x-layer-testnet"].settlementRouter],
   };
 
   it("should pass validation for whitelisted router", () => {
     expect(() => {
       validateSettlementRouter(
         "base-sepolia",
-        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        networks["base-sepolia"].settlementRouter,
         allowedRouters,
       );
     }).not.toThrow();
@@ -76,7 +77,7 @@ describe("validateSettlementRouter", () => {
     expect(() => {
       validateSettlementRouter(
         "base-sepolia",
-        "0x32431D4511E061F1133520461B07EC42AFF157D6", // uppercase
+        networks["base-sepolia"].settlementRouter.toUpperCase(), // uppercase
         allowedRouters,
       );
     }).not.toThrow();
@@ -104,7 +105,7 @@ describe("validateSettlementRouter", () => {
     expect(() => {
       validateSettlementRouter(
         "unknown-network",
-        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        networks["base-sepolia"].settlementRouter,
         allowedRouters,
       );
     }).toThrow(SettlementExtraError);
@@ -114,7 +115,7 @@ describe("validateSettlementRouter", () => {
     expect(() => {
       validateSettlementRouter(
         "unknown-network",
-        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        networks["base-sepolia"].settlementRouter,
         allowedRouters,
       );
     }).toThrow("No allowed settlement routers configured for network: unknown-network");
@@ -128,7 +129,7 @@ describe("validateSettlementRouter", () => {
     expect(() => {
       validateSettlementRouter(
         "base-sepolia",
-        "0x32431D4511e061F1133520461B07eC42afF157D6",
+        networks["base-sepolia"].settlementRouter,
         emptyAllowedRouters,
       );
     }).toThrow("No allowed settlement routers configured");
@@ -183,11 +184,11 @@ describe("settleWithRouter", () => {
       resource: "/api/test",
       description: "Test payment",
       mimeType: "application/json",
-      payTo: "0x32431D4511e061F1133520461B07eC42afF157D6",
+      payTo: networks["base-sepolia"].settlementRouter,
       maxTimeoutSeconds: 300,
       asset: mockAddresses.token,
       extra: {
-        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+        settlementRouter: networks["base-sepolia"].settlementRouter,
         salt: "0x" + "1".repeat(64),
         payTo: mockAddresses.payTo,
         facilitatorFee: "10000",
@@ -198,7 +199,7 @@ describe("settleWithRouter", () => {
 
     mockConfig = {
       allowedRouters: {
-        "base-sepolia": ["0x32431D4511e061F1133520461B07eC42afF157D6"],
+        "base-sepolia": [networks["base-sepolia"].settlementRouter],
       },
     };
   });
@@ -422,7 +423,7 @@ describe("settleWithRouter", () => {
     const invalidRequirements = {
       ...mockPaymentRequirements,
       extra: {
-        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+        settlementRouter: networks["base-sepolia"].settlementRouter,
         // salt missing
         payTo: mockAddresses.payTo,
         facilitatorFee: "10000",

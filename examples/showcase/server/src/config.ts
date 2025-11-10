@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evm } from 'x402/types';
+import { networks as sdkNetworks, TransferHook } from '@x402x/core';
 
 // Load env from local .env first; then fill missing keys from repo root .env
 config();
@@ -180,11 +181,13 @@ export const appConfig: Config = {
   
   // Network-specific configurations
   networks: {
-    // Base Sepolia configuration (supports both new prefixed and legacy env vars for backward compatibility)
+    // Base Sepolia configuration
+    // Settlement router and transfer hook addresses are loaded from SDK
     'base-sepolia': {
       rpcUrl: getOptionalEnv('BASE_SEPOLIA_RPC_URL') || getOptionalEnv('RPC_URL') || getDefaultRpcUrl('base-sepolia'),
-      settlementRouterAddress: getOptionalEnv('BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS') || getOptionalEnv('SETTLEMENT_ROUTER_ADDRESS') || (() => { throw new Error('SETTLEMENT_ROUTER_ADDRESS or BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS is required'); })(),
-      transferHookAddress: getOptionalEnv('BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS') || getOptionalEnv('TRANSFER_HOOK_ADDRESS') || (() => { throw new Error('TRANSFER_HOOK_ADDRESS or BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS is required'); })(),
+      // Load from SDK instead of env vars
+      settlementRouterAddress: sdkNetworks['base-sepolia'].settlementRouter,
+      transferHookAddress: TransferHook.getAddress('base-sepolia'),
       revenueSplitHookAddress: getOptionalEnv('BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS') || getOptionalEnv('REVENUE_SPLIT_HOOK_ADDRESS') || (() => { throw new Error('REVENUE_SPLIT_HOOK_ADDRESS or BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS is required'); })(),
       nftMintHookAddress: getOptionalEnv('BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS') || getOptionalEnv('NFT_MINT_HOOK_ADDRESS') || (() => { throw new Error('NFT_MINT_HOOK_ADDRESS or BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS is required'); })(),
       randomNFTAddress: getOptionalEnv('BASE_SEPOLIA_RANDOM_NFT_ADDRESS') || getOptionalEnv('RANDOM_NFT_ADDRESS') || (() => { throw new Error('RANDOM_NFT_ADDRESS or BASE_SEPOLIA_RANDOM_NFT_ADDRESS is required'); })(),
@@ -192,11 +195,13 @@ export const appConfig: Config = {
       rewardHookAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_HOOK_ADDRESS') || getOptionalEnv('REWARD_HOOK_ADDRESS') || (() => { throw new Error('REWARD_HOOK_ADDRESS or BASE_SEPOLIA_REWARD_HOOK_ADDRESS is required'); })(),
       usdcAddress: getOptionalEnv('BASE_SEPOLIA_USDC_ADDRESS') || getOptionalEnv('USDC_ADDRESS') || getDefaultUsdcAddress('base-sepolia'),
     },
-    // X-Layer Testnet configuration (uses defaults from x402 and viem definitions)
+    // X-Layer Testnet configuration
+    // Settlement router and transfer hook addresses are loaded from SDK
     'x-layer-testnet': {
       rpcUrl: getOptionalEnv('X_LAYER_TESTNET_RPC_URL') || getDefaultRpcUrl('x-layer-testnet'),
-      settlementRouterAddress: getOptionalEnv('X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS') || '0x0000000000000000000000000000000000000000',
-      transferHookAddress: getOptionalEnv('X_LAYER_TESTNET_TRANSFER_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      // Load from SDK instead of env vars
+      settlementRouterAddress: sdkNetworks['x-layer-testnet'].settlementRouter,
+      transferHookAddress: TransferHook.getAddress('x-layer-testnet'),
       revenueSplitHookAddress: getOptionalEnv('X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       nftMintHookAddress: getOptionalEnv('X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       randomNFTAddress: getOptionalEnv('X_LAYER_TESTNET_RANDOM_NFT_ADDRESS') || '0x0000000000000000000000000000000000000000',

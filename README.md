@@ -201,8 +201,8 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 
 | Network | SettlementRouter | Status |
 |---------|------------------|--------|
-| Base Sepolia (Testnet) | [`0x32431D4511e061F1133520461B07eC42afF157D6`](https://sepolia.basescan.org/address/0x32431D4511e061F1133520461B07eC42afF157D6) | ✅ Active |
-| X-Layer Testnet | [`0x1ae0e196dc18355af3a19985faf67354213f833d`](https://www.oklink.com/xlayer-test/address/0x1ae0e196dc18355af3a19985faf67354213f833d) | ✅ Active |
+| Base Sepolia (Testnet) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb) | ✅ Active |
+| X-Layer Testnet | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ Active |
 | Base Mainnet | - | 🚧 Pending Audit |
 | Ethereum Mainnet | - | 🚧 Pending Audit |
 
@@ -210,8 +210,8 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 
 | Network | TransferHook | Status |
 |---------|--------------|--------|
-| Base Sepolia (Testnet) | [`0x6b486aF5A08D27153d0374BE56A1cB1676c460a8`](https://sepolia.basescan.org/address/0x6b486aF5A08D27153d0374BE56A1cB1676c460a8) | ✅ Active |
-| X-Layer Testnet | [`0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB`](https://www.oklink.com/xlayer-test/address/0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB) | ✅ Active |
+| Base Sepolia (Testnet) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569) | ✅ Active |
+| X-Layer Testnet | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ Active |
 | Base Mainnet | - | 🚧 Pending Audit |
 | Ethereum Mainnet | - | 🚧 Pending Audit |
 

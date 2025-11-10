@@ -38,7 +38,7 @@ export namespace TransferHook {
    * @example
    * ```typescript
    * const address = TransferHook.getAddress('base-sepolia');
-   * // => '0x6b486aF5A08D27153d0374BE56A1cB1676c460a8'
+   * // => '0x4DE234059C6CcC94B8fE1eb1BD24804794083569'
    * ```
    */
   export function getAddress(network: string): string {
