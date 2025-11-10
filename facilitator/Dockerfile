@@ -64,8 +64,14 @@ WORKDIR /app
 # Copy workspace configuration
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy SDK packages metadata (needed for pnpm to understand workspace structure)
-COPY typescript/packages/*/package.json ./typescript/packages/
+# Copy SDK packages with proper directory structure
+# We need to copy each package's package.json AND dist directory separately
+# to maintain the correct structure: typescript/packages/{core,express,hono,fetch,react}/
+COPY --from=builder /app/typescript/packages/core/package.json ./typescript/packages/core/
+COPY --from=builder /app/typescript/packages/express/package.json ./typescript/packages/express/
+COPY --from=builder /app/typescript/packages/hono/package.json ./typescript/packages/hono/
+COPY --from=builder /app/typescript/packages/fetch/package.json ./typescript/packages/fetch/
+COPY --from=builder /app/typescript/packages/react/package.json ./typescript/packages/react/
 
 # Copy facilitator package.json
 COPY facilitator/package.json ./facilitator/
@@ -73,8 +79,12 @@ COPY facilitator/package.json ./facilitator/
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy built SDK packages from builder
-COPY --from=builder /app/typescript/packages/*/dist ./typescript/packages/
+# Copy built SDK packages from builder (with correct directory structure)
+COPY --from=builder /app/typescript/packages/core/dist ./typescript/packages/core/dist
+COPY --from=builder /app/typescript/packages/express/dist ./typescript/packages/express/dist
+COPY --from=builder /app/typescript/packages/hono/dist ./typescript/packages/hono/dist
+COPY --from=builder /app/typescript/packages/fetch/dist ./typescript/packages/fetch/dist
+COPY --from=builder /app/typescript/packages/react/dist ./typescript/packages/react/dist
 
 # Copy built facilitator from builder
 COPY --from=builder /app/facilitator/dist ./facilitator/dist
