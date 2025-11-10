@@ -16,7 +16,7 @@ import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x40
 import type { GasCostConfig } from "./gas-cost.js";
 import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { TokenPriceConfig } from "./token-price.js";
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
 
 // Load environment variables
@@ -397,7 +397,9 @@ function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
   // Map of network names to viem chains
   const viemChains: Record<string, Chain> = {
     "base-sepolia": baseSepolia,
+    base: base,
     "x-layer-testnet": evm.xLayerTestnet,
+    "x-layer": evm.xLayer,
   };
 
   // Parse RPC URLs for each network

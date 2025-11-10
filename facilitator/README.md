@@ -111,6 +111,11 @@ The facilitator automatically detects the settlement mode based on the presence 
   - X-Layer Testnet (Chain ID: 1952)
 - **Solana**: Devnet support (standard mode only)
 
+**Mainnet Note**: Mainnet networks are automatically supported through the SDK configuration. The facilitator will:
+- Auto-load SettlementRouter addresses from `@x402x/core`
+- Auto-load RPC URLs from viem chain definitions (or use environment variables if provided)
+- Apply mainnet security policies (only SettlementRouter mode allowed)
+
 ## Quick Start
 
 ### Prerequisites
