@@ -209,7 +209,7 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 | Base Sepolia (Testnet) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb) | ✅ Active |
 | X-Layer Testnet | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ Active |
 | Base Mainnet | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 Live |
-| X-Layer Mainnet | [`0x73fc659cd5494e69852be8d9d23fe05aab14b29b`](https://www.oklink.com/xlayer/address/0x73fc659cd5494e69852be8d9d23fe05aab14b29b) | 🎉 Live |
+| X-Layer Mainnet | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 Live |
 | Ethereum Mainnet | - | 🚧 Planned |
 
 ### TransferHook (Built-in)
