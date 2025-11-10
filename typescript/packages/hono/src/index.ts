@@ -359,7 +359,9 @@ export function paymentMiddleware(
             // When using dynamic fee, price is business price only
             // Total = business price + facilitator fee
             businessAmount = baseAmount;
-            maxAmountRequired = (BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)).toString();
+            maxAmountRequired = (
+              BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)
+            ).toString();
 
             console.log("[x402x Middleware] Dynamic fee calculated:", {
               network,

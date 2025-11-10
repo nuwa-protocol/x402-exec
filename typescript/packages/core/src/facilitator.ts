@@ -19,7 +19,7 @@ import { SETTLEMENT_ROUTER_ABI } from "./abi.js";
 
 /**
  * Result of facilitator fee calculation
- * 
+ *
  * This interface represents the response from facilitator's /calculate-fee endpoint.
  * Only essential information is included - internal cost breakdown is not exposed.
  */
@@ -42,7 +42,6 @@ export interface FeeCalculationResult {
     symbol: string;
     decimals: number;
   };
-
 }
 
 /**
@@ -259,7 +258,7 @@ export function validateSettlementRouter(
  * @param nativeTokenPriceUSD - Native token price in USD (optional, defaults to 0)
  * @param tokenDecimals - Token decimals (e.g., 6 for USDC, defaults to 6)
  * @returns Gas metrics for monitoring
- * 
+ *
  * @note This function is currently only used for EVM chains where native tokens
  * (ETH, BNB, AVAX, OKB, etc.) all use 18 decimals. If supporting non-EVM chains
  * in the future, a nativeTokenDecimals parameter should be added.
@@ -280,16 +279,16 @@ function calculateGasMetrics(
   const gasUsedBigInt = BigInt(gasUsed);
   const effectiveGasPriceBigInt = BigInt(effectiveGasPrice);
   const actualGasCostWei = gasUsedBigInt * effectiveGasPriceBigInt;
-  
+
   // Convert from Wei to native token using BigInt arithmetic to maintain precision
   // All EVM chains use 18 decimals for native tokens (1 ETH = 10^18 Wei)
   const nativeTokenDecimals = BigInt(10 ** 18);
-  
+
   // Format to string with proper decimal places
   const integerPart = actualGasCostWei / nativeTokenDecimals;
   const fractionalPart = actualGasCostWei % nativeTokenDecimals;
-  const actualGasCostNative = `${integerPart}.${fractionalPart.toString().padStart(18, '0')}`;
-  
+  const actualGasCostNative = `${integerPart}.${fractionalPart.toString().padStart(18, "0")}`;
+
   // Remove trailing zeros for cleaner display
   const actualGasCostNativeFormatted = actualGasCostNative.replace(/\.?0+$/, "") || "0";
 
@@ -302,11 +301,12 @@ function calculateGasMetrics(
 
   // Calculate profit/loss
   const profitUSD = (parseFloat(facilitatorFeeUSD) - parseFloat(actualGasCostUSD)).toFixed(6);
-  
+
   // Calculate profit margin percentage
-  const profitMarginPercent = parseFloat(facilitatorFeeUSD) > 0
-    ? ((parseFloat(profitUSD) / parseFloat(facilitatorFeeUSD)) * 100).toFixed(2)
-    : "0.00";
+  const profitMarginPercent =
+    parseFloat(facilitatorFeeUSD) > 0
+      ? ((parseFloat(profitUSD) / parseFloat(facilitatorFeeUSD)) * 100).toFixed(2)
+      : "0.00";
 
   const profitable = parseFloat(profitUSD) >= 0;
 

@@ -67,11 +67,13 @@ app.listen(3000);
 ### Key Concepts
 
 When using **dynamic fee calculation** (recommended):
+
 - `price`: Your business/API price (what you charge for the service)
 - **Facilitator fee**: Automatically calculated based on current gas prices
 - **Total price**: `price + facilitator fee` (shown to users in 402 response)
 
 For **static fee** (legacy mode), explicitly set `facilitatorFee`:
+
 ```typescript
 {
   price: "$0.10",
