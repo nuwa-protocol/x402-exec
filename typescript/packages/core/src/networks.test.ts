@@ -49,7 +49,7 @@ describe("getNetworkConfig", () => {
 
     expect(config).toBeDefined();
     expect(config.chainId).toBe(84532);
-    expect(config.settlementRouter).toBe("0x32431D4511e061F1133520461B07eC42afF157D6");
+    expect(config.settlementRouter).toBe(networks["base-sepolia"].settlementRouter);
   });
 
   it("should return config for x-layer-testnet", () => {
@@ -57,7 +57,7 @@ describe("getNetworkConfig", () => {
 
     expect(config).toBeDefined();
     expect(config.chainId).toBe(1952);
-    expect(config.settlementRouter).toBe("0x1ae0e196dc18355af3a19985faf67354213f833d");
+    expect(config.settlementRouter).toBe(networks["x-layer-testnet"].settlementRouter);
   });
 
   it("should throw error for unsupported network", () => {

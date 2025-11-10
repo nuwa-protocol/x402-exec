@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TransferHook } from "./transfer";
+import { networks } from "../networks";
 
 describe("TransferHook.encode", () => {
   it("should return empty bytes", () => {
@@ -22,7 +23,7 @@ describe("TransferHook.getAddress", () => {
 
     expect(address).toBeDefined();
     expect(address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(address).toBe("0x6b486aF5A08D27153d0374BE56A1cB1676c460a8");
+    expect(address).toBe(networks["base-sepolia"].hooks.transfer);
   });
 
   it("should return address for x-layer-testnet", () => {
@@ -30,7 +31,7 @@ describe("TransferHook.getAddress", () => {
 
     expect(address).toBeDefined();
     expect(address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(address).toBe("0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB");
+    expect(address).toBe(networks["x-layer-testnet"].hooks.transfer);
   });
 
   it("should throw error for unsupported network", () => {

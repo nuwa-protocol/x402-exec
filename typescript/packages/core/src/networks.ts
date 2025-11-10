@@ -28,18 +28,18 @@ function createUsdcConfig(chainId: number) {
 export const networks: Record<string, NetworkConfig> = {
   "base-sepolia": {
     chainId: 84532,
-    settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+    settlementRouter: "0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb",
     usdc: createUsdcConfig(84532),
     hooks: {
-      transfer: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
+      transfer: "0x4DE234059C6CcC94B8fE1eb1BD24804794083569",
     },
   },
   "x-layer-testnet": {
     chainId: 1952,
-    settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
+    settlementRouter: "0xba9980fb08771e2fd10c17450f52d39bcb9ed576",
     usdc: createUsdcConfig(1952),
     hooks: {
-      transfer: "0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB",
+      transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
     },
   },
   // Mainnet configurations (pending audit)

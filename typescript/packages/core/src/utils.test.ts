@@ -2,40 +2,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { addSettlementExtra } from "./utils";
 import type { PaymentRequirements } from "./types";
 import { mockAddresses } from "./__tests__/fixtures";
+import { networks } from "./networks";
 
 // Mock the dependencies
-vi.mock("./networks", () => ({
-  getNetworkConfig: vi.fn((network: string) => {
-    if (network === "base-sepolia") {
-      return {
-        chainId: 84532,
-        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
-        usdc: {
-          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-          name: "USDC",
-          version: "2",
-        },
-        hooks: {
-          transfer: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",
-        },
-      };
-    } else if (network === "x-layer-testnet") {
-      return {
-        chainId: 1952,
-        settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
-        usdc: {
-          address: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
-          name: "USDC",
-          version: "2",
-        },
-        hooks: {
-          transfer: "0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB",
-        },
-      };
-    }
-    throw new Error(`Unsupported network: ${network}`);
-  }),
-}));
+vi.mock("./networks", async () => {
+  const actual = await vi.importActual<typeof import("./networks")>("./networks");
+  return {
+    ...actual,
+    getNetworkConfig: vi.fn((network: string) => {
+      const config = actual.networks[network];
+      if (!config) {
+        throw new Error(`Unsupported network: ${network}`);
+      }
+      return config;
+    }),
+  };
+});
 
 vi.mock("./commitment", () => ({
   generateSalt: vi.fn(() => "0x" + "9".repeat(64)),
@@ -72,7 +54,7 @@ describe("addSettlementExtra", () => {
     expect(result.extra).toMatchObject({
       name: "USDC",
       version: "2",
-      settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+      settlementRouter: networks["base-sepolia"].settlementRouter,
       salt: expect.stringMatching(/^0x[0-9a-fA-F]{64}$/),
       payTo: mockAddresses.payTo,
       facilitatorFee: "10000",
@@ -89,7 +71,7 @@ describe("addSettlementExtra", () => {
       payTo: mockAddresses.payTo,
     });
 
-    expect(result.payTo).toBe("0x32431D4511e061F1133520461B07eC42afF157D6");
+    expect(result.payTo).toBe(networks["base-sepolia"].settlementRouter);
     expect(result.payTo).not.toBe(baseRequirements.payTo);
   });
 
@@ -194,8 +176,8 @@ describe("addSettlementExtra", () => {
       hookData: "0x",
     });
 
-    expect(result.extra.settlementRouter).toBe("0x1ae0e196dc18355af3a19985faf67354213f833d");
-    expect(result.payTo).toBe("0x1ae0e196dc18355af3a19985faf67354213f833d");
+    expect(result.extra.settlementRouter).toBe(networks["x-layer-testnet"].settlementRouter);
+    expect(result.payTo).toBe(networks["x-layer-testnet"].settlementRouter);
   });
 
   it("should handle empty hookData", () => {
@@ -263,7 +245,7 @@ describe("addSettlementExtra", () => {
     });
 
     // Verify all required fields for settlement
-    expect(result.payTo).toBe("0x32431D4511e061F1133520461B07eC42afF157D6");
+    expect(result.payTo).toBe(networks["base-sepolia"].settlementRouter);
     expect(result.extra.settlementRouter).toBeDefined();
     expect(result.extra.salt).toBeDefined();
     expect(result.extra.payTo).toBeDefined();
