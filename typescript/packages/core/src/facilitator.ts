@@ -11,12 +11,17 @@ import type {
   SettleResponse,
   Signer,
   FacilitatorConfig,
+  GasMetrics,
+  SettleResponseWithMetrics,
 } from "./types.js";
 import { SettlementExtraError } from "./types.js";
 import { SETTLEMENT_ROUTER_ABI } from "./abi.js";
 
 /**
  * Result of facilitator fee calculation
+ * 
+ * This interface represents the response from facilitator's /calculate-fee endpoint.
+ * Only essential information is included - internal cost breakdown is not exposed.
  */
 export interface FeeCalculationResult {
   network: string;
@@ -25,24 +30,12 @@ export interface FeeCalculationResult {
   hookAllowed: boolean;
 
   // Main result - recommended facilitator fee
-  facilitatorFee: string; // Atomic units
-  facilitatorFeeUSD: string; // USD value
-
-  // Detailed breakdown
-  breakdown: {
-    baseGasCost: string;
-    gasLimit: number;
-    maxGasLimit: number;
-    gasPrice: string;
-    gasCostNative: string;
-    gasCostUSD: string;
-    safetyMultiplier: number;
-    finalCostUSD: string;
-  };
+  facilitatorFee: string; // Atomic units (e.g., USDC with 6 decimals)
+  facilitatorFeeUSD: string; // USD value for display
 
   // Metadata
   calculatedAt: string; // ISO 8601 timestamp
-  validitySeconds: number; // Validity period
+  validitySeconds: number; // How long this fee is valid (typically 60 seconds)
 
   token: {
     address: string;
@@ -50,10 +43,6 @@ export interface FeeCalculationResult {
     decimals: number;
   };
 
-  prices: {
-    nativeToken: string;
-    timestamp: string;
-  };
 }
 
 /**
@@ -260,6 +249,72 @@ export function validateSettlementRouter(
  * @returns Parsed settlement extra parameters
  * @throws SettlementExtraError if parameters are invalid
  */
+/**
+ * Calculate gas metrics from transaction receipt
+ *
+ * @param receipt - Transaction receipt from the blockchain
+ * @param facilitatorFee - Facilitator fee in token's smallest unit (e.g., USDC with 6 decimals)
+ * @param hook - Hook contract address
+ * @param network - Network name
+ * @param nativeTokenPriceUSD - Native token price in USD (optional, defaults to 0)
+ * @returns Gas metrics for monitoring
+ */
+function calculateGasMetrics(
+  receipt: any,
+  facilitatorFee: string,
+  hook: string,
+  network: string,
+  nativeTokenPriceUSD = "0",
+): GasMetrics {
+  // Extract gas information from receipt
+  const gasUsed = receipt.gasUsed.toString();
+  const effectiveGasPrice = receipt.effectiveGasPrice.toString();
+
+  // Calculate actual gas cost in native token (Wei → ETH/BNB/etc.)
+  const gasUsedBigInt = BigInt(gasUsed);
+  const effectiveGasPriceBigInt = BigInt(effectiveGasPrice);
+  const actualGasCostWei = gasUsedBigInt * effectiveGasPriceBigInt;
+  
+  // Convert from Wei (10^18) to native token
+  const actualGasCostNative = (Number(actualGasCostWei) / Math.pow(10, 18)).toFixed(18);
+  
+  // Remove trailing zeros for cleaner display
+  const actualGasCostNativeFormatted = parseFloat(actualGasCostNative)
+    .toFixed(18)
+    .replace(/\.?0+$/, "");
+
+  // Calculate actual gas cost in USD
+  const nativePrice = parseFloat(nativeTokenPriceUSD) || 0;
+  const actualGasCostUSD = (parseFloat(actualGasCostNative) * nativePrice).toFixed(6);
+
+  // Calculate facilitator fee in USD (assuming USDC with 6 decimals)
+  const facilitatorFeeUSD = (parseFloat(facilitatorFee) / 1_000_000).toFixed(6);
+
+  // Calculate profit/loss
+  const profitUSD = (parseFloat(facilitatorFeeUSD) - parseFloat(actualGasCostUSD)).toFixed(6);
+  
+  // Calculate profit margin percentage
+  const profitMarginPercent = parseFloat(facilitatorFeeUSD) > 0
+    ? ((parseFloat(profitUSD) / parseFloat(facilitatorFeeUSD)) * 100).toFixed(2)
+    : "0.00";
+
+  const profitable = parseFloat(profitUSD) >= 0;
+
+  return {
+    gasUsed,
+    effectiveGasPrice,
+    actualGasCostNative: actualGasCostNativeFormatted,
+    actualGasCostUSD,
+    facilitatorFee,
+    facilitatorFeeUSD,
+    profitUSD,
+    profitMarginPercent,
+    profitable,
+    hook,
+    nativeTokenPriceUSD: nativePrice.toFixed(2),
+  };
+}
+
 function parseSettlementExtra(extra: unknown): {
   settlementRouter: string;
   salt: string;
@@ -342,7 +397,7 @@ export async function settleWithRouter(
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
   config: FacilitatorConfig,
-): Promise<SettleResponse> {
+): Promise<SettleResponseWithMetrics> {
   try {
     // 1. Parse settlement extra parameters
     const extra = parseSettlementExtra(paymentRequirements.extra);
@@ -418,11 +473,22 @@ export async function settleWithRouter(
       };
     }
 
+    // 8. Calculate gas metrics for monitoring
+    // Note: Native token price is not available here, will be calculated by facilitator
+    const gasMetrics = calculateGasMetrics(
+      receipt,
+      extra.facilitatorFee,
+      extra.hook,
+      paymentPayload.network,
+      "0", // Native token price will be added by facilitator layer
+    );
+
     return {
       success: true,
       transaction: tx,
       network: paymentPayload.network,
       payer: authorization.from,
+      gasMetrics,
     };
   } catch (error) {
     console.error("Error in settleWithRouter:", error);

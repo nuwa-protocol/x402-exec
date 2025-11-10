@@ -136,7 +136,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
       const validitySeconds = 60;
       const calculatedAt = new Date().toISOString();
 
-      // Return successful response with new field names
+      // Return successful response - only essential information
       const response = {
         network,
         hook,
@@ -145,16 +145,6 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         // Main result - recommended facilitator fee
         facilitatorFee: feeCalculation.minFacilitatorFee,
         facilitatorFeeUSD: feeCalculation.minFacilitatorFeeUSD,
-        breakdown: {
-          baseGasCost: feeCalculation.gasCostUSD,
-          gasLimit: feeCalculation.gasLimit,
-          maxGasLimit: feeCalculation.maxGasLimit,
-          gasPrice: feeCalculation.gasPrice,
-          gasCostNative: feeCalculation.gasCostNative,
-          gasCostUSD: feeCalculation.gasCostUSD,
-          safetyMultiplier: feeCalculation.safetyMultiplier,
-          finalCostUSD: feeCalculation.finalCostUSD,
-        },
         // Metadata
         calculatedAt,
         validitySeconds,
@@ -163,10 +153,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
           symbol: "USDC",
           decimals: tokenDecimals,
         },
-        prices: {
-          nativeToken: deps.gasCost.nativeTokenPrice[network]?.toFixed(2) || "0.00",
-          timestamp: calculatedAt,
-        },
+        // Note: breakdown and prices removed to avoid exposing internal cost structure
       };
 
       logger.debug(
@@ -177,6 +164,14 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
           facilitatorFee: response.facilitatorFee,
           facilitatorFeeUSD: response.facilitatorFeeUSD,
           validitySeconds,
+          // Log internal breakdown for monitoring
+          breakdown: {
+            gasLimit: feeCalculation.gasLimit,
+            gasPrice: feeCalculation.gasPrice,
+            gasCostUSD: feeCalculation.gasCostUSD,
+            safetyMultiplier: feeCalculation.safetyMultiplier,
+            finalCostUSD: feeCalculation.finalCostUSD,
+          },
         },
         "Facilitator fee calculated",
       );

@@ -34,6 +34,8 @@ export type {
   PaymentPayload,
   SettleResponse,
   Signer,
+  GasMetrics,
+  SettleResponseWithMetrics,
 } from "./types.js";
 
 export { SettlementExtraError } from "./types.js";
