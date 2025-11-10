@@ -42,15 +42,23 @@ export const networks: Record<string, NetworkConfig> = {
       transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
     },
   },
-  // Mainnet configurations (pending audit)
-  // 'base': {
-  //   chainId: 8453,
-  //   settlementRouter: '0x...',
-  //   usdc: createUsdcConfig(8453),
-  //   hooks: {
-  //     transfer: '0x...',
-  //   },
-  // },
+  // Mainnet configurations
+  base: {
+    chainId: 8453,
+    settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+    usdc: createUsdcConfig(8453),
+    hooks: {
+      transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+    },
+  },
+  "x-layer": {
+    chainId: 196,
+    settlementRouter: "0x73fc659cd5494e69852be8d9d23fe05aab14b29b",
+    usdc: createUsdcConfig(196),
+    hooks: {
+      transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+    },
+  },
 };
 
 /**

@@ -1,7 +1,23 @@
 #!/bin/bash
+# DEPRECATED: This script has been merged into deploy-network.sh
+# Please use: ./deploy-network.sh [NETWORK] --hooks
+#
 # Multi-network deployment script for built-in Hooks
 # Built-in Hooks are protocol-level Hooks deployed once per network for universal use.
 # Supports: Base Sepolia, Base Mainnet, X-Layer Testnet, X-Layer Mainnet
+
+echo "⚠️  DEPRECATED: This script has been merged into deploy-network.sh"
+echo ""
+echo "Please use instead:"
+echo "  ./deploy-network.sh [NETWORK] --hooks        # Deploy all built-in hooks"
+echo "  ./deploy-network.sh [NETWORK] --transfer     # Deploy only TransferHook"
+echo "  ./deploy-network.sh [NETWORK] --all --with-hooks  # Deploy everything including hooks"
+echo ""
+echo "Examples:"
+echo "  ./deploy-network.sh xlayer-testnet --hooks"
+echo "  ./deploy-network.sh base-sepolia --transfer --verify"
+echo ""
+exit 1
 
 set -e
 

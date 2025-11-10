@@ -33,7 +33,10 @@ usage() {
     echo "  --referral        Deploy only Referral Split scenario"
     echo "  --nft             Deploy only NFT Minting scenario"
     echo "  --reward          Deploy only Reward Points scenario"
-    echo "  --all             Deploy both SettlementRouter and all showcase (default)"
+    echo "  --hooks           Deploy all built-in Hooks (requires SETTLEMENT_ROUTER_ADDRESS)"
+    echo "  --transfer        Deploy only TransferHook (requires SETTLEMENT_ROUTER_ADDRESS)"
+    echo "  --all             Deploy SettlementRouter and all showcase (default)"
+    echo "  --with-hooks      When used with --all, also deploy built-in Hooks"
     echo "  --verify          Verify contracts on block explorer"
     echo "  --yes             Skip confirmation prompts"
     echo "  -h, --help        Show this help message"
@@ -42,12 +45,17 @@ usage() {
     echo "  $0 xlayer-testnet                    # Deploy everything on X-Layer Testnet"
     echo "  $0 xlayer-testnet --settlement       # Deploy only SettlementRouter"
     echo "  $0 xlayer-testnet --showcase         # Deploy all showcase scenarios"
+    echo "  $0 xlayer-testnet --hooks            # Deploy all built-in Hooks"
+    echo "  $0 xlayer-testnet --transfer         # Deploy only TransferHook"
     echo "  $0 xlayer-testnet --nft              # Deploy only NFT scenario"
+    echo "  $0 base-sepolia --all --with-hooks   # Deploy everything including hooks"
     echo "  $0 base-sepolia --all --verify       # Deploy and verify on Base Sepolia"
     echo ""
     echo "Environment Variables Required:"
     echo "  DEPLOYER_PRIVATE_KEY                 Deployer wallet private key"
-    echo "  [NETWORK]_RPC_URL                    RPC URL for the network (e.g., X_LAYER_TESTNET_RPC_URL)"
+    echo ""
+    echo "Optional (defaults are provided):"
+    echo "  [NETWORK]_RPC_URL                    Custom RPC URL for the network"
     echo "  [NETWORK]_SETTLEMENT_ROUTER_ADDRESS  (Only for showcase) Deployed router address"
     echo ""
     echo "Optional for verification:"
@@ -58,9 +66,10 @@ usage() {
 
 # Parse arguments
 NETWORK=""
-DEPLOY_MODE="all"  # all | settlement | showcase | referral | nft | reward
+DEPLOY_MODE="all"  # all | settlement | showcase | referral | nft | reward | hooks | transfer
 VERIFY=false
 AUTO_YES=false
+WITH_HOOKS=false  # Flag for --with-hooks option
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -88,8 +97,20 @@ while [[ $# -gt 0 ]]; do
             DEPLOY_MODE="reward"
             shift
             ;;
+        --hooks)
+            DEPLOY_MODE="hooks"
+            shift
+            ;;
+        --transfer)
+            DEPLOY_MODE="transfer"
+            shift
+            ;;
         --all)
             DEPLOY_MODE="all"
+            shift
+            ;;
+        --with-hooks)
+            WITH_HOOKS=true
             shift
             ;;
         --verify)
@@ -159,6 +180,24 @@ get_network_info() {
     esac
 }
 
+# Get default RPC URL for network
+get_default_rpc_url() {
+    case $1 in
+        base-sepolia)
+            echo "https://sepolia.base.org"
+            ;;
+        base)
+            echo "https://mainnet.base.org"
+            ;;
+        xlayer-testnet)
+            echo "https://testrpc.xlayer.tech/terigon"
+            ;;
+        xlayer)
+            echo "https://rpc.xlayer.tech"
+            ;;
+    esac
+}
+
 ENV_PREFIX=$(get_env_prefix $NETWORK)
 NETWORK_INFO=$(get_network_info $NETWORK)
 NETWORK_NAME=$(echo $NETWORK_INFO | cut -d'|' -f1)
@@ -174,13 +213,14 @@ else
     print_warning ".env file not found in project root, using shell environment variables"
 fi
 
-# Get RPC URL from environment
+# Get RPC URL from environment or use default
 RPC_URL_VAR="${ENV_PREFIX}_RPC_URL"
 RPC_URL="${!RPC_URL_VAR}"
 
-# Fallback to generic RPC_URL if network-specific not set
+# Fallback to default RPC URL if not set in environment
 if [ -z "$RPC_URL" ]; then
-    RPC_URL="${RPC_URL}"
+    RPC_URL=$(get_default_rpc_url $NETWORK)
+    print_info "Using default RPC URL for $NETWORK_NAME"
 fi
 
 # Verify required environment variables
@@ -192,10 +232,9 @@ if [ -z "$DEPLOYER_PRIVATE_KEY" ]; then
 fi
 
 if [ -z "$RPC_URL" ]; then
-    print_error "${RPC_URL_VAR} is not set"
+    print_error "Failed to get RPC URL for $NETWORK_NAME"
     echo ""
-    echo "Set it in .env or as an environment variable:"
-    echo "  export ${RPC_URL_VAR}=https://..."
+    echo "This should not happen. Please report this issue."
     exit 1
 fi
 
@@ -203,12 +242,12 @@ fi
 SETTLEMENT_ROUTER_VAR="${ENV_PREFIX}_SETTLEMENT_ROUTER_ADDRESS"
 SETTLEMENT_ROUTER="${!SETTLEMENT_ROUTER_VAR}"
 
-# Check if we need settlement router for showcase scenarios
-if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "all" ]; then
-    if [ "$DEPLOY_MODE" != "all" ] && [ -z "$SETTLEMENT_ROUTER" ]; then
+# Check if we need settlement router for showcase scenarios or hooks
+if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$DEPLOY_MODE" = "all" ]; then
+    if [ "$DEPLOY_MODE" != "all" ] && [ "$DEPLOY_MODE" != "settlement" ] && [ -z "$SETTLEMENT_ROUTER" ]; then
         print_error "${SETTLEMENT_ROUTER_VAR} is not set"
         echo ""
-        echo "For showcase deployment, you must first deploy SettlementRouter or set its address in .env"
+        echo "For showcase or hooks deployment, you must first deploy SettlementRouter or set its address in .env"
         exit 1
     fi
 fi
@@ -218,8 +257,8 @@ print_info "Network: $NETWORK_NAME (Chain ID: $CHAIN_ID)"
 print_info "RPC URL: $RPC_URL"
 print_info "Deployer: $(cast wallet address --private-key $DEPLOYER_PRIVATE_KEY 2>/dev/null || echo 'N/A')"
 
-# Show settlement router for any showcase scenario
-if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "all" ]; then
+# Show settlement router for showcase scenarios and hooks
+if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEPLOY_MODE" = "nft" ] || [ "$DEPLOY_MODE" = "reward" ] || [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$DEPLOY_MODE" = "all" ]; then
     if [ ! -z "$SETTLEMENT_ROUTER" ]; then
         print_info "Settlement Router: $SETTLEMENT_ROUTER"
     fi
@@ -227,6 +266,9 @@ fi
 
 echo ""
 print_info "Deployment Mode: $DEPLOY_MODE"
+if [ "$WITH_HOOKS" = true ]; then
+    print_info "With Built-in Hooks: YES"
+fi
 if [ "$VERIFY" = true ]; then
     print_info "Contract Verification: ENABLED"
 else
@@ -351,6 +393,45 @@ if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEP
     echo ""
 fi
 
+# Deploy Built-in Hooks
+if [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$WITH_HOOKS" = true ]; then
+    if [ -z "$SETTLEMENT_ROUTER_ADDRESS" ]; then
+        print_error "Cannot deploy hooks: SETTLEMENT_ROUTER_ADDRESS not set"
+        exit 1
+    fi
+    
+    # Verify SettlementRouter is deployed
+    if ! cast code $SETTLEMENT_ROUTER_ADDRESS --rpc-url $RPC_URL > /dev/null 2>&1; then
+        print_error "SettlementRouter not deployed at $SETTLEMENT_ROUTER_ADDRESS"
+        exit 1
+    fi
+    
+    # Deploy TransferHook (currently the only built-in hook)
+    if [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$WITH_HOOKS" = true ]; then
+        echo "========================================="
+        echo "  Deploying TransferHook..."
+        echo "========================================="
+        echo ""
+        
+        forge script script/DeployTransferHook.s.sol:DeployTransferHook \
+            --sig "run(address)" "$SETTLEMENT_ROUTER_ADDRESS" \
+            --rpc-url $RPC_URL \
+            --broadcast \
+            $VERIFY_FLAG \
+            -vvv
+        
+        print_success "TransferHook deployed!"
+        echo ""
+    fi
+    
+    # Future built-in Hooks can be added here
+    # Example:
+    # if [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_BATCH" = true ]; then
+    #     echo "Deploying BatchTransferHook..."
+    #     forge script script/DeployBatchTransferHook.s.sol:DeployBatchTransferHook ...
+    # fi
+fi
+
 # Final summary
 echo "========================================="
 echo "  ✅ Deployment Complete!"
@@ -363,8 +444,16 @@ echo "1. Copy deployed addresses from above"
 echo "2. Update .env files:"
 echo "   - Project root: ../.env"
 echo "   - Server: ../examples/showcase/server/.env"
-echo "3. Test the deployment:"
-echo "   cd ../examples/showcase && npm run dev"
+
+# Show hooks-specific next steps
+if [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$WITH_HOOKS" = true ]; then
+    echo "3. Documentation:"
+    echo "   - Built-in Hooks Guide: ./docs/builtin_hooks.md"
+    echo "   - Hook Development Guide: ./docs/hook_guide.md"
+else
+    echo "3. Test the deployment:"
+    echo "   cd ../examples/showcase && npm run dev"
+fi
 echo ""
 
 # Display block explorer link

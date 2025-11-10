@@ -18,6 +18,22 @@ describe("networks", () => {
     expect(networks["x-layer-testnet"].hooks.transfer).toBeDefined();
   });
 
+  it("should contain base mainnet configuration", () => {
+    expect(networks["base"]).toBeDefined();
+    expect(networks["base"].chainId).toBe(8453);
+    expect(networks["base"].settlementRouter).toBeDefined();
+    expect(networks["base"].usdc).toBeDefined();
+    expect(networks["base"].hooks.transfer).toBeDefined();
+  });
+
+  it("should contain x-layer mainnet configuration", () => {
+    expect(networks["x-layer"]).toBeDefined();
+    expect(networks["x-layer"].chainId).toBe(196);
+    expect(networks["x-layer"].settlementRouter).toBeDefined();
+    expect(networks["x-layer"].usdc).toBeDefined();
+    expect(networks["x-layer"].hooks.transfer).toBeDefined();
+  });
+
   it("should have valid USDC configuration for base-sepolia", () => {
     const usdc = networks["base-sepolia"].usdc;
     expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
@@ -32,14 +48,46 @@ describe("networks", () => {
     expect(usdc.version).toBe("2");
   });
 
+  it("should have valid USDC configuration for base mainnet", () => {
+    const usdc = networks["base"].usdc;
+    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(usdc.name).toBe("USD Coin"); // Base mainnet uses "USD Coin" as the name
+    expect(usdc.version).toBe("2");
+  });
+
+  it("should have valid USDC configuration for x-layer mainnet", () => {
+    const usdc = networks["x-layer"].usdc;
+    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(usdc.name).toBe("USDC");
+    expect(usdc.version).toBe("2");
+  });
+
   it("should have valid settlementRouter addresses", () => {
     expect(networks["base-sepolia"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["x-layer-testnet"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["base"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["x-layer"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
   it("should have valid hook addresses", () => {
     expect(networks["base-sepolia"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["x-layer-testnet"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["base"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["x-layer"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+  });
+
+  it("should have same settlementRouter address for base and x-layer mainnets", () => {
+    // Addresses should be the same (deterministic deployment)
+    const baseRouter = networks["base"].settlementRouter.toLowerCase();
+    const xlayerRouter = networks["x-layer"].settlementRouter.toLowerCase();
+    expect(baseRouter).toBe(xlayerRouter);
+  });
+
+  it("should have same TransferHook address for base and x-layer mainnets", () => {
+    // Addresses should be the same (deterministic deployment)
+    const baseHook = networks["base"].hooks.transfer.toLowerCase();
+    const xlayerHook = networks["x-layer"].hooks.transfer.toLowerCase();
+    expect(baseHook).toBe(xlayerHook);
   });
 });
 
@@ -104,10 +152,18 @@ describe("isNetworkSupported", () => {
     expect(isNetworkSupported("x-layer-testnet")).toBe(true);
   });
 
+  it("should return true for base mainnet", () => {
+    expect(isNetworkSupported("base")).toBe(true);
+  });
+
+  it("should return true for x-layer mainnet", () => {
+    expect(isNetworkSupported("x-layer")).toBe(true);
+  });
+
   it("should return false for unsupported network", () => {
     expect(isNetworkSupported("ethereum")).toBe(false);
     expect(isNetworkSupported("polygon")).toBe(false);
-    expect(isNetworkSupported("base")).toBe(false);
+    expect(isNetworkSupported("arbitrum")).toBe(false);
   });
 
   it("should return false for empty string", () => {
@@ -149,11 +205,23 @@ describe("getSupportedNetworks", () => {
     expect(networks).toContain("x-layer-testnet");
   });
 
+  it("should include base mainnet", () => {
+    const networks = getSupportedNetworks();
+
+    expect(networks).toContain("base");
+  });
+
+  it("should include x-layer mainnet", () => {
+    const networks = getSupportedNetworks();
+
+    expect(networks).toContain("x-layer");
+  });
+
   it("should return all configured networks", () => {
     const networks = getSupportedNetworks();
 
-    // Should match the number of networks in the config
-    expect(networks.length).toBeGreaterThanOrEqual(2);
+    // Should match the number of networks in the config (2 testnets + 2 mainnets)
+    expect(networks.length).toBeGreaterThanOrEqual(4);
   });
 
   it("should return unique network names", () => {
