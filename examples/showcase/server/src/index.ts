@@ -3,9 +3,10 @@
  * Demonstrates x402x settlement with multiple scenarios using @x402x/hono middleware
  * 
  * This server showcases secure payment practices:
- * - Simple scenarios use static configuration
- * - Complex scenarios use dynamic configuration but server-controlled parameters
+ * - Uses dynamic facilitator fee calculation based on current gas prices
+ * - Complex scenarios use server-controlled hook parameters
  * - Payer identity and amounts are always verified via payment signatures
+ * - Business prices are clearly separated from facilitator fees
  */
 
 import { Hono } from 'hono';
@@ -204,11 +205,11 @@ app.post('/api/transfer-with-hook/payment',
   paymentMiddleware(
     appConfig.resourceServerAddress,
     {
-      price: '$0.11', // 0.11 USD total (0.10 + 0.01 facilitator fee, converted to USDC atomic units automatically)
+      price: '$0.10', // 0.10 USD business price (facilitator fee auto-calculated)
       network: Object.keys(appConfig.networks) as any, // Support all configured networks
-      facilitatorFee: '$0.01', // 0.01 USD facilitator fee (same format as price)
+      // facilitatorFee auto-calculated based on current gas prices
       config: {
-        description: 'Transfer with Hook: Pay $0.1 to merchant with $0.01 facilitator fee',
+        description: 'Transfer with Hook: Pay $0.10 to merchant (+ dynamic facilitator fee)',
       },
     },
     facilitatorConfig
@@ -217,12 +218,13 @@ app.post('/api/transfer-with-hook/payment',
     const x402 = c.get('x402');
     console.log('[Transfer with Hook] Payment completed successfully');
     console.log(`[Transfer with Hook] Network: ${x402.network}`);
+    console.log(`[Transfer with Hook] Facilitator fee: ${x402.settlement?.facilitatorFee}`);
     return c.json({
       message: 'Payment successful with TransferHook',
       scenario: 'transfer-with-hook',
       network: x402.network,
       recipient: appConfig.resourceServerAddress,
-      facilitatorFee: '$0.01 USDC',
+      facilitatorFee: x402.settlement?.facilitatorFee,
     });
   }
 );
@@ -238,9 +240,9 @@ app.post('/api/referral-split/payment',
   paymentMiddleware(
     appConfig.resourceServerAddress,
     {
-      price: '$0.10', // 0.10 USD (converted to USDC atomic units automatically)
+      price: '$0.10', // 0.10 USD business price (facilitator fee auto-calculated)
       network: Object.keys(appConfig.networks) as any, // Support all configured networks
-      facilitatorFee: '$0.01', // 0.01 USD facilitator fee (same format as price)
+      // facilitatorFee auto-calculated based on current gas prices
       // For referral, we need custom hook and hook data
       hook: (network: string) => {
         const networkConfig = appConfig.networks[network];
@@ -263,7 +265,7 @@ app.post('/api/referral-split/payment',
         return encodeRevenueSplitData(splits);
       },
       config: {
-        description: 'Referral Split: 70% merchant, 20% referrer, 10% platform',
+        description: 'Referral Split: 70% merchant, 20% referrer, 10% platform (+ dynamic facilitator fee)',
       },
     },
     facilitatorConfig
@@ -272,6 +274,7 @@ app.post('/api/referral-split/payment',
     const x402 = c.get('x402');
     console.log('[Referral Split] Payment completed successfully');
     console.log(`[Referral Split] Network: ${x402.network}`);
+    console.log(`[Referral Split] Facilitator fee: ${x402.settlement?.facilitatorFee}`);
     return c.json({
       message: 'Payment successful with referral split',
       scenario: 'referral-split',
@@ -281,6 +284,7 @@ app.post('/api/referral-split/payment',
         { party: 'Referrer', percentage: '20%' },
         { party: 'Platform', percentage: '10%' },
       ],
+      facilitatorFee: x402.settlement?.facilitatorFee,
     });
   }
 );
@@ -296,9 +300,9 @@ app.post('/api/nft-minting/payment',
   paymentMiddleware(
     appConfig.resourceServerAddress,
     {
-      price: '$1.00', // 1.00 USD (converted to USDC atomic units automatically)
+      price: '$1.00', // 1.00 USD business price (facilitator fee auto-calculated)
       network: Object.keys(appConfig.networks) as any, // Support all configured networks
-      facilitatorFee: '$0.01', // 0.01 USD facilitator fee (same format as price)
+      // facilitatorFee auto-calculated based on current gas prices
       hook: (network: string) => {
         const networkConfig = appConfig.networks[network];
         return networkConfig.nftMintHookAddress;
@@ -319,7 +323,7 @@ app.post('/api/nft-minting/payment',
         });
       },
       config: {
-        description: 'NFT Minting: Mint NFT to payer for $1 USDC',
+        description: 'NFT Minting: Mint NFT to payer for $1 USDC (+ dynamic facilitator fee)',
       },
     },
     facilitatorConfig
@@ -344,6 +348,7 @@ app.post('/api/nft-minting/payment',
     console.log('[NFT Minting] Payment completed successfully');
     console.log(`[NFT Minting] Network: ${network}`);
     console.log(`[NFT Minting] NFT #${tokenId} will be minted to payer: ${recipientAddress}`);
+    console.log(`[NFT Minting] Facilitator fee: ${x402.settlement?.facilitatorFee}`);
     
     return c.json({
       message: 'Payment successful, NFT minted to payer',
@@ -369,9 +374,9 @@ app.post('/api/reward-points/payment',
   paymentMiddleware(
     appConfig.resourceServerAddress,
     {
-      price: '$0.01', // 0.01 USD (converted to USDC atomic units automatically)
+      price: '$0.01', // 0.01 USD business price (facilitator fee auto-calculated)
       network: Object.keys(appConfig.networks) as any, // Support all configured networks
-      facilitatorFee: '$0.01', // 0.01 USD facilitator fee (same format as price)
+      // facilitatorFee auto-calculated based on current gas prices
       hook: (network: string) => {
         const networkConfig = appConfig.networks[network];
         return networkConfig.rewardHookAddress;
@@ -388,7 +393,7 @@ app.post('/api/reward-points/payment',
         });
       },
       config: {
-        description: 'Reward Points: Earn points for payment',
+        description: 'Reward Points: Earn points for payment (+ dynamic facilitator fee)',
       },
     },
     facilitatorConfig
@@ -409,6 +414,7 @@ app.post('/api/reward-points/payment',
     console.log('[Reward Points] Payment completed successfully');
     console.log(`[Reward Points] Network: ${network}`);
     console.log(`[Reward Points] ${points} points issued to ${userAddress}`);
+    console.log(`[Reward Points] Facilitator fee: ${x402.settlement?.facilitatorFee}`);
     
     return c.json({
       message: 'Payment successful, reward points issued',
@@ -419,6 +425,7 @@ app.post('/api/reward-points/payment',
         points,
         token: networkConfig.rewardHookAddress,
       },
+      facilitatorFee: x402.settlement?.facilitatorFee,
     });
   }
 );

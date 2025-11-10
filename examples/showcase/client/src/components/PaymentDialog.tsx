@@ -11,7 +11,7 @@ import { PaymentStatus } from './PaymentStatus';
 import { usePayment } from '../hooks/usePayment';
 import { useNetworkSwitch } from '../hooks/useNetworkSwitch';
 import { useNetworkBalances } from '../hooks/useNetworkBalances';
-import { Network, NETWORKS, getNetworkByChainId, getPreferredNetwork, setPreferredNetwork } from '../config';
+import { Network, NETWORKS, getNetworkByChainId, getPreferredNetwork, setPreferredNetwork, buildApiUrl } from '../config';
 
 type PaymentStep = 'select-network' | 'connect-wallet' | 'switch-network' | 'confirm-payment' | 'processing';
 
@@ -41,16 +41,18 @@ export function PaymentDialog({
   const [step, setStep] = useState<PaymentStep>('select-network');
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
+  const [paymentRequirements, setPaymentRequirements] = useState<any>(null);
   
   const { address, isConnected, chain } = useAccount();
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
-  const { status, error, result, pay, reset } = usePayment();
+  const { status, error, result, pay, reset, debugInfo } = usePayment();
   const balances = useNetworkBalances(address);
 
   // Reset state when dialog opens/closes and auto-select preferred network
   useEffect(() => {
     if (isOpen) {
       setShowWalletSelector(false);
+      setPaymentRequirements(null);
       reset();
       
       // Try to auto-select preferred network
@@ -105,6 +107,13 @@ export function PaymentDialog({
     }
   }, [step, selectedNetwork, isConnected, switchToNetwork]);
 
+  // Track payment requirements from debugInfo
+  useEffect(() => {
+    if (debugInfo?.paymentRequirements) {
+      setPaymentRequirements(debugInfo.paymentRequirements);
+    }
+  }, [debugInfo]);
+
   // Handle payment status changes
   useEffect(() => {
     if (status === 'success' && result && onSuccess) {
@@ -145,6 +154,39 @@ export function PaymentDialog({
     setShowWalletSelector(false);
     // The useEffect will handle advancing to the next step
   };
+
+  // Pre-fetch payment requirements when entering confirm-payment step
+  useEffect(() => {
+    const fetchPaymentRequirements = async () => {
+      if (step === 'confirm-payment' && selectedNetwork && address && !paymentRequirements) {
+        try {
+          const finalRequestBody = getRequestBody ? getRequestBody(address) : requestBody;
+          const requestBodyWithNetwork = { ...finalRequestBody, network: selectedNetwork };
+          
+          const fullUrl = buildApiUrl(endpoint);
+          const response = await fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBodyWithNetwork),
+          });
+
+          if (response.status === 402) {
+            const paymentResponse = await response.json();
+            const paymentReq = paymentResponse.accepts?.find((req: any) => req.network === selectedNetwork);
+            if (paymentReq) {
+              setPaymentRequirements(paymentReq);
+            }
+          }
+        } catch (err) {
+          console.error('[PaymentDialog] Failed to pre-fetch payment requirements:', err);
+        }
+      }
+    };
+
+    fetchPaymentRequirements();
+  }, [step, selectedNetwork, address, endpoint, requestBody, getRequestBody, paymentRequirements]);
 
   const handleConfirmPayment = async () => {
     if (!selectedNetwork || !address) return;
@@ -364,10 +406,30 @@ export function PaymentDialog({
                 borderRadius: '8px',
                 marginBottom: '16px'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Amount:</span>
-                  <strong>{amount} {currency}</strong>
-                </div>
+                {paymentRequirements?.extra?.businessAmount ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span>Business Amount:</span>
+                      <strong>{(parseFloat(paymentRequirements.extra.businessAmount) / 1000000).toFixed(6)} {currency}</strong>
+                    </div>
+                    {paymentRequirements?.extra?.facilitatorFee && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span>Facilitator Fee:</span>
+                        <strong>{(parseFloat(paymentRequirements.extra.facilitatorFee) / 1000000).toFixed(6)} {currency}</strong>
+                      </div>
+                    )}
+                    <div style={{ borderTop: '1px solid #dee2e6', margin: '8px 0' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span><strong>Total Amount:</strong></span>
+                      <strong>{(parseFloat(paymentRequirements.maxAmountRequired) / 1000000).toFixed(6)} {currency}</strong>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Amount:</span>
+                    <strong>{amount} {currency}</strong>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span>Network:</span>
                   <strong>{NETWORKS[selectedNetwork].displayName}</strong>
