@@ -254,21 +254,18 @@ contract StressTests is Test {
             
             // Accumulate fees in this token
             bytes32 salt = bytes32(i + 300);
-            bytes32 nonce = keccak256(abi.encodePacked(
-                "X402/settle/v1",
-                block.chainid,
-                address(router),
+            bytes32 nonce = router.calculateCommitment(
                 address(newToken),
                 payer,
-                uint256(10_000),
-                uint256(0),
+                10_000,
+                0,
                 type(uint256).max,
                 salt,
                 merchant,
-                uint256(100),
+                100,
                 address(hook),
-                keccak256("")
-            ));
+                ""
+            );
             
             vm.prank(facilitator);
             router.settleAndExecute(
@@ -312,21 +309,18 @@ contract StressTests is Test {
         
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(400));
-        bytes32 nonce = keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
-            uint256(1_000_000),
-            uint256(0),
+            1_000_000,
+            0,
             type(uint256).max,
             salt,
             merchant,
-            uint256(0),
+            0,
             address(hook),
-            keccak256(hookData)
-        ));
+            hookData
+        );
         
         uint256 gasBefore = gasleft();
         vm.prank(facilitator);
@@ -371,21 +365,18 @@ contract StressTests is Test {
         
         bytes memory hookData = abi.encode(splits);
         bytes32 salt = bytes32(uint256(500));
-        bytes32 nonce = keccak256(abi.encodePacked(
-            "X402/settle/v1",
-            block.chainid,
-            address(router),
+        bytes32 nonce = router.calculateCommitment(
             address(token),
             payer,
-            uint256(10_000_000),
-            uint256(0),
+            10_000_000,
+            0,
             type(uint256).max,
             salt,
             merchant,
-            uint256(0),
+            0,
             address(hook),
-            keccak256(hookData)
-        ));
+            hookData
+        );
         
         vm.prank(facilitator);
         router.settleAndExecute(

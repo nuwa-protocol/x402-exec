@@ -50,7 +50,7 @@ contract MockUSDCWithSignatureValidation is ERC20, EIP712, IERC3009 {
         bytes32 nonce,
         bytes calldata signature
     ) external {
-        require(block.timestamp > validAfter, "Authorization not yet valid");
+        require(block.timestamp >= validAfter, "Authorization not yet valid");
         require(block.timestamp < validBefore, "Authorization expired");
         require(!_authorizationStates[from][nonce], "Authorization already used");
         
@@ -91,14 +91,10 @@ contract MockUSDCWithSignatureValidation is ERC20, EIP712, IERC3009 {
     ) external {
         require(!_authorizationStates[from][nonce], "Authorization already used");
         
-        // Verify this is an authorization for from
+        // Verify cancellation signature (only authorizer and nonce)
         bytes32 structHash = keccak256(abi.encode(
-            TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
+            CANCEL_AUTHORIZATION_TYPEHASH,
             from,
-            to,
-            value,
-            validAfter,
-            validBefore,
             nonce
         ));
         
