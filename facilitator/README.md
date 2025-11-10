@@ -112,6 +112,7 @@ The facilitator automatically detects the settlement mode based on the presence 
 - **Solana**: Devnet support (standard mode only)
 
 **Mainnet Note**: Mainnet networks are automatically supported through the SDK configuration. The facilitator will:
+
 - Auto-load SettlementRouter addresses from `@x402x/core`
 - Auto-load RPC URLs from viem chain definitions (or use environment variables if provided)
 - Apply mainnet security policies (only SettlementRouter mode allowed)
@@ -170,6 +171,11 @@ RATE_LIMIT_VERIFY_MAX=100  # verify 端点每分钟最大请求数
 RATE_LIMIT_SETTLE_MAX=20   # settle 端点每分钟最大请求数
 RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
 
+# CORS Configuration (for client-side SDK support)
+# CORS_ORIGIN=*                    # Allow all origins (default, for testing)
+# CORS_ORIGIN=https://yourdomain.com  # Single origin
+# CORS_ORIGIN=https://app1.com,https://app2.com  # Multiple origins (comma-separated)
+
 # Input Validation
 REQUEST_BODY_LIMIT=1mb     # 请求体大小限制
 
@@ -203,6 +209,44 @@ pnpm start
 The server will start on http://localhost:3000 (or the port specified in your `.env` file)
 
 ## Security Configuration
+
+### CORS Configuration 🆕
+
+**For Serverless Mode (Client-Side SDK)**
+
+The facilitator now supports direct client-side access through the `@x402x/client` SDK. CORS (Cross-Origin Resource Sharing) must be properly configured:
+
+#### Development
+
+```env
+# Allow all origins (for testing only)
+CORS_ORIGIN=*
+```
+
+#### Production
+
+For production, specify exact allowed origins:
+
+```env
+# Single origin
+CORS_ORIGIN=https://yourdomain.com
+
+# Multiple origins (comma-separated)
+CORS_ORIGIN=https://app1.com,https://app2.com,https://app3.com
+```
+
+#### Security Best Practices
+
+1. **Never use `*` in production** - Always specify exact origins
+2. **Use HTTPS** - Only allow secure origins in production
+3. **Whitelist specific domains** - Only domains you own or trust
+4. **Consider subdomains** - Explicitly list all subdomains if needed
+
+#### Default Configuration
+
+If `CORS_ORIGIN` is not set, defaults to `*` (allow all origins) for backward compatibility.
+
+**Note**: When using the client SDK from a browser, the facilitator URL must have proper CORS configuration, otherwise browser will block the requests.
 
 ### Hook Whitelist & Gas Attack Protection 🆕
 

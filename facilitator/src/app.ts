@@ -5,6 +5,7 @@
  */
 
 import express, { Express } from "express";
+import cors from "cors";
 import { registerRoutes, RoutesDependencies } from "./routes/index.js";
 import { shutdownMiddleware, GracefulShutdown } from "./shutdown.js";
 import type { RateLimitConfig } from "./config.js";
@@ -28,6 +29,17 @@ export interface AppDependencies {
  */
 export function createApp(deps: AppDependencies): Express {
   const app = express();
+
+  // Enable CORS for client-side SDK support (Serverless Mode)
+  app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN || "*",
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+      maxAge: 86400, // 24 hours
+    }),
+  );
 
   // Configure express to parse JSON bodies with size limit
   app.use(express.json({ limit: deps.requestBodyLimit }));
