@@ -173,7 +173,7 @@ git commit -m "chore: update x402 to feature/your-feature"
 
 4. **Build Verification**
    ```bash
-   ./scripts/deploy-showcase.sh --all
+   pnpm run build  # Build all packages
    ```
 
 5. **Commit Code**
@@ -212,41 +212,33 @@ pnpm update <package-name> --latest
 
 ## Build and Deployment
 
-### Using Build Scripts
-
-We provide unified build scripts:
+### Build TypeScript Packages
 
 ```bash
-# Build everything (x402 + server + client)
-./scripts/deploy-showcase.sh --all
+# Build everything from root
+pnpm run build
 
-# Build only x402 dependency
-./scripts/deploy-showcase.sh --x402
-
-# Build server (includes x402)
-./scripts/deploy-showcase.sh --server
-
-# Build client (includes x402)
-./scripts/deploy-showcase.sh --client
-
-# Clean build artifacts
-./scripts/deploy-showcase.sh --clean
-```
-
-### Manual Build
-
-```bash
-# Build x402
+# Or build individually
 cd deps/x402/typescript
 pnpm run build
 
-# Build server
 cd examples/showcase/server
 pnpm run build
 
-# Build client
 cd examples/showcase/client
 pnpm run build
+```
+
+### Deploy Contracts
+
+```bash
+cd contracts
+./deploy-network.sh [NETWORK] [OPTIONS]
+
+# Examples:
+./deploy-network.sh xlayer-testnet --all         # Deploy everything
+./deploy-network.sh base-sepolia --settlement    # Deploy SettlementRouter only
+./deploy-network.sh xlayer --hooks --verify      # Deploy hooks with verification
 ```
 
 ### Cloud Deployment
@@ -328,8 +320,8 @@ pnpm run dev
 ### Q6: How to Debug Build Issues
 
 ```bash
-# Use build script with detailed output
-./scripts/deploy-showcase.sh --all
+# Use pnpm to build from root
+pnpm run build
 
 # Or manually build step by step
 git submodule update --init --recursive

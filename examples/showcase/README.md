@@ -92,8 +92,12 @@ cp .env.example .env
 ### 3. Deploy Showcase Contracts
 
 ```bash
-cd contracts
-./deploy.sh
+cd ../../contracts
+./deploy-network.sh xlayer-testnet --all
+
+# Or deploy to other networks:
+# ./deploy-network.sh base-sepolia --all --verify
+# ./deploy-network.sh xlayer --settlement
 ```
 
 After deployment, copy the output contract addresses and update `server/.env`:
@@ -270,7 +274,7 @@ showcase/
 │   │   ├── RewardToken.sol
 │   │   └── RewardHook.sol
 │   ├── script/Deploy.s.sol
-│   └── deploy.sh
+│   └── deploy-network.sh      # Unified deployment script
 │
 ├── server/                 # Hono backend service
 │   ├── src/
