@@ -12,7 +12,7 @@
  * const client = new X402Client({
  *   wallet: walletClient,
  *   network: 'base-sepolia',
- *   facilitatorUrl: 'https://facilitator.x402.io'
+ *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  *
  * const result = await client.execute({
@@ -41,7 +41,7 @@
  * import { useX402Client, useExecute } from '@x402x/client';
  *
  * const client = useX402Client({
- *   facilitatorUrl: 'https://facilitator.x402.io'
+ *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  *
  * const { execute, status, error } = useExecute();

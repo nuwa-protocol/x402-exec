@@ -32,7 +32,7 @@ import {
  * @example
  * ```typescript
  * const fee = await queryFacilitatorFee(
- *   'https://facilitator.x402.io',
+ *   'https://facilitator.x402x.dev',
  *   'base-sepolia',
  *   '0x...'
  * );
@@ -99,7 +99,7 @@ export async function queryFacilitatorFee(
  *   hookData: TransferHook.encode(),
  *   amount: '1000000',
  *   recipient: '0x...',
- *   facilitatorUrl: 'https://facilitator.x402.io'
+ *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  * ```
  */

@@ -36,7 +36,7 @@ import { formatFacilitatorUrl } from "./utils.js";
  * import { submitToFacilitator } from '@x402x/client';
  *
  * const result = await submitToFacilitator(
- *   'https://facilitator.x402.io',
+ *   'https://facilitator.x402x.dev',
  *   signed
  * );
  * console.log('TX Hash:', result.transaction);

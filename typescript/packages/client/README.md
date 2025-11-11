@@ -230,7 +230,7 @@ const settlement = await prepareSettlement({
   hookData: "0x...",
   amount: "1000000",
   recipient: "0x...",
-  facilitatorUrl: "https://facilitator.x402.io", // for fee query
+  facilitatorUrl: "https://facilitator.x402x.dev", // Optional: uses default if not provided
 });
 ```
 
@@ -251,7 +251,7 @@ Submits signed authorization to facilitator.
 ```typescript
 import { submitToFacilitator } from "@x402x/client";
 
-const result = await submitToFacilitator("https://facilitator.x402.io", signed);
+const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
 ```
 
 #### queryFacilitatorFee
@@ -261,7 +261,7 @@ Queries minimum facilitator fee for a hook.
 ```typescript
 import { queryFacilitatorFee } from "@x402x/client";
 
-const fee = await queryFacilitatorFee("https://facilitator.x402.io", "base-sepolia", "0x...");
+const fee = await queryFacilitatorFee("https://facilitator.x402x.dev", "base-sepolia", "0x...");
 ```
 
 ---
@@ -335,7 +335,7 @@ import { RevenueSplitHook } from "@x402x/core";
 
 // 1. Query minimum fee
 const feeEstimate = await queryFacilitatorFee(
-  "https://facilitator.x402.io",
+  "https://facilitator.x402x.dev",
   "base-sepolia",
   RevenueSplitHook.getAddress("base-sepolia"),
 );
@@ -358,7 +358,7 @@ const settlement = await prepareSettlement({
 const signed = await signAuthorization(walletClient, settlement);
 
 // 4. Submit to facilitator
-const result = await submitToFacilitator("https://facilitator.x402.io", signed);
+const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
 
 console.log("Transaction:", result.transaction);
 ```
@@ -538,7 +538,7 @@ Apache-2.0 - see [LICENSE](../../LICENSE) for details.
 
 ## Support
 
-- [Documentation](https://docs.x402.io)
+- [Documentation](https://x402x.dev/)
 - [GitHub Issues](https://github.com/nuwa-protocol/x402-exec/issues)
 - [Discord Community](https://discord.gg/nuwa-protocol)
 

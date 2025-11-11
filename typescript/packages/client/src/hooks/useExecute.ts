@@ -47,7 +47,7 @@ export interface UseExecuteReturn {
  *
  * function PayButton() {
  *   const { execute, status, error, result } = useExecute({
- *     facilitatorUrl: 'https://facilitator.x402.io'
+ *     facilitatorUrl: 'https://facilitator.x402x.dev'
  *   });
  *
  *   const handlePay = async () => {
@@ -77,7 +77,7 @@ export interface UseExecuteReturn {
  * ```
  */
 export function useExecute(config?: UseX402ClientConfig): UseExecuteReturn {
-  const client = config ? useX402Client(config) : null;
+  const client = useX402Client(config);
   const [status, setStatus] = useState<ExecuteStatus>("idle");
   const [error, setError] = useState<Error | null>(null);
   const [result, setResult] = useState<ExecuteResult | null>(null);
