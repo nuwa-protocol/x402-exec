@@ -9,6 +9,7 @@ import { TransferHook } from '@x402x/core';
 import { useX402Client } from '@x402x/client';
 import type { FeeCalculationResult } from '@x402x/client';
 import { useNetworkSwitch } from '../hooks/useNetworkSwitch';
+import { WalletSelector } from './WalletSelector';
 import { type Network, NETWORKS, getPreferredNetwork, setPreferredNetwork, getFacilitatorUrl } from '../config';
 
 type PaymentStep = 'select-network' | 'switch-network' | 'loading-fee' | 'confirm-payment';
@@ -20,6 +21,7 @@ interface ServerlessPaymentDialogProps {
   recipient: string; // Recipient address
   hook?: `0x${string}`; // Optional: custom hook address (defaults to TransferHook)
   hookData?: `0x${string}`; // Optional: custom hook data (defaults to empty TransferHook)
+  prepareHookData?: (network: Network) => { hook: `0x${string}`; hookData: `0x${string}` }; // Optional: function to prepare hook/hookData per network
   onSuccess?: (result: { txHash: string; network: Network; facilitatorFee?: string }) => void;
   onError?: (error: string) => void;
 }
@@ -31,6 +33,7 @@ export function ServerlessPaymentDialog({
   recipient,
   hook: customHook,
   hookData: customHookData,
+  prepareHookData,
   onSuccess,
   onError,
 }: ServerlessPaymentDialogProps) {
@@ -39,11 +42,20 @@ export function ServerlessPaymentDialog({
   const [feeInfo, setFeeInfo] = useState<FeeCalculationResult | null>(null);
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWalletSelector, setShowWalletSelector] = useState(false);
 
   const { address, isConnected, chain } = useAccount();
   const facilitatorUrl = getFacilitatorUrl(); // Get facilitator URL from config
   const client = useX402Client({ facilitatorUrl }); // Pass to client
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
+
+  const handleResetNetworkSelection = () => {
+    setSelectedNetwork(null);
+    setFeeInfo(null);
+    setError(null);
+    setShowWalletSelector(false);
+    setStep('select-network');
+  };
 
   // Load preferred network on open
   useEffect(() => {
@@ -67,6 +79,12 @@ export function ServerlessPaymentDialog({
     setSelectedNetwork(network);
     setPreferredNetwork(network); // Remember user's choice
     setError(null);
+    
+    // If wallet not connected, trigger wallet selector
+    if (!isConnected) {
+      setShowWalletSelector(true);
+      return;
+    }
     
     // Check if we need to switch network
     const targetChainId = NETWORKS[network].chainId;
@@ -98,25 +116,61 @@ export function ServerlessPaymentDialog({
     }
   }, [step, selectedNetwork, isConnected, switchToNetwork]);
 
+  // Auto-continue flow after wallet connection
+  useEffect(() => {
+    if (isConnected && selectedNetwork && step === 'select-network' && !showWalletSelector && client) {
+      // Wallet just connected and client is ready, continue with the selected network
+      const targetChainId = NETWORKS[selectedNetwork].chainId;
+      if (chain?.id !== targetChainId) {
+        setStep('switch-network');
+      } else {
+        // Already on correct network, load fee directly
+        setStep('loading-fee');
+        loadFee(selectedNetwork);
+      }
+    }
+  }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client]);
+
   // Helper function to load fee
   const loadFee = async (network: Network) => {
     try {
-      if (!client) {
-        throw new Error('Please connect your wallet first');
+      if (!client || !address) {
+        console.log('[ServerlessPaymentDialog] Client or address not ready, waiting...');
+        return; // Don't throw error, just wait for client to be ready
       }
 
-      // Use custom hook if provided, otherwise default to TransferHook
-      const hook = customHook || TransferHook.getAddress(network);
+      console.log('[ServerlessPaymentDialog] Loading fee for network:', network);
       
-      // Use custom hookData if provided, otherwise use empty TransferHook encoding
-      const hookData = customHookData || TransferHook.encode();
+      // Determine hook and hookData based on priority:
+      // 1. Use prepareHookData function if provided (network-specific)
+      // 2. Use custom hook/hookData if provided (static)
+      // 3. Default to TransferHook
+      let hook: `0x${string}`;
+      let hookData: `0x${string}`;
       
-      const fee = await client.calculateFee(hook as `0x${string}`, hookData as `0x${string}`);
+      if (prepareHookData) {
+        // Use dynamic preparation function
+        const prepared = prepareHookData(network);
+        hook = prepared.hook;
+        hookData = prepared.hookData;
+        console.log('[ServerlessPaymentDialog] Using prepareHookData for network:', network, 'hook:', hook);
+      } else if (customHook) {
+        // Use static custom hook
+        hook = customHook;
+        hookData = (customHookData || TransferHook.encode()) as `0x${string}`;
+      } else {
+        // Default to TransferHook
+        hook = TransferHook.getAddress(network) as `0x${string}`;
+        hookData = TransferHook.encode() as `0x${string}`;
+      }
       
+      const fee = await client.calculateFee(hook, hookData);
+      
+      console.log('[ServerlessPaymentDialog] Fee loaded:', fee);
       setFeeInfo(fee);
       setStep('confirm-payment');
     } catch (err: any) {
-      console.error('Failed to load fee:', err);
+      console.error('[ServerlessPaymentDialog] Failed to load fee:', err);
       setError(err.message || 'Failed to load facilitator fee');
       setStep('select-network');
     }
@@ -132,15 +186,25 @@ export function ServerlessPaymentDialog({
     setError(null);
 
     try {
-      // Use custom hook if provided, otherwise default to TransferHook
-      const hook = customHook || TransferHook.getAddress(selectedNetwork);
+      // Determine hook and hookData using same logic as loadFee
+      let hook: `0x${string}`;
+      let hookData: `0x${string}`;
       
-      // Use custom hookData if provided, otherwise use empty TransferHook encoding
-      const hookData = customHookData || TransferHook.encode();
+      if (prepareHookData) {
+        const prepared = prepareHookData(selectedNetwork);
+        hook = prepared.hook;
+        hookData = prepared.hookData;
+      } else if (customHook) {
+        hook = customHook;
+        hookData = (customHookData || TransferHook.encode()) as `0x${string}`;
+      } else {
+        hook = TransferHook.getAddress(selectedNetwork) as `0x${string}`;
+        hookData = TransferHook.encode() as `0x${string}`;
+      }
 
       const result = await client.execute({
-        hook: hook as `0x${string}`,
-        hookData: hookData as `0x${string}`,
+        hook,
+        hookData,
         amount,
         recipient: recipient as `0x${string}`,
         facilitatorFee: feeInfo.facilitatorFee,
@@ -234,22 +298,11 @@ export function ServerlessPaymentDialog({
                 🌐 Select Payment Network
               </h2>
               <p style={{ marginBottom: '25px', color: '#666', fontSize: '14px' }}>
-                Choose the blockchain network for your ${amountInUsdc} USDC payment
+                {isConnected 
+                  ? `Choose the blockchain network for your $${amountInUsdc} USDC payment`
+                  : `Choose a network to get started (wallet connection will be requested next)`
+                }
               </p>
-
-              {!isConnected && (
-                <div style={{ 
-                  marginBottom: '20px', 
-                  padding: '15px', 
-                  backgroundColor: '#fff3cd', 
-                  borderRadius: '8px',
-                  border: '1px solid #ffeaa7'
-                }}>
-                  <div style={{ fontSize: '14px', color: '#856404' }}>
-                    ⚠️ Please connect your wallet first using the button in the header
-                  </div>
-                </div>
-              )}
 
               {error && (
                 <div style={{ 
@@ -270,7 +323,6 @@ export function ServerlessPaymentDialog({
                   <button
                     key={key}
                     onClick={() => handleNetworkSelect(key as Network)}
-                    disabled={!isConnected}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -279,28 +331,25 @@ export function ServerlessPaymentDialog({
                       border: selectedNetwork === key ? '2px solid #3b82f6' : '2px solid #e5e7eb',
                       borderRadius: '10px',
                       backgroundColor: selectedNetwork === key ? '#f0f9ff' : 'white',
-                      cursor: isConnected ? 'pointer' : 'not-allowed',
-                      opacity: isConnected ? 1 : 0.5,
+                      cursor: 'pointer',
                       transition: 'all 0.2s',
                       textAlign: 'left',
                       fontSize: '16px',
                       fontWeight: '500',
                     }}
                     onMouseEnter={(e) => {
-                      if (isConnected) {
-                        e.currentTarget.style.borderColor = '#3b82f6';
-                        e.currentTarget.style.backgroundColor = '#f0f9ff';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
-                      }
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.backgroundColor = '#f0f9ff';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
                     }}
                     onMouseLeave={(e) => {
-                      if (isConnected && selectedNetwork !== key) {
+                      if (selectedNetwork !== key) {
                         e.currentTarget.style.borderColor = '#e5e7eb';
                         e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
                       }
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
                     <span style={{ fontSize: '32px' }}>{networkConfig.icon}</span>
@@ -400,8 +449,8 @@ export function ServerlessPaymentDialog({
                       {NETWORKS[selectedNetwork].name}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setStep('select-network')}
+          <button
+            onClick={handleResetNetworkSelection}
                     disabled={isPaying}
                     style={{
                       marginLeft: 'auto',
@@ -533,6 +582,12 @@ export function ServerlessPaymentDialog({
           `}</style>
         </div>
       </div>
+
+      {/* Wallet Selector Modal */}
+      <WalletSelector 
+        isOpen={showWalletSelector} 
+        onClose={() => setShowWalletSelector(false)} 
+      />
     </>
   );
 }

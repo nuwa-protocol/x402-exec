@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
-import { encodeAbiParameters, type Address } from 'viem';
+import type { Address } from 'viem';
 import { ServerlessPaymentDialog } from '../components/ServerlessPaymentDialog';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
@@ -31,40 +31,30 @@ export function ServerlessRandomNFT() {
   // Read NFT data from all networks
   const allNetworksData = useAllNetworksNFTData();
 
-  // Prepare hook and hookData for NFT minting
-  const prepareNFTMint = () => {
+  // NFT mint preparation function that takes network as parameter
+  // This will be called by ServerlessPaymentDialog with the selected network
+  const prepareNFTMintForNetwork = (network: Network) => {
     if (!connectedAddress) {
-      return { hook: undefined, hookData: undefined };
+      throw new Error('Wallet not connected. Please connect your wallet first.');
     }
 
-    // Get NFT mint hook address (network-agnostic, will be resolved per network)
-    const hook = NFTMintHook.getAddress('base-sepolia'); // Will be dynamically selected in dialog
+    // Get NFT mint hook address for the selected network
+    // This will throw an error if not configured, which is intentional
+    const hook = NFTMintHook.getAddress(network);
     
-    // Get NFT contract address from environment
-    const nftAddresses = {
-      'base-sepolia': import.meta.env.VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
-      'x-layer-testnet': import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
-    };
-    const nftContract = nftAddresses['base-sepolia']; // Will be dynamically selected
+    // Get NFT contract address for the selected network
+    // This will throw an error if not configured, which is intentional
+    const nftContract = NFTMintHook.getNFTContractAddress(network);
     
-    // Encode hookData: (nftContract, tokenId=0 for random, merchant=payer to return funds)
-    const hookData = encodeAbiParameters(
-      [
-        { name: 'nftContract', type: 'address' },
-        { name: 'tokenId', type: 'uint256' },
-        { name: 'merchant', type: 'address' }
-      ],
-      [
-        nftContract as Address,
-        0n, // 0 for random NFT selection
-        connectedAddress as Address // merchant = payer (funds return to user)
-      ]
-    );
+    // Encode hookData using NFTMintHook.encode() for correct tuple format
+    const hookData = NFTMintHook.encode({
+      nftContract,
+      tokenId: 0n, // 0 for random NFT selection
+      merchant: connectedAddress as Address // merchant = payer (funds return to user)
+    });
 
-    return { hook: hook as `0x${string}`, hookData: hookData as `0x${string}` };
+    return { hook, hookData };
   };
-
-  const { hook, hookData } = prepareNFTMint();
 
   return (
     <ScenarioCard
@@ -216,14 +206,13 @@ export function ServerlessRandomNFT() {
         </>
       }
     >
-      {/* Payment Dialog - use NFT mint hook */}
+      {/* Payment Dialog - use NFT mint hook with dynamic network selection */}
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
         recipient={connectedAddress || '0x0000000000000000000000000000000000000000'}
-        hook={hook}
-        hookData={hookData}
+        prepareHookData={prepareNFTMintForNetwork}
         onSuccess={handleSuccess}
         onError={handleError}
       />

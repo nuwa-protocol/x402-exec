@@ -21,11 +21,11 @@ describe("RewardHook", () => {
       );
     });
 
-    it("should throw error for xlayer-testnet when not configured", () => {
-      expect(() => RewardHook.getAddress("xlayer-testnet")).toThrow(
-        'RewardHook address not configured for network "xlayer-testnet"'
+    it("should throw error for x-layer-testnet when not configured", () => {
+      expect(() => RewardHook.getAddress("x-layer-testnet")).toThrow(
+        'RewardHook address not configured for network "x-layer-testnet"'
       );
-      expect(() => RewardHook.getAddress("xlayer-testnet")).toThrow(
+      expect(() => RewardHook.getAddress("x-layer-testnet")).toThrow(
         "Please set VITE_X_LAYER_TESTNET_REWARD_HOOK_ADDRESS in .env file"
       );
     });

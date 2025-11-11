@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
 import { getServerUrl } from '../config';
 import { PaymentDialog } from '../components/PaymentDialog';
 import { CodeBlock } from '../components/CodeBlock';
@@ -15,22 +14,16 @@ interface DownloadResult {
 }
 
 export function PremiumDownload() {
-  const { address, isConnected } = useAccount();
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = () => {
-    if (!isConnected || !address) {
-      alert('Please connect your wallet first');
-      return;
-    }
-
     // Clear previous results
     setDownloadResult(null);
     setError(null);
 
-    // Show payment dialog
+    // Show payment dialog (wallet connection will be handled inside PaymentDialog)
     setShowPaymentDialog(true);
   };
 

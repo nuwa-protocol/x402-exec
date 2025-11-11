@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
-import { encodeAbiParameters, type Address } from 'viem';
+import type { Address } from 'viem';
 import { ServerlessPaymentDialog } from '../components/ServerlessPaymentDialog';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
@@ -18,7 +18,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { usePaymentFlow } from '../hooks/usePaymentFlow';
 import { useAllNetworksRewardTokenData } from '../hooks/useRewardTokenData';
 import { RewardHook } from '../hooks/RewardHook';
-import { NETWORK_UI_CONFIG } from '../config';
+import { type Network, NETWORK_UI_CONFIG } from '../config';
 import pointsRewardCode from '../code-examples/points-reward.ts?raw';
 
 const AMOUNT = '100000'; // 0.1 USDC (6 decimals)
@@ -31,34 +31,29 @@ export function ServerlessPointsReward() {
   // Read reward token data from all networks
   const allNetworksData = useAllNetworksRewardTokenData(connectedAddress);
 
-  // Prepare hook and hookData for reward distribution
-  const prepareRewardHook = () => {
+  // Reward preparation function that takes network as parameter
+  // This will be called by ServerlessPaymentDialog with the selected network
+  const prepareRewardForNetwork = (network: Network) => {
     if (!connectedAddress) {
-      return { hook: undefined, hookData: undefined };
+      throw new Error('Wallet not connected. Please connect your wallet first.');
     }
 
-    // Get reward hook address (network-agnostic, will be resolved per network)
-    const hook = RewardHook.getAddress('base-sepolia'); // Will be dynamically selected in dialog
+    // Get reward hook address for the selected network
+    // This will throw an error if not configured, which is intentional
+    const hook = RewardHook.getAddress(network);
     
-    // Get reward token address from RewardHook
-    const rewardToken = RewardHook.getTokenAddress('base-sepolia'); // Will be dynamically selected
+    // Get reward token address for the selected network
+    // This will throw an error if not configured, which is intentional
+    const rewardToken = RewardHook.getTokenAddress(network);
     
-    // Encode hookData: (rewardToken, merchant=payer to return funds)
-    const hookData = encodeAbiParameters(
-      [
-        { name: 'rewardToken', type: 'address' },
-        { name: 'merchant', type: 'address' }
-      ],
-      [
-        rewardToken as Address,
-        connectedAddress as Address // merchant = payer (funds return to user)
-      ]
-    );
+    // Encode hookData using RewardHook.encode() for correct format
+    const hookData = RewardHook.encode({
+      rewardToken,
+      merchant: connectedAddress as Address // merchant = payer (funds return to user)
+    });
 
-    return { hook: hook as `0x${string}`, hookData: hookData as `0x${string}` };
+    return { hook, hookData };
   };
-
-  const { hook, hookData } = prepareRewardHook();
 
   return (
     <ScenarioCard
@@ -210,14 +205,13 @@ export function ServerlessPointsReward() {
         </>
       }
     >
-      {/* Payment Dialog - use reward hook */}
+      {/* Payment Dialog - use reward hook with dynamic network selection */}
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
         recipient={connectedAddress || '0x0000000000000000000000000000000000000000'}
-        hook={hook}
-        hookData={hookData}
+        prepareHookData={prepareRewardForNetwork}
         onSuccess={handleSuccess}
         onError={handleError}
       />

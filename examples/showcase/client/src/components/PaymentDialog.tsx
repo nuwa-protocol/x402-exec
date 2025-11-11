@@ -11,9 +11,9 @@ import { PaymentStatus } from './PaymentStatus';
 import { usePayment } from '../hooks/usePayment';
 import { useNetworkSwitch } from '../hooks/useNetworkSwitch';
 import { useNetworkBalances } from '../hooks/useNetworkBalances';
-import { Network, NETWORKS, getNetworkByChainId, getPreferredNetwork, setPreferredNetwork, buildApiUrl } from '../config';
+import { Network, NETWORKS, getNetworkByChainId, setPreferredNetwork, buildApiUrl } from '../config';
 
-type PaymentStep = 'select-network' | 'connect-wallet' | 'switch-network' | 'confirm-payment' | 'processing';
+type PaymentStep = 'select-network' | 'switch-network' | 'confirm-payment' | 'processing';
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -42,49 +42,33 @@ export function PaymentDialog({
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [paymentRequirements, setPaymentRequirements] = useState<any>(null);
+  const [allowAutoSelectPreferred, setAllowAutoSelectPreferred] = useState(true);
   
   const { address, isConnected, chain } = useAccount();
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
   const { status, error, result, pay, reset, debugInfo } = usePayment();
   const balances = useNetworkBalances(address);
 
-  // Reset state when dialog opens/closes and auto-select preferred network
+  // Reset state when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
       setShowWalletSelector(false);
       setPaymentRequirements(null);
+      setAllowAutoSelectPreferred(true);
       reset();
-      
-      // Try to auto-select preferred network
-      const preferredNetwork = getPreferredNetwork();
-      if (preferredNetwork) {
-        setSelectedNetwork(preferredNetwork);
-        // Skip network selection step if we have a preferred network
-        if (!isConnected) {
-          setStep('connect-wallet');
-        } else {
-          // Check if on correct network
-          const currentNetwork = chain ? getNetworkByChainId(chain.id) : null;
-          if (currentNetwork !== preferredNetwork) {
-            setStep('switch-network');
-          } else {
-            setStep('confirm-payment');
-          }
-        }
-      } else {
-        // No preferred network, show selection
-        setSelectedNetwork(null);
-        setStep('select-network');
-      }
+
+      // Reset to network selection (PaymentMethodSelector may auto-select preferred network)
+      setSelectedNetwork(null);
+      setStep('select-network');
     }
-  }, [isOpen, isConnected, chain]); // Add isConnected and chain to dependencies
+  }, [isOpen]);
 
   // Handle wallet connection changes
   useEffect(() => {
     if (!isOpen || !selectedNetwork) return;
     
-    // If we're waiting for wallet connection and wallet gets connected
-    if (step === 'connect-wallet' && isConnected) {
+    // If we're at network selection and wallet just connected, automatically continue
+    if (step === 'select-network' && isConnected && !showWalletSelector) {
       const currentNetwork = chain ? getNetworkByChainId(chain.id) : null;
       if (currentNetwork !== selectedNetwork) {
         setStep('switch-network');
@@ -92,7 +76,8 @@ export function PaymentDialog({
         setStep('confirm-payment');
       }
     }
-  }, [isConnected, chain, selectedNetwork, step, isOpen]);
+    
+  }, [isConnected, chain, selectedNetwork, step, isOpen, showWalletSelector]);
 
   // Handle network switching
   useEffect(() => {
@@ -124,30 +109,41 @@ export function PaymentDialog({
   }, [status, result, error, onSuccess, onError]);
 
   const handleNetworkSelect = (network: Network) => {
+    if (allowAutoSelectPreferred) {
+      // Ignore the initial auto-selection triggered by the selector,
+      // only highlight the preferred network without advancing the flow.
+      setAllowAutoSelectPreferred(false);
+      setSelectedNetwork(network);
+      setPreferredNetwork(network);
+      return;
+    }
+
+    setAllowAutoSelectPreferred(false);
     setSelectedNetwork(network);
     // Save user's preference
     setPreferredNetwork(network);
     
-    // Immediately check wallet connection and advance to next step
+    // If wallet not connected, open wallet selector
     if (!isConnected) {
-      setStep('connect-wallet');
+      setShowWalletSelector(true);
+      return;
+    }
+    
+    // Wallet connected, check if on correct network
+    const currentNetwork = chain ? getNetworkByChainId(chain.id) : null;
+    if (currentNetwork !== network) {
+      setStep('switch-network');
     } else {
-      // Wallet connected, check if on correct network
-      const currentNetwork = chain ? getNetworkByChainId(chain.id) : null;
-      if (currentNetwork !== network) {
-        setStep('switch-network');
-      } else {
-        setStep('confirm-payment');
-      }
+      setStep('confirm-payment');
     }
   };
 
   const handleChangeNetwork = () => {
+    setAllowAutoSelectPreferred(false);
+    setPaymentRequirements(null);
+    setSelectedNetwork(null);
+    setShowWalletSelector(false);
     setStep('select-network');
-  };
-
-  const handleConnectWallet = () => {
-    setShowWalletSelector(true);
   };
 
   const handleWalletConnected = () => {
@@ -278,76 +274,12 @@ export function PaymentDialog({
               onSelect={handleNetworkSelect}
               disabled={false}
               showBalances={false} // Don't show balances in network selection step
+              autoSelectPreferred={allowAutoSelectPreferred}
             />
           </div>
         )}
 
-        {/* Step 2: Connect Wallet */}
-        {step === 'connect-wallet' && selectedNetwork && (
-          <div>
-            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', marginBottom: '10px' }}>
-                Selected Network: <strong>{NETWORKS[selectedNetwork].displayName}</strong>
-              </div>
-              <div style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
-                Connect your wallet to continue with the payment
-              </div>
-            </div>
-            
-            <button
-              onClick={handleConnectWallet}
-              style={{
-                width: '100%',
-                padding: '16px',
-                backgroundColor: '#4A90E2',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                marginBottom: '12px',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#357ABD'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4A90E2'}
-            >
-              Connect Wallet
-            </button>
-
-            <button
-              onClick={handleChangeNetwork}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: 'transparent',
-                color: '#4A90E2',
-                border: '1px solid #4A90E2',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f7ff';
-                e.currentTarget.style.borderColor = '#357ABD';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = '#4A90E2';
-              }}
-            >
-              Change Network
-            </button>
-            
-            <WalletSelector 
-              isOpen={showWalletSelector} 
-              onClose={() => setShowWalletSelector(false)} 
-            />
-          </div>
-        )}
-
-        {/* Step 3: Switch Network */}
+        {/* Step 2: Switch Network */}
         {step === 'switch-network' && selectedNetwork && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '16px', marginBottom: '10px' }}>
@@ -393,7 +325,7 @@ export function PaymentDialog({
           </div>
         )}
 
-        {/* Step 4: Confirm Payment */}
+        {/* Step 3: Confirm Payment */}
         {step === 'confirm-payment' && selectedNetwork && isConnected && isOnCorrectNetwork && (
           <div>
             <div style={{ marginBottom: '20px' }}>
@@ -528,7 +460,7 @@ export function PaymentDialog({
           </div>
         )}
 
-        {/* Step 5: Processing Payment */}
+        {/* Step 4: Processing Payment */}
         {step === 'processing' && (
           <div>
             <PaymentStatus

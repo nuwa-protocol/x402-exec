@@ -15,6 +15,7 @@ interface PaymentMethodSelectorProps {
   onSelect: (network: Network) => void;
   disabled?: boolean;
   showBalances?: boolean; // New prop to control balance display
+  autoSelectPreferred?: boolean; // Whether to auto-select preferred network
 }
 
 export function PaymentMethodSelector({
@@ -25,6 +26,7 @@ export function PaymentMethodSelector({
   onSelect,
   disabled = false,
   showBalances = true,
+  autoSelectPreferred = true,
 }: PaymentMethodSelectorProps) {
   const handleSelect = (network: Network) => {
     onSelect(network);
@@ -32,8 +34,8 @@ export function PaymentMethodSelector({
     setPreferredNetwork(network);
   };
 
-  // Auto-select preferred network on mount if none selected
-  if (!selectedNetwork && !disabled) {
+  // Auto-select preferred network on mount if none selected and autoSelectPreferred is true
+  if (!selectedNetwork && !disabled && autoSelectPreferred) {
     const preferred = getPreferredNetwork();
     if (preferred) {
       setTimeout(() => onSelect(preferred), 0);

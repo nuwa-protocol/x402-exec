@@ -48,7 +48,7 @@ export interface MintConfig {
 function getNFTMintHookAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
-    "xlayer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -61,7 +61,7 @@ function getNFTMintHookAddresses(): Record<string, Address> {
 function getRandomNFTAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
-    "xlayer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -74,7 +74,7 @@ export class NFTMintHook {
   /**
    * Get NFTMintHook contract address for a specific network
    * 
-   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
    * @returns The contract address for the specified network
    * @throws Error if address not configured for the network
    */
@@ -100,7 +100,7 @@ export class NFTMintHook {
    * 
    * This is the address of the ERC721 contract that will be minted from.
    * 
-   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
    * @returns The NFT contract address for the specified network
    * @throws Error if address not configured for the network
    */

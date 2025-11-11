@@ -45,7 +45,7 @@ export interface RewardConfig {
 function getRewardHookAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
-    "xlayer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_REWARD_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_REWARD_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -58,7 +58,7 @@ function getRewardHookAddresses(): Record<string, Address> {
 function getRewardTokenAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_REWARD_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
-    "xlayer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -71,7 +71,7 @@ export class RewardHook {
   /**
    * Get RewardHook contract address for a specific network
    * 
-   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
    * @returns The contract address for the specified network
    * @throws Error if address not configured for the network
    */
@@ -97,7 +97,7 @@ export class RewardHook {
    * 
    * This is the address of the ERC20 contract that will be distributed as rewards.
    * 
-   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
    * @returns The reward token contract address for the specified network
    * @throws Error if address not configured for the network
    */
