@@ -12,7 +12,7 @@ import { prepareSettlement } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
 import { submitToFacilitator } from "./core/submit.js";
 import { ValidationError, FacilitatorError } from "./errors.js";
-import { validateAddress, validateHex, validateAmount } from "./core/utils.js";
+import { normalizeAddress, validateHex, validateAmount } from "./core/utils.js";
 
 /**
  * Default facilitator URL
@@ -130,20 +130,20 @@ export class X402Client {
     params: ExecuteParams,
     waitForConfirmation: boolean = true,
   ): Promise<ExecuteResult> {
-    // 1. Validate parameters
-    validateAddress(params.hook, "hook");
+    // 1. Validate and normalize parameters
+    const hook = normalizeAddress(params.hook, "hook");
+    const recipient = normalizeAddress(params.recipient, "recipient");
     validateHex(params.hookData, "hookData");
     validateAmount(params.amount, "amount");
-    validateAddress(params.recipient, "recipient");
 
-    // 2. Prepare settlement
+    // 2. Prepare settlement with normalized addresses
     const settlement = await prepareSettlement({
       wallet: this.config.wallet,
       network: this.config.network,
-      hook: params.hook,
+      hook,
       hookData: params.hookData,
       amount: params.amount,
-      recipient: params.recipient,
+      recipient,
       facilitatorFee: params.facilitatorFee,
       customSalt: params.customSalt,
       validAfter: params.validAfter,
@@ -199,14 +199,14 @@ export class X402Client {
    * ```
    */
   async calculateFee(hook: Address, hookData: Hex = "0x"): Promise<FeeCalculationResult> {
-    validateAddress(hook, "hook");
+    const normalizedHook = normalizeAddress(hook, "hook");
     validateHex(hookData, "hookData");
-
+    
     try {
       return await calculateFacilitatorFee(
         this.config.facilitatorUrl,
         this.config.network,
-        hook,
+        normalizedHook,
         hookData,
       );
     } catch (error) {

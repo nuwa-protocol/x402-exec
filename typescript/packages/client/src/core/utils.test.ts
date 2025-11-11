@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   generateSalt,
+  normalizeAddress,
   validateAddress,
   validateHex,
   validateAmount,
@@ -25,10 +26,50 @@ describe("utils", () => {
     });
   });
 
+  describe("normalizeAddress", () => {
+    it("should normalize lowercase address to checksum format", () => {
+      const result = normalizeAddress("0x742d35cc6634c0532925a3b844bc9e7595f0beb1");
+      expect(result).toBe("0x742d35cC6634c0532925A3b844bc9E7595F0beB1");
+    });
+
+    it("should normalize mixed-case address to checksum format", () => {
+      const result = normalizeAddress("0x742d35cC6634c0532925a3b844bc9e7595f0beb1");
+      expect(result).toBe("0x742d35cC6634c0532925A3b844bc9E7595F0beB1");
+    });
+
+    it("should keep correct checksum address unchanged", () => {
+      const result = normalizeAddress("0x742d35cC6634c0532925A3b844bc9E7595F0beB1");
+      expect(result).toBe("0x742d35cC6634c0532925A3b844bc9E7595F0beB1");
+    });
+
+    it("should throw for invalid address", () => {
+      expect(() => normalizeAddress("invalid")).toThrow(ValidationError);
+      expect(() => normalizeAddress("0x123")).toThrow(ValidationError);
+    });
+
+    it("should throw for missing address", () => {
+      expect(() => normalizeAddress("")).toThrow(ValidationError);
+    });
+
+    it("should use custom parameter name in error", () => {
+      try {
+        normalizeAddress("invalid", "hook");
+      } catch (error: any) {
+        expect(error.message).toContain("hook");
+      }
+    });
+  });
+
   describe("validateAddress", () => {
-    it("should not throw for valid address", () => {
+    it("should not throw for valid checksum address", () => {
       expect(() =>
-        validateAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", "address"),
+        validateAddress("0x742d35cC6634c0532925A3b844bc9E7595F0beB1", "address"),
+      ).not.toThrow();
+    });
+
+    it("should not throw for valid lowercase address", () => {
+      expect(() =>
+        validateAddress("0x742d35cc6634c0532925a3b844bc9e7595f0beb1", "address"),
       ).not.toThrow();
     });
 

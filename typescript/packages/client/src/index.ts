@@ -60,7 +60,7 @@ export { signAuthorization } from "./core/sign.js";
 export { submitToFacilitator } from "./core/submit.js";
 
 // Export utilities
-export { generateSalt, calculateTimeWindow, formatFacilitatorUrl } from "./core/utils.js";
+export { generateSalt, calculateTimeWindow, formatFacilitatorUrl, normalizeAddress } from "./core/utils.js";
 
 // Export React hooks (optional, requires React peer dependency)
 export { useX402Client } from "./hooks/useX402Client.js";

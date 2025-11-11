@@ -33,7 +33,7 @@ import { TransferHook } from '@x402x/core';
 
 function PaymentComponent() {
   const { execute, status, error, result } = useExecute({
-    facilitatorUrl: 'https://facilitator.x402.io'
+    facilitatorUrl: 'https://facilitator.x402x.dev'
   });
 
   const handlePay = async () => {
@@ -77,7 +77,7 @@ function PaymentComponent() {
     const client = new X402Client({
       wallet,
       network: 'base-sepolia',
-      facilitatorUrl: 'https://facilitator.x402.io'
+      facilitatorUrl: 'https://facilitator.x402x.dev'
     });
 
     const result = await client.execute({

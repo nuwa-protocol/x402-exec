@@ -2,7 +2,8 @@
  * Utility functions for x402x client
  */
 
-import type { Hex } from "viem";
+import type { Address, Hex } from "viem";
+import { getAddress, isAddress } from "viem";
 import type { Network } from "x402/types";
 import { processPriceToAtomicAmount } from "x402/shared";
 import { ValidationError } from "../errors.js";
@@ -26,8 +27,44 @@ export function generateSalt(): Hex {
 }
 
 /**
- * Validate Ethereum address format
+ * Normalize Ethereum address to EIP-55 checksum format
+ * 
+ * Automatically converts any valid Ethereum address (lowercase, uppercase, or mixed)
+ * to the proper checksummed format. This provides a better developer experience
+ * by accepting addresses in any case format.
  *
+ * @param address - Address to normalize (can be any case)
+ * @param name - Parameter name for error messages (optional)
+ * @returns Checksummed address in EIP-55 format
+ * @throws ValidationError if address is invalid
+ *
+ * @example
+ * ```typescript
+ * normalizeAddress('0xabc123...') // Returns '0xAbC123...' (checksummed)
+ * normalizeAddress('0xABC123...') // Returns '0xAbC123...' (checksummed)
+ * normalizeAddress('0xAbC123...') // Returns '0xAbC123...' (already checksummed)
+ * ```
+ */
+export function normalizeAddress(address: string, name: string = "address"): Address {
+  if (!address || typeof address !== "string") {
+    throw new ValidationError(`${name} is required`);
+  }
+  
+  // Convert to EIP-55 checksum format
+  // getAddress() will throw if the address is invalid
+  try {
+    return getAddress(address);
+  } catch (error) {
+    throw new ValidationError(
+      `${name} is not a valid Ethereum address: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Validate Ethereum address format (legacy, prefer normalizeAddress)
+ * 
+ * @deprecated Use normalizeAddress() instead for better developer experience
  * @param address - Address to validate
  * @param name - Parameter name for error messages
  * @throws ValidationError if address is invalid
@@ -36,7 +73,7 @@ export function validateAddress(address: string, name: string): void {
   if (!address || typeof address !== "string") {
     throw new ValidationError(`${name} is required`);
   }
-  if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+  if (!isAddress(address)) {
     throw new ValidationError(`${name} must be a valid Ethereum address`);
   }
 }
