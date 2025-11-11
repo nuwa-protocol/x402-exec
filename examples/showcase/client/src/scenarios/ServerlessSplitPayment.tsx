@@ -10,6 +10,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
+import { TransferHook } from '@x402x/core';
 import { ServerlessPaymentDialog } from '../components/ServerlessPaymentDialog';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
@@ -91,15 +92,18 @@ export function ServerlessSplitPayment() {
     }
   };
 
-  // Convert splits to hookData format
-  const getSplitsForPayment = () => {
+  // Convert splits to TransferHook format  
+  const getHookDataForPayment = () => {
     return splits
-      .filter(s => s.recipient && parseInt(s.bips) > 0)
+      .filter(s => s.recipient && s.recipient !== '' && parseInt(s.bips) > 0)
       .map(s => ({
         recipient: s.recipient as `0x${string}`,
-        bips: parseInt(s.bips),
+        bips: parseInt(s.bips) || 0,
       }));
   };
+
+  // Encode hookData using TransferHook
+  const hookData = TransferHook.encode(getHookDataForPayment()) as `0x${string}`;
 
   return (
     <ScenarioCard
@@ -430,7 +434,7 @@ export function ServerlessSplitPayment() {
           network={paymentResult.network}
           details={[
             { label: 'Payment', value: <strong>$0.1 USDC</strong> },
-            { label: 'Recipients', value: <strong>{getSplitsForPayment().length + 1} addresses</strong> },
+            { label: 'Recipients', value: <strong>{getHookDataForPayment().length + 1} addresses</strong> },
             { 
               label: 'Splits', 
               value: (
@@ -440,7 +444,7 @@ export function ServerlessSplitPayment() {
                     Primary: {payTo.slice(0, 6)}...{payTo.slice(-4)} ({(remainingBips / 100).toFixed(2)}%)
                   </div>
                   {/* Additional recipients */}
-                  {getSplitsForPayment().map((s, i) => (
+                  {getHookDataForPayment().map((s, i) => (
                     <div key={i} style={{ fontSize: '12px', marginBottom: '4px' }}>
                       #{i+1}: {s.recipient.slice(0, 6)}...{s.recipient.slice(-4)} ({(s.bips / 100).toFixed(2)}%)
                     </div>
@@ -466,7 +470,7 @@ export function ServerlessSplitPayment() {
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
         recipient={payTo}
-        splits={getSplitsForPayment()}
+        hookData={hookData}
         onSuccess={handleSuccess}
         onError={handleError}
       />

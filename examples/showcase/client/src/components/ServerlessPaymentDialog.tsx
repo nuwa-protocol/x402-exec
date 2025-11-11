@@ -13,17 +13,13 @@ import { type Network, NETWORKS, getPreferredNetwork, setPreferredNetwork, getFa
 
 type PaymentStep = 'select-network' | 'switch-network' | 'loading-fee' | 'confirm-payment';
 
-interface Split {
-  recipient: `0x${string}`;
-  bips: number;
-}
-
 interface ServerlessPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
-  recipient: string; // Fallback recipient (used if no splits provided)
-  splits?: Split[]; // Optional: for distributed transfers
+  recipient: string; // Recipient address
+  hook?: `0x${string}`; // Optional: custom hook address (defaults to TransferHook)
+  hookData?: `0x${string}`; // Optional: custom hook data (defaults to empty TransferHook)
   onSuccess?: (result: { txHash: string; network: Network; facilitatorFee?: string }) => void;
   onError?: (error: string) => void;
 }
@@ -33,7 +29,8 @@ export function ServerlessPaymentDialog({
   onClose,
   amount,
   recipient,
-  splits,
+  hook: customHook,
+  hookData: customHookData,
   onSuccess,
   onError,
 }: ServerlessPaymentDialogProps) {
@@ -108,9 +105,11 @@ export function ServerlessPaymentDialog({
         throw new Error('Please connect your wallet first');
       }
 
-      const hook = TransferHook.getAddress(network);
-      // Encode hookData based on whether we have splits or not
-      const hookData = splits ? TransferHook.encode(splits) : TransferHook.encode();
+      // Use custom hook if provided, otherwise default to TransferHook
+      const hook = customHook || TransferHook.getAddress(network);
+      
+      // Use custom hookData if provided, otherwise use empty TransferHook encoding
+      const hookData = customHookData || TransferHook.encode();
       
       const fee = await client.calculateFee(hook as `0x${string}`, hookData as `0x${string}`);
       
@@ -133,9 +132,11 @@ export function ServerlessPaymentDialog({
     setError(null);
 
     try {
-      const hook = TransferHook.getAddress(selectedNetwork);
-      // Encode hookData based on whether we have splits or not
-      const hookData = splits ? TransferHook.encode(splits) : TransferHook.encode();
+      // Use custom hook if provided, otherwise default to TransferHook
+      const hook = customHook || TransferHook.getAddress(selectedNetwork);
+      
+      // Use custom hookData if provided, otherwise use empty TransferHook encoding
+      const hookData = customHookData || TransferHook.encode();
 
       const result = await client.execute({
         hook: hook as `0x${string}`,
