@@ -1,25 +1,45 @@
 /**
- * RewardHook utilities for showcase
+ * RewardHook Utilities for Showcase
  * 
- * Helper functions for encoding hookData for RewardHook contract.
- * This is a showcase example, not part of the core SDK.
+ * This is an example implementation showing how to work with the RewardHook contract.
+ * It demonstrates:
+ * - How to encode hookData for loyalty rewards scenarios
+ * - How to manage network-specific contract addresses
+ * - How to integrate reward distribution with payments
  * 
- * @see contracts/examples/reward-points/RewardHook.sol
+ * ⚠️ This is a showcase example, not part of the core SDK. 
+ * When building your own app, you can use this as a reference.
+ * 
+ * @see contracts/examples/reward-points/RewardHook.sol for contract implementation
+ * @example
+ * ```typescript
+ * // Encode hookData for reward distribution
+ * const hookData = RewardHook.encode({
+ *   rewardToken: '0x...',
+ *   merchant: '0x...',
+ * });
+ * ```
  */
 
 import { encodeAbiParameters } from "viem";
 import type { Address } from "viem";
 
 /**
- * Reward Hook configuration
+ * Reward Hook Configuration
+ * 
+ * Defines the parameters needed to distribute rewards during payment settlement.
  */
 export interface RewardConfig {
+  /** Address of the ERC20 reward token contract */
   rewardToken: Address;
+  /** Address that receives the payment (merchant) */
   merchant: Address;
 }
 
 /**
- * RewardHook contract addresses by network (from environment variables)
+ * RewardHook contract addresses by network
+ * 
+ * Reads contract addresses from environment variables.
  * Environment variable format: VITE_{NETWORK}_{HOOK}_ADDRESS
  */
 function getRewardHookAddresses(): Record<string, Address> {
@@ -30,7 +50,9 @@ function getRewardHookAddresses(): Record<string, Address> {
 }
 
 /**
- * Reward token addresses by network (from environment variables)
+ * Reward token addresses by network
+ * 
+ * Reads ERC20 reward token addresses from environment variables.
  * Environment variable format: VITE_{NETWORK}_REWARD_TOKEN_ADDRESS
  */
 function getRewardTokenAddresses(): Record<string, Address> {
@@ -41,11 +63,16 @@ function getRewardTokenAddresses(): Record<string, Address> {
 }
 
 /**
- * RewardHook utility class for showcase
+ * RewardHook utility class for showcase examples
+ * 
+ * Provides helper methods to work with RewardHook contracts.
  */
 export class RewardHook {
   /**
-   * Get RewardHook contract address for a network
+   * Get RewardHook contract address for a specific network
+   * 
+   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @returns The contract address for the specified network
    * @throws Error if address not configured for the network
    */
   static getAddress(network: string): Address {
@@ -66,7 +93,12 @@ export class RewardHook {
   }
 
   /**
-   * Get reward token address for a network
+   * Get the reward token (ERC20) address for a specific network
+   * 
+   * This is the address of the ERC20 contract that will be distributed as rewards.
+   * 
+   * @param network - Network identifier (e.g., 'base-sepolia', 'xlayer-testnet')
+   * @returns The reward token contract address for the specified network
    * @throws Error if address not configured for the network
    */
   static getTokenAddress(network: string): Address {
@@ -87,17 +119,37 @@ export class RewardHook {
   }
 
   /**
-   * Encode RewardConfig for hookData
+   * Encode RewardConfig into hookData for RewardHook
    * 
-   * The RewardHook expects ABI-encoded RewardConfig struct:
-   * ```solidity
-   * struct RewardConfig {
-   *   address rewardToken;
-   *   address merchant;
-   * }
+   * The RewardHook contract expects a specific ABI-encoded struct format.
+   * This method handles the encoding for you.
+   * 
+   * @param config - The reward configuration
+   * @returns ABI-encoded hookData ready to use with x402x execute
+   * 
+   * @example
+   * ```typescript
+   * const hookData = RewardHook.encode({
+   *   rewardToken: '0x123...',
+   *   merchant: '0xabc...'
+   * });
+   * 
+   * // Use with x402x client
+   * await client.execute({
+   *   hook: RewardHook.getAddress('base-sepolia'),
+   *   hookData,
+   *   amount: '100000',
+   *   recipient: merchantAddress
+   * });
+   * // Payer automatically receives reward tokens!
    * ```
    */
   static encode(config: RewardConfig): `0x${string}` {
+    // Encode as tuple matching the Solidity struct:
+    // struct RewardConfig {
+    //   address rewardToken;
+    //   address merchant;
+    // }
     return encodeAbiParameters(
       [
         {
