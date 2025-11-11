@@ -7,6 +7,7 @@
 
 import { useMemo } from "react";
 import { useWalletClient, useAccount, useChainId } from "wagmi";
+import { publicActions } from "viem";
 import { X402Client } from "../client.js";
 import type { X402ClientConfig } from "../types.js";
 
@@ -90,8 +91,11 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
     }
 
     try {
+      // Extend wallet client with public actions (required for waitForTransactionReceipt)
+      const extendedWallet = walletClient.extend(publicActions);
+
       return new X402Client({
-        wallet: walletClient,
+        wallet: extendedWallet,
         network,
         facilitatorUrl: config?.facilitatorUrl,
         networkConfig: config?.networkConfig,

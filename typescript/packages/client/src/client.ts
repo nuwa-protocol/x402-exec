@@ -201,7 +201,7 @@ export class X402Client {
   async calculateFee(hook: Address, hookData: Hex = "0x"): Promise<FeeCalculationResult> {
     const normalizedHook = normalizeAddress(hook, "hook");
     validateHex(hookData, "hookData");
-    
+
     try {
       return await calculateFacilitatorFee(
         this.config.facilitatorUrl,

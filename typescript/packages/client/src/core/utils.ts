@@ -28,7 +28,7 @@ export function generateSalt(): Hex {
 
 /**
  * Normalize Ethereum address to EIP-55 checksum format
- * 
+ *
  * Automatically converts any valid Ethereum address (lowercase, uppercase, or mixed)
  * to the proper checksummed format. This provides a better developer experience
  * by accepting addresses in any case format.
@@ -49,21 +49,21 @@ export function normalizeAddress(address: string, name: string = "address"): Add
   if (!address || typeof address !== "string") {
     throw new ValidationError(`${name} is required`);
   }
-  
+
   // Convert to EIP-55 checksum format
   // getAddress() will throw if the address is invalid
   try {
     return getAddress(address);
   } catch (error) {
     throw new ValidationError(
-      `${name} is not a valid Ethereum address: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `${name} is not a valid Ethereum address: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
 
 /**
  * Validate Ethereum address format (legacy, prefer normalizeAddress)
- * 
+ *
  * @deprecated Use normalizeAddress() instead for better developer experience
  * @param address - Address to validate
  * @param name - Parameter name for error messages

@@ -54,7 +54,7 @@ export async function submitToFacilitator(
     const paymentPayload: PaymentPayload = {
       x402Version: 1,
       scheme: "exact",
-      network: signed.settlement.network,
+      network: signed.settlement.network as any, // Network type compatibility
       payload: {
         signature: signed.signature,
         authorization: {
@@ -71,11 +71,17 @@ export async function submitToFacilitator(
     // Construct PaymentRequirements (for serverless mode verification)
     const paymentRequirements: PaymentRequirements = {
       scheme: "exact",
-      network: signed.settlement.network,
+      network: signed.settlement.network as any, // Network type compatibility
       maxAmountRequired: signed.settlement.amount,
       asset: signed.settlement.token as Address,
       payTo: signed.settlement.networkConfig.settlementRouter as Address,
       maxTimeoutSeconds: 300, // 5 minutes
+      // Required by x402 protocol (even though not used in serverless mode)
+      // In the future, the x402 v2 will remove the resource field from the payment requirements
+      // (https://github.com/coinbase/x402/pull/446)
+      resource: "https://x402x.dev/serverless", // Placeholder for serverless mode
+      description: "x402x Serverless Settlement",
+      mimeType: "application/json",
       extra: {
         name: signed.settlement.networkConfig.usdc.name,
         version: signed.settlement.networkConfig.usdc.version,

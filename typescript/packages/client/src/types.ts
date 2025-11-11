@@ -4,6 +4,7 @@
 
 import type { Address, Hex, WalletClient, TransactionReceipt } from "viem";
 import type { NetworkConfig } from "@x402x/core";
+import type { PaymentRequirements, PaymentPayload } from "x402/types";
 
 /**
  * Execute status enum
@@ -170,45 +171,5 @@ export interface SubmitResult {
   errorReason?: string;
 }
 
-/**
- * Payment payload for x402 protocol
- */
-export interface PaymentPayload {
-  x402Version: number;
-  scheme: string;
-  network: string;
-  payload: {
-    signature: Hex;
-    authorization: {
-      from: Address;
-      to: Address;
-      value: string;
-      validAfter: string;
-      validBefore: string;
-      nonce: Hex;
-    };
-  };
-  paymentRequirements?: PaymentRequirements;
-}
-
-/**
- * Payment requirements for x402 protocol
- */
-export interface PaymentRequirements {
-  scheme: string;
-  network: string;
-  maxAmountRequired: string;
-  asset: Address;
-  payTo: Address;
-  maxTimeoutSeconds: number;
-  extra?: {
-    name?: string;
-    version?: string;
-    settlementRouter?: Address;
-    salt?: Hex;
-    payTo?: Address;
-    facilitatorFee?: string;
-    hook?: Address;
-    hookData?: Hex;
-  };
-}
+// Re-export x402 types for convenience
+export type { PaymentRequirements, PaymentPayload };
