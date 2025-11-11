@@ -171,45 +171,6 @@ export interface SubmitResult {
 }
 
 /**
- * Fee estimate from facilitator
- */
-export interface FeeEstimate {
-  /** Network name */
-  network: string;
-  /** Hook address */
-  hook: Address;
-  /** Whether hook is allowed */
-  hookAllowed: boolean;
-  /** Minimum facilitator fee in token's smallest unit */
-  minFacilitatorFee: string;
-  /** Minimum fee in USD */
-  minFacilitatorFeeUSD: string;
-  /** Fee breakdown details */
-  breakdown?: {
-    gasLimit: number;
-    maxGasLimit: number;
-    gasPrice: string;
-    gasCostNative: string;
-    gasCostUSD: string;
-    safetyMultiplier: number;
-    finalCostUSD: string;
-  };
-  /** Token information */
-  token?: {
-    address: Address;
-    symbol: string;
-    decimals: number;
-  };
-  /** Price information */
-  prices?: {
-    nativeToken: string;
-    timestamp: string;
-  };
-  /** Error message if hook not allowed */
-  error?: string;
-}
-
-/**
  * Payment payload for x402 protocol
  */
 export interface PaymentPayload {

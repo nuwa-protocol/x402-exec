@@ -6,66 +6,49 @@
  */
 
 import type { Address, Hex } from "viem";
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig, calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core";
 import { calculateCommitment } from "@x402x/core";
-import type { PrepareParams, SettlementData, FeeEstimate } from "../types.js";
-import { NetworkError, ValidationError } from "../errors.js";
+import type { PrepareParams, SettlementData } from "../types.js";
+import { NetworkError, ValidationError, FacilitatorError } from "../errors.js";
 import {
   generateSalt,
   validateAddress,
   validateHex,
   parseAmount,
   calculateTimeWindow,
-  formatFacilitatorUrl,
 } from "./utils.js";
 
 /**
- * Query minimum facilitator fee from facilitator
+ * Query facilitator fee from facilitator service (internal helper)
  *
+ * Uses the /calculate-fee endpoint which provides accurate gas cost estimates
+ * with safety margins.
+ *
+ * @internal
  * @param facilitatorUrl - Facilitator URL
  * @param network - Network name
  * @param hook - Hook contract address
- * @returns Fee estimate
+ * @param hookData - Optional encoded hook parameters (default: '0x')
+ * @returns Fee calculation result
  *
  * @throws FacilitatorError if request fails
- *
- * @example
- * ```typescript
- * const fee = await queryFacilitatorFee(
- *   'https://facilitator.x402x.dev',
- *   'base-sepolia',
- *   '0x...'
- * );
- * console.log('Min fee:', fee.minFacilitatorFee);
- * ```
  */
-export async function queryFacilitatorFee(
+async function queryFacilitatorFee(
   facilitatorUrl: string,
   network: string,
   hook: Address,
-): Promise<FeeEstimate> {
-  const url = `${formatFacilitatorUrl(facilitatorUrl)}/min-facilitator-fee?network=${encodeURIComponent(network)}&hook=${encodeURIComponent(hook)}`;
-
+  hookData: Hex = "0x",
+): Promise<FeeCalculationResult> {
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData: any = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data as FeeEstimate;
+    return await calculateFacilitatorFee(facilitatorUrl, network, hook, hookData);
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Failed to query facilitator fee: ${error.message}`);
+      throw new FacilitatorError(
+        `Failed to query facilitator fee: ${error.message}`,
+        "FEE_QUERY_FAILED",
+      );
     }
-    throw new Error("Failed to query facilitator fee: Unknown error");
+    throw new FacilitatorError("Failed to query facilitator fee: Unknown error", "UNKNOWN_ERROR");
   }
 }
 
@@ -149,16 +132,16 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
         params.facilitatorUrl,
         params.network,
         params.hook,
+        params.hookData, // Pass hookData for accurate fee calculation
       );
 
       if (!feeEstimate.hookAllowed) {
         throw new ValidationError(
-          `Hook ${params.hook} is not allowed on network ${params.network}. ` +
-            `Error: ${feeEstimate.error || "Unknown error"}`,
+          `Hook ${params.hook} is not allowed on network ${params.network}.`,
         );
       }
 
-      facilitatorFee = feeEstimate.minFacilitatorFee;
+      facilitatorFee = feeEstimate.facilitatorFee;
     } catch (error) {
       // If fee query fails, log warning and use 0
       console.warn(

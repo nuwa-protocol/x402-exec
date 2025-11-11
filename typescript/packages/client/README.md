@@ -113,7 +113,7 @@ The main client class that handles the entire settlement flow.
 class X402Client {
   constructor(config: X402ClientConfig);
   execute(params: ExecuteParams): Promise<ExecuteResult>;
-  estimateFee(hook: Address): Promise<FeeEstimate>;
+  calculateFee(hook: Address, hookData?: Hex): Promise<FeeCalculationResult>;
   waitForTransaction(txHash: Hex): Promise<TransactionReceipt>;
 }
 ```
@@ -254,16 +254,6 @@ import { submitToFacilitator } from "@x402x/client";
 const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
 ```
 
-#### queryFacilitatorFee
-
-Queries minimum facilitator fee for a hook.
-
-```typescript
-import { queryFacilitatorFee } from "@x402x/client";
-
-const fee = await queryFacilitatorFee("https://facilitator.x402x.dev", "base-sepolia", "0x...");
-```
-
 ---
 
 ## Examples
@@ -325,19 +315,19 @@ function MintNFT() {
 ### Example 3: Revenue Split (Low-Level API)
 
 ```typescript
-import {
-  prepareSettlement,
-  signAuthorization,
-  submitToFacilitator,
-  queryFacilitatorFee,
-} from "@x402x/client";
+import { prepareSettlement, signAuthorization, submitToFacilitator } from "@x402x/client";
+import { calculateFacilitatorFee } from "@x402x/core";
 import { RevenueSplitHook } from "@x402x/core";
 
 // 1. Query minimum fee
-const feeEstimate = await queryFacilitatorFee(
+const feeEstimate = await calculateFacilitatorFee(
   "https://facilitator.x402x.dev",
   "base-sepolia",
   RevenueSplitHook.getAddress("base-sepolia"),
+  RevenueSplitHook.encode({
+    recipients: ["0x...", "0x..."],
+    shares: [60, 40], // 60/40 split
+  }),
 );
 
 // 2. Prepare settlement
@@ -351,7 +341,7 @@ const settlement = await prepareSettlement({
   }),
   amount: "10000000", // 10 USDC
   recipient: "0x...", // Primary recipient
-  facilitatorFee: feeEstimate.minFacilitatorFee,
+  facilitatorFee: feeEstimate.facilitatorFee,
 });
 
 // 3. Sign authorization
@@ -451,7 +441,7 @@ import type {
   ExecuteResult,
   SettlementData,
   SignedAuthorization,
-  FeeEstimate,
+  FeeCalculationResult,
   ExecuteStatus,
 } from "@x402x/client";
 ```

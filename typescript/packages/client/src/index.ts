@@ -55,7 +55,7 @@
 export { X402Client, DEFAULT_FACILITATOR_URL } from "./client.js";
 
 // Export low-level API
-export { prepareSettlement, queryFacilitatorFee } from "./core/prepare.js";
+export { prepareSettlement } from "./core/prepare.js";
 export { signAuthorization } from "./core/sign.js";
 export { submitToFacilitator } from "./core/submit.js";
 
@@ -66,6 +66,9 @@ export { generateSalt, calculateTimeWindow, formatFacilitatorUrl } from "./core/
 export { useX402Client } from "./hooks/useX402Client.js";
 export { useExecute } from "./hooks/useExecute.js";
 
+// Re-export core types for convenience
+export type { FeeCalculationResult } from "@x402x/core";
+
 // Export types
 export type {
   X402ClientConfig,
@@ -75,7 +78,6 @@ export type {
   PrepareParams,
   SignedAuthorization,
   SubmitResult,
-  FeeEstimate,
   ExecuteStatus,
   PaymentPayload,
   PaymentRequirements,

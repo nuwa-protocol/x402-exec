@@ -6,11 +6,12 @@
  */
 
 import type { Address, Hex, TransactionReceipt } from "viem";
-import type { X402ClientConfig, ExecuteParams, ExecuteResult, FeeEstimate } from "./types.js";
-import { prepareSettlement, queryFacilitatorFee } from "./core/prepare.js";
+import { calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core";
+import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
+import { prepareSettlement } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
 import { submitToFacilitator } from "./core/submit.js";
-import { ValidationError } from "./errors.js";
+import { ValidationError, FacilitatorError } from "./errors.js";
 import { validateAddress, validateHex, validateAmount } from "./core/utils.js";
 
 /**
@@ -177,22 +178,49 @@ export class X402Client {
   }
 
   /**
-   * Query minimum facilitator fee for a hook
+   * Calculate facilitator fee for a hook with optional hook data
+   *
+   * Queries the facilitator for the recommended fee based on current gas prices
+   * and hook gas usage. The returned fee includes a safety margin to ensure
+   * settlement will succeed.
    *
    * @param hook - Hook contract address
-   * @returns Fee estimate
+   * @param hookData - Optional encoded hook parameters (default: '0x')
+   * @returns Fee calculation result from facilitator
    *
    * @throws FacilitatorError if query fails
    *
    * @example
    * ```typescript
-   * const fee = await client.estimateFee('0x...');
-   * console.log('Min fee:', fee.minFacilitatorFee);
+   * const fee = await client.calculateFee('0x...', '0x');
+   * console.log('Facilitator fee:', fee.facilitatorFee);
+   * console.log('Fee in USD:', fee.facilitatorFeeUSD);
+   * console.log('Valid for:', fee.validitySeconds, 'seconds');
    * ```
    */
-  async estimateFee(hook: Address): Promise<FeeEstimate> {
+  async calculateFee(hook: Address, hookData: Hex = "0x"): Promise<FeeCalculationResult> {
     validateAddress(hook, "hook");
-    return queryFacilitatorFee(this.config.facilitatorUrl, this.config.network, hook);
+    validateHex(hookData, "hookData");
+
+    try {
+      return await calculateFacilitatorFee(
+        this.config.facilitatorUrl,
+        this.config.network,
+        hook,
+        hookData,
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new FacilitatorError(
+          `Failed to calculate facilitator fee: ${error.message}`,
+          "FEE_QUERY_FAILED",
+        );
+      }
+      throw new FacilitatorError(
+        "Failed to calculate facilitator fee: Unknown error",
+        "UNKNOWN_ERROR",
+      );
+    }
   }
 
   /**
