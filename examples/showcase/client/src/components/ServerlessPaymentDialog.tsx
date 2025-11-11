@@ -13,11 +13,17 @@ import { type Network, NETWORKS, getPreferredNetwork, setPreferredNetwork, getFa
 
 type PaymentStep = 'select-network' | 'switch-network' | 'loading-fee' | 'confirm-payment';
 
+interface Split {
+  recipient: `0x${string}`;
+  bips: number;
+}
+
 interface ServerlessPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
-  recipient: string;
+  recipient: string; // Fallback recipient (used if no splits provided)
+  splits?: Split[]; // Optional: for distributed transfers
   onSuccess?: (result: { txHash: string; network: Network }) => void;
   onError?: (error: string) => void;
 }
@@ -27,6 +33,7 @@ export function ServerlessPaymentDialog({
   onClose,
   amount,
   recipient,
+  splits,
   onSuccess,
   onError,
 }: ServerlessPaymentDialogProps) {
@@ -102,7 +109,8 @@ export function ServerlessPaymentDialog({
       }
 
       const hook = TransferHook.getAddress(network);
-      const hookData = TransferHook.encode();
+      // Encode hookData based on whether we have splits or not
+      const hookData = splits ? TransferHook.encode(splits) : TransferHook.encode();
       
       const fee = await client.calculateFee(hook as `0x${string}`, hookData as `0x${string}`);
       
@@ -126,7 +134,8 @@ export function ServerlessPaymentDialog({
 
     try {
       const hook = TransferHook.getAddress(selectedNetwork);
-      const hookData = TransferHook.encode();
+      // Encode hookData based on whether we have splits or not
+      const hookData = splits ? TransferHook.encode(splits) : TransferHook.encode();
 
       const result = await client.execute({
         hook: hook as `0x${string}`,

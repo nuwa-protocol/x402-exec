@@ -128,13 +128,13 @@ export function setPreferredNetwork(network: Network): void {
 
 /**
  * Get the facilitator URL
- * In development: can use local facilitator via VITE_FACILITATOR_URL
- * In production: uses VITE_FACILITATOR_URL environment variable or default
+ * In development: can use local facilitator via FACILITATOR_URL
+ * In production: uses FACILITATOR_URL environment variable or default
  * 
  * @returns Facilitator URL
  */
 export function getFacilitatorUrl(): string {
-  const facilitatorUrl = import.meta.env.VITE_FACILITATOR_URL;
+  const facilitatorUrl = import.meta.env.FACILITATOR_URL;
   
   // If no facilitator URL is set, use default
   if (!facilitatorUrl) {
@@ -148,10 +148,10 @@ export function getFacilitatorUrl(): string {
 /**
  * Get the API base URL
  * In development: uses empty string to leverage Vite proxy
- * In production: uses VITE_SERVER_URL environment variable
+ * In production: uses SERVER_URL environment variable
  */
 export function getServerUrl(): string {
-  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  const serverUrl = import.meta.env.SERVER_URL;
   
   // If no server URL is set, use relative paths (Vite proxy in dev, or same-origin in production)
   if (!serverUrl) {
