@@ -74,14 +74,18 @@ yarn add @x402x/client @x402x/core
 import { X402Client } from '@x402x/client';
 import { TransferHook } from '@x402x/core';
 import { useWalletClient } from 'wagmi';
+import { publicActions } from 'viem';
 
 function PayButton() {
   const { data: wallet } = useWalletClient();
 
   const handlePay = async () => {
+    // Extend wallet with public actions (required for transaction confirmation)
+    const extendedWallet = wallet.extend(publicActions);
+
     // Uses default facilitator at https://facilitator.x402x.dev/
     const client = new X402Client({
-      wallet,
+      wallet: extendedWallet,
       network: 'base-sepolia'
     });
 
@@ -98,6 +102,8 @@ function PayButton() {
   return <button onClick={handlePay}>Pay 1 USDC</button>;
 }
 ```
+
+> **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`useX402Client`), this is done automatically.
 
 ---
 
@@ -319,6 +325,7 @@ console.log("Distributed transfer:", result.txHash);
 ```
 
 **Split Rules:**
+
 - `bips` = basis points (1-10000, where 10000 = 100%)
 - Total bips must be ≤ 10000
 - If total < 10000, remainder goes to `recipient` parameter
