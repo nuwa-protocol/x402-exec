@@ -272,7 +272,7 @@ const client = new X402Client({
 
 const result = await client.execute({
   hook: TransferHook.getAddress("base-sepolia"),
-  hookData: TransferHook.encode(),
+  hookData: TransferHook.encode(), // Simple transfer mode
   amount: "1000000", // 1 USDC
   recipient: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
 });
@@ -280,7 +280,51 @@ const result = await client.execute({
 console.log("Transaction:", result.txHash);
 ```
 
-### Example 2: NFT Minting (React)
+### Example 2: Distributed Transfer (Payroll, Revenue Split)
+
+TransferHook supports distributing funds to multiple recipients by percentage:
+
+```typescript
+import { X402Client } from "@x402x/client";
+import { TransferHook, type Split } from "@x402x/core";
+
+const client = new X402Client({
+  wallet: walletClient,
+  network: "base-sepolia",
+});
+
+// Payroll example: Pay 3 employees with different shares
+const result = await client.execute({
+  hook: TransferHook.getAddress("base-sepolia"),
+  hookData: TransferHook.encode([
+    { recipient: "0xEmployee1...", bips: 3000 }, // 30%
+    { recipient: "0xEmployee2...", bips: 4000 }, // 40%
+    { recipient: "0xEmployee3...", bips: 3000 }, // 30%
+  ]),
+  amount: "10000000", // 10000 USDC total
+  recipient: "0xCompany...", // Receives remainder (0% in this case)
+});
+
+// Revenue split example: Platform takes 30%, creator gets 70%
+const result2 = await client.execute({
+  hook: TransferHook.getAddress("base-sepolia"),
+  hookData: TransferHook.encode([
+    { recipient: "0xPlatform...", bips: 3000 }, // 30%
+  ]),
+  amount: "100000000", // 100 USDC
+  recipient: "0xCreator...", // Gets remaining 70% automatically
+});
+
+console.log("Distributed transfer:", result.txHash);
+```
+
+**Split Rules:**
+- `bips` = basis points (1-10000, where 10000 = 100%)
+- Total bips must be ≤ 10000
+- If total < 10000, remainder goes to `recipient` parameter
+- If total = 10000, `recipient` gets 0
+
+### Example 3: NFT Minting (React)
 
 ```typescript
 import { useExecute } from '@x402x/client';
@@ -312,7 +356,7 @@ function MintNFT() {
 }
 ```
 
-### Example 3: Revenue Split (Low-Level API)
+### Example 4: Revenue Split (Low-Level API)
 
 ```typescript
 import { prepareSettlement, signAuthorization, submitToFacilitator } from "@x402x/client";
@@ -353,7 +397,7 @@ const result = await submitToFacilitator("https://facilitator.x402x.dev", signed
 console.log("Transaction:", result.transaction);
 ```
 
-### Example 4: Vue 3 Integration
+### Example 5: Vue 3 Integration
 
 ```typescript
 import { ref } from "vue";
