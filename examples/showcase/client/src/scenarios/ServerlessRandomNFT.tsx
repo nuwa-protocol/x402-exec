@@ -18,7 +18,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { usePaymentFlow } from '../hooks/usePaymentFlow';
 import { useAllNetworksNFTData } from '../hooks/useNFTData';
 import { NFTMintHook } from '../hooks/NFTMintHook';
-import { NETWORK_UI_CONFIG } from '../config';
+import { type Network, NETWORK_UI_CONFIG } from '../config';
 import nftMintCode from '../code-examples/nft-mint.ts?raw';
 
 const AMOUNT = '100000'; // 0.1 USDC (6 decimals)
