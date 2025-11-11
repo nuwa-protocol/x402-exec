@@ -4,9 +4,7 @@
  */
 
 import { useState } from 'react';
-import { WalletDebugInfo } from './components/WalletDebugInfo';
-import { FacilitatorDebugPanel } from './components/FacilitatorDebugPanel';
-import { DirectPayment } from './scenarios/DirectPayment';
+import { UnifiedDebugPanel } from './components/UnifiedDebugPanel';
 import { ServerlessTransfer } from './scenarios/ServerlessTransfer';
 import { ServerlessReferralSplit } from './scenarios/ServerlessReferralSplit';
 import { ServerlessRandomNFT } from './scenarios/ServerlessRandomNFT';
@@ -14,10 +12,10 @@ import { ServerlessPointsReward } from './scenarios/ServerlessPointsReward';
 import { PremiumDownload } from './scenarios/PremiumDownload';
 import './App.css';
 
-type ScenarioTab = 'direct-payment' | 'serverless-transfer' | 'serverless-referral' | 'serverless-nft' | 'serverless-reward' | 'premium-download';
+type ScenarioTab = 'serverless-transfer' | 'serverless-referral' | 'serverless-nft' | 'serverless-reward' | 'premium-download';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<ScenarioTab>('direct-payment');
+  const [activeTab, setActiveTab] = useState<ScenarioTab>('serverless-transfer');
   const [showDebug, setShowDebug] = useState<boolean>(false);
 
 
@@ -35,13 +33,6 @@ function App() {
 
       <main className="app-main">
         <div className="tabs">
-          <button
-            className={`tab ${activeTab === 'direct-payment' ? 'active' : ''}`}
-            onClick={() => setActiveTab('direct-payment')}
-          >
-            <span className="tab-number">0</span>
-            <span>Direct Payment</span>
-          </button>
           <button
             className={`tab ${activeTab === 'serverless-transfer' ? 'active' : ''}`}
             onClick={() => setActiveTab('serverless-transfer')}
@@ -80,7 +71,6 @@ function App() {
         </div>
 
         <div className="scenario-container">
-          {activeTab === 'direct-payment' && <DirectPayment />}
           {activeTab === 'serverless-transfer' && <ServerlessTransfer />}
           {activeTab === 'serverless-referral' && <ServerlessReferralSplit />}
           {activeTab === 'serverless-nft' && <ServerlessRandomNFT />}
@@ -117,11 +107,8 @@ function App() {
         </p>
       </footer>
 
-      {/* Wallet Debug Info - floating panel */}
-      <WalletDebugInfo visible={showDebug} />
-      
-      {/* Facilitator Debug Panel - shows facilitator URL */}
-      <FacilitatorDebugPanel />
+      {/* Unified Debug Panel - floating panel */}
+      <UnifiedDebugPanel visible={showDebug} />
     </div>
   );
 }

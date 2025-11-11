@@ -6,6 +6,53 @@ This document explains the reusable components created during the showcase refac
 
 All reusable components are located in `src/components/`.
 
+### UnifiedDebugPanel
+
+A unified debugging panel that combines wallet connection status and configuration info in a tabbed interface.
+
+**Props:**
+- `visible?`: `boolean` - Whether the panel is visible (default: false)
+
+**Features:**
+- **Wallet Tab**: Shows detailed wallet connection status
+  - useAccount hook data
+  - useWalletClient status
+  - useConnectorClient status
+  - Manual fallback client status
+  - Available connectors list
+  - Overall connection status
+- **Config Tab**: Shows facilitator and server configuration
+  - Facilitator URL
+  - Server URL
+  - Local development warnings
+  - Configuration tips
+
+**Example:**
+```tsx
+import { UnifiedDebugPanel } from '../components/UnifiedDebugPanel';
+
+function App() {
+  const [showDebug, setShowDebug] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setShowDebug(!showDebug)}>
+        {showDebug ? 'Hide' : 'Show'} Debug Info
+      </button>
+      <UnifiedDebugPanel visible={showDebug} />
+    </>
+  );
+}
+```
+
+**Visual:**
+- Fixed position at bottom-right corner
+- Tabbed interface with two tabs
+- Max height 80vh with scrollable content
+- Auto-highlights issues (red for errors, yellow for local dev)
+
+---
+
 ### StatusMessage
 
 A unified component for displaying status messages with different types.

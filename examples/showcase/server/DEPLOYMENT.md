@@ -88,10 +88,11 @@ docker run -p 3000:3000 \
 Once deployed, the showcase server provides:
 
 - `GET /api/health` - Health check endpoint
-- `POST /api/payments/direct-payment` - Direct payment scenario
-- `POST /api/payments/referral` - Referral split scenario
-- `POST /api/payments/nft` - NFT purchase scenario
-- `POST /api/payments/reward` - Points reward scenario
+- `POST /api/transfer-with-hook/payment` - Transfer with hook scenario
+- `POST /api/referral-split/payment` - Referral split scenario
+- `POST /api/nft-minting/payment` - NFT minting scenario
+- `POST /api/reward-points/payment` - Points reward scenario
+- `POST /api/purchase-download` - Premium download scenario
 
 ## Troubleshooting
 

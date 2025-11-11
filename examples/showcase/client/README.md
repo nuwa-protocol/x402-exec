@@ -54,15 +54,16 @@ src/
 ├── components/       # Reusable UI components
 │   ├── WalletConnect.tsx    # Wallet connection UI
 │   ├── PaymentStatus.tsx    # Payment status display
-│   └── DebugPanel.tsx       # Debug information panel
+│   └── UnifiedDebugPanel.tsx # Debug information panel
 ├── hooks/           # React hooks
 │   ├── usePayment.ts        # Payment flow logic
 │   └── useWallet.ts         # Wallet interaction
 ├── scenarios/       # Payment scenario demos
-│   ├── DirectPayment.tsx    # Simple payment
-│   ├── ReferralSplit.tsx    # Payment splitting
-│   ├── RandomNFT.tsx        # NFT purchase
-│   └── PointsReward.tsx     # Reward distribution
+│   ├── ServerlessTransfer.tsx      # Serverless transfer
+│   ├── ServerlessReferralSplit.tsx # Serverless referral splitting
+│   ├── ServerlessRandomNFT.tsx     # Serverless NFT purchase
+│   ├── ServerlessPointsReward.tsx  # Serverless reward distribution
+│   └── PremiumDownload.tsx         # Server-mode premium content
 ├── utils/           # Utility functions
 │   └── commitment.ts        # Commitment hash calculation
 ├── config.ts        # Configuration management

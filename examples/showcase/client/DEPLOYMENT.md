@@ -74,7 +74,7 @@ app.use(express.static('public'));
 
 // API routes
 app.get('/api/health', ...);
-app.post('/api/direct-payment/payment', ...);
+app.post('/api/transfer-with-hook/payment', ...);
 ```
 
 ### Option 3: Vercel
