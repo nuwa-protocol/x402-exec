@@ -39,11 +39,11 @@ export interface DownloadAccess {
 const CONTENT_CATALOG: Record<string, ContentItem> = {
   'x402-protocol-guide': {
     id: 'x402-protocol-guide',
-    title: 'x402 Protocol Implementation Guide',
-    description: 'Comprehensive guide to implementing x402 payment protocol',
-    fileName: 'x402-protocol-guide.pdf',
+    title: 'x402 Protocol Whitepaper',
+    description: 'Official whitepaper of the x402 payment protocol',
+    fileName: 'x402-whitepaper.pdf',
     fileSize: '2.5 MB',
-    price: '$1.00',
+    price: '$0.10',
     mimeType: 'application/pdf',
   },
 };

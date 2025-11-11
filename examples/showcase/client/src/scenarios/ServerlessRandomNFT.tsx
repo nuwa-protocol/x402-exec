@@ -1,9 +1,13 @@
 /**
  * Serverless Random NFT Scenario
  * Pay-to-mint NFT using NFTMintHook in Serverless Mode
+ * 
+ * Mainnet Design: merchant = payer (funds return to user)
+ * User only pays facilitator fee + gas
  */
 
 import { useState } from 'react';
+import { useAccount } from 'wagmi';
 import { ServerlessPaymentDialog } from '../components/ServerlessPaymentDialog';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
@@ -11,23 +15,48 @@ import { StatusMessage } from '../components/StatusMessage';
 import { TransactionResult } from '../components/TransactionResult';
 import { usePaymentFlow } from '../hooks/usePaymentFlow';
 
-const MERCHANT_ADDRESS = '0x1111111111111111111111111111111111111111';
 const AMOUNT = '100000'; // 0.1 USDC (6 decimals)
 
 export function ServerlessRandomNFT() {
+  const { address: connectedAddress } = useAccount();
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const { paymentResult, error, handleSuccess, handleError, reset, isCompleted } = usePaymentFlow();
 
   return (
     <ScenarioCard
-      title="⚡ Serverless Random NFT"
+      title="🎨 Pay & Mint NFT"
       badge="Serverless Mode"
       description={
         <>
           <p>
-            Pay <strong>$0.1 USDC</strong> and automatically mint a random NFT after payment using a Serverless
-            NFTMintHook.
+            Pay <strong>$0.1 USDC</strong> and automatically mint a random NFT. Your USDC returns to your wallet!
           </p>
+
+          {/* Mainnet Zero-Cost Highlight */}
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '15px',
+              backgroundColor: '#f0fdf4',
+              borderRadius: '8px',
+              border: '2px solid #86efac',
+            }}
+          >
+            <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '15px' }}>
+              💰 Mainnet-Ready: Zero-Cost Demo
+            </h4>
+            <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#166534' }}>
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>💸 Funds Return:</strong> The $0.1 USDC payment automatically returns to your wallet after NFT minting
+              </p>
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>✨ You Get:</strong> NFT + $0.1 USDC back
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>💵 Actual Cost:</strong> Only $0.01 facilitator fee + gas
+              </p>
+            </div>
+          </div>
 
           <div
             style={{
@@ -42,6 +71,9 @@ export function ServerlessRandomNFT() {
             <ul style={{ margin: 0, paddingLeft: '20px' }}>
               <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
                 💸 <strong>Pay-to-Mint</strong>: Payment and NFT minting in one atomic transaction
+              </li>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                🔄 <strong>Fund Circulation</strong>: merchant = payer, USDC returns to your wallet
               </li>
               <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
                 🎲 <strong>Random Selection</strong>: Each mint gets a randomly selected NFT
@@ -64,7 +96,7 @@ export function ServerlessRandomNFT() {
               borderLeft: '4px solid #28a745',
             }}
           >
-            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🔧 How it works:</h4>
+            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🔧 Technical Flow:</h4>
             <pre
               style={{
                 margin: 0,
@@ -82,36 +114,37 @@ export function ServerlessRandomNFT() {
                   lineHeight: 1.6,
                 }}
               >
-                {`// 1. Get NFT contract and Hook addresses from env
-const nftContract = NFTMintHook.getNFTContractAddress(network);
-const hookAddress = NFTMintHook.getAddress(network);
+                {`// 1. User clicks Pay → Connect wallet → Get payer address
+const payer = await getConnectedAddress();
 
-// 2. Encode hookData with NFT config
+// 2. Encode hookData with NFT config (merchant = payer!)
 const hookData = NFTMintHook.encode({
-  nftContract,
+  nftContract: nftContractAddress,
   tokenId: 0n, // Random mint
-  merchant: merchantAddress
+  merchant: payer // ← Key: Set merchant as payer
 });
 
 // 3. Execute payment with NFT mint hook
 const result = await client.execute({
-  hook: hookAddress,
+  hook: nftMintHookAddress,
   hookData,
   amount: '100000', // 0.1 USDC
-  recipient: merchantAddress
-});`}
+});
+
+// Result: NFT minted to payer + USDC returned to payer`}
               </code>
             </pre>
           </div>
         </>
       }
     >
-      {/* Payment Dialog */}
+      {/* Payment Dialog - merchant will be set to payer dynamically */}
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
-        recipient={MERCHANT_ADDRESS}
+        recipient={connectedAddress || '0x0000000000000000000000000000000000000000'} // Will be updated on connect
+        scenario="nft-mint"
         onSuccess={handleSuccess}
         onError={handleError}
       />
@@ -121,7 +154,7 @@ const result = await client.execute({
         onClick={() => setShowPaymentDialog(true)}
         isCompleted={isCompleted}
         idleLabel="🎨 Pay $0.1 & Mint NFT"
-        completedLabel="✅ NFT Minted!"
+        completedLabel="✅ NFT Minted & Funds Returned!"
       />
 
       {/* New Payment Button (shown after completion) */}
@@ -151,9 +184,15 @@ const result = await client.execute({
           txHash={paymentResult.txHash}
           network={paymentResult.network}
           details={[
-            { label: 'Payment', value: <strong>$0.1 USDC</strong> },
+            { label: 'Payment', value: <strong>$0.1 USDC (returned to you)</strong> },
+            { label: 'NFT', value: <strong>Minted to your wallet 🎨</strong> },
             { label: 'Hook', value: <code>NFTMintHook</code> },
-            { label: 'Type', value: <strong>Random Mint 🎲</strong> },
+            { 
+              label: 'Cost', 
+              value: paymentResult.facilitatorFee 
+                ? <strong>${(parseFloat(paymentResult.facilitatorFee) / 1_000_000).toFixed(4)} facilitator fee</strong>
+                : <strong>$0.01 facilitator fee</strong>
+            },
             { label: 'Mode', value: <strong>Serverless ⚡</strong> },
           ]}
         />

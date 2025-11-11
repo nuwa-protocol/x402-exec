@@ -26,6 +26,7 @@ import { type Network } from '../config';
 export interface PaymentResult {
   txHash: string;
   network: Network;
+  facilitatorFee?: string; // In atomic units (e.g., "10000" for 0.01 USDC)
 }
 
 export interface PaymentFlowState {

@@ -1,21 +1,24 @@
 /**
  * Main application component
  * Manages wallet connection and scenario tab switching
+ * 
+ * Modes:
+ * - Serverless: Client-side only (Split Payment, NFT Mint, Reward Points)
+ * - Server: Server-controlled (Premium Download)
  */
 
 import { useState } from 'react';
 import { UnifiedDebugPanel } from './components/UnifiedDebugPanel';
-import { ServerlessTransfer } from './scenarios/ServerlessTransfer';
-import { ServerlessReferralSplit } from './scenarios/ServerlessReferralSplit';
+import { ServerlessSplitPayment } from './scenarios/ServerlessSplitPayment';
 import { ServerlessRandomNFT } from './scenarios/ServerlessRandomNFT';
 import { ServerlessPointsReward } from './scenarios/ServerlessPointsReward';
 import { PremiumDownload } from './scenarios/PremiumDownload';
 import './App.css';
 
-type ScenarioTab = 'serverless-transfer' | 'serverless-referral' | 'serverless-nft' | 'serverless-reward' | 'premium-download';
+type ScenarioTab = 'split-payment' | 'nft-mint' | 'points-reward' | 'premium-download';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<ScenarioTab>('serverless-transfer');
+  const [activeTab, setActiveTab] = useState<ScenarioTab>('split-payment');
   const [showDebug, setShowDebug] = useState<boolean>(false);
 
 
@@ -25,7 +28,7 @@ function App() {
         <div className="header-content">
           <div className="header-left">
             <h1>🎯 x402-exec Showcase</h1>
-            <p className="subtitle">x402 Payment Scenarios Demo</p>
+            <p className="subtitle">Serverless & Server Mode Payment Scenarios</p>
           </div>
         </div>
       </header>
@@ -34,47 +37,43 @@ function App() {
       <main className="app-main">
         <div className="tabs">
           <button
-            className={`tab ${activeTab === 'serverless-transfer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('serverless-transfer')}
+            className={`tab ${activeTab === 'split-payment' ? 'active' : ''}`}
+            onClick={() => setActiveTab('split-payment')}
           >
             <span className="tab-number">1</span>
-            <span>⚡ Serverless Transfer</span>
+            <span>💸 Split Payment</span>
+            <span className="tab-badge" style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af' }}>Serverless</span>
           </button>
           <button
-            className={`tab ${activeTab === 'serverless-referral' ? 'active' : ''}`}
-            onClick={() => setActiveTab('serverless-referral')}
+            className={`tab ${activeTab === 'nft-mint' ? 'active' : ''}`}
+            onClick={() => setActiveTab('nft-mint')}
           >
             <span className="tab-number">2</span>
-            <span>⚡ Serverless Referral</span>
+            <span>🎨 Pay & Mint NFT</span>
+            <span className="tab-badge" style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af' }}>Serverless</span>
           </button>
           <button
-            className={`tab ${activeTab === 'serverless-nft' ? 'active' : ''}`}
-            onClick={() => setActiveTab('serverless-nft')}
+            className={`tab ${activeTab === 'points-reward' ? 'active' : ''}`}
+            onClick={() => setActiveTab('points-reward')}
           >
             <span className="tab-number">3</span>
-            <span>⚡ Serverless NFT</span>
-          </button>
-          <button
-            className={`tab ${activeTab === 'serverless-reward' ? 'active' : ''}`}
-            onClick={() => setActiveTab('serverless-reward')}
-          >
-            <span className="tab-number">4</span>
-            <span>⚡ Serverless Reward</span>
+            <span>🎁 Pay & Earn Points</span>
+            <span className="tab-badge" style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af' }}>Serverless</span>
           </button>
           <button
             className={`tab ${activeTab === 'premium-download' ? 'active' : ''}`}
             onClick={() => setActiveTab('premium-download')}
           >
-            <span className="tab-number">5</span>
-            <span>📄 Premium Download (Server)</span>
+            <span className="tab-number">4</span>
+            <span>📥 Premium Download</span>
+            <span className="tab-badge" style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#fef3c7', color: '#92400e' }}>Server</span>
           </button>
         </div>
 
         <div className="scenario-container">
-          {activeTab === 'serverless-transfer' && <ServerlessTransfer />}
-          {activeTab === 'serverless-referral' && <ServerlessReferralSplit />}
-          {activeTab === 'serverless-nft' && <ServerlessRandomNFT />}
-          {activeTab === 'serverless-reward' && <ServerlessPointsReward />}
+          {activeTab === 'split-payment' && <ServerlessSplitPayment />}
+          {activeTab === 'nft-mint' && <ServerlessRandomNFT />}
+          {activeTab === 'points-reward' && <ServerlessPointsReward />}
           {activeTab === 'premium-download' && <PremiumDownload />}
         </div>
       </main>

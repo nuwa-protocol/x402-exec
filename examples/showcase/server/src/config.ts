@@ -56,8 +56,9 @@ config();
 export interface NetworkConfig {
   rpcUrl: string;
   settlementRouterAddress: string;
-  transferHookAddress: string; // Built-in TransferHook
-  revenueSplitHookAddress: string;
+  transferHookAddress: string; // Built-in TransferHook (used in server mode)
+  // Note: The following configs are for serverless scenarios
+  // Server only uses TransferHook for Premium Download
   nftMintHookAddress: string;
   randomNFTAddress: string;
   rewardTokenAddress: string;
@@ -188,11 +189,11 @@ export const appConfig: Config = {
       // Load from SDK instead of env vars
       settlementRouterAddress: sdkNetworks['base-sepolia'].settlementRouter,
       transferHookAddress: TransferHook.getAddress('base-sepolia'),
-      revenueSplitHookAddress: getOptionalEnv('BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS') || getOptionalEnv('REVENUE_SPLIT_HOOK_ADDRESS') || (() => { throw new Error('REVENUE_SPLIT_HOOK_ADDRESS or BASE_SEPOLIA_REVENUE_SPLIT_HOOK_ADDRESS is required'); })(),
-      nftMintHookAddress: getOptionalEnv('BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS') || getOptionalEnv('NFT_MINT_HOOK_ADDRESS') || (() => { throw new Error('NFT_MINT_HOOK_ADDRESS or BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS is required'); })(),
-      randomNFTAddress: getOptionalEnv('BASE_SEPOLIA_RANDOM_NFT_ADDRESS') || getOptionalEnv('RANDOM_NFT_ADDRESS') || (() => { throw new Error('RANDOM_NFT_ADDRESS or BASE_SEPOLIA_RANDOM_NFT_ADDRESS is required'); })(),
-      rewardTokenAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_TOKEN_ADDRESS') || getOptionalEnv('REWARD_TOKEN_ADDRESS') || (() => { throw new Error('REWARD_TOKEN_ADDRESS or BASE_SEPOLIA_REWARD_TOKEN_ADDRESS is required'); })(),
-      rewardHookAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_HOOK_ADDRESS') || getOptionalEnv('REWARD_HOOK_ADDRESS') || (() => { throw new Error('REWARD_HOOK_ADDRESS or BASE_SEPOLIA_REWARD_HOOK_ADDRESS is required'); })(),
+      // Serverless scenario configs (optional for server-only deployment)
+      nftMintHookAddress: getOptionalEnv('BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS') || getOptionalEnv('NFT_MINT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      randomNFTAddress: getOptionalEnv('BASE_SEPOLIA_RANDOM_NFT_ADDRESS') || getOptionalEnv('RANDOM_NFT_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      rewardTokenAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_TOKEN_ADDRESS') || getOptionalEnv('REWARD_TOKEN_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      rewardHookAddress: getOptionalEnv('BASE_SEPOLIA_REWARD_HOOK_ADDRESS') || getOptionalEnv('REWARD_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       usdcAddress: getOptionalEnv('BASE_SEPOLIA_USDC_ADDRESS') || getOptionalEnv('USDC_ADDRESS') || getDefaultUsdcAddress('base-sepolia'),
     },
     // X-Layer Testnet configuration
@@ -202,7 +203,7 @@ export const appConfig: Config = {
       // Load from SDK instead of env vars
       settlementRouterAddress: sdkNetworks['x-layer-testnet'].settlementRouter,
       transferHookAddress: TransferHook.getAddress('x-layer-testnet'),
-      revenueSplitHookAddress: getOptionalEnv('X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
+      // Serverless scenario configs (optional for server-only deployment)
       nftMintHookAddress: getOptionalEnv('X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS') || '0x0000000000000000000000000000000000000000',
       randomNFTAddress: getOptionalEnv('X_LAYER_TESTNET_RANDOM_NFT_ADDRESS') || '0x0000000000000000000000000000000000000000',
       rewardTokenAddress: getOptionalEnv('X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS') || '0x0000000000000000000000000000000000000000',

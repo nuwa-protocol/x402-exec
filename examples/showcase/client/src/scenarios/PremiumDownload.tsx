@@ -69,8 +69,8 @@ export function PremiumDownload() {
 
       <div className="scenario-description">
         <p>
-          Purchase the exclusive <strong>"x402 Protocol Implementation Guide"</strong> PDF report for{' '}
-          <strong>$1.00 USDC</strong>. This content requires server-side processing for secure delivery.
+          Purchase the exclusive <strong>"x402 Protocol Whitepaper"</strong> PDF for{' '}
+          <strong>$0.10 USDC</strong>. This content requires server-side processing for secure delivery.
         </p>
         <p>
           Upon successful payment, the server will generate a unique, time-limited download link for you.
@@ -78,10 +78,10 @@ export function PremiumDownload() {
         <div className="content-details" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '14px' }}>
           <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📚 Content Details:</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            <li style={{ marginBottom: '5px' }}><strong>Title:</strong> x402 Protocol Implementation Guide</li>
+            <li style={{ marginBottom: '5px' }}><strong>Title:</strong> x402 Protocol Whitepaper</li>
             <li style={{ marginBottom: '5px' }}><strong>Format:</strong> PDF</li>
-            <li style={{ marginBottom: '5px' }}><strong>Size:</strong> ~5 MB (demo content)</li>
-            <li style={{ marginBottom: '5px' }}><strong>Price:</strong> $1.00 USDC</li>
+            <li style={{ marginBottom: '5px' }}><strong>Size:</strong> ~2.5 MB</li>
+            <li style={{ marginBottom: '5px' }}><strong>Price:</strong> $0.10 USDC</li>
           </ul>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function PremiumDownload() {
             cursor: downloadResult ? 'not-allowed' : 'pointer'
           }}
         >
-          {downloadResult ? '✅ Purchased' : '💳 Purchase & Download ($1 USDC)'}
+          {downloadResult ? '✅ Purchased' : '💳 Purchase & Download ($0.1 USDC)'}
         </button>
 
         {downloadResult && (
@@ -196,7 +196,7 @@ export function PremiumDownload() {
         <PaymentDialog
           isOpen={showPaymentDialog}
           onClose={() => setShowPaymentDialog(false)}
-          amount="$1.00"
+          amount="$0.10"
           currency="USDC"
           endpoint="/api/purchase-download"
           getRequestBody={(userAddress) => ({

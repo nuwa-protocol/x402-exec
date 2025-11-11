@@ -24,7 +24,7 @@ interface ServerlessPaymentDialogProps {
   amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
   recipient: string; // Fallback recipient (used if no splits provided)
   splits?: Split[]; // Optional: for distributed transfers
-  onSuccess?: (result: { txHash: string; network: Network }) => void;
+  onSuccess?: (result: { txHash: string; network: Network; facilitatorFee?: string }) => void;
   onError?: (error: string) => void;
 }
 
@@ -147,7 +147,11 @@ export function ServerlessPaymentDialog({
 
       console.log('[ServerlessPaymentDialog] Execute result:', result);
       console.log('[ServerlessPaymentDialog] Selected network:', selectedNetwork);
-      onSuccess?.({ txHash: result.txHash, network: selectedNetwork });
+      onSuccess?.({ 
+        txHash: result.txHash, 
+        network: selectedNetwork,
+        facilitatorFee: feeInfo.facilitatorFee, // Pass the actual facilitator fee
+      });
       onClose();
     } catch (err: any) {
       console.error('Payment failed:', err);
