@@ -11,13 +11,10 @@ import { ServerlessTransfer } from './scenarios/ServerlessTransfer';
 import { ServerlessReferralSplit } from './scenarios/ServerlessReferralSplit';
 import { ServerlessRandomNFT } from './scenarios/ServerlessRandomNFT';
 import { ServerlessPointsReward } from './scenarios/ServerlessPointsReward';
-import { TransferWithHook } from './scenarios/TransferWithHook';
-import { ReferralSplit } from './scenarios/ReferralSplit';
-import { RandomNFT } from './scenarios/RandomNFT';
-import { PointsReward } from './scenarios/PointsReward';
+import { PremiumDownload } from './scenarios/PremiumDownload';
 import './App.css';
 
-type ScenarioTab = 'direct-payment' | 'serverless-transfer' | 'serverless-referral' | 'serverless-nft' | 'serverless-reward' | 'transfer-with-hook' | 'referral' | 'nft' | 'reward';
+type ScenarioTab = 'direct-payment' | 'serverless-transfer' | 'serverless-referral' | 'serverless-nft' | 'serverless-reward' | 'premium-download';
 
 function App() {
   const [activeTab, setActiveTab] = useState<ScenarioTab>('direct-payment');
@@ -74,32 +71,11 @@ function App() {
             <span>⚡ Serverless Reward</span>
           </button>
           <button
-            className={`tab ${activeTab === 'transfer-with-hook' ? 'active' : ''}`}
-            onClick={() => setActiveTab('transfer-with-hook')}
+            className={`tab ${activeTab === 'premium-download' ? 'active' : ''}`}
+            onClick={() => setActiveTab('premium-download')}
           >
             <span className="tab-number">5</span>
-            <span>Transfer Hook (Server)</span>
-          </button>
-          <button
-            className={`tab ${activeTab === 'referral' ? 'active' : ''}`}
-            onClick={() => setActiveTab('referral')}
-          >
-            <span className="tab-number">6</span>
-            <span>Referral Split (Server)</span>
-          </button>
-          <button
-            className={`tab ${activeTab === 'nft' ? 'active' : ''}`}
-            onClick={() => setActiveTab('nft')}
-          >
-            <span className="tab-number">7</span>
-            <span>NFT Mint (Server)</span>
-          </button>
-          <button
-            className={`tab ${activeTab === 'reward' ? 'active' : ''}`}
-            onClick={() => setActiveTab('reward')}
-          >
-            <span className="tab-number">8</span>
-            <span>Points Reward (Server)</span>
+            <span>📄 Premium Download (Server)</span>
           </button>
         </div>
 
@@ -109,10 +85,7 @@ function App() {
           {activeTab === 'serverless-referral' && <ServerlessReferralSplit />}
           {activeTab === 'serverless-nft' && <ServerlessRandomNFT />}
           {activeTab === 'serverless-reward' && <ServerlessPointsReward />}
-          {activeTab === 'transfer-with-hook' && <TransferWithHook />}
-          {activeTab === 'referral' && <ReferralSplit />}
-          {activeTab === 'nft' && <RandomNFT />}
-          {activeTab === 'reward' && <PointsReward />}
+          {activeTab === 'premium-download' && <PremiumDownload />}
         </div>
       </main>
 

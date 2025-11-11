@@ -21,6 +21,7 @@ import * as transferWithHook from './scenarios/transfer-with-hook.js';
 import * as referral from './scenarios/referral.js';
 import * as nft from './scenarios/nft.js';
 import * as reward from './scenarios/reward.js';
+import * as premiumDownload from './scenarios/premium-download.js';
 import { encodeRevenueSplitData, encodeRewardData, encodeNFTMintData, decodeNFTMintData } from './utils/hookData.js';
 
 // Extend Hono Context to include x402 data
@@ -73,6 +74,7 @@ app.get('/api/scenarios', (c) => {
       'referral-split',
       'nft-minting',
       'reward-points',
+      'premium-download',
     ],
   });
 });
@@ -429,6 +431,102 @@ app.post('/api/reward-points/payment',
     });
   }
 );
+
+// ===== Scenario 6: Premium Content Download =====
+
+app.get('/api/premium-download/info', (c) => {
+  const info = premiumDownload.getScenarioInfo();
+  return c.json(info);
+});
+
+app.post('/api/purchase-download',
+  paymentMiddleware(
+    appConfig.resourceServerAddress,
+    {
+      price: '$1.00', // 1.00 USD for digital content
+      network: Object.keys(appConfig.networks) as any,
+      config: {
+        description: 'Premium Content Download: Purchase and download digital content',
+      },
+    },
+    facilitatorConfig
+  ),
+  async (c) => {
+    const x402 = c.get('x402');
+    const body = await c.req.json();
+    
+    console.log('[Premium Download] Payment completed successfully');
+    console.log(`[Premium Download] Network: ${x402.network}`);
+    console.log(`[Premium Download] Payer: ${x402.payer}`);
+    
+    // Verify content exists
+    const contentId = body.contentId || 'x402-protocol-guide';
+    const content = premiumDownload.getContentItem(contentId);
+    
+    if (!content) {
+      return c.json({
+        success: false,
+        error: `Content not found: ${contentId}`,
+      }, 404);
+    }
+    
+    // Generate download access
+    const downloadAccess = premiumDownload.generateDownloadUrl(
+      contentId,
+      x402.payer as `0x${string}`
+    );
+    
+    console.log(`[Premium Download] Generated download URL for ${x402.payer}`);
+    console.log(`[Premium Download] Content: ${content.title}`);
+    console.log(`[Premium Download] Expires: ${downloadAccess.expiresAt}`);
+    
+    return c.json({
+      success: true,
+      message: 'Purchase successful',
+      downloadUrl: downloadAccess.downloadUrl,
+      fileName: downloadAccess.fileName,
+      expiresAt: downloadAccess.expiresAt,
+      network: x402.network,
+    });
+  }
+);
+
+// Serve download files
+app.get('/api/download/:contentId', async (c) => {
+  const contentId = c.req.param('contentId');
+  const token = c.req.query('token');
+  
+  if (!token) {
+    return c.json({ error: 'Download token required' }, 401);
+  }
+  
+  // Verify token
+  const isValid = premiumDownload.verifyDownloadToken(contentId, token);
+  if (!isValid) {
+    return c.json({ error: 'Invalid or expired download token' }, 403);
+  }
+  
+  const content = premiumDownload.getContentItem(contentId);
+  if (!content) {
+    return c.json({ error: 'Content not found' }, 404);
+  }
+  
+  // In production, stream file from S3/cloud storage
+  // For demo, return a simple PDF or redirect to demo file
+  console.log(`[Download] Serving ${content.fileName} to user`);
+  
+  // Return demo content (in production, use c.stream() or redirect)
+  return c.text(
+    'Demo PDF Content - x402 Protocol Implementation Guide\n\n' +
+    'This is a placeholder for the actual PDF file.\n' +
+    'In production, this would stream the actual file content.',
+    200,
+    {
+      'Content-Type': content.mimeType,
+      'Content-Disposition': `attachment; filename="${content.fileName}"`,
+    }
+  );
+});
 
 // Start server
 const port = Number(process.env.PORT) || 3000;

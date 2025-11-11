@@ -1,21 +1,23 @@
 /**
  * Facilitator Debug Panel Component
- * Shows current facilitator URL for debugging
+ * Shows current facilitator URL and server URL for debugging
  */
 
-import { getFacilitatorUrl } from '../config';
+import { getFacilitatorUrl, getServerUrl } from '../config';
 
 export function FacilitatorDebugPanel() {
   const facilitatorUrl = getFacilitatorUrl();
+  const serverUrl = getServerUrl();
   const isLocalFacilitator = facilitatorUrl.includes('localhost') || facilitatorUrl.includes('127.0.0.1');
+  const isLocalServer = serverUrl && (serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1'));
 
   return (
     <div style={{
       position: 'fixed',
       bottom: '20px',
       right: '20px',
-      backgroundColor: isLocalFacilitator ? '#fff3cd' : '#f8f9fa',
-      border: `2px solid ${isLocalFacilitator ? '#ffc107' : '#dee2e6'}`,
+      backgroundColor: (isLocalFacilitator || isLocalServer) ? '#fff3cd' : '#f8f9fa',
+      border: `2px solid ${(isLocalFacilitator || isLocalServer) ? '#ffc107' : '#dee2e6'}`,
       borderRadius: '8px',
       padding: '12px 16px',
       fontSize: '12px',
@@ -41,7 +43,20 @@ export function FacilitatorDebugPanel() {
         </div>
       </div>
 
-      {isLocalFacilitator && (
+      <div style={{ marginBottom: '6px' }}>
+        <strong>Server:</strong>
+        <div style={{ 
+          marginTop: '4px',
+          padding: '6px 8px',
+          backgroundColor: isLocalServer ? '#fff' : '#e9ecef',
+          borderRadius: '4px',
+          wordBreak: 'break-all',
+        }}>
+          {serverUrl || '(relative - Vite proxy)'}
+        </div>
+      </div>
+
+      {(isLocalFacilitator || isLocalServer) && (
         <div style={{
           marginTop: '8px',
           padding: '8px',
@@ -53,7 +68,9 @@ export function FacilitatorDebugPanel() {
             ⚠️ Local Development Mode
           </div>
           <div style={{ color: '#856404', fontSize: '11px' }}>
-            Using local facilitator. Make sure it's running!
+            {isLocalFacilitator && <div>• Facilitator: localhost</div>}
+            {isLocalServer && <div>• Server: localhost</div>}
+            <div style={{ marginTop: '4px' }}>Make sure local services are running!</div>
           </div>
         </div>
       )}
@@ -65,7 +82,7 @@ export function FacilitatorDebugPanel() {
         fontSize: '11px',
         color: '#6c757d'
       }}>
-        💡 To change: Set <code>VITE_FACILITATOR_URL</code> in <code>.env</code>
+        💡 To change: Edit <code>.env</code> and restart dev server
       </div>
     </div>
   );
