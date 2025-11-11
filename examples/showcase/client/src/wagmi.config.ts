@@ -15,7 +15,7 @@ export const config = createConfig({
     // Explicitly target specific wallets to avoid conflicts
     metaMask(),
     coinbaseWallet({
-      appName: 'x402-exec Showcase',
+      appName: 'x402x Protocol Demo',
     }),
     // Fallback to generic injected for other wallets
     injected(),

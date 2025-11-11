@@ -133,7 +133,7 @@ export function ServerlessRandomNFT() {
             </table>
           </div>
 
-          {/* Mainnet Zero-Cost Highlight */}
+          {/* Mainnet Fund Circulation */}
           <div
             style={{
               margin: '20px 0',
@@ -144,17 +144,17 @@ export function ServerlessRandomNFT() {
             }}
           >
             <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '15px' }}>
-              💰 Mainnet-Ready: Zero-Cost Demo
+              💰 How Payment Works
             </h4>
             <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#166534' }}>
               <p style={{ margin: '0 0 8px 0' }}>
-                <strong>💸 Funds Return:</strong> The $0.1 USDC payment automatically returns to your wallet after NFT minting
+                <strong>💸 Payment Flow:</strong> You pay $0.1 USDC, which returns to your wallet after NFT minting
               </p>
               <p style={{ margin: '0 0 8px 0' }}>
-                <strong>✨ You Get:</strong> NFT + $0.1 USDC back
+                <strong>✨ What You Get:</strong> NFT minted to your wallet
               </p>
               <p style={{ margin: 0 }}>
-                <strong>💵 Actual Cost:</strong> Only $0.01 facilitator fee + gas
+                <strong>💵 Net Cost:</strong> Only facilitator fee (~$0.01) + gas
               </p>
             </div>
           </div>

@@ -127,17 +127,17 @@ export function ServerlessSplitPayment() {
             }}
           >
             <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#15803d' }}>
-              💰 Mainnet-Ready: Zero-Cost Demo
+              💰 How Payment Works
             </h4>
             <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#166534' }}>
               <p style={{ margin: '0 0 8px 0' }}>
-                <strong>💸 Funds Return:</strong> Set yourself as the primary recipient to get funds back
+                <strong>💸 Payment Flow:</strong> $0.1 USDC is split among recipients based on configured percentages
               </p>
               <p style={{ margin: '0 0 8px 0' }}>
-                <strong>✨ You Get:</strong> Split distribution demonstrated + USDC back
+                <strong>✨ Distribution:</strong> All transfers happen atomically in one transaction
               </p>
               <p style={{ margin: 0 }}>
-                <strong>💵 Actual Cost:</strong> Only $0.01 facilitator fee
+                <strong>💵 Cost:</strong> Facilitator fee (~$0.01) + gas
               </p>
             </div>
           </div>

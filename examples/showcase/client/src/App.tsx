@@ -27,8 +27,8 @@ function App() {
       <header className="app-header">
         <div className="header-content">
           <div className="header-left">
-            <h1>🎯 x402-exec Showcase</h1>
-            <p className="subtitle">Serverless & Server Mode Payment Scenarios</p>
+            <h1>🎯 x402x Protocol Demo</h1>
+            <p className="subtitle">Atomic Payment & Smart Contract Execution</p>
           </div>
         </div>
       </header>
