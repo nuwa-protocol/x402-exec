@@ -9,15 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@x402x/client": "workspace:*",
     "@x402x/core": "workspace:*",
-    "@x402x/fetch": "workspace:*",
-    "@x402x/react": "workspace:*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "viem": "^2.17.0",
     "wagmi": "^2.12.0",
     "x402": "npm:@x402x/x402@^0.6.6-patch.1",
-    "x402-fetch": "^0.6.6",
     "@tanstack/react-query": "^5.51.0"
   },
   "devDependencies": {

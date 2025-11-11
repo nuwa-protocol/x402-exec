@@ -127,6 +127,25 @@ export function setPreferredNetwork(network: Network): void {
 }
 
 /**
+ * Get the facilitator URL
+ * In development: can use local facilitator via VITE_FACILITATOR_URL
+ * In production: uses VITE_FACILITATOR_URL environment variable or default
+ * 
+ * @returns Facilitator URL
+ */
+export function getFacilitatorUrl(): string {
+  const facilitatorUrl = import.meta.env.VITE_FACILITATOR_URL;
+  
+  // If no facilitator URL is set, use default
+  if (!facilitatorUrl) {
+    return 'https://facilitator.x402x.dev';
+  }
+  
+  // Remove trailing slash if present
+  return facilitatorUrl.replace(/\/$/, '');
+}
+
+/**
  * Get the API base URL
  * In development: uses empty string to leverage Vite proxy
  * In production: uses VITE_SERVER_URL environment variable
@@ -157,6 +176,7 @@ export function buildApiUrl(path: string): string {
 
 // Export configuration object for convenience
 export const config = {
+  facilitatorUrl: getFacilitatorUrl(),
   serverUrl: getServerUrl(),
   buildApiUrl,
   networks: NETWORKS,

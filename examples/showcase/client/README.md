@@ -140,3 +140,79 @@ MIT
 - [Facilitator Documentation](../../facilitator/README.md)
 - [x402 Protocol Specification](https://github.com/x402-protocol/x402-spec)
 
+
+## 🔧 Development Configuration
+
+### Facilitator URL Configuration
+
+The showcase client supports configuring the facilitator URL for local development and debugging.
+
+#### Quick Start
+
+1. **Copy the environment template:**
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. **For local facilitator development:**
+   ```bash
+   # .env.local
+   VITE_FACILITATOR_URL=http://localhost:3001
+   ```
+
+3. **Restart the dev server:**
+   ```bash
+   pnpm dev
+   ```
+
+#### Environment Variables
+
+- `VITE_FACILITATOR_URL` - Facilitator service URL
+  - Default: `https://facilitator.x402x.dev`
+  - Local: `http://localhost:3001`
+  
+- `VITE_SERVER_URL` - Server URL (for Server Mode examples)
+  - Default: Empty (uses relative paths/Vite proxy)
+  - Local: `http://localhost:3000`
+
+#### Debug Panel
+
+The app includes a **Facilitator Debug Panel** in the bottom-right corner that shows:
+- Current facilitator URL
+- ⚠️ Warning when using local facilitator
+- Instructions for changing configuration
+
+#### Examples
+
+**Production (default):**
+```env
+VITE_FACILITATOR_URL=https://facilitator.x402x.dev
+```
+
+**Local development:**
+```env
+VITE_FACILITATOR_URL=http://localhost:3001
+```
+
+**Custom facilitator:**
+```env
+VITE_FACILITATOR_URL=https://my-facilitator.example.com
+```
+
+#### Testing Local Facilitator
+
+1. Start local facilitator:
+   ```bash
+   cd facilitator
+   pnpm dev
+   ```
+
+2. Configure showcase client:
+   ```bash
+   cd examples/showcase/client
+   echo "VITE_FACILITATOR_URL=http://localhost:3001" > .env.local
+   pnpm dev
+   ```
+
+3. Check the debug panel - it should show a yellow warning indicating local mode.
+

@@ -5,14 +5,16 @@
 
 import { useState } from 'react';
 import { WalletDebugInfo } from './components/WalletDebugInfo';
+import { FacilitatorDebugPanel } from './components/FacilitatorDebugPanel';
 import { DirectPayment } from './scenarios/DirectPayment';
+import { ServerlessTransfer } from './scenarios/ServerlessTransfer';
 import { TransferWithHook } from './scenarios/TransferWithHook';
 import { ReferralSplit } from './scenarios/ReferralSplit';
 import { RandomNFT } from './scenarios/RandomNFT';
 import { PointsReward } from './scenarios/PointsReward';
 import './App.css';
 
-type ScenarioTab = 'direct-payment' | 'transfer-with-hook' | 'referral' | 'nft' | 'reward';
+type ScenarioTab = 'direct-payment' | 'serverless-transfer' | 'transfer-with-hook' | 'referral' | 'nft' | 'reward';
 
 function App() {
   const [activeTab, setActiveTab] = useState<ScenarioTab>('direct-payment');
@@ -41,37 +43,45 @@ function App() {
             <span>Direct Payment</span>
           </button>
           <button
+            className={`tab ${activeTab === 'serverless-transfer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('serverless-transfer')}
+          >
+            <span className="tab-number">1</span>
+            <span>⚡ Serverless</span>
+          </button>
+          <button
             className={`tab ${activeTab === 'transfer-with-hook' ? 'active' : ''}`}
             onClick={() => setActiveTab('transfer-with-hook')}
           >
-            <span className="tab-number">1</span>
-            <span>Transfer Hook</span>
+            <span className="tab-number">2</span>
+            <span>Transfer Hook (Server)</span>
           </button>
           <button
             className={`tab ${activeTab === 'referral' ? 'active' : ''}`}
             onClick={() => setActiveTab('referral')}
           >
-            <span className="tab-number">2</span>
-            <span>Referral Split</span>
+            <span className="tab-number">3</span>
+            <span>Referral Split (Server)</span>
           </button>
           <button
             className={`tab ${activeTab === 'nft' ? 'active' : ''}`}
             onClick={() => setActiveTab('nft')}
           >
-            <span className="tab-number">3</span>
-            <span>NFT Mint</span>
+            <span className="tab-number">4</span>
+            <span>NFT Mint (Server)</span>
           </button>
           <button
             className={`tab ${activeTab === 'reward' ? 'active' : ''}`}
             onClick={() => setActiveTab('reward')}
           >
-            <span className="tab-number">4</span>
-            <span>Points Reward</span>
+            <span className="tab-number">5</span>
+            <span>Points Reward (Server)</span>
           </button>
         </div>
 
         <div className="scenario-container">
           {activeTab === 'direct-payment' && <DirectPayment />}
+          {activeTab === 'serverless-transfer' && <ServerlessTransfer />}
           {activeTab === 'transfer-with-hook' && <TransferWithHook />}
           {activeTab === 'referral' && <ReferralSplit />}
           {activeTab === 'nft' && <RandomNFT />}
@@ -109,6 +119,9 @@ function App() {
 
       {/* Wallet Debug Info - floating panel */}
       <WalletDebugInfo visible={showDebug} />
+      
+      {/* Facilitator Debug Panel - shows facilitator URL */}
+      <FacilitatorDebugPanel />
     </div>
   );
 }
