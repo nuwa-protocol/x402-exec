@@ -1,0 +1,10 @@
+{
+  "name": "NuPay Demos",
+  "description": "Sample merchant and wallet integrations that highlight facilitator settlement flows on testnets.",
+  "url": "https://demo.x402x.dev",
+  "networks": ["base-sepolia", "x-layer-testnet"],
+  "paymentTokensByNetwork": {
+    "base-sepolia": ["USDC"],
+    "x-layer-testnet": ["USDC_TEST"]
+  }
+}

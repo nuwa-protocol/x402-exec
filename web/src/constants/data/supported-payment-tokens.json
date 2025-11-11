@@ -1,0 +1,34 @@
+{
+  "base": [
+    {
+      "symbol": "USDC",
+      "label": "USDC",
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "explorerUrl": "https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    }
+  ],
+  "base-sepolia": [
+    {
+      "symbol": "USDC",
+      "label": "USDC",
+      "address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "explorerUrl": "https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+    }
+  ],
+  "x-layer": [
+    {
+      "symbol": "USDC",
+      "label": "USDC",
+      "address": "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      "explorerUrl": "https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B"
+    }
+  ],
+  "x-layer-testnet": [
+    {
+      "symbol": "USDC_TEST",
+      "label": "USDC",
+      "address": "0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d",
+      "explorerUrl": "https://www.oklink.com/xlayer-test/address/0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d"
+    }
+  ]
+}

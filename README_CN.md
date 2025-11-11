@@ -6,11 +6,11 @@
 
 [English](./README.md) | 简体中文
 
-x402X (x402-exec 的简称) 是一个为 [x402 协议](https://github.com/coinbase/x402) 设计的可编程结算框架，在原子交易中结合支付验证、基于 Hook 的业务逻辑和 Facilitator 激励。
+x402x (x402-exec 的简称) 是一个为 [x402 协议](https://github.com/coinbase/x402) 设计的可编程结算框架，在原子交易中结合支付验证、基于 Hook 的业务逻辑和 Facilitator 激励。
 
 ## ✨ 特性
 
-### x402X 的独特之处
+### x402x 的独特之处
 
 **可编程结算与真正的原子性** - 不仅仅是支付路由，而是一个完整的结算执行框架，在单个原子交易中组合支付验证、业务逻辑执行和 Facilitator 激励。
 
@@ -204,23 +204,23 @@ cd contracts
 
 ### SettlementRouter 合约
 
-| 网络 | SettlementRouter | 状态 |
-|------|------------------|------|
-| Base Sepolia (测试网) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb) | ✅ 活跃 |
-| X-Layer 测试网 | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ 活跃 |
-| Base 主网 | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 已上线 |
-| X-Layer 主网 | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 已上线 |
-| Ethereum 主网 | - | 🚧 计划中 |
+| 网络                  | SettlementRouter                                                                                                                      | 状态     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Base Sepolia (测试网) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb)       | ✅ 活跃   |
+| X-Layer 测试网        | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ 活跃   |
+| Base 主网             | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)               | 🎉 已上线 |
+| X-Layer 主网          | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)      | 🎉 已上线 |
+| Ethereum 主网         | -                                                                                                                                     | 🚧 计划中 |
 
 ### TransferHook（内置）
 
-| 网络 | TransferHook | 状态 |
-|------|--------------|------|
-| Base Sepolia (测试网) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569) | ✅ 活跃 |
-| X-Layer 测试网 | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ 活跃 |
-| Base 主网 | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7) | 🎉 已上线 |
-| X-Layer 主网 | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7) | 🎉 已上线 |
-| Ethereum 主网 | - | 🚧 计划中 |
+| 网络                  | TransferHook                                                                                                                          | 状态     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Base Sepolia (测试网) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569)       | ✅ 活跃   |
+| X-Layer 测试网        | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ 活跃   |
+| Base 主网             | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)               | 🎉 已上线 |
+| X-Layer 主网          | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)      | 🎉 已上线 |
+| Ethereum 主网         | -                                                                                                                                     | 🚧 计划中 |
 
 ### 在线示例
 

@@ -1,0 +1,51 @@
+---
+title: Server Guide
+description: Verify and settle payments on the facilitator server with Hono + x402 helpers.
+navGroup: Guides
+navOrder: 3
+status: beta
+---
+
+**Stack:** Hono + x402
+
+The server exposes scenario endpoints that first return `402 Payment Required` with payment
+requirements, then verify and settle once the client reposts with `X-PAYMENT`.
+
+```ts
+import { Hono } from "hono";
+import { useFacilitator } from "x402/verify";
+import { findMatchingPaymentRequirements } from "x402/shared";
+
+const { verify, settle } = useFacilitator({
+  url: process.env.FACILITATOR_URL! as const,
+});
+
+app.post("/api/scenario-1/payment", async (c) => {
+  if (!c.req.header("X-PAYMENT")) {
+    const accepts = [generateReferralPayment({ /* ... */ })];
+    return c.json({ error: "X-PAYMENT required", accepts, x402Version: 1 }, 402);
+  }
+
+  const decoded = exact.evm.decodePayment(c.req.header("X-PAYMENT")!);
+  const selected = findMatchingPaymentRequirements([decoded.paymentRequirements], decoded);
+  const ok = await verify(decoded, selected);
+
+  if (!ok.isValid) {
+    return c.json({ error: ok.invalidReason, accepts: [selected] }, 402);
+  }
+
+  const settlement = await settle(decoded, selected);
+  return c.json({ success: settlement.success, transaction: settlement.transaction });
+});
+```
+
+Key pieces:
+
+- `generateReferralPayment` (and friends) output consistent payment requirement payloads for each
+  scenario.
+- `verify` checks signatures, balances, expirations, and commitment binding.
+- `settle` handles the actual submission against your configured facilitator contract.
+
+📁 See [`examples/showcase/server/src/index.ts`](https://github.com/nuwa-protocol/x402-exec/blob/main/examples/showcase/server/src/index.ts)
+and scenario generators in
+[`examples/showcase/server/src/scenarios`](https://github.com/nuwa-protocol/x402-exec/tree/main/examples/showcase/server/src/scenarios).

@@ -25,11 +25,19 @@ export function Navbar() {
             {/* <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs">
               ⚡
             </span> */}
-            <span className="ml-2 text-xl font-bold tracking-tight">x402X</span>
+            <span className="ml-2 text-xl font-bold tracking-tight">x402x</span>
           </Link>
         </Button>
         <NavigationMenu className="hidden md:flex" viewport={false}>
           <NavigationMenuList className="justify-end">
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                data-active={pathname === "/" ? true : undefined}
+              >
+                <Link to="/">Home</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink
                 asChild
@@ -46,6 +54,16 @@ export function Navbar() {
                 }
               >
                 <Link to="/facilitator">Facilitator</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                data-active={
+                  pathname.startsWith("/ecosystem") ? true : undefined
+                }
+              >
+                <Link to="/ecosystem">Ecosystem</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             {/* <NavigationMenuItem>

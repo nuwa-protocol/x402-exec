@@ -1,4 +1,4 @@
-# x402X
+# x402x
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Solidity](https://img.shields.io/badge/solidity-^0.8.20-green.svg)](https://soliditylang.org/)
@@ -6,11 +6,11 @@
 
 English | [简体中文](./README_CN.md)
 
-x402X (short for x402-exec) is a programmable settlement framework for [x402 protocol](https://github.com/coinbase/x402), combining payment verification, Hook-based business logic, and facilitator incentives in atomic transactions.
+x402x (short for x402-exec) is a programmable settlement framework for [x402 protocol](https://github.com/coinbase/x402), combining payment verification, Hook-based business logic, and facilitator incentives in atomic transactions.
 
 ## ✨ Features
 
-### 💎 What Makes x402X Special
+### 💎 What Makes x402x Special
 
 **Programmable Settlement with Real Atomicity** - Not just payment routing, but a complete settlement execution framework that combines payment verification, business logic execution, and facilitator incentives in a single atomic transaction.
 
@@ -204,23 +204,23 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 
 ### SettlementRouter Contract
 
-| Network | SettlementRouter | Status |
-|---------|------------------|--------|
-| Base Sepolia (Testnet) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb) | ✅ Active |
-| X-Layer Testnet | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ Active |
-| Base Mainnet | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 Live |
-| X-Layer Mainnet | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B) | 🎉 Live |
-| Ethereum Mainnet | - | 🚧 Planned |
+| Network                | SettlementRouter                                                                                                                      | Status    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Base Sepolia (Testnet) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb)       | ✅ Active  |
+| X-Layer Testnet        | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ Active  |
+| Base Mainnet           | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)               | 🎉 Live    |
+| X-Layer Mainnet        | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)      | 🎉 Live    |
+| Ethereum Mainnet       | -                                                                                                                                     | 🚧 Planned |
 
 ### TransferHook (Built-in)
 
-| Network | TransferHook | Status |
-|---------|--------------|--------|
-| Base Sepolia (Testnet) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569) | ✅ Active |
-| X-Layer Testnet | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ Active |
-| Base Mainnet | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7) | 🎉 Live |
-| X-Layer Mainnet | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7) | 🎉 Live |
-| Ethereum Mainnet | - | 🚧 Planned |
+| Network                | TransferHook                                                                                                                          | Status    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Base Sepolia (Testnet) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569)       | ✅ Active  |
+| X-Layer Testnet        | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ Active  |
+| Base Mainnet           | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)               | 🎉 Live    |
+| X-Layer Mainnet        | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)      | 🎉 Live    |
+| Ethereum Mainnet       | -                                                                                                                                     | 🚧 Planned |
 
 ### Live Examples
 

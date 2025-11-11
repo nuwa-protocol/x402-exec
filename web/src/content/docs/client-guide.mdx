@@ -1,0 +1,97 @@
+---
+title: Client Guide
+description: Learn how the showcase React client runs an end-to-end 402 flow with viem.
+navGroup: Guides
+navOrder: 2
+status: beta
+---
+
+**Stack:** React + viem
+
+The client performs a 402 flow:
+
+1. Request payment requirements from the facilitator server.
+2. Sign an EIP‑3009 authorization, computing the nonce as either a random 32-byte value or a
+   settlement commitment (router flows).
+3. Replay the original request with an `X-PAYMENT` header that embeds the payment payload.
+
+```ts
+// 1) Initial request to get 402
+const res = await fetch("/api/scenario-1/payment", {
+  method: "POST",
+  body: JSON.stringify({ ...payload }),
+});
+const { accepts, x402Version } = await res.json();
+const req = accepts[0];
+
+// 2) Build authorization params
+const from = wallet.address;
+const chainId = wallet.chain.id;
+const value = req.maxAmountRequired;
+const validAfter = Math.floor(Date.now() / 1000) - 600;
+const validBefore = Math.floor(Date.now() / 1000) + req.maxTimeoutSeconds;
+
+// 3) Compute nonce (commitment for router mode; random for direct payments)
+const isRouter = !!req.extra?.settlementRouter;
+const nonce = isRouter
+  ? calculateCommitment({
+      chainId,
+      hub: req.extra.settlementRouter,
+      token: req.asset,
+      from,
+      value,
+      validAfter,
+      validBefore,
+      salt: req.extra.salt,
+      payTo: req.extra.payTo,
+      facilitatorFee: req.extra.facilitatorFee || "0",
+      hook: req.extra.hook,
+      hookData: req.extra.hookData,
+    })
+  : randomBytes32();
+
+// 4) Sign EIP-712 (EIP-3009 TransferWithAuthorization)
+const domain = {
+  name: "USDC",
+  version: "2",
+  chainId,
+  verifyingContract: req.asset,
+};
+const message = {
+  from,
+  to: isRouter ? req.extra.settlementRouter : req.payTo,
+  value: BigInt(value),
+  validAfter: BigInt(validAfter),
+  validBefore: BigInt(validBefore),
+  nonce,
+};
+const signature = await signTypedData(walletClient, {
+  domain,
+  types: { TransferWithAuthorization: [...] },
+  message,
+});
+
+// 5) Send final request with X-PAYMENT header (include original requirements)
+const paymentPayload = {
+  x402Version,
+  scheme: req.scheme,
+  network: req.network,
+  payload: { signature, authorization: { ...message } },
+  paymentRequirements: req,
+};
+const header = base64url(JSON.stringify(paymentPayload));
+const finalRes = await fetch("/api/scenario-1/payment", {
+  method: "POST",
+  headers: { "X-PAYMENT": header },
+});
+```
+
+📁 Full implementation:
+[`examples/showcase/client/src/hooks/usePayment.ts`](https://github.com/nuwa-protocol/x402-exec/blob/main/examples/showcase/client/src/hooks/usePayment.ts)
+
+### Tips
+
+- Keep the original payment requirements around — they are echoed back inside `X-PAYMENT`.
+- When driving the settlement router, the EIP‑3009 nonce must equal the commitment hash so the hub
+  can prove intent.
+- Use viem's `signTypedData` helper to avoid subtle struct mismatches.

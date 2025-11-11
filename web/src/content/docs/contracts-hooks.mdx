@@ -1,0 +1,40 @@
+---
+title: Contracts & Hooks
+description: Dive into the settlement router, hooks, and facilitator utilities.
+navGroup: References
+navOrder: 4
+status: alpha
+---
+
+The showcase uses the `SettlementRouter` to execute arbitrary hooks after receiving an EIP‑3009
+authorization. A hook is any contract implementing `execute(bytes calldata data)` and returning a
+boolean success flag.
+
+```solidity
+function execute(bytes calldata data) external returns (bool) {
+    PaymentContext memory ctx = abi.decode(data, (PaymentContext));
+
+    // Example: mint an NFT before releasing funds
+    nft.mint(ctx.payer);
+    usdc.transfer(ctx.merchant, ctx.amount);
+
+    return true;
+}
+```
+
+Tips when authoring hooks:
+
+- Keep them deterministic — any reverts will bubble up and revert the entire settlement.
+- Use the provided `PaymentContext` (see `contracts/examples`) to avoid brittle calldata layouts.
+- Unit test hooks in isolation, then run them through the facilitator harness before shipping.
+
+### Facilitator Utilities
+
+The `contracts/facilitator` directory contains helpers for:
+
+- Reading facilitator fees and allowed hooks.
+- Emitting typed events the server can watch for reconciliation.
+- Validating commitment hashes so signatures remain single-use.
+
+For a full reference, open the `contracts/README.md` file and the example hooks in
+`contracts/examples`.

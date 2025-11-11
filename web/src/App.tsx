@@ -2,6 +2,7 @@ import Footer from "@/components/site/footer";
 import Hero from "@/components/site/hero";
 import Navbar from "@/components/site/navbar";
 import DocsPage from "@/pages/docs";
+import EcosystemPage from "@/pages/ecosystem";
 import FacilitatorPage from "@/pages/facilitator";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
@@ -11,19 +12,23 @@ function App() {
 
   // Basic client-side SEO: update document title based on route
   useEffect(() => {
-    const base = "x402X";
+    const base = "x402x";
     const pathname = location.pathname.replace(/^\/+/, "");
     const route = pathname.startsWith("docs")
       ? "docs"
       : pathname.startsWith("facilitator")
         ? "facilitator"
-        : "home";
+        : pathname.startsWith("ecosystem")
+          ? "ecosystem"
+          : "home";
     const title =
       route === "docs"
         ? `${base} • Docs`
         : route === "facilitator"
           ? `${base} • Facilitator`
-          : `${base} - Turn any x402 payment into an on-chain action`;
+          : route === "ecosystem"
+            ? `${base} • Ecosystem`
+            : `${base} - Turn any x402 payment into an on-chain action`;
     if (typeof document !== "undefined") {
       document.title = title;
     }
@@ -38,7 +43,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Hero />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/docs/:slug" element={<DocsPage />} />
           <Route path="/facilitator" element={<FacilitatorPage />} />
+          <Route path="/ecosystem" element={<EcosystemPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

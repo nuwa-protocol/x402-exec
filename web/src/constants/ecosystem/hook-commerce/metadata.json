@@ -1,0 +1,10 @@
+{
+  "name": "Hook Commerce",
+  "description": "Composable storefront templates that turn x402 payments into instantly fulfilled onchain orders.",
+  "url": "https://commerce.x402x.dev",
+  "networks": ["base", "x-layer"],
+  "paymentTokensByNetwork": {
+    "base": ["USDC"],
+    "x-layer": ["USDC"]
+  }
+}

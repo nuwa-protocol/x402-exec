@@ -1,0 +1,93 @@
+---
+title: Getting Started
+description: Understand how the showcase repo is organized and what the docs cover.
+navGroup: Getting Started
+navOrder: 1
+status: stable
+---
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+<Alert>
+  <AlertTitle>Where To Look In The Repo</AlertTitle>
+  <AlertDescription>
+    <div>
+      • Frontend (client): {" "}
+      <a
+        href="https://github.com/nuwa-protocol/x402-exec/tree/main/examples/showcase/client"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <code>examples/showcase/client</code>
+      </a>
+    </div>
+    <div>
+      • Backend (server): {" "}
+      <a
+        href="https://github.com/nuwa-protocol/x402-exec/tree/main/examples/showcase/server"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <code>examples/showcase/server</code>
+      </a>
+    </div>
+    <div>
+      • Contracts & Hooks: {" "}
+      <a
+        href="https://github.com/nuwa-protocol/x402-exec/tree/main/contracts"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <code>contracts/</code>
+      </a>
+      {" "}and{" "}
+      <a
+        href="https://github.com/nuwa-protocol/x402-exec/tree/main/contracts/examples"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <code>contracts/examples/</code>
+      </a>
+    </div>
+  </AlertDescription>
+</Alert>
+
+## Overview
+
+x402‑exec enables atomic pay‑and‑execute workflows: users sign an EIP‑3009 authorization that is
+consumed by either a standard transfer or the `SettlementRouter`, which then executes a Hook (your
+business logic). The showcase implements three end‑to‑end examples on Base Sepolia:
+
+- **Referral Split** — split a single payment across multiple recipients.
+- **Random NFT Mint** — mint an NFT to the payer then send the merchant their proceeds.
+- **Loyalty Points** — distribute reward tokens to the payer while also paying the merchant.
+
+You can find the walkthrough for all flows in
+[`examples/showcase/README.md`](https://github.com/nuwa-protocol/x402-exec/blob/main/examples/showcase/README.md).
+
+## Documentation Structure
+
+These docs are intentionally pragmatic:
+
+1. **Getting Started** (you are here) — repo tour and mental model.
+2. **Guides** — client, server, and contract deep dives for the showcase flows.
+3. **References** — settlement router parameters, facilitator contract surface, and reusable snippets.
+
+Each MDX file lives in `src/content/docs` and exposes metadata via frontmatter. The sidebar order is
+driven by `navGroup` and `navOrder`, so you can add new pages without changing any React components.
+
+## MDX Frontmatter
+
+Every doc page supports the following metadata:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `title` | string | Display name shown above the article. |
+| `description` | string | Short lead text rendered below the title. |
+| `navGroup` | string | Group heading in the sidebar. |
+| `navOrder` | number | Sort order for both the sidebar group and the page. |
+| `status` | `alpha \| beta \| stable` | Renders a status pill next to the title and sidebar entry. |
+| `hideFromSidebar` | boolean | Omits the page from navigation (useful for drafts or landing pages). |
+
+Feel free to add fields — they are passed through the loader and available to the MDX body via
+`frontmatter`.

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Base Mainnet",
+    "network": "base",
+    "chainId": 8453,
+    "status": "Mainnet",
+    "settlementRouter": "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+    "explorerUrl": "https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B"
+  },
+  {
+    "name": "Base Sepolia",
+    "network": "base-sepolia",
+    "chainId": 84532,
+    "status": "Testnet",
+    "settlementRouter": "0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb",
+    "explorerUrl": "https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb"
+  },
+  {
+    "name": "X-Layer Mainnet",
+    "network": "x-layer",
+    "chainId": 196,
+    "status": "Mainnet",
+    "settlementRouter": "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+    "explorerUrl": "https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B"
+  },
+  {
+    "name": "X-Layer Testnet",
+    "network": "x-layer-testnet",
+    "chainId": 1952,
+    "status": "Testnet",
+    "settlementRouter": "0xba9980fb08771e2fd10c17450f52d39bcb9ed576",
+    "explorerUrl": "https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576"
+  }
+]
