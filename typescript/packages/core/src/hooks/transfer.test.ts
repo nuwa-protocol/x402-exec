@@ -1,19 +1,178 @@
 import { describe, it, expect } from "vitest";
-import { TransferHook } from "./transfer";
+import { TransferHook, type Split } from "./transfer";
 import { networks } from "../networks";
 
 describe("TransferHook.encode", () => {
-  it("should return empty bytes", () => {
-    const hookData = TransferHook.encode();
+  describe("Simple Transfer Mode", () => {
+    it("should return empty bytes with no parameters", () => {
+      const hookData = TransferHook.encode();
 
-    expect(hookData).toBe("0x");
+      expect(hookData).toBe("0x");
+    });
+
+    it("should return empty bytes with empty array", () => {
+      const hookData = TransferHook.encode([]);
+
+      expect(hookData).toBe("0x");
+    });
+
+    it("should always return the same value", () => {
+      const hookData1 = TransferHook.encode();
+      const hookData2 = TransferHook.encode();
+
+      expect(hookData1).toBe(hookData2);
+    });
   });
 
-  it("should always return the same value", () => {
-    const hookData1 = TransferHook.encode();
-    const hookData2 = TransferHook.encode();
+  describe("Distributed Transfer Mode", () => {
+    it("should encode single split", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1234567890123456789012345678901234567890" as any,
+          bips: 5000, // 50%
+        },
+      ];
 
-    expect(hookData1).toBe(hookData2);
+      const hookData = TransferHook.encode(splits);
+
+      expect(hookData).toMatch(/^0x[0-9a-f]+$/i);
+      expect(hookData).not.toBe("0x");
+    });
+
+    it("should encode multiple splits", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 6000, // 60%
+        },
+        {
+          recipient: "0x2222222222222222222222222222222222222222" as any,
+          bips: 4000, // 40%
+        },
+      ];
+
+      const hookData = TransferHook.encode(splits);
+
+      expect(hookData).toMatch(/^0x[0-9a-f]+$/i);
+      expect(hookData).not.toBe("0x");
+    });
+
+    it("should encode partial splits (< 100%)", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 3000, // 30%
+        },
+      ];
+
+      const hookData = TransferHook.encode(splits);
+
+      expect(hookData).toMatch(/^0x[0-9a-f]+$/i);
+      // Remaining 70% goes to payTo
+    });
+
+    it("should encode full splits (100%)", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 10000, // 100%
+        },
+      ];
+
+      const hookData = TransferHook.encode(splits);
+
+      expect(hookData).toMatch(/^0x[0-9a-f]+$/i);
+      // payTo receives 0%
+    });
+
+    it("should encode complex multi-recipient splits", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 2500, // 25%
+        },
+        {
+          recipient: "0x2222222222222222222222222222222222222222" as any,
+          bips: 2500, // 25%
+        },
+        {
+          recipient: "0x3333333333333333333333333333333333333333" as any,
+          bips: 2500, // 25%
+        },
+        {
+          recipient: "0x4444444444444444444444444444444444444444" as any,
+          bips: 2500, // 25%
+        },
+      ];
+
+      const hookData = TransferHook.encode(splits);
+
+      expect(hookData).toMatch(/^0x[0-9a-f]+$/i);
+      expect(hookData.length).toBeGreaterThan(10); // Should be substantial
+    });
+  });
+
+  describe("Validation", () => {
+    it("should throw error for total bips > 10000", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 6000,
+        },
+        {
+          recipient: "0x2222222222222222222222222222222222222222" as any,
+          bips: 5000,
+        },
+      ];
+
+      expect(() => TransferHook.encode(splits)).toThrow("Total bips (11000) exceeds 10000");
+    });
+
+    it("should throw error for zero address", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x0000000000000000000000000000000000000000" as any,
+          bips: 5000,
+        },
+      ];
+
+      expect(() => TransferHook.encode(splits)).toThrow("Invalid recipient address");
+    });
+
+    it("should throw error for zero bips", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 0,
+        },
+      ];
+
+      expect(() => TransferHook.encode(splits)).toThrow("Bips must be greater than 0");
+    });
+
+    it("should throw error for negative bips", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: -100,
+        },
+      ];
+
+      expect(() => TransferHook.encode(splits)).toThrow("Bips must be greater than 0");
+    });
+
+    it("should throw error for individual bips > 10000", () => {
+      const splits: Split[] = [
+        {
+          recipient: "0x1111111111111111111111111111111111111111" as any,
+          bips: 15000,
+        },
+      ];
+
+      expect(() => TransferHook.encode(splits)).toThrow(
+        "Individual bips cannot exceed 10000, got: 15000",
+      );
+    });
   });
 });
 
