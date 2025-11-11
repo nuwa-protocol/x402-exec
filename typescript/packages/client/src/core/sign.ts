@@ -66,10 +66,13 @@ export async function signAuthorization(
 
     // Build EIP-712 message
     // The "to" address is the SettlementRouter (not the final recipient)
+    // The "value" MUST be total amount (business amount + facilitator fee)
+    // because the Router needs to deduct the fee before passing to Hook
+    const totalAmount = BigInt(settlement.amount) + BigInt(settlement.facilitatorFee);
     const message = {
       from: getAddress(settlement.from),
       to: getAddress(settlement.networkConfig.settlementRouter),
-      value: BigInt(settlement.amount),
+      value: totalAmount,
       validAfter: BigInt(settlement.validAfter),
       validBefore: BigInt(settlement.validBefore),
       nonce: settlement.commitment, // Use commitment as nonce
@@ -88,7 +91,7 @@ export async function signAuthorization(
     const authorization = {
       from: settlement.from,
       to: settlement.networkConfig.settlementRouter as Address,
-      value: settlement.amount,
+      value: totalAmount.toString(), // Use total amount (business + fee)
       validAfter: settlement.validAfter,
       validBefore: settlement.validBefore,
       nonce: settlement.commitment,

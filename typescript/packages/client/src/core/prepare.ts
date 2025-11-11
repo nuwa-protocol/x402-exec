@@ -158,12 +158,16 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
       : calculateTimeWindow(300); // 5 minutes default
 
   // 7. Calculate commitment hash
+  // IMPORTANT: value must be total amount (business amount + facilitator fee)
+  // because the contract's calculateCommitment expects the same value that
+  // will be authorized in the EIP-3009 signature
+  const totalAmount = (BigInt(atomicAmount) + BigInt(facilitatorFee)).toString();
   const commitment = calculateCommitment({
     chainId: networkConfig.chainId,
     hub: networkConfig.settlementRouter as Address,
     token: networkConfig.usdc.address as Address,
     from,
-    value: atomicAmount,
+    value: totalAmount,
     validAfter: timeWindow.validAfter,
     validBefore: timeWindow.validBefore,
     salt,
