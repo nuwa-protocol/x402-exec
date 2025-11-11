@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { getServerUrl } from '../config';
 import { PaymentDialog } from '../components/PaymentDialog';
+import { CodeBlock } from '../components/CodeBlock';
+import premiumDownloadClientCode from '../code-examples/premium-download-client.ts?raw';
+import premiumDownloadServerCode from '../code-examples/premium-download-server.ts?raw';
 
 interface DownloadResult {
   success: boolean;
@@ -72,6 +75,71 @@ export function PremiumDownload() {
           Purchase the exclusive <strong>"x402 Protocol Whitepaper"</strong> PDF for{' '}
           <strong>$0.10 USDC</strong>. This content requires server-side processing for secure delivery.
         </p>
+
+        {/* Features */}
+        <div
+          style={{
+            margin: '20px 0',
+            padding: '15px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            borderLeft: '4px solid #667eea',
+          }}
+        >
+          <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>✨ Features:</h4>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+              🔐 <strong>Server Verification</strong>: Payment verified before content access
+            </li>
+            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+              ⏱️ <strong>Temporary Links</strong>: Download URLs expire after 24 hours
+            </li>
+            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+              📊 <strong>Access Control</strong>: Server tracks and validates all downloads
+            </li>
+            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+              🖥️ <strong>Server Mode</strong>: Backend controls payment requirements
+            </li>
+            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+              💰 <strong>Real Payment</strong>: Actual USDC payment (not returned in this demo)
+            </li>
+          </ul>
+        </div>
+
+        {/* How It Works */}
+        <div
+          style={{
+            margin: '20px 0',
+            padding: '15px',
+            backgroundColor: '#f0f9ff',
+            borderRadius: '8px',
+            border: '1px solid #bfdbfe',
+          }}
+        >
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>💡 How it works:</h4>
+          <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8', color: '#1e40af' }}>
+            <li>Click "Purchase & Download" button</li>
+            <li>Server generates payment requirements with resource details</li>
+            <li>Connect wallet and sign the payment authorization</li>
+            <li>Server verifies payment and generates temporary download link</li>
+            <li>Download the whitepaper using the secure link</li>
+          </ol>
+        </div>
+
+        {/* Technical Flow - Client Side */}
+        <CodeBlock
+          code={premiumDownloadClientCode}
+          title="🔧 Technical Flow - Client:"
+          borderColor="#3b82f6"
+        />
+
+        {/* Technical Flow - Server Side */}
+        <CodeBlock
+          code={premiumDownloadServerCode}
+          title="🔧 Technical Flow - Server:"
+          borderColor="#28a745"
+        />
+
         <p>
           Upon successful payment, the server will generate a unique, time-limited download link for you.
         </p>

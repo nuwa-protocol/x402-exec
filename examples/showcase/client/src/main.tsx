@@ -10,7 +10,6 @@ const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {/* @ts-expect-error - WagmiProvider type compatibility issue with React 18 */}
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <App />

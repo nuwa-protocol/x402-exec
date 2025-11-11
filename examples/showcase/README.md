@@ -12,11 +12,7 @@ x402-exec Showcase is built on the [x402 protocol](https://x402.org) and [x402-e
 - **Automated Fulfillment**: Smart contracts handle business logic without manual intervention
 - **Infinite Extensibility**: Hook pattern supports arbitrary scenarios
 
-### Five Scenarios
-
-0. **💳 Direct Payment**
-   - Original x402 protocol without router/hook
-   - Debugging baseline for isolating issues
+### Four Scenarios
 
 1. **🎣 Transfer with Hook**
    - Pay $0.11 → Basic x402x settlement with $0.01 facilitator fee
@@ -125,28 +121,6 @@ This starts both:
 5. Check your wallet for results (NFT or tokens)
 
 ## 📖 Scenario Details
-
-### Scenario 0: Direct Payment (Debugging Baseline)
-
-**Purpose**: Original x402 protocol implementation for debugging and comparison
-
-**Workflow**:
-```
-1. User clicks payment button
-2. Frontend calls /api/direct-payment/payment
-3. Server generates standard PaymentRequirements (no router/hook)
-4. User signs authorization for $0.1 USDC
-5. Facilitator calls USDC.transferWithAuthorization()
-6. USDC transferred directly to merchant
-```
-
-**Key Characteristics**:
-- No SettlementRouter
-- No Hook
-- No commitment hash
-- Simplest possible flow for debugging
-
----
 
 ### Scenario 1: Transfer with Hook
 
@@ -337,7 +311,6 @@ npm run dev:client
 
 | Scenario | Gas Cost | Notes |
 |----------|----------|-------|
-| Direct Payment | ~50k | Original x402 - 1x transferWithAuthorization |
 | Transfer Hook | ~58k | TransferHook - adds ~8k gas (~16%) for router+hook |
 | Referral Split | ~120k | 1x settleAndExecute + 3x transfer |
 | NFT Mint | ~180k | 1x settleAndExecute + 1x mint + 1x transfer |
@@ -355,11 +328,6 @@ npm run dev:client
    - Contract: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
 
 ### Testing Steps
-
-0. **Scenario 0**: Test direct payment (debugging baseline)
-   - Pay $0.1 USDC
-   - Verify direct transfer to merchant in block explorer
-   - Use this to isolate router/hook issues
 
 1. **Scenario 1**: Test transfer with hook
    - Pay $0.11 USDC ($0.1 + $0.01 fee)

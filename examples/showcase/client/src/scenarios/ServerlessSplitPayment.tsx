@@ -15,7 +15,9 @@ import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
 import { StatusMessage } from '../components/StatusMessage';
 import { TransactionResult } from '../components/TransactionResult';
+import { CodeBlock } from '../components/CodeBlock';
 import { usePaymentFlow } from '../hooks/usePaymentFlow';
+import splitPaymentCode from '../code-examples/split-payment.ts?raw';
 
 // Default recipient from environment or fallback
 const DEFAULT_RECIPIENT = import.meta.env.VITE_DEFAULT_RECIPIENT_ADDRESS || '0x1111111111111111111111111111111111111111';
@@ -110,23 +112,88 @@ export function ServerlessSplitPayment() {
             Add multiple recipients and define their share in basis points (1 bip = 0.01%).
           </p>
 
+          {/* Mainnet Zero-Cost Highlight */}
           <div
             style={{
               marginTop: '15px',
               padding: '15px',
               backgroundColor: '#f0fdf4',
               borderRadius: '8px',
-              border: '1px solid #bbf7d0',
+              border: '2px solid #86efac',
             }}
           >
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#15803d' }}>
-              💰 Mainnet-Ready Design
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#15803d' }}>
+              💰 Mainnet-Ready: Zero-Cost Demo
             </h4>
-            <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.8', color: '#15803d' }}>
-              Your USDC returns to you! Set yourself as the recipient(s) to get 100% back.
-              Only <strong>$0.01 facilitator fee + gas</strong> will be charged.
-            </p>
+            <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#166534' }}>
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>💸 Funds Return:</strong> Set yourself as the primary recipient to get funds back
+              </p>
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong>✨ You Get:</strong> Split distribution demonstrated + USDC back
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>💵 Actual Cost:</strong> Only $0.01 facilitator fee
+              </p>
+            </div>
           </div>
+
+          {/* Features */}
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '15px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              borderLeft: '4px solid #667eea',
+            }}
+          >
+            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>✨ Features:</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px' }}>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                💰 <strong>Flexible Distribution</strong>: Define multiple recipients with custom percentages
+              </li>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                🎯 <strong>Remainder Handling</strong>: Primary recipient automatically gets remaining funds
+              </li>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                ⚡ <strong>Atomic Execution</strong>: All transfers happen in one transaction
+              </li>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                🔒 <strong>Built-in Hook</strong>: Uses TransferHook (no custom contract needed)
+              </li>
+              <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+                💸 <strong>Gas Efficient</strong>: Single transaction for multiple recipients
+              </li>
+            </ul>
+          </div>
+
+          {/* How It Works */}
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '15px',
+              backgroundColor: '#f0f9ff',
+              borderRadius: '8px',
+              border: '1px solid #bfdbfe',
+            }}
+          >
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>💡 How it works:</h4>
+            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8', color: '#1e40af' }}>
+              <li>Set primary recipient (receives remainder automatically)</li>
+              <li>Add additional recipients with specific percentages (bips)</li>
+              <li>Click Pay → Connect wallet → Sign authorization</li>
+              <li>TransferHook distributes payment atomically to all recipients</li>
+              <li>Set yourself as primary recipient to get funds back (only pay facilitator fee)</li>
+            </ol>
+          </div>
+
+          {/* Technical Flow */}
+          <CodeBlock
+            code={splitPaymentCode}
+            title="🔧 Technical Flow:"
+            borderColor="#28a745"
+          />
 
           {/* Split Configuration */}
           <div style={{ marginTop: '20px' }}>
@@ -335,25 +402,6 @@ export function ServerlessSplitPayment() {
               )}
             </div>
           </div>
-
-          <div
-            style={{
-              marginTop: '15px',
-              padding: '15px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '8px',
-              border: '1px solid #bfdbfe',
-            }}
-          >
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>💡 How it works:</h4>
-            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8', color: '#1e40af' }}>
-              <li>Set primary recipient (receives remainder automatically)</li>
-              <li>Add additional recipients with specific percentages (bips)</li>
-              <li>Click Pay → Connect wallet → Sign authorization</li>
-              <li>TransferHook distributes payment atomically to all recipients</li>
-              <li>Set yourself as primary recipient to get funds back (only pay facilitator fee)</li>
-            </ol>
-          </div>
         </>
       }
     >
@@ -373,7 +421,7 @@ export function ServerlessSplitPayment() {
       </div>
 
       {/* Error Message */}
-      {error && <StatusMessage type="error" message={error} />}
+      {error && <StatusMessage type="error" title="Payment Failed">{error}</StatusMessage>}
 
       {/* Success Result */}
       {isCompleted && paymentResult && (

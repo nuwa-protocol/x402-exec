@@ -13,7 +13,9 @@ import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
 import { StatusMessage } from '../components/StatusMessage';
 import { TransactionResult } from '../components/TransactionResult';
+import { CodeBlock } from '../components/CodeBlock';
 import { usePaymentFlow } from '../hooks/usePaymentFlow';
+import nftMintCode from '../code-examples/nft-mint.ts?raw';
 
 const AMOUNT = '100000'; // 0.1 USDC (6 decimals)
 
@@ -87,54 +89,31 @@ export function ServerlessRandomNFT() {
             </ul>
           </div>
 
+          {/* How It Works */}
           <div
             style={{
               margin: '20px 0',
               padding: '15px',
-              backgroundColor: '#f8f9fa',
+              backgroundColor: '#f0f9ff',
               borderRadius: '8px',
-              borderLeft: '4px solid #28a745',
+              border: '1px solid #bfdbfe',
             }}
           >
-            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🔧 Technical Flow:</h4>
-            <pre
-              style={{
-                margin: 0,
-                backgroundColor: '#282c34',
-                padding: '15px',
-                borderRadius: '6px',
-                overflow: 'auto',
-              }}
-            >
-              <code
-                style={{
-                  color: '#abb2bf',
-                  fontFamily: "'Courier New', monospace",
-                  fontSize: '13px',
-                  lineHeight: 1.6,
-                }}
-              >
-                {`// 1. User clicks Pay → Connect wallet → Get payer address
-const payer = await getConnectedAddress();
-
-// 2. Encode hookData with NFT config (merchant = payer!)
-const hookData = NFTMintHook.encode({
-  nftContract: nftContractAddress,
-  tokenId: 0n, // Random mint
-  merchant: payer // ← Key: Set merchant as payer
-});
-
-// 3. Execute payment with NFT mint hook
-const result = await client.execute({
-  hook: nftMintHookAddress,
-  hookData,
-  amount: '100000', // 0.1 USDC
-});
-
-// Result: NFT minted to payer + USDC returned to payer`}
-              </code>
-            </pre>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>💡 How it works:</h4>
+            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8', color: '#1e40af' }}>
+              <li>Click "Pay & Mint NFT" to start the payment process</li>
+              <li>Connect your wallet if not already connected</li>
+              <li>Review the payment details and sign the authorization</li>
+              <li>Facilitator executes payment + NFT minting atomically</li>
+              <li>NFT appears in your wallet, USDC returns to you</li>
+            </ol>
           </div>
+
+          <CodeBlock
+            code={nftMintCode}
+            title="🔧 Technical Flow:"
+            borderColor="#28a745"
+          />
         </>
       }
     >
@@ -144,7 +123,6 @@ const result = await client.execute({
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
         recipient={connectedAddress || '0x0000000000000000000000000000000000000000'} // Will be updated on connect
-        scenario="nft-mint"
         onSuccess={handleSuccess}
         onError={handleError}
       />
