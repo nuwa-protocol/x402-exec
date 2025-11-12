@@ -218,6 +218,53 @@ function PayButton() {
 
 ---
 
+## Terminology
+
+Understanding the x402 protocol terminology used in this SDK:
+
+### verify
+
+**Verify** (from x402 protocol) - Validate a payment payload without executing it on-chain. This is useful for pre-validation before actual settlement.
+
+- In x402 protocol: `POST /verify` endpoint
+- In @x402x/core: `verify()` function
+- Use case: Check if payment is valid before committing resources
+
+### settle
+
+**Settle** (from x402 protocol) - Execute a payment on-chain by submitting it to the blockchain. This is the actual payment execution step.
+
+- In x402 protocol: `POST /settle` endpoint
+- In @x402x/core: `settle()` function
+- In @x402x/client: `settle()` function (convenience wrapper)
+- Use case: Submit signed payment for blockchain execution
+
+### execute
+
+**Execute** (high-level API) - Complete end-to-end payment flow including preparation, signing, settlement, and confirmation.
+
+- In @x402x/client: `X402Client.execute()` method
+- Flow: `prepare → sign → settle → wait for confirmation`
+- Use case: One-line payment execution for most developers
+
+### API Hierarchy
+
+```
+High-Level (Recommended for most developers):
+  └─ execute() - Complete flow
+
+Low-Level (Advanced use cases):
+  ├─ prepareSettlement() - Prepare data
+  ├─ signAuthorization() - Sign with wallet
+  └─ settle() - Submit to facilitator
+
+Core Protocol (x402 standard):
+  ├─ verify() - Validate payment
+  └─ settle() - Execute payment
+```
+
+---
+
 ### Low-Level API (Advanced)
 
 For users who need full control over the settlement flow.
@@ -250,14 +297,14 @@ import { signAuthorization } from "@x402x/client";
 const signed = await signAuthorization(walletClient, settlement);
 ```
 
-#### submitToFacilitator
+#### settle
 
 Submits signed authorization to facilitator.
 
 ```typescript
-import { submitToFacilitator } from "@x402x/client";
+import { settle } from "@x402x/client";
 
-const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
+const result = await settle("https://facilitator.x402x.dev", signed);
 ```
 
 ---
@@ -366,7 +413,7 @@ function MintNFT() {
 ### Example 4: Revenue Split (Low-Level API)
 
 ```typescript
-import { prepareSettlement, signAuthorization, submitToFacilitator } from "@x402x/client";
+import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
 import { calculateFacilitatorFee } from "@x402x/core";
 import { RevenueSplitHook } from "@x402x/core";
 
@@ -399,7 +446,7 @@ const settlement = await prepareSettlement({
 const signed = await signAuthorization(walletClient, settlement);
 
 // 4. Submit to facilitator
-const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
+const result = await settle("https://facilitator.x402x.dev", signed);
 
 console.log("Transaction:", result.transaction);
 ```

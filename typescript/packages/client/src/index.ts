@@ -28,12 +28,12 @@
  * import {
  *   prepareSettlement,
  *   signAuthorization,
- *   submitToFacilitator
+ *   settle
  * } from '@x402x/client';
  *
  * const settlement = await prepareSettlement({...});
  * const signed = await signAuthorization(wallet, settlement);
- * const result = await submitToFacilitator(facilitatorUrl, signed);
+ * const result = await settle(facilitatorUrl, signed);
  * ```
  *
  * @example React Hooks
@@ -54,10 +54,10 @@
 // Export main client class and constants
 export { X402Client, DEFAULT_FACILITATOR_URL } from "./client.js";
 
-// Export low-level API
+// Export low-level API (aligned with x402 standard terminology)
 export { prepareSettlement } from "./core/prepare.js";
 export { signAuthorization } from "./core/sign.js";
-export { submitToFacilitator } from "./core/submit.js";
+export { settle } from "./core/settle.js";
 
 // Export utilities
 export {
@@ -82,7 +82,7 @@ export type {
   SettlementData,
   PrepareParams,
   SignedAuthorization,
-  SubmitResult,
+  SettleResult,
   ExecuteStatus,
   PaymentPayload,
   PaymentRequirements,

@@ -1,54 +1,52 @@
 /**
- * Submit signed authorization to facilitator
+ * Settle payment with facilitator
  *
- * This module handles the submission of signed payment payloads to the
+ * This module handles the settlement of signed payment payloads with the
  * facilitator's /settle endpoint, following the x402 protocol.
  */
 
 import type { Address, Hex } from "viem";
+import { settle as coreSettle } from "@x402x/core";
 import type {
   SignedAuthorization,
-  SubmitResult,
+  SettleResult,
   PaymentPayload,
   PaymentRequirements,
 } from "../types.js";
 import { FacilitatorError } from "../errors.js";
-import { formatFacilitatorUrl } from "./utils.js";
 
 /**
- * Submit signed authorization to facilitator for settlement
+ * Settle signed authorization with facilitator
  *
- * This function:
+ * This function acts as a convenience wrapper that:
  * 1. Constructs the PaymentPayload according to x402 protocol
  * 2. Constructs the PaymentRequirements with settlement extra
- * 3. POSTs to facilitator's /settle endpoint
+ * 3. Calls core's settle() method to POST to facilitator's /settle endpoint
  * 4. Parses and returns the settlement result
  *
  * @param facilitatorUrl - Facilitator URL
  * @param signed - Signed authorization from signAuthorization
  * @param timeout - Optional timeout in milliseconds (default: 30000)
- * @returns Submit result with transaction hash
+ * @returns Settlement result with transaction hash
  *
  * @throws FacilitatorError if request fails or facilitator returns error
  *
  * @example
  * ```typescript
- * import { submitToFacilitator } from '@x402x/client';
+ * import { settle } from '@x402x/client';
  *
- * const result = await submitToFacilitator(
+ * const result = await settle(
  *   'https://facilitator.x402x.dev',
  *   signed
  * );
  * console.log('TX Hash:', result.transaction);
  * ```
  */
-export async function submitToFacilitator(
+export async function settle(
   facilitatorUrl: string,
   signed: SignedAuthorization,
   timeout: number = 30000,
-): Promise<SubmitResult> {
-  const url = `${formatFacilitatorUrl(facilitatorUrl)}/settle`;
-
+): Promise<SettleResult> {
   try {
     // Construct PaymentPayload
     const paymentPayload: PaymentPayload = {
@@ -97,70 +95,14 @@ export async function submitToFacilitator(
     // Include payment requirements in payload (for stateless facilitator processing)
     paymentPayload.paymentRequirements = paymentRequirements;
 
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    // POST to facilitator
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        paymentPayload,
-        paymentRequirements,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    // Parse response
-    const result: any = await response.json();
-
-    if (!response.ok) {
-      throw new FacilitatorError(
-        result.error || result.message || "Facilitator request failed",
-        "FACILITATOR_ERROR",
-        response.status,
-        result,
-      );
-    }
-
-    // Validate result structure
-    if (typeof result.success !== "boolean") {
-      throw new FacilitatorError(
-        "Invalid response from facilitator: missing success field",
-        "INVALID_RESPONSE",
-        response.status,
-        result,
-      );
-    }
-
-    if (!result.success) {
-      throw new FacilitatorError(
-        result.errorReason || "Settlement failed",
-        "SETTLEMENT_FAILED",
-        response.status,
-        result,
-      );
-    }
-
-    if (!result.transaction) {
-      throw new FacilitatorError(
-        "Invalid response from facilitator: missing transaction hash",
-        "INVALID_RESPONSE",
-        response.status,
-        result,
-      );
-    }
+    // Call core's settle method
+    const result = await coreSettle(facilitatorUrl, paymentPayload, paymentRequirements, timeout);
 
     return {
       success: result.success,
       transaction: result.transaction as Hex,
       network: result.network || signed.settlement.network,
-      payer: result.payer || signed.settlement.from,
+      payer: (result.payer || signed.settlement.from) as Address,
       errorReason: result.errorReason,
     };
   } catch (error) {
@@ -168,20 +110,11 @@ export async function submitToFacilitator(
       throw error;
     }
 
-    // Handle network errors
+    // Handle errors from core settle
     if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        throw new FacilitatorError(`Facilitator request timed out after ${timeout}ms`, "TIMEOUT");
-      }
-      if (error.message.includes("fetch")) {
-        throw new FacilitatorError(`Network error: ${error.message}`, "NETWORK_ERROR");
-      }
-      throw new FacilitatorError(
-        `Failed to submit to facilitator: ${error.message}`,
-        "UNKNOWN_ERROR",
-      );
+      throw new FacilitatorError(`Failed to settle payment: ${error.message}`, "SETTLEMENT_ERROR");
     }
 
-    throw new FacilitatorError("Failed to submit to facilitator: Unknown error", "UNKNOWN_ERROR");
+    throw new FacilitatorError("Failed to settle payment: Unknown error", "UNKNOWN_ERROR");
   }
 }

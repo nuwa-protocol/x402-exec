@@ -164,6 +164,94 @@ Encode hookData for TransferHook (always returns '0x').
 
 Get TransferHook address for a specific network.
 
+### Facilitator API
+
+The core package provides client-side functions to interact with facilitator HTTP APIs, following the x402 protocol standard.
+
+#### `verify(facilitatorUrl, paymentPayload, paymentRequirements): Promise<VerifyResponse>`
+
+Verify a payment payload with the facilitator without executing it. This calls the facilitator's `/verify` endpoint.
+
+```typescript
+import { verify } from "@x402x/core";
+
+const result = await verify("https://facilitator.x402x.dev", paymentPayload, paymentRequirements);
+
+if (result.isValid) {
+  console.log("Payment is valid, payer:", result.payer);
+} else {
+  console.error("Invalid payment:", result.invalidReason);
+}
+```
+
+**Response type:**
+
+```typescript
+interface VerifyResponse {
+  isValid: boolean;
+  invalidReason?: string;
+  payer: string;
+}
+```
+
+#### `settle(facilitatorUrl, paymentPayload, paymentRequirements, timeout?): Promise<SettleResponse>`
+
+Settle a payment with the facilitator. This calls the facilitator's `/settle` endpoint to execute the payment on-chain.
+
+```typescript
+import { settle } from "@x402x/core";
+
+const result = await settle(
+  "https://facilitator.x402x.dev",
+  paymentPayload,
+  paymentRequirements,
+  30000, // optional timeout in ms
+);
+
+if (result.success) {
+  console.log("Settlement successful!");
+  console.log("Transaction:", result.transaction);
+  console.log("Network:", result.network);
+} else {
+  console.error("Settlement failed:", result.errorReason);
+}
+```
+
+**Response type:**
+
+```typescript
+interface SettleResponse {
+  success: boolean;
+  transaction: string; // Transaction hash
+  network: string;
+  payer: string;
+  errorReason?: string;
+}
+```
+
+#### `calculateFacilitatorFee(facilitatorUrl, network, hook, hookData?): Promise<FeeCalculationResult>`
+
+Calculate recommended facilitator fee for a specific hook.
+
+```typescript
+import { calculateFacilitatorFee } from "@x402x/core";
+
+const feeResult = await calculateFacilitatorFee(
+  "https://facilitator.x402x.dev",
+  "base-sepolia",
+  "0x1234...",
+  "0x",
+);
+
+console.log(`Fee: ${feeResult.facilitatorFee} (${feeResult.facilitatorFeeUSD} USD)`);
+```
+
+#### Other Facilitator Utilities
+
+- `isSettlementMode(paymentRequirements)` - Check if SettlementRouter mode is required
+- `parseSettlementExtra(extra)` - Parse and validate settlement extra parameters
+- `clearFeeCache()` - Clear the fee calculation cache
+
 ### Facilitator Functions
 
 See `@x402x/core/facilitator` for detailed facilitator utilities.

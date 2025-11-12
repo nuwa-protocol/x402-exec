@@ -156,9 +156,9 @@ export interface SignedAuthorization {
 }
 
 /**
- * Result from submitting to facilitator
+ * Result from settling with facilitator
  */
-export interface SubmitResult {
+export interface SettleResult {
   /** Whether the settlement was successful */
   success: boolean;
   /** Transaction hash */

@@ -6,7 +6,7 @@
  * helper functions for settlement mode detection and validation.
  */
 
-import type { PaymentRequirements, SettlementExtraCore } from "./types.js";
+import type { PaymentRequirements, PaymentPayload, SettlementExtraCore } from "./types.js";
 import { SettlementExtraError } from "./types.js";
 
 /**
@@ -261,4 +261,221 @@ export async function calculateFacilitatorFee(
  */
 export function clearFeeCache(): void {
   feeCache.clear();
+}
+
+/**
+ * Response from facilitator verify endpoint
+ *
+ * Indicates whether a payment payload is valid without executing it.
+ */
+export interface VerifyResponse {
+  /** Whether the payment payload is valid */
+  isValid: boolean;
+  /** Reason for invalidity if isValid is false */
+  invalidReason?: string;
+  /** Payer address extracted from the payload */
+  payer: string;
+}
+
+/**
+ * Response from facilitator settle endpoint
+ *
+ * Contains the result of settlement execution on-chain.
+ */
+export interface SettleResponse {
+  /** Whether the settlement was successful */
+  success: boolean;
+  /** Transaction hash of the settlement */
+  transaction: string;
+  /** Network the settlement was executed on */
+  network: string;
+  /** Payer address */
+  payer: string;
+  /** Error reason if settlement failed */
+  errorReason?: string;
+}
+
+/**
+ * Verify a payment payload with the facilitator
+ *
+ * Calls the facilitator's `/verify` endpoint to validate a payment without executing it.
+ * This is useful for pre-validation before actual settlement.
+ *
+ * @param facilitatorUrl - Facilitator service base URL
+ * @param paymentPayload - Payment payload from client (x402 standard)
+ * @param paymentRequirements - Payment requirements (x402 standard)
+ * @returns Verification response indicating validity
+ *
+ * @throws Error if network request fails or response is invalid
+ *
+ * @example
+ * ```typescript
+ * import { verify } from '@x402x/core';
+ *
+ * const result = await verify(
+ *   'https://facilitator.x402x.dev',
+ *   paymentPayload,
+ *   paymentRequirements
+ * );
+ *
+ * if (result.isValid) {
+ *   console.log('Payment is valid, payer:', result.payer);
+ * } else {
+ *   console.error('Invalid payment:', result.invalidReason);
+ * }
+ * ```
+ */
+export async function verify(
+  facilitatorUrl: string,
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+): Promise<VerifyResponse> {
+  // Remove trailing slash from URL
+  const baseUrl = facilitatorUrl.endsWith("/") ? facilitatorUrl.slice(0, -1) : facilitatorUrl;
+  const url = `${baseUrl}/verify`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        paymentPayload,
+        paymentRequirements,
+      }),
+      // Add timeout
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Facilitator verify failed: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+
+    const result: VerifyResponse = await response.json();
+
+    // Validate response structure
+    if (typeof result.isValid !== "boolean") {
+      throw new Error("Invalid response from facilitator: missing isValid field");
+    }
+
+    if (typeof result.payer !== "string") {
+      throw new Error("Invalid response from facilitator: missing payer field");
+    }
+
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to verify with facilitator: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Settle a payment with the facilitator
+ *
+ * Calls the facilitator's `/settle` endpoint to execute the payment on-chain.
+ * This is the core function that submits a signed payment for blockchain execution.
+ *
+ * @param facilitatorUrl - Facilitator service base URL
+ * @param paymentPayload - Payment payload from client (x402 standard)
+ * @param paymentRequirements - Payment requirements (x402 standard)
+ * @param timeout - Optional timeout in milliseconds (default: 30000)
+ * @returns Settlement response with transaction details
+ *
+ * @throws Error if network request fails, response is invalid, or settlement fails
+ *
+ * @example
+ * ```typescript
+ * import { settle } from '@x402x/core';
+ *
+ * const result = await settle(
+ *   'https://facilitator.x402x.dev',
+ *   paymentPayload,
+ *   paymentRequirements,
+ *   30000 // 30 second timeout
+ * );
+ *
+ * if (result.success) {
+ *   console.log('Settlement successful!');
+ *   console.log('Transaction:', result.transaction);
+ *   console.log('Network:', result.network);
+ * } else {
+ *   console.error('Settlement failed:', result.errorReason);
+ * }
+ * ```
+ */
+export async function settle(
+  facilitatorUrl: string,
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+  timeout: number = 30000,
+): Promise<SettleResponse> {
+  // Remove trailing slash from URL
+  const baseUrl = facilitatorUrl.endsWith("/") ? facilitatorUrl.slice(0, -1) : facilitatorUrl;
+  const url = `${baseUrl}/settle`;
+
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        paymentPayload,
+        paymentRequirements,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    // Parse response
+    const result: any = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || result.message || `Facilitator settle failed: ${response.status}`,
+      );
+    }
+
+    // Validate result structure
+    if (typeof result.success !== "boolean") {
+      throw new Error("Invalid response from facilitator: missing success field");
+    }
+
+    if (!result.success) {
+      throw new Error(result.errorReason || "Settlement failed");
+    }
+
+    if (!result.transaction) {
+      throw new Error("Invalid response from facilitator: missing transaction hash");
+    }
+
+    return {
+      success: result.success,
+      transaction: result.transaction,
+      network: result.network || paymentRequirements.network,
+      payer: result.payer || "",
+      errorReason: result.errorReason,
+    };
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        throw new Error(`Facilitator settle timed out after ${timeout}ms`);
+      }
+      throw new Error(`Failed to settle with facilitator: ${error.message}`);
+    }
+    throw error;
+  }
 }

@@ -2,15 +2,10 @@
  * Type definitions for @x402x/core
  */
 
-import type {
-	PaymentPayload,
-	PaymentRequirements,
-	SettleResponse,
-	Signer,
-} from "x402/types";
+import type { PaymentRequirements, PaymentPayload, Signer } from "x402/types";
 
 // Re-export x402 types for convenience
-export type { PaymentPayload, PaymentRequirements, SettleResponse, Signer };
+export type { PaymentRequirements, PaymentPayload, Signer };
 
 /**
  * Commitment calculation parameters

@@ -10,7 +10,7 @@ import { calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core"
 import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
 import { prepareSettlement } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
-import { submitToFacilitator } from "./core/submit.js";
+import { settle } from "./core/settle.js";
 import { ValidationError, FacilitatorError } from "./errors.js";
 import { normalizeAddress, validateHex, validateAmount } from "./core/utils.js";
 
@@ -155,23 +155,19 @@ export class X402Client {
     // 3. Sign authorization
     const signed = await signAuthorization(this.config.wallet, settlement);
 
-    // 4. Submit to facilitator
-    const submitResult = await submitToFacilitator(
-      this.config.facilitatorUrl,
-      signed,
-      this.config.timeout,
-    );
+    // 4. Settle with facilitator
+    const settleResult = await settle(this.config.facilitatorUrl, signed, this.config.timeout);
 
     // 5. Optionally wait for confirmation
     let receipt: TransactionReceipt | undefined;
     if (waitForConfirmation) {
-      receipt = await this.waitForTransaction(submitResult.transaction);
+      receipt = await this.waitForTransaction(settleResult.transaction);
     }
 
     return {
-      txHash: submitResult.transaction,
-      network: submitResult.network,
-      payer: submitResult.payer,
+      txHash: settleResult.transaction,
+      network: settleResult.network,
+      payer: settleResult.payer,
       receipt,
       settlement,
     };

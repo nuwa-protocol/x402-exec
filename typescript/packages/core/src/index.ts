@@ -32,7 +32,6 @@ export type {
   SettlementExtraCore,
   PaymentRequirements,
   PaymentPayload,
-  SettleResponse,
   Signer,
 } from "./types.js";
 
@@ -61,9 +60,11 @@ export {
   clearFeeCache,
   isSettlementMode,
   parseSettlementExtra,
+  verify,
+  settle,
 } from "./facilitator.js";
 
-export type { FeeCalculationResult } from "./facilitator.js";
+export type { FeeCalculationResult, VerifyResponse, SettleResponse } from "./facilitator.js";
 
 // Export ABI
 export { SETTLEMENT_ROUTER_ABI } from "./abi.js";
