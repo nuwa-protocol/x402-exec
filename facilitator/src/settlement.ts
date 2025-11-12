@@ -202,7 +202,7 @@ export async function settleWithRouter(
         );
 
         effectiveGasLimit = BigInt(calculatedLimit);
-        gasLimitMode = gasCostConfig.enableDynamicGasLimit ? "dynamic" : "static";
+        gasLimitMode = gasCostConfig.dynamicGasLimitMargin > 0 ? "dynamic" : "static";
 
         logger.debug(
           {

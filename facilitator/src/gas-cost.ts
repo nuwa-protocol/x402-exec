@@ -14,21 +14,30 @@ const logger = getLogger();
 
 /**
  * Gas cost configuration
+ *
+ * Simplified configuration for gas cost calculation and validation.
+ * Dynamic gas limit is enabled by default for profitability protection.
  */
 export interface GasCostConfig {
-  enabled: boolean;
-  baseGasLimit: number;
-  hookGasOverhead: Record<string, number>;
-  safetyMultiplier: number;
-  networkGasPrice: Record<string, string>;
-  nativeTokenPrice: Record<string, number>;
-  maxGasLimit: number; // Absolute upper limit for gas (防御恶意 hook)
-  hookWhitelistEnabled: boolean;
-  allowedHooks: Record<string, string[]>;
-  validationTolerance: number; // Tolerance for fee validation (0-1, e.g., 0.1 = 10%)
-  enableDynamicGasLimit: boolean; // Enable dynamic gas limit based on facilitator fee (default: true)
-  dynamicGasLimitMargin: number; // Profit margin to reserve when calculating dynamic limit (0-1, e.g., 0.2 = 20%)
-  minGasLimit: number; // Minimum gas limit to ensure transaction can execute
+  // Gas Limit Configuration
+  minGasLimit: number; // Minimum gas limit to ensure transaction can execute (default: 150000)
+  maxGasLimit: number; // Absolute upper limit for gas to defend against malicious hooks (default: 500000)
+  dynamicGasLimitMargin: number; // Profit margin reserved when calculating dynamic limit (0-1, default: 0.2 = 20%)
+
+  // Gas Overhead Configuration
+  hookGasOverhead: Record<string, number>; // Additional gas required by different hook types
+  safetyMultiplier: number; // Safety multiplier for gas estimation (default: 1.5)
+
+  // Fee Validation
+  validationTolerance: number; // Tolerance for fee validation to handle price fluctuations (0-1, default: 0.1 = 10%)
+
+  // Hook Security
+  hookWhitelistEnabled: boolean; // Enable hook whitelist validation (default: false)
+  allowedHooks: Record<string, string[]>; // Whitelist of allowed hook addresses per network
+
+  // Fallback Prices (used when dynamic pricing is unavailable)
+  networkGasPrice: Record<string, string>; // Static gas prices per network (Wei)
+  nativeTokenPrice: Record<string, number>; // Static native token prices per network (USD)
 }
 
 /**
@@ -117,7 +126,7 @@ export function getGasLimit(network: string, hook: string, config: GasCostConfig
 
   // Calculate gas limit
   const overhead = config.hookGasOverhead[hookType] || config.hookGasOverhead.custom || 100000;
-  const gasLimit = config.baseGasLimit + overhead;
+  const gasLimit = config.minGasLimit + overhead;
 
   // Validate against maximum
   if (gasLimit > config.maxGasLimit) {
@@ -131,7 +140,7 @@ export function getGasLimit(network: string, hook: string, config: GasCostConfig
       network,
       hook,
       hookType,
-      baseGasLimit: config.baseGasLimit,
+      minGasLimit: config.minGasLimit,
       overhead,
       gasLimit,
     },
@@ -197,11 +206,14 @@ export function convertUsdToToken(usdAmount: string, decimals: number): string {
 /**
  * Calculate effective gas limit with triple constraints
  *
- * This function implements a dynamic gas limit calculation based on the facilitator fee,
+ * This function implements dynamic gas limit calculation based on the facilitator fee,
  * while maintaining absolute safety bounds:
  * 1. Minimum limit: Ensures transaction can execute (basic settlement operations)
  * 2. Maximum limit: Absolute cap to defend against malicious hooks
  * 3. Dynamic limit: Based on facilitator fee to prevent unprofitable settlements
+ *
+ * Dynamic gas limit is always enabled. To use static limit only, set
+ * dynamicGasLimitMargin to 0, which makes all fees available for gas.
  *
  * @param facilitatorFee - Facilitator fee in token's smallest unit (e.g., USDC with 6 decimals)
  * @param gasPrice - Current gas price in Wei
@@ -232,11 +244,6 @@ export function calculateEffectiveGasLimit(
   nativeTokenPrice: number,
   config: GasCostConfig,
 ): number {
-  // If dynamic gas limit is disabled, use the static maximum
-  if (!config.enableDynamicGasLimit) {
-    return config.maxGasLimit;
-  }
-
   // Convert facilitator fee to USD (assuming 6 decimals for USDC)
   const feeUSD = parseFloat(facilitatorFee) / 1e6;
 
@@ -285,22 +292,6 @@ export async function calculateMinFacilitatorFee(
   dynamicConfig?: DynamicGasPriceConfig,
   tokenPriceConfig?: TokenPriceConfig,
 ): Promise<FeeCalculationResult> {
-  // Check if validation is enabled
-  if (!config.enabled) {
-    return {
-      minFacilitatorFee: "0",
-      minFacilitatorFeeUSD: "0.00",
-      gasLimit: 0,
-      maxGasLimit: config.maxGasLimit,
-      gasPrice: "0",
-      gasCostNative: "0",
-      gasCostUSD: "0.00",
-      safetyMultiplier: config.safetyMultiplier,
-      finalCostUSD: "0.00",
-      hookAllowed: true,
-    };
-  }
-
   // Check if hook is allowed
   const hookAllowed = isHookAllowed(network, hook, config);
   if (!hookAllowed) {

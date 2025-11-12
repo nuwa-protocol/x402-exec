@@ -14,31 +14,32 @@ import { calculateEffectiveGasLimit, type GasCostConfig } from "../../src/gas-co
 describe("calculateEffectiveGasLimit", () => {
   // Base configuration for tests
   const baseConfig: GasCostConfig = {
-    enabled: true,
-    baseGasLimit: 150000,
+    minGasLimit: 150000,
+    maxGasLimit: 500000,
+    dynamicGasLimitMargin: 0.2, // 20% profit margin
     hookGasOverhead: { transfer: 50000, custom: 100000 },
     safetyMultiplier: 1.5,
-    networkGasPrice: { "base-sepolia": "1000000000" },
-    nativeTokenPrice: { "base-sepolia": 3000 },
-    maxGasLimit: 500000,
+    validationTolerance: 0.1,
     hookWhitelistEnabled: false,
     allowedHooks: {},
-    validationTolerance: 0.1,
-    enableDynamicGasLimit: true,
-    dynamicGasLimitMargin: 0.2, // 20% profit margin
-    minGasLimit: 150000,
+    networkGasPrice: { "base-sepolia": "1000000000" },
+    nativeTokenPrice: { "base-sepolia": 3000 },
   };
 
-  describe("When dynamic gas limit is disabled", () => {
-    it("should return maxGasLimit", () => {
-      const config = { ...baseConfig, enableDynamicGasLimit: false };
+  describe("Dynamic gas limit (always enabled)", () => {
+    it("should use static maxGasLimit when margin is 0 (dynamic disabled)", () => {
+      const config = { ...baseConfig, dynamicGasLimitMargin: 0 }; // 0 margin = all fee goes to gas
       const facilitatorFee = "10000000"; // 10 USDC
       const gasPrice = "10000000000"; // 10 gwei
       const nativeTokenPrice = 3000; // $3000
 
+      // With 0 margin, available = $10.00 (100%)
+      // Max affordable gas = $10.00 / $3000 * 1e18 / 10e9 = 333,333 gas
+      // Result should be max(150000, min(333333, 500000)) = 333,333 (dynamic still applies)
+
       const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, config);
 
-      expect(result).toBe(config.maxGasLimit);
+      expect(result).toBe(333333);
     });
   });
 

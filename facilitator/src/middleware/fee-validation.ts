@@ -30,11 +30,6 @@ export function createFeeValidationMiddleware(
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Skip if validation is disabled
-      if (!config.enabled) {
-        return next();
-      }
-
       // Get payment requirements from request body
       const paymentRequirements: PaymentRequirements | undefined = req.body?.paymentRequirements;
 
@@ -70,7 +65,7 @@ export function createFeeValidationMiddleware(
       }
 
       // Get token decimals
-      const networkConfig = getNetworkConfig(network);
+      //const networkConfig = getNetworkConfig(network);
       const tokenDecimals = 6; // USDC has 6 decimals (networkConfig.usdc would have this info)
 
       // Calculate minimum required fee

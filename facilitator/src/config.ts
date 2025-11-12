@@ -358,19 +358,25 @@ function parseGasCostConfig(): GasCostConfig {
   }
 
   return {
-    enabled: process.env.GAS_COST_VALIDATION_ENABLED !== "false", // Enabled by default
-    baseGasLimit: parseInt(process.env.GAS_COST_BASE_LIMIT || "150000"),
+    // Gas Limit Configuration
+    minGasLimit: parseInt(process.env.GAS_COST_MIN_GAS_LIMIT || "150000"),
+    maxGasLimit: parseInt(process.env.GAS_COST_MAX_GAS_LIMIT || "500000"),
+    dynamicGasLimitMargin: parseFloat(process.env.GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN || "0.2"),
+
+    // Gas Overhead Configuration
     hookGasOverhead,
     safetyMultiplier: parseFloat(process.env.GAS_COST_SAFETY_MULTIPLIER || "1.5"),
+
+    // Fee Validation
+    validationTolerance: parseFloat(process.env.GAS_COST_VALIDATION_TOLERANCE || "0.1"),
+
+    // Hook Security
+    hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true",
+    allowedHooks: parseAllowedHooks(),
+
+    // Fallback Prices
     networkGasPrice,
     nativeTokenPrice,
-    maxGasLimit: parseInt(process.env.GAS_COST_MAX_GAS_LIMIT || "500000"),
-    hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true", // Disabled by default
-    allowedHooks: parseAllowedHooks(),
-    validationTolerance: parseFloat(process.env.GAS_COST_VALIDATION_TOLERANCE || "0.1"), // 10% tolerance by default
-    enableDynamicGasLimit: process.env.GAS_COST_ENABLE_DYNAMIC_GAS_LIMIT !== "false", // Enabled by default
-    dynamicGasLimitMargin: parseFloat(process.env.GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN || "0.2"), // 20% profit margin by default
-    minGasLimit: parseInt(process.env.GAS_COST_MIN_GAS_LIMIT || "150000"), // Same as baseGasLimit by default
   };
 }
 

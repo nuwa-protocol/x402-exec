@@ -21,8 +21,8 @@ const logger = getLogger();
 export function createHookValidationMiddleware(config: GasCostConfig) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Skip if validation is disabled
-      if (!config.enabled || !config.hookWhitelistEnabled) {
+      // Skip if hook whitelist is disabled
+      if (!config.hookWhitelistEnabled) {
         return next();
       }
 

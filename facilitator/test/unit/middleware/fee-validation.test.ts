@@ -10,6 +10,8 @@ import { createFeeValidationMiddleware } from "../../../src/middleware/fee-valid
 import type { GasCostConfig } from "../../../src/gas-cost.js";
 import type { DynamicGasPriceConfig } from "../../../src/dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../../../src/token-price.js";
+import { calculateMinFacilitatorFee } from "../../../src/gas-cost.js";
+import { isSettlementMode } from "../../../src/settlement.js";
 
 // Mock dependencies
 vi.mock("../../../src/gas-cost.js", async () => {
@@ -29,9 +31,6 @@ vi.mock("@x402x/core", () => ({
     usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   })),
 }));
-
-import { calculateMinFacilitatorFee } from "../../../src/gas-cost.js";
-import { isSettlementMode } from "../../../src/settlement.js";
 
 describe("Fee Validation Middleware", () => {
   let mockReq: Partial<Request>;
@@ -62,38 +61,47 @@ describe("Fee Validation Middleware", () => {
     mockNext = vi.fn();
 
     config = {
-      enabled: true,
-      baseGasLimit: 150000,
+      // Gas Limit Configuration
+      minGasLimit: 150000,
+      maxGasLimit: 500000,
+      dynamicGasLimitMargin: 0.2,
+
+      // Gas Overhead Configuration
       hookGasOverhead: {
         transfer: 50000,
         custom: 100000,
       },
       safetyMultiplier: 1.5,
+
+      // Fee Validation
+      validationTolerance: 0.1, // 10% tolerance
+
+      // Hook Security
+      hookWhitelistEnabled: false,
+      allowedHooks: {},
+
+      // Fallback Prices
       networkGasPrice: {
         "base-sepolia": "1000000000", // 1 gwei
       },
       nativeTokenPrice: {
         "base-sepolia": 3000, // $3000 ETH
       },
-      maxGasLimit: 500000,
-      hookWhitelistEnabled: false,
-      allowedHooks: {},
-      validationTolerance: 0.1, // 10% tolerance
-    };
+    } satisfies GasCostConfig;
 
     dynamicConfig = {
       strategy: "static",
       cacheTTL: 300,
       updateInterval: 60,
       rpcUrls: {},
-    };
+    } satisfies DynamicGasPriceConfig;
 
     tokenPriceConfig = {
       enabled: false,
       cacheTTL: 3600,
       updateInterval: 600,
       coinIds: {},
-    };
+    } satisfies TokenPriceConfig;
 
     // Reset mocks
     vi.clearAllMocks();
@@ -408,17 +416,6 @@ describe("Fee Validation Middleware", () => {
   describe("Edge Cases", () => {
     it("should skip validation when not in settlement mode", async () => {
       vi.mocked(isSettlementMode).mockReturnValue(false);
-
-      const middleware = createFeeValidationMiddleware(config, dynamicConfig, tokenPriceConfig);
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(calculateMinFacilitatorFee).not.toHaveBeenCalled();
-      expect(mockNext).toHaveBeenCalled();
-    });
-
-    it("should skip validation when config is disabled", async () => {
-      vi.mocked(isSettlementMode).mockReturnValue(true);
-      config.enabled = false;
 
       const middleware = createFeeValidationMiddleware(config, dynamicConfig, tokenPriceConfig);
       await middleware(mockReq as Request, mockRes as Response, mockNext);
