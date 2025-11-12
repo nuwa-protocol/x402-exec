@@ -250,6 +250,12 @@ export function calculateEffectiveGasLimit(
   // Calculate available amount for gas (after reserving profit margin)
   const availableForGasUSD = feeUSD * (1 - config.dynamicGasLimitMargin);
 
+  // Protect against invalid token price (zero or negative)
+  // If price is invalid, return minimum gas limit as safety fallback
+  if (nativeTokenPrice <= 0 || !Number.isFinite(nativeTokenPrice)) {
+    return config.minGasLimit;
+  }
+
   // Calculate how much gas we can afford
   // Formula: (availableUSD / tokenPrice) * 1e18 Wei / gasPrice Wei
   const gasPriceBigInt = BigInt(gasPrice);

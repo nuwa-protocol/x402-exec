@@ -9,7 +9,6 @@ import type { PaymentRequirements } from "x402/types";
 import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { isSettlementMode } from "../settlement.js";
-import { getNetworkConfig } from "@x402x/core";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
 
@@ -66,6 +65,7 @@ export function createFeeValidationMiddleware(
 
       // Get token decimals
       //const networkConfig = getNetworkConfig(network);
+      // TODO: In future, fetch token decimals dynamically from network config.
       const tokenDecimals = 6; // USDC has 6 decimals (networkConfig.usdc would have this info)
 
       // Calculate minimum required fee
@@ -93,8 +93,9 @@ export function createFeeValidationMiddleware(
 
       // Apply validation tolerance: threshold = requiredFee * (1 - tolerance)
       // This allows for small price fluctuations between fee calculation and validation
-      const toleranceMultiplier = 1 - config.validationTolerance;
-      const threshold = BigInt(Math.floor(Number(requiredFee) * toleranceMultiplier));
+      // Use BigInt arithmetic to avoid precision loss for large values
+      const tolerancePercent = BigInt(Math.floor(config.validationTolerance * 10000)); // Convert to basis points (0.01 = 100)
+      const threshold = (requiredFee * (10000n - tolerancePercent)) / 10000n;
 
       if (providedFee < threshold) {
         logger.warn(
@@ -140,7 +141,7 @@ export function createFeeValidationMiddleware(
           requiredFee: feeCalculation.minFacilitatorFee,
           threshold: threshold.toString(),
           validationTolerance: config.validationTolerance,
-          margin: `${(((Number(providedFee) - Number(threshold)) / Number(threshold)) * 100).toFixed(2)}%`,
+          margin: `${(Number(((providedFee - threshold) * 10000n) / threshold) / 100).toFixed(2)}%`,
         },
         "Facilitator fee validated successfully",
       );

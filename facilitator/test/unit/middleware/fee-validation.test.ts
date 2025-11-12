@@ -455,5 +455,70 @@ describe("Fee Validation Middleware", () => {
         }),
       );
     });
+
+    it("should maintain precision with very large fee values using BigInt arithmetic", async () => {
+      vi.mocked(isSettlementMode).mockReturnValue(true);
+
+      // Use a value larger than Number.MAX_SAFE_INTEGER (2^53 - 1)
+      // This represents ~9 quintillion tokens (far exceeding realistic USDC supply)
+      const largeRequiredFee = "10000000000000000000"; // 10^19 smallest units
+      const largeProvidedFee = "9900000000000000000"; // 99% of required (well within 10% tolerance)
+
+      mockReq.body.paymentRequirements.extra.facilitatorFee = largeProvidedFee;
+
+      vi.mocked(calculateMinFacilitatorFee).mockResolvedValue({
+        minFacilitatorFee: largeRequiredFee,
+        minFacilitatorFeeUSD: "10000000000000.00",
+        gasLimit: 300000,
+        maxGasLimit: 500000,
+        gasPrice: "10000000000",
+        gasCostNative: "0.003",
+        gasCostUSD: "9.00",
+        safetyMultiplier: 1.5,
+        finalCostUSD: "13.50",
+        hookAllowed: true,
+      });
+
+      const middleware = createFeeValidationMiddleware(config, dynamicConfig, tokenPriceConfig);
+      await middleware(mockReq as Request, mockRes as Response, mockNext);
+
+      // With 10% tolerance: threshold = largeRequiredFee * 0.90
+      // 9.9e18 >= 9.0e18 (10e18 * 0.90), so should pass
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
+    it("should reject large fees that fall below tolerance threshold", async () => {
+      vi.mocked(isSettlementMode).mockReturnValue(true);
+
+      const largeRequiredFee = "10000000000000000000"; // 10^19
+      const insufficientFee = "8900000000000000000"; // 89% of required (below 90% threshold with 10% tolerance)
+
+      mockReq.body.paymentRequirements.extra.facilitatorFee = insufficientFee;
+
+      vi.mocked(calculateMinFacilitatorFee).mockResolvedValue({
+        minFacilitatorFee: largeRequiredFee,
+        minFacilitatorFeeUSD: "10000000000000.00",
+        gasLimit: 300000,
+        maxGasLimit: 500000,
+        gasPrice: "10000000000",
+        gasCostNative: "0.003",
+        gasCostUSD: "9.00",
+        safetyMultiplier: 1.5,
+        finalCostUSD: "13.50",
+        hookAllowed: true,
+      });
+
+      const middleware = createFeeValidationMiddleware(config, dynamicConfig, tokenPriceConfig);
+      await middleware(mockReq as Request, mockRes as Response, mockNext);
+
+      // 8.9e18 < 9.0e18 (10e18 * 0.90), so should fail
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: "Insufficient facilitator fee",
+        }),
+      );
+    });
   });
 });

@@ -232,12 +232,47 @@ describe("calculateEffectiveGasLimit", () => {
       const gasPrice = "10000000000"; // 10 gwei
       const nativeTokenPrice = 0; // Invalid: $0
 
-      // This should result in NaN or Infinity, but still be clamped by min/max
+      // Should return minimum gas limit as safety fallback
       const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, config);
 
-      // Should fallback to reasonable values (minimum or maximum)
-      expect(result).toBeGreaterThanOrEqual(config.minGasLimit);
-      expect(result).toBeLessThanOrEqual(config.maxGasLimit);
+      // Should fallback to minimum gas limit
+      expect(result).toBe(config.minGasLimit);
+    });
+
+    it("should protect against negative token price", () => {
+      const config = baseConfig;
+      const facilitatorFee = "10000000"; // 10 USDC
+      const gasPrice = "10000000000"; // 10 gwei
+      const nativeTokenPrice = -100; // Invalid: negative price
+
+      // Should return minimum gas limit as safety fallback
+      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, config);
+
+      expect(result).toBe(config.minGasLimit);
+    });
+
+    it("should protect against NaN token price", () => {
+      const config = baseConfig;
+      const facilitatorFee = "10000000"; // 10 USDC
+      const gasPrice = "10000000000"; // 10 gwei
+      const nativeTokenPrice = NaN; // Invalid: NaN
+
+      // Should return minimum gas limit as safety fallback
+      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, config);
+
+      expect(result).toBe(config.minGasLimit);
+    });
+
+    it("should protect against Infinity token price", () => {
+      const config = baseConfig;
+      const facilitatorFee = "10000000"; // 10 USDC
+      const gasPrice = "10000000000"; // 10 gwei
+      const nativeTokenPrice = Infinity; // Invalid: Infinity
+
+      // Should return minimum gas limit as safety fallback
+      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, config);
+
+      expect(result).toBe(config.minGasLimit);
     });
 
     it("should handle edge case: facilitatorFee equals minGasLimit cost", () => {
