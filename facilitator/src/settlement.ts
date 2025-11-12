@@ -7,7 +7,7 @@
  * Wraps @x402x/core functionality with additional logging and gas metrics calculation.
  */
 
-import type { PaymentPayload, PaymentRequirements, SettleResponse, Signer } from "x402/types";
+import type { PaymentPayload, PaymentRequirements, Signer } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import {
   isSettlementMode as isSettlementModeCore,
@@ -16,8 +16,10 @@ import {
   SettlementExtraError,
 } from "@x402x/core";
 import { getLogger } from "./telemetry.js";
-import { calculateGasMetrics, type GasMetrics } from "./gas-metrics.js";
+import { calculateGasMetrics } from "./gas-metrics.js";
 import type { SettleResponseWithMetrics } from "./settlement-types.js";
+import { calculateEffectiveGasLimit, type GasCostConfig } from "./gas-cost.js";
+import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 
 /**
  * Check if a payment request requires SettlementRouter mode
@@ -88,6 +90,7 @@ export function validateSettlementRouter(
  * 6. Ensures Router doesn't hold funds
  *
  * This facilitator wrapper adds:
+ * - Dynamic gas limit calculation based on facilitator fee
  * - Gas cost tracking and profitability metrics
  * - Detailed logging for monitoring
  * - Warning on unprofitable settlements
@@ -96,6 +99,8 @@ export function validateSettlementRouter(
  * @param paymentPayload - The payment payload with authorization and signature
  * @param paymentRequirements - The payment requirements with settlement extra parameters
  * @param allowedRouters - Whitelist of allowed SettlementRouter addresses per network
+ * @param gasCostConfig - Gas cost configuration for dynamic gas limit
+ * @param dynamicGasPriceConfig - Dynamic gas price configuration
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
@@ -105,6 +110,8 @@ export async function settleWithRouter(
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
   allowedRouters: Record<string, string[]>,
+  gasCostConfig?: GasCostConfig,
+  dynamicGasPriceConfig?: DynamicGasPriceConfig,
   nativeTokenPrices?: Record<string, number>,
 ): Promise<SettleResponseWithMetrics> {
   const logger = getLogger();
@@ -115,21 +122,77 @@ export async function settleWithRouter(
       throw new Error("Settlement Router requires an EVM signer");
     }
 
+    const network = paymentRequirements.network;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const extra = paymentRequirements.extra as any;
+    const facilitatorFee = extra?.facilitatorFee || "0";
+
     logger.debug(
       {
-        network: paymentRequirements.network,
-        router: paymentRequirements.extra?.settlementRouter,
+        network,
+        router: extra?.settlementRouter,
+        facilitatorFee,
       },
       "Starting settlement with router",
     );
 
+    // Calculate effective gas limit if config is provided
+    let effectiveGasLimit: number | undefined;
+    let gasLimitMode = "static";
+
+    if (gasCostConfig && dynamicGasPriceConfig) {
+      try {
+        // Get current gas price for the network
+        const gasPrice = await getGasPrice(network, gasCostConfig, dynamicGasPriceConfig);
+
+        // Get native token price
+        const nativePrice = nativeTokenPrices?.[network] || 0;
+
+        // Calculate effective gas limit with triple constraints
+        effectiveGasLimit = calculateEffectiveGasLimit(
+          facilitatorFee,
+          gasPrice,
+          nativePrice,
+          gasCostConfig,
+        );
+
+        gasLimitMode = gasCostConfig.enableDynamicGasLimit ? "dynamic" : "static";
+
+        logger.debug(
+          {
+            network,
+            facilitatorFee,
+            gasPrice,
+            nativePrice,
+            effectiveGasLimit,
+            mode: gasLimitMode,
+            minGasLimit: gasCostConfig.minGasLimit,
+            maxGasLimit: gasCostConfig.maxGasLimit,
+            dynamicMargin: gasCostConfig.dynamicGasLimitMargin,
+          },
+          "Calculated effective gas limit for settlement",
+        );
+      } catch (error) {
+        logger.warn(
+          {
+            error,
+            network,
+          },
+          "Failed to calculate dynamic gas limit, using default",
+        );
+        // Continue with default gas limit
+      }
+    }
+
     // Call core settleWithRouter - this returns receipt
-    const walletClient = signer as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const publicClient = signer as any;
 
     // Use @x402x/core's settleWithRouter (includes validation)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await settleWithRouterCore(signer as any, paymentPayload, paymentRequirements, {
       allowedRouters,
+      gasLimit: effectiveGasLimit,
     });
 
     // If settlement succeeded, calculate gas metrics from the transaction
@@ -139,6 +202,7 @@ export async function settleWithRouter(
         const receipt = await publicClient.waitForTransactionReceipt({ hash: result.transaction });
 
         // Extract facilitator fee and hook from payment requirements
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const extra = paymentRequirements.extra as any;
         const facilitatorFee = extra?.facilitatorFee || "0";
         const hook = extra?.hook || "";
@@ -163,6 +227,10 @@ export async function settleWithRouter(
             payer: result.payer,
             network: paymentRequirements.network,
             hook,
+            gasLimit: {
+              value: effectiveGasLimit,
+              mode: gasLimitMode,
+            },
             gasMetrics: {
               gasUsed: gasMetrics.gasUsed,
               effectiveGasPrice: gasMetrics.effectiveGasPrice,

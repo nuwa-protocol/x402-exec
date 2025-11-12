@@ -22,10 +22,13 @@ export interface GasCostConfig {
   safetyMultiplier: number;
   networkGasPrice: Record<string, string>;
   nativeTokenPrice: Record<string, number>;
-  maxGasLimit: number;
+  maxGasLimit: number; // Absolute upper limit for gas (防御恶意 hook)
   hookWhitelistEnabled: boolean;
   allowedHooks: Record<string, string[]>;
   validationTolerance: number; // Tolerance for fee validation (0-1, e.g., 0.1 = 10%)
+  enableDynamicGasLimit: boolean; // Enable dynamic gas limit based on facilitator fee (default: true)
+  dynamicGasLimitMargin: number; // Profit margin to reserve when calculating dynamic limit (0-1, e.g., 0.2 = 20%)
+  minGasLimit: number; // Minimum gas limit to ensure transaction can execute
 }
 
 /**
@@ -189,6 +192,77 @@ export async function convertNativeToUsd(
 export function convertUsdToToken(usdAmount: string, decimals: number): string {
   const amount = parseFloat(usdAmount) * Math.pow(10, decimals);
   return Math.ceil(amount).toString();
+}
+
+/**
+ * Calculate effective gas limit with triple constraints
+ *
+ * This function implements a dynamic gas limit calculation based on the facilitator fee,
+ * while maintaining absolute safety bounds:
+ * 1. Minimum limit: Ensures transaction can execute (basic settlement operations)
+ * 2. Maximum limit: Absolute cap to defend against malicious hooks
+ * 3. Dynamic limit: Based on facilitator fee to prevent unprofitable settlements
+ *
+ * @param facilitatorFee - Facilitator fee in token's smallest unit (e.g., USDC with 6 decimals)
+ * @param gasPrice - Current gas price in Wei
+ * @param nativeTokenPrice - Native token price in USD (e.g., ETH price)
+ * @param config - Gas cost configuration
+ * @returns Effective gas limit to use for the transaction
+ *
+ * @example
+ * ```typescript
+ * // Fee = 1 USDC, Gas = 10 gwei, ETH = $3000, Margin = 20%
+ * // Available for gas = $1.00 * 0.8 = $0.80
+ * // Max affordable gas = $0.80 / $3000 * 1e18 / 10e9 = 26,666 gas
+ * // Result = max(150000, min(26666, 500000)) = 150000 (use minimum)
+ *
+ * // Fee = 10 USDC
+ * // Available = $8.00
+ * // Max affordable = 266,666 gas
+ * // Result = max(150000, min(266666, 500000)) = 266,666 (use dynamic)
+ *
+ * // Fee = 100 USDC
+ * // Max affordable = 2,666,666 gas
+ * // Result = max(150000, min(2666666, 500000)) = 500,000 (use maximum)
+ * ```
+ */
+export function calculateEffectiveGasLimit(
+  facilitatorFee: string,
+  gasPrice: string,
+  nativeTokenPrice: number,
+  config: GasCostConfig,
+): number {
+  // If dynamic gas limit is disabled, use the static maximum
+  if (!config.enableDynamicGasLimit) {
+    return config.maxGasLimit;
+  }
+
+  // Convert facilitator fee to USD (assuming 6 decimals for USDC)
+  const feeUSD = parseFloat(facilitatorFee) / 1e6;
+
+  // Calculate available amount for gas (after reserving profit margin)
+  const availableForGasUSD = feeUSD * (1 - config.dynamicGasLimitMargin);
+
+  // Calculate how much gas we can afford
+  // Formula: (availableUSD / tokenPrice) * 1e18 Wei / gasPrice Wei
+  const gasPriceBigInt = BigInt(gasPrice);
+
+  // Convert available USD to Wei that can be spent on gas
+  const availableWei = (availableForGasUSD / nativeTokenPrice) * 1e18;
+
+  // Calculate maximum affordable gas
+  const maxAffordableGas = Math.floor(availableWei / Number(gasPriceBigInt));
+
+  // Apply triple constraints:
+  // 1. Not less than minimum (ensure transaction can execute)
+  // 2. Not more than maximum (absolute safety cap)
+  // 3. Not more than affordable (profit protection)
+  const effectiveGasLimit = Math.max(
+    config.minGasLimit,
+    Math.min(maxAffordableGas, config.maxGasLimit),
+  );
+
+  return effectiveGasLimit;
 }
 
 /**

@@ -368,6 +368,9 @@ function parseGasCostConfig(): GasCostConfig {
     hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true", // Disabled by default
     allowedHooks: parseAllowedHooks(),
     validationTolerance: parseFloat(process.env.GAS_COST_VALIDATION_TOLERANCE || "0.1"), // 10% tolerance by default
+    enableDynamicGasLimit: process.env.GAS_COST_ENABLE_DYNAMIC_GAS_LIMIT !== "false", // Enabled by default
+    dynamicGasLimitMargin: parseFloat(process.env.GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN || "0.2"), // 20% profit margin by default
+    minGasLimit: parseInt(process.env.GAS_COST_MIN_GAS_LIMIT || "150000"), // Same as baseGasLimit by default
   };
 }
 

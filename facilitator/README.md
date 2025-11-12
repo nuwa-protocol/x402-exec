@@ -55,10 +55,12 @@ Or clone and run from source (see [Development](#development) section below).
   - Only pre-approved Hooks are accepted
   - Network-specific Hook whitelists
   - Prevents unknown/malicious contracts from draining facilitator funds
-- **Gas Limit Protection** 🆕: Maximum gas limit enforcement
-  - Configurable gas limit cap per transaction (default: 500k)
-  - Prevents excessive gas consumption even from whitelisted Hooks
-  - Additional safety layer against gas attacks
+- **Dynamic Gas Limit Protection** 🆕: Prevents losses from malicious gas-consuming hooks
+  - Automatically calculates gas limit based on facilitator fee (enabled by default)
+  - Triple constraint system: minimum (ensure execution) / maximum (safety cap) / dynamic (profitability)
+  - Configurable profit margin (default 20%) reserved from fee
+  - Static maximum gas limit (500k) as absolute safety cap
+  - Can be disabled to use static limit only
 - **Facilitator Fee Validation** 🆕: Ensures profitability with dynamic tolerance
   - Automatic minimum fee calculation based on gas costs
   - Validates fees cover transaction costs before execution
@@ -344,8 +346,19 @@ GAS_COST_VALIDATION_ENABLED=true
 # This handles price fluctuations between fee calculation and validation
 GAS_COST_VALIDATION_TOLERANCE=0.1
 
-# Maximum gas limit per transaction
+# Maximum gas limit per transaction (absolute upper bound)
 GAS_COST_MAX_GAS_LIMIT=500000
+
+# Dynamic gas limit calculation (enabled by default)
+# Automatically calculates gas limit based on facilitator fee to prevent unprofitable settlements
+GAS_COST_ENABLE_DYNAMIC_GAS_LIMIT=true
+
+# Profit margin to reserve when calculating dynamic gas limit (default: 0.2 = 20%)
+# Higher margin = more profit reserved = lower gas limit
+GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN=0.2
+
+# Minimum gas limit to ensure basic transaction can execute (default: same as base limit)
+GAS_COST_MIN_GAS_LIMIT=150000
 
 # Add trusted Hooks to whitelist
 BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8

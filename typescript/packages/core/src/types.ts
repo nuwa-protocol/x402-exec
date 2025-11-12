@@ -94,6 +94,8 @@ export interface FacilitatorConfig {
   allowedHooks?: Record<string, string[]>;
   /** Maximum gas limit for settlement transactions (optional, for security) */
   maxGasLimit?: number;
+  /** Gas limit for the settlement transaction (optional, overrides maxGasLimit if provided) */
+  gasLimit?: number;
 }
 
 /**

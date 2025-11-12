@@ -370,6 +370,8 @@ export async function settleWithRouter(
     }
 
     // 6. Call SettlementRouter.settleAndExecute
+    // Prioritize gasLimit over maxGasLimit (gasLimit is dynamically calculated)
+    const gasLimit = config.gasLimit ?? config.maxGasLimit;
     const tx = await walletClient.writeContract({
       address: extra.settlementRouter as Address,
       abi: SETTLEMENT_ROUTER_ABI,
@@ -389,7 +391,7 @@ export async function settleWithRouter(
         extra.hookData as Hex,
       ],
       // Add gas limit if configured (for security against malicious hooks)
-      ...(config.maxGasLimit ? { gas: BigInt(config.maxGasLimit) } : {}),
+      ...(gasLimit ? { gas: BigInt(gasLimit) } : {}),
     });
 
     // 7. Wait for transaction confirmation
