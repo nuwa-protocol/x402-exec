@@ -22,6 +22,7 @@ import {
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
+import type { BalanceChecker } from "../balance-check.js";
 
 const logger = getLogger();
 
@@ -39,6 +40,7 @@ type VerifyRequest = {
 export interface VerifyRouteDependencies {
   poolManager: PoolManager;
   x402Config?: X402Config;
+  balanceChecker?: BalanceChecker;
 }
 
 /**
@@ -104,6 +106,59 @@ export function createVerifyRoutes(
       );
 
       const valid = await verify(client, paymentPayload, paymentRequirements, deps.x402Config);
+
+      // If basic verification passed and balance checker is available, check user balance
+      if (valid.isValid && deps.balanceChecker) {
+        try {
+          const balanceCheck = await deps.balanceChecker.checkBalance(
+            client,
+            valid.payer as `0x${string}`,
+            paymentRequirements.asset as `0x${string}`,
+            paymentRequirements.maxAmountRequired,
+            paymentRequirements.network,
+          );
+
+          if (!balanceCheck.hasSufficient) {
+            logger.warn(
+              {
+                payer: valid.payer,
+                network: paymentRequirements.network,
+                balance: balanceCheck.balance,
+                required: balanceCheck.required,
+                cached: balanceCheck.cached,
+              },
+              "Insufficient balance detected during verification",
+            );
+
+            // Override verification result
+            valid.isValid = false;
+            valid.invalidReason = "insufficient_funds";
+          } else {
+            logger.debug(
+              {
+                payer: valid.payer,
+                network: paymentRequirements.network,
+                balance: balanceCheck.balance,
+                required: balanceCheck.required,
+                cached: balanceCheck.cached,
+              },
+              "Balance check passed during verification",
+            );
+          }
+        } catch (error) {
+          logger.error(
+            {
+              error,
+              payer: valid.payer,
+              network: paymentRequirements.network,
+            },
+            "Balance check failed during verification, proceeding with verification result",
+          );
+          // If balance check fails, we don't override the verification result
+          // This ensures verification can still work even if balance check has issues
+        }
+      }
+
       const duration = Date.now() - startTime;
 
       // Record metrics

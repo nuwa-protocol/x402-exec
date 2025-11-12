@@ -9,6 +9,15 @@ import { vi } from "vitest";
 
 /**
  * Create a mock EVM signer with configurable behavior
+ *
+ * @param options
+ * @param options.address
+ * @param options.signMessageResolve
+ * @param options.signMessageReject
+ * @param options.sendTransactionResolve
+ * @param options.sendTransactionReject
+ * @param options.writeContractResolve
+ * @param options.writeContractReject
  */
 export function createMockEvmSigner(options?: {
   address?: string;

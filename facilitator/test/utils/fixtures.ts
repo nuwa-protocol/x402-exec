@@ -9,6 +9,8 @@ import { vi } from "vitest";
 
 /**
  * Create a mock EVM signer
+ *
+ * @param address
  */
 export function createMockEvmSigner(
   address = "0x1234567890123456789012345678901234567890",
@@ -25,6 +27,8 @@ export function createMockEvmSigner(
 
 /**
  * Create mock payment requirements (standard mode)
+ *
+ * @param overrides
  */
 export function createMockPaymentRequirements(
   overrides?: Partial<PaymentRequirements>,
@@ -43,6 +47,8 @@ export function createMockPaymentRequirements(
 
 /**
  * Create mock payment requirements (settlement router mode)
+ *
+ * @param overrides
  */
 export function createMockSettlementRouterPaymentRequirements(
   overrides?: Partial<PaymentRequirements>,
@@ -68,6 +74,8 @@ export function createMockSettlementRouterPaymentRequirements(
 
 /**
  * Create mock payment payload
+ *
+ * @param overrides
  */
 export function createMockPaymentPayload(overrides?: Partial<PaymentPayload>): PaymentPayload {
   return {
@@ -133,6 +141,8 @@ export function createMockCache() {
 
 /**
  * Wait for a specified number of milliseconds
+ *
+ * @param ms
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -140,6 +150,8 @@ export function sleep(ms: number): Promise<void> {
 
 /**
  * Mock environment variables
+ *
+ * @param vars
  */
 export function mockEnv(vars: Record<string, string>): () => void {
   const original = { ...process.env };

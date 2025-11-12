@@ -32,7 +32,14 @@ vi.mock("viem", async () => {
 
 // Mock @x402x/core
 vi.mock("@x402x/core", () => {
+  /**
+   *
+   */
   class MockSettlementExtraError extends Error {
+    /**
+     *
+     * @param message
+     */
     constructor(message: string) {
       super(message);
       this.name = "SettlementExtraError";

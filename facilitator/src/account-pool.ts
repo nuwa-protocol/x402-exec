@@ -63,6 +63,7 @@ export class AccountPool {
    * @param privateKeys - Array of private keys
    * @param network - Network name (e.g., "base-sepolia", "solana-devnet")
    * @param config - Optional configuration
+   * @param strategy
    */
   private constructor(network: string, strategy: "round_robin" | "random") {
     this.network = network;
@@ -71,6 +72,10 @@ export class AccountPool {
 
   /**
    * Create an account pool (async factory method)
+   *
+   * @param privateKeys
+   * @param network
+   * @param config
    */
   static async create(
     privateKeys: string[],

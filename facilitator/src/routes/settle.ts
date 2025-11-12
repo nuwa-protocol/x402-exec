@@ -23,6 +23,7 @@ import { getLogger, traced, recordMetric, recordHistogram } from "../telemetry.j
 import type { PoolManager } from "../pool-manager.js";
 import { isStandardX402Allowed } from "../config.js";
 import type { RequestHandler } from "express";
+import type { BalanceChecker } from "../balance-check.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 
@@ -45,6 +46,7 @@ export interface SettleRouteDependencies {
   x402Config?: X402Config;
   gasCost?: GasCostConfig; // Gas cost config for fee validation and dynamic gas limit
   dynamicGasPrice?: DynamicGasPriceConfig; // Dynamic gas price config for gas limit calculation
+  balanceChecker?: BalanceChecker;
 }
 
 /**
@@ -140,6 +142,7 @@ export function createSettleRoutes(
                   deps.gasCost, // Pass gas cost config for dynamic gas limit
                   deps.dynamicGasPrice, // Pass dynamic gas price config
                   deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
+                  deps.balanceChecker, // Pass balance checker for defensive checks
                 ),
               {
                 network: paymentRequirements.network,

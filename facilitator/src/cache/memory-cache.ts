@@ -19,6 +19,10 @@ export class MemoryCache implements CacheInterface {
   private hits = 0;
   private misses = 0;
 
+  /**
+   *
+   * @param config
+   */
   constructor(config?: CacheConfig) {
     const defaultConfig: CacheConfig = {
       stdTTL: 3600, // 1 hour default
@@ -54,6 +58,10 @@ export class MemoryCache implements CacheInterface {
     });
   }
 
+  /**
+   *
+   * @param key
+   */
   get<T>(key: string): T | undefined {
     const value = this.cache.get<T>(key);
 
@@ -68,6 +76,12 @@ export class MemoryCache implements CacheInterface {
     return undefined;
   }
 
+  /**
+   *
+   * @param key
+   * @param value
+   * @param ttl
+   */
   set<T>(key: string, value: T, ttl?: number): void {
     const success = this.cache.set(key, value, ttl || 0);
 
@@ -78,6 +92,10 @@ export class MemoryCache implements CacheInterface {
     }
   }
 
+  /**
+   *
+   * @param key
+   */
   del(key: string): boolean {
     const deleted = this.cache.del(key) > 0;
 
@@ -88,10 +106,17 @@ export class MemoryCache implements CacheInterface {
     return deleted;
   }
 
+  /**
+   *
+   * @param key
+   */
   has(key: string): boolean {
     return this.cache.has(key);
   }
 
+  /**
+   *
+   */
   flush(): void {
     this.cache.flushAll();
     this.hits = 0;
@@ -99,6 +124,9 @@ export class MemoryCache implements CacheInterface {
     logger.info("Cache flushed");
   }
 
+  /**
+   *
+   */
   getStats(): CacheStats {
     const nodeStats = this.cache.getStats();
 
@@ -122,6 +150,8 @@ export class MemoryCache implements CacheInterface {
 
 /**
  * Create a memory cache instance with optional configuration
+ *
+ * @param config
  */
 export function createMemoryCache(config?: CacheConfig): MemoryCache {
   return new MemoryCache(config);

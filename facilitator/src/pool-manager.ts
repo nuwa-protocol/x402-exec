@@ -17,6 +17,12 @@ const logger = getLogger();
 export class PoolManager {
   private evmAccountPools: Map<string, AccountPool> = new Map();
 
+  /**
+   *
+   * @param evmPrivateKeys
+   * @param networkConfig
+   * @param accountPoolConfig
+   */
   constructor(
     private evmPrivateKeys: string[],
     private networkConfig: NetworkConfig,
