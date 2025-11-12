@@ -355,12 +355,6 @@ Always verify contracts on mainnet deployments:
 # Redeploy everything
 ./deploy-network.sh xlayer-testnet --all
 
-# Redeploy specific scenario
-cd contracts
-forge script script/DeployShowcase.s.sol:DeployShowcase \
-  --sig "deployReferral()" \
-  --rpc-url $X_LAYER_TESTNET_RPC_URL \
-  --broadcast
 ```
 
 **Remember:** Update all `.env` files with new addresses!
