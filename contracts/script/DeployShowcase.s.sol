@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
-import {RevenueSplitHook} from "../examples/revenue-split/RevenueSplitHook.sol";
+// RevenueSplitHook has been deprecated and replaced by TransferHook
 import {NFTMintHook} from "../examples/nft-mint/NFTMintHook.sol";
 import {RandomNFT} from "../examples/nft-mint/RandomNFT.sol";
 import {RewardToken} from "../examples/reward-points/RewardToken.sol";
@@ -13,17 +13,17 @@ import {RewardHook} from "../examples/reward-points/RewardHook.sol";
  * @title DeployShowcase
  * @notice Deployment script for x402-exec Showcase scenarios
  * 
- * This script deploys all contracts needed for the three showcase scenarios:
- * - referral: RevenueSplitHook
+ * This script deploys all contracts needed for the two showcase scenarios:
  * - nft: NFTMintHook + RandomNFT
  * - reward: RewardHook + RewardToken
+ * 
+ * Note: RevenueSplitHook has been deprecated. Use TransferHook (built-in) instead.
  * 
  * Usage:
  *   # Deploy all scenarios (with network prefix)
  *   forge script script/Deploy.s.sol:DeployShowcase --sig "deployAll(string)" "BASE_SEPOLIA" --rpc-url $RPC_URL --broadcast
  *   
  *   # Deploy specific scenario
- *   forge script script/Deploy.s.sol:DeployShowcase --sig "deployReferral(string)" "X_LAYER_TESTNET" --rpc-url $RPC_URL --broadcast
  *   forge script script/Deploy.s.sol:DeployShowcase --sig "deployNFT(string)" "BASE_SEPOLIA" --rpc-url $RPC_URL --broadcast
  *   forge script script/Deploy.s.sol:DeployShowcase --sig "deployReward(string)" "BASE_SEPOLIA" --rpc-url $RPC_URL --broadcast
  * 
@@ -42,7 +42,6 @@ contract DeployShowcase is Script {
     string networkPrefix;
     
     // Deployed contract addresses
-    address revenueSplitHook;
     address nftMintHook;
     address randomNFT;
     address rewardToken;
@@ -76,13 +75,12 @@ contract DeployShowcase is Script {
         networkPrefix = prefix;
         vm.startBroadcast(deployerPrivateKey);
         
-        _deployReferral();
         _deployNFT();
         _deployReward();
         
         vm.stopBroadcast();
         
-        _printSummary(true, true, true);
+        _printSummary(true, true);
     }
     
     /**
@@ -91,34 +89,12 @@ contract DeployShowcase is Script {
     function deployAll() external {
         vm.startBroadcast(deployerPrivateKey);
         
-        _deployReferral();
         _deployNFT();
         _deployReward();
         
         vm.stopBroadcast();
         
-        _printSummary(true, true, true);
-    }
-    
-    /**
-     * @notice Deploy referral split scenario with network prefix
-     */
-    function deployReferral(string memory prefix) external {
-        networkPrefix = prefix;
-        vm.startBroadcast(deployerPrivateKey);
-        _deployReferral();
-        vm.stopBroadcast();
-        _printSummary(true, false, false);
-    }
-    
-    /**
-     * @notice Deploy referral split scenario (legacy - no prefix)
-     */
-    function deployReferral() external {
-        vm.startBroadcast(deployerPrivateKey);
-        _deployReferral();
-        vm.stopBroadcast();
-        _printSummary(true, false, false);
+        _printSummary(true, true);
     }
     
     /**
@@ -129,7 +105,7 @@ contract DeployShowcase is Script {
         vm.startBroadcast(deployerPrivateKey);
         _deployNFT();
         vm.stopBroadcast();
-        _printSummary(false, true, false);
+        _printSummary(true, false);
     }
     
     /**
@@ -139,7 +115,7 @@ contract DeployShowcase is Script {
         vm.startBroadcast(deployerPrivateKey);
         _deployNFT();
         vm.stopBroadcast();
-        _printSummary(false, true, false);
+        _printSummary(true, false);
     }
     
     /**
@@ -150,7 +126,7 @@ contract DeployShowcase is Script {
         vm.startBroadcast(deployerPrivateKey);
         _deployReward();
         vm.stopBroadcast();
-        _printSummary(false, false, true);
+        _printSummary(false, true);
     }
     
     /**
@@ -160,17 +136,10 @@ contract DeployShowcase is Script {
         vm.startBroadcast(deployerPrivateKey);
         _deployReward();
         vm.stopBroadcast();
-        _printSummary(false, false, true);
+        _printSummary(false, true);
     }
     
     // Internal deployment functions
-    
-    function _deployReferral() internal {
-        console.log("=== Deploying Referral Split (revenue-split) ===");
-        revenueSplitHook = address(new RevenueSplitHook(settlementRouter));
-        console.log("RevenueSplitHook:", revenueSplitHook);
-        console.log("");
-    }
     
     function _deployNFT() internal {
         console.log("=== Deploying NFT Mint (nft-mint) ===");
@@ -200,22 +169,12 @@ contract DeployShowcase is Script {
         console.log("");
     }
     
-    function _printSummary(bool referral, bool nft, bool reward) internal view {
+    function _printSummary(bool nft, bool reward) internal view {
         console.log("=== Deployment Summary ===");
         console.log("");
         
         // Check if we have a network prefix
         bool hasPrefix = bytes(networkPrefix).length > 0;
-        
-        if (referral) {
-            console.log("Referral Split (revenue-split/):");
-            if (hasPrefix) {
-                console.log("  %s_REVENUE_SPLIT_HOOK_ADDRESS=%s", networkPrefix, revenueSplitHook);
-            } else {
-                console.log("  REVENUE_SPLIT_HOOK_ADDRESS=%s", revenueSplitHook);
-            }
-            console.log("");
-        }
         
         if (nft) {
             console.log("NFT Mint (nft-mint/):");

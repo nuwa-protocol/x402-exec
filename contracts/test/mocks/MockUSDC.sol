@@ -79,16 +79,12 @@ contract MockUSDC is ERC20, IERC3009 {
     }
     
     function cancelAuthorization(
-        address from,
-        address to,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
+        address authorizer,
         bytes32 nonce,
         bytes calldata signature
     ) external override {
-        require(!_usedNonces[from][nonce], "Authorization already used");
-        _usedNonces[from][nonce] = true;
+        require(!_usedNonces[authorizer][nonce], "Authorization already used");
+        _usedNonces[authorizer][nonce] = true;
     }
     
     function authorizationState(

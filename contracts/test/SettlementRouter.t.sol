@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {SettlementRouter} from "../src/SettlementRouter.sol";
-import {RevenueSplitHook} from "../examples/revenue-split/RevenueSplitHook.sol";
+import {TransferHook} from "../src/hooks/TransferHook.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {MockFailingHook, MockSimpleHook} from "./mocks/MockHooks.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,7 +14,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract SettlementRouterTest is Test {
     SettlementRouter public router;
-    RevenueSplitHook public splitHook;
+    TransferHook public transferHook;
     MockUSDC public token;
     MockFailingHook public failingHook;
     MockSimpleHook public simpleHook;
@@ -60,7 +60,7 @@ contract SettlementRouterTest is Test {
         // Deploy contracts
         router = new SettlementRouter();
         token = new MockUSDC();
-        splitHook = new RevenueSplitHook(address(router));
+        transferHook = new TransferHook(address(router));
         failingHook = new MockFailingHook(address(router));
         simpleHook = new MockSimpleHook(address(router));
         
@@ -320,20 +320,20 @@ contract SettlementRouterTest is Test {
         );
     }
     
-    function testRevenueSplitHook() public {
+    function testTransferHookDistributedMode() public {
         bytes32 salt = bytes32(uint256(5));
         address payTo = merchant; // Merchant is primary recipient
         uint256 facilitatorFee = 0;
         bytes memory signature = "mock_signature";
         
         // Setup split configuration: 70% to merchant, 30% to platform
-        // Note: RevenueSplitHook splits data is directly encoded into hookData
-        RevenueSplitHook.Split[] memory splits = new RevenueSplitHook.Split[](2);
-        splits[0] = RevenueSplitHook.Split({
+        // Note: TransferHook splits data is directly encoded into hookData
+        TransferHook.Split[] memory splits = new TransferHook.Split[](2);
+        splits[0] = TransferHook.Split({
             recipient: merchant,
             bips: 7000
         });
-        splits[1] = RevenueSplitHook.Split({
+        splits[1] = TransferHook.Split({
             recipient: platform,
             bips: 3000
         });
@@ -350,7 +350,7 @@ contract SettlementRouterTest is Test {
             salt,
             payTo,
             facilitatorFee,
-            address(splitHook),
+            address(transferHook),
             hookData
         );
         
@@ -366,7 +366,7 @@ contract SettlementRouterTest is Test {
             salt,
             payTo,
             facilitatorFee,
-            address(splitHook),
+            address(transferHook),
             hookData
         );
         
@@ -377,21 +377,21 @@ contract SettlementRouterTest is Test {
         assertEq(token.balanceOf(payer), 9 * AMOUNT); // Payer balance decreased
     }
     
-    function testInvalidRevenueSplit() public {
+    function testInvalidTransferSplit() public {
         bytes32 salt = bytes32(uint256(7));
         address payTo = merchant;
         uint256 facilitatorFee = 0;
         bytes memory signature = "mock_signature";
         
-        // Setup invalid split configuration: total not equal to 100%
-        RevenueSplitHook.Split[] memory splits = new RevenueSplitHook.Split[](2);
-        splits[0] = RevenueSplitHook.Split({
+        // Setup invalid split configuration: total > 100%
+        TransferHook.Split[] memory splits = new TransferHook.Split[](2);
+        splits[0] = TransferHook.Split({
             recipient: merchant,
             bips: 6000 // 60%
         });
-        splits[1] = RevenueSplitHook.Split({
+        splits[1] = TransferHook.Split({
             recipient: platform,
-            bips: 3000 // 30%, total 90%
+            bips: 5000 // 50%, total 110% (invalid)
         });
         
         bytes memory hookData = abi.encode(splits);
@@ -406,15 +406,15 @@ contract SettlementRouterTest is Test {
             salt,
             payTo,
             facilitatorFee,
-            address(splitHook),
+            address(transferHook),
             hookData
         );
         
         vm.expectRevert(
             abi.encodeWithSelector(
                 SettlementRouter.HookExecutionFailed.selector,
-                address(splitHook),
-                abi.encodeWithSelector(RevenueSplitHook.InvalidTotalBips.selector, 9000)
+                address(transferHook),
+                abi.encodeWithSelector(TransferHook.InvalidTotalBips.selector, 11000)
             )
         );
         router.settleAndExecute(
@@ -428,7 +428,7 @@ contract SettlementRouterTest is Test {
             salt,
             payTo,
             facilitatorFee,
-            address(splitHook),
+            address(transferHook),
             hookData
         );
     }

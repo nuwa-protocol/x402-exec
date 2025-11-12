@@ -31,20 +31,12 @@ interface IERC3009 {
     
     /**
      * @notice Cancel authorization
-     * @param from Payer address
-     * @param to Recipient address
-     * @param value Amount
-     * @param validAfter Valid after timestamp
-     * @param validBefore Expiration timestamp
+     * @param authorizer Authorizer address
      * @param nonce Unique nonce
      * @param signature EIP-712 signature
      */
     function cancelAuthorization(
-        address from,
-        address to,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
+        address authorizer,
         bytes32 nonce,
         bytes calldata signature
     ) external;

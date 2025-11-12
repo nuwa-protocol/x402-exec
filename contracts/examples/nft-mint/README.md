@@ -1,67 +1,221 @@
 # NFT Mint Scenario
 
-This scenario demonstrates automatic NFT minting upon payment completion.
+This scenario demonstrates automatic NFT minting after payment.
 
 ## Contracts
 
 ### `NFTMintHook.sol`
-**Purpose**: Automatically mint NFT to payer after payment is processed
+**Purpose**: Automatically mint NFT to customer after receiving payment
+
+**Architecture**:
+- Hook is deployed once as reusable infrastructure
+- Can be used with any NFT contract that implements `mint(address)` function
+- NFT contract address is passed via hookData at runtime (flexible)
+
+**Design Improvements** (Post-Refactor):
+- ✅ **Simplified Configuration**: Only requires NFT contract address in hookData
+- ✅ **Removed Redundancy**: Uses `payTo` parameter instead of separate `merchant` field
+- ✅ **Enhanced Security**: Follows CEI pattern (transfer payment first, then mint NFT)
+- ✅ **Better Error Handling**: Properly bubbles up revert reasons from NFT contracts
+- ✅ **Reentrancy Protection**: Payment secured before external NFT mint call
 
 **Flow**:
-1. User pays for NFT
-2. Payment is transferred to merchant
-3. NFT is automatically minted to user's address
+1. User makes payment
+2. **Payment is transferred to merchant first** (CEI pattern for security)
+3. NFT is minted to user
+4. If either step fails, entire transaction reverts (atomic)
 
 **Configuration**:
 ```solidity
-struct MintConfig {
-    address nftContract;  // NFT contract address
-    uint256 tokenId;      // Token ID to mint
-    address recipient;    // Usually the payer
-    address merchant;     // Merchant receiving payment
+constructor(address _settlementRouter) {
+    settlementRouter = _settlementRouter;
 }
+
+// hookData format: abi.encode(MintConfig)
+struct MintConfig {
+    address nftContract;  // NFT contract address (must implement mint(address))
+}
+
+// Example hookData encoding
+bytes memory hookData = abi.encode(MintConfig({
+    nftContract: address(randomNFT)
+}));
 ```
 
-### `RandomNFT.sol`
-**Purpose**: Example NFT contract with sequential token ID generation
+**Security Features**:
+- Only callable by SettlementRouter
+- Validates NFT contract address is non-zero
+- Validates payTo address is non-zero
+- Follows Checks-Effects-Interactions (CEI) pattern
+- Properly handles NFT mint failures with detailed error messages
+- Prevents reentrancy by securing funds before external calls
 
-**Features**:
-- Maximum supply of 1000 NFTs
-- Sequential token IDs (0-999)
-- Only designated minter can mint
-- One-time minter setup for security
+### `RandomNFT.sol`
+**Purpose**: Example NFT contract with automatic sequential token ID generation
+
+**Architecture**:
+- Minter address set at deployment (immutable)
+- Sequential token IDs (0, 1, 2, ..., 999)
+- Maximum supply of 1,000 NFTs
+
+**Interface** (Post-Refactor):
+```solidity
+// Simple mint function - contract manages tokenId internally
+function mint(address to) external;
+
+// View functions
+function totalSupply() external view returns (uint256);
+function remainingSupply() external view returns (uint256);
+```
+
+**Key Changes**:
+- ✅ **Simplified Interface**: No longer requires tokenId parameter
+- ✅ **Automatic ID Assignment**: Contract manages token ID sequence internally
+- ✅ **Cleaner API**: Removes confusion about ignored parameters
 
 ## Deployment Example
 
 ```solidity
-// 1. Deploy Hook first
+// 1. Deploy NFTMintHook (reusable for all projects)
 NFTMintHook hook = new NFTMintHook(settlementRouter);
 
-// 2. Deploy NFT contract with Hook as minter (secure by design)
+// 2. Deploy RandomNFT with hook as minter
 RandomNFT nft = new RandomNFT(address(hook));
 
-// 3. Configure hookData for each sale
-bytes memory hookData = abi.encode(MintConfig({
-    nftContract: address(nft),
-    tokenId: nextTokenId,
-    recipient: payer,
-    merchant: merchantAddress
+// 3. Configure hookData for each transaction
+bytes memory hookData = abi.encode(NFTMintHook.MintConfig({
+    nftContract: address(nft)
 }));
-```
 
-**Security Note**: The minter address is set in the constructor to prevent front-running attacks. The deployment order matters: Hook must be deployed before the NFT contract.
+// 4. Execute settlement with NFT mint
+router.settleAndExecute(
+    token,
+    payer,
+    amount,
+    validAfter,
+    validBefore,
+    nonce,
+    signature,
+    salt,
+    merchant,      // payTo - receives payment
+    facilitatorFee,
+    address(hook),
+    hookData
+);
+```
 
 ## Use Cases
 
-- **NFT Marketplaces**: Automatic fulfillment of NFT purchases
-- **Digital Collectibles**: Mint-on-demand collectibles
-- **Event Tickets**: NFT-based event tickets
-- **Membership Cards**: NFT membership tokens
-- **Gaming Assets**: In-game item NFTs
+### NFT Sales
+- Digital art purchases
+- Collectible card sales
+- Limited edition items
+
+### Membership NFTs
+- Gym membership cards
+- Club access passes
+- Subscription proof tokens
+
+### Event Tickets
+- Concert tickets
+- Conference passes
+- Sports event tickets
+
+### Digital Products
+- Game items
+- Virtual land
+- In-game assets
+
+## Gas Optimization
+
+The refactored design is more gas-efficient:
+- **Removed merchant field**: Saves 32 bytes in hookData (~512 gas)
+- **CEI pattern**: No additional overhead, improves security
+- **Better error handling**: Minimal gas cost for improved developer experience
 
 ## Integration Notes
 
-- Each application should deploy its own NFT contract and Hook instance
-- The NFT contract must authorize the Hook as a minter
-- Token IDs can be pre-determined or generated dynamically
-- Consider gas costs for complex NFT minting logic
+### For NFT Contract Developers
+
+Your NFT contract must implement:
+```solidity
+function mint(address to) external;
+```
+
+The function should:
+- Check that `msg.sender` is the authorized minter
+- Generate the next token ID internally
+- Call `_safeMint(to, tokenId)` or `_mint(to, tokenId)`
+- Revert with clear error message if minting fails
+
+### For Frontend Developers
+
+```typescript
+// Simple hookData encoding - only NFT address needed
+const hookData = ethers.AbiCoder.defaultAbiCoder().encode(
+    ['tuple(address nftContract)'],
+    [{
+        nftContract: nftAddress
+    }]
+);
+
+// payTo is the merchant who receives payment
+const payTo = merchantAddress;
+
+// Call settleAndExecute with the hook
+await router.settleAndExecute(
+    token,
+    payer,
+    amount,
+    validAfter,
+    validBefore,
+    nonce,
+    signature,
+    salt,
+    payTo,           // Merchant receives payment here
+    facilitatorFee,
+    hookAddress,
+    hookData
+);
+```
+
+## Security Considerations
+
+### ✅ Protected Against
+- **Reentrancy**: CEI pattern ensures funds are secured before external calls
+- **Invalid addresses**: Validates both NFT contract and payTo addresses
+- **Failed mints**: Entire transaction reverts if NFT mint fails
+- **Malicious NFT contracts**: Error messages are properly bubbled up
+
+### ⚠️ Considerations
+- NFT contract must be trusted (can execute arbitrary code during mint)
+- Minter role in NFT contract should be set correctly at deployment
+- Max supply should be checked by the NFT contract to prevent over-minting
+
+## Testing
+
+Comprehensive tests are provided in:
+- `contracts/test/Scenarios.t.sol` - Basic functionality tests
+- `contracts/test/adversarial/ShowcaseSecurityTests.t.sol` - Security tests including:
+  - Malicious NFT reentrancy attempts
+  - NFT mint failures
+  - Address validation
+  - Max supply enforcement
+
+Run tests with:
+```bash
+forge test --match-contract ShowcaseSecurityTests
+```
+
+## Changelog
+
+### v2.0 (Post-Refactor)
+- ✅ Removed `tokenId` parameter (NFT contracts manage IDs internally)
+- ✅ Removed `merchant` field from MintConfig (use `payTo` instead)
+- ✅ Enhanced security with CEI pattern (payment first, then mint)
+- ✅ Improved error handling (bubble up revert reasons)
+- ✅ Added comprehensive security tests
+- ✅ Reduced gas costs by simplifying configuration
+
+### v1.0 (Original)
+- Initial implementation with merchant and tokenId parameters

@@ -9,18 +9,9 @@ This directory contains various examples of Settlement Hooks organized by busine
 
 Complete NFT minting solutions for digital asset sales:
 - **`NFTMintHook.sol`** - Automatically mint NFT after payment
-- **`NFTMintAndSplitHook.sol`** - Combined NFT minting + revenue splitting
 - **`RandomNFT.sol`** - Example NFT contract with sequential token ID generation
 
 *Use cases: NFT marketplaces, digital collectibles, event tickets*
-
-### 💰 `revenue-split/`
-**Scenario: Payment Distribution**
-
-Revenue sharing solutions for multi-party transactions:
-- **`RevenueSplitHook.sol`** - Distribute revenue proportionally among recipients
-
-*Use cases: Marketplace commissions, affiliate programs, royalty distribution*
 
 ### 🎁 `reward-points/`
 **Scenario: Loyalty & Rewards**

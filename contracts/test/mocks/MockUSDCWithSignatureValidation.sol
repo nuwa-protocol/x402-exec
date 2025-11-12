@@ -81,30 +81,26 @@ contract MockUSDCWithSignatureValidation is ERC20, EIP712, IERC3009 {
     
     /// @inheritdoc IERC3009
     function cancelAuthorization(
-        address from,
-        address to,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
+        address authorizer,
         bytes32 nonce,
         bytes calldata signature
-    ) external {
-        require(!_authorizationStates[from][nonce], "Authorization already used");
+    ) external override {
+        require(!_authorizationStates[authorizer][nonce], "Authorization already used");
         
         // Verify cancellation signature (only authorizer and nonce)
         bytes32 structHash = keccak256(abi.encode(
             CANCEL_AUTHORIZATION_TYPEHASH,
-            from,
+            authorizer,
             nonce
         ));
         
         bytes32 digest = _hashTypedDataV4(structHash);
         address signer = digest.recover(signature);
-        require(signer == from, "Invalid signature");
+        require(signer == authorizer, "Invalid signature");
         
         // Mark as used so it can't be used in the future
-        _authorizationStates[from][nonce] = true;
-        emit AuthorizationCanceled(from, nonce);
+        _authorizationStates[authorizer][nonce] = true;
+        emit AuthorizationCanceled(authorizer, nonce);
     }
     
     /// @inheritdoc IERC3009

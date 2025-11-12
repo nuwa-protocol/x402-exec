@@ -29,14 +29,10 @@ contract NFTMintHook is ISettlementHook {
     
     /**
      * @notice NFT mint configuration
-     * @param nftContract NFT contract address
-     * @param tokenId Token ID
-     * @param merchant Merchant address (recipient of funds)
+     * @param nftContract NFT contract address (must implement mint(address) function)
      */
     struct MintConfig {
         address nftContract;
-        uint256 tokenId;
-        address merchant;
     }
     
     // ===== Events =====
@@ -45,25 +41,23 @@ contract NFTMintHook is ISettlementHook {
      * @notice NFT mint completed event
      * @param contextKey Settlement context ID
      * @param nftContract NFT contract address
-     * @param tokenId Token ID
      * @param recipient Recipient address
      */
     event NFTMinted(
         bytes32 indexed contextKey,
         address indexed nftContract,
-        uint256 indexed tokenId,
-        address recipient
+        address indexed recipient
     );
     
     /**
-     * @notice Merchant payment received event
+     * @notice Payment transferred event
      * @param contextKey Settlement context ID
-     * @param merchant Merchant address
+     * @param payTo Recipient address
      * @param amount Amount
      */
-    event MerchantPaid(
+    event PaymentTransferred(
         bytes32 indexed contextKey,
-        address indexed merchant,
+        address indexed payTo,
         uint256 amount
     );
     
@@ -93,6 +87,14 @@ contract NFTMintHook is ISettlementHook {
     /**
      * @inheritdoc ISettlementHook
      * @dev hookData format: abi.encode(MintConfig)
+     * 
+     * Execution order follows CEI (Checks-Effects-Interactions) pattern:
+     * 1. Checks: Validate addresses
+     * 2. Interactions: Transfer payment first (revert on failure)
+     * 3. Interactions: Mint NFT (revert if fails, payment already secured)
+     * 
+     * This order prevents reentrancy attacks where a malicious NFT contract
+     * could drain funds during the mint callback.
      */
     function execute(
         bytes32 contextKey,
@@ -108,28 +110,30 @@ contract NFTMintHook is ISettlementHook {
         MintConfig memory config = abi.decode(data, (MintConfig));
         
         // Validate addresses
-        if (config.nftContract == address(0) || 
-            config.merchant == address(0)) {
+        if (config.nftContract == address(0)) {
+            revert InvalidAddress();
+        }
+        if (payTo == address(0)) {
             revert InvalidAddress();
         }
         
-        // 1. Mint NFT to payer (not from config, use the payer parameter directly)
-        _safeMint(config.nftContract, payer, config.tokenId);
-        emit NFTMinted(contextKey, config.nftContract, config.tokenId, payer);
-        
-        // 2. Transfer to merchant
+        // 1. Transfer payment to payTo (merchant) first - secures funds before external call
         IERC20(token).safeTransferFrom(
             settlementRouter,
-            config.merchant,
+            payTo,
             amount
         );
-        emit MerchantPaid(contextKey, config.merchant, amount);
+        emit PaymentTransferred(contextKey, payTo, amount);
         
-        // Note: salt, payTo, and facilitator parameters are available but not used in this simple hook
+        // 2. Mint NFT to payer - after funds are secured
+        _safeMint(config.nftContract, payer);
+        emit NFTMinted(contextKey, config.nftContract, payer);
+        
+        // Note: salt and facilitator parameters are available for advanced use cases
         // Advanced hooks could use facilitator for referral rewards or other incentive mechanisms
         
-        // Return tokenId
-        return abi.encode(config.tokenId);
+        // Return NFT contract address for tracking
+        return abi.encode(config.nftContract);
     }
     
     // ===== Internal Methods =====
@@ -137,13 +141,30 @@ contract NFTMintHook is ISettlementHook {
     /**
      * @notice Safely mint NFT
      * @dev Use low-level call to be compatible with different NFT contracts
+     *      Calls mint(address) function on the NFT contract
+     *      The NFT contract is responsible for managing tokenId generation
+     * @param nftContract Address of the NFT contract
+     * @param to Address to receive the minted NFT
      */
-    function _safeMint(address nftContract, address to, uint256 tokenId) internal {
-        // Call mint(address to, uint256 tokenId)
-        (bool success, ) = nftContract.call(
-            abi.encodeWithSignature("mint(address,uint256)", to, tokenId)
+    function _safeMint(address nftContract, address to) internal {
+        // Call mint(address to)
+        (bool success, bytes memory returnData) = nftContract.call(
+            abi.encodeWithSignature("mint(address)", to)
         );
-        require(success, "NFT mint failed");
+        
+        // Verify call succeeded
+        if (!success) {
+            // If there's return data, it might be a revert reason
+            if (returnData.length > 0) {
+                // Bubble up the revert reason
+                assembly {
+                    let returnDataSize := mload(returnData)
+                    revert(add(32, returnData), returnDataSize)
+                }
+            } else {
+                revert("NFT mint failed");
+            }
+        }
     }
 }
 
