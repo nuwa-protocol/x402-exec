@@ -55,8 +55,8 @@ bytes memory hookData = abi.encode(MintConfig({
 
 **Architecture**:
 - Minter address set at deployment (immutable)
-- Sequential token IDs (0, 1, 2, ..., 999)
-- Maximum supply of 1,000 NFTs
+- Sequential token IDs (0, 1, 2, ..., 9,999)
+- Maximum supply of 10,000 NFTs
 
 **Interface** (Post-Refactor):
 ```solidity

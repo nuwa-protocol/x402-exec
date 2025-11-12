@@ -66,6 +66,7 @@ contract RewardToken is ERC20, EIP712, IERC3009 {
     error AuthorizationExpired();
     error AuthorizationAlreadyUsed();
     error InvalidSignature();
+    error InvalidRecipient();
     
     // ===== Constructor =====
     
@@ -122,8 +123,11 @@ contract RewardToken is ERC20, EIP712, IERC3009 {
         bytes32 nonce,
         bytes calldata signature
     ) external override {
-        // Verify timing
-        if (block.timestamp <= validAfter) revert AuthorizationNotYetValid();
+        // Verify recipient is not zero address (prevent accidental burns)
+        if (to == address(0)) revert InvalidRecipient();
+        
+        // Verify timing (EIP-3009 standard: [validAfter, validBefore) - left-closed, right-open)
+        if (block.timestamp < validAfter) revert AuthorizationNotYetValid();
         if (block.timestamp >= validBefore) revert AuthorizationExpired();
         
         // Verify nonce not used

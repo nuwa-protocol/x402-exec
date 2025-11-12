@@ -162,7 +162,7 @@ Users can transfer their reward tokens without paying gas:
 ```javascript
 // 1. Generate EIP-712 signature (off-chain)
 const domain = {
-    name: "Reward Points",
+    name: "X402 Reward Points",
     version: "1",
     chainId: await ethers.provider.getNetwork().then(n => n.chainId),
     verifyingContract: rewardTokenAddress

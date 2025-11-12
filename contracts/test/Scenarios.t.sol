@@ -74,6 +74,38 @@ contract ScenariosTest is Test {
         assertEq(rewardToken.balanceOf(address(rewardToken)), maxSupply);
     }
     
+    function testRewardTokenZeroAddressProtection() public {
+        // Distribute some tokens to test user first
+        vm.prank(address(rewardHook));
+        rewardToken.distribute(user, 1000 * 10**18);
+        
+        // Try to transfer to zero address via transferWithAuthorization
+        // This should revert with InvalidRecipient
+        bytes32 nonce = keccak256("test-nonce");
+        
+        // Build authorization parameters
+        address from = user;
+        address to = address(0); // Zero address
+        uint256 value = 100 * 10**18;
+        uint256 validAfter = 0;
+        uint256 validBefore = type(uint256).max;
+        
+        // Create a mock signature (doesn't matter since we expect revert before signature check)
+        bytes memory signature = new bytes(65);
+        
+        // Should revert with InvalidRecipient before checking signature
+        vm.expectRevert(RewardToken.InvalidRecipient.selector);
+        rewardToken.transferWithAuthorization(
+            from,
+            to,
+            value,
+            validAfter,
+            validBefore,
+            nonce,
+            signature
+        );
+    }
+    
     function testRewardDistribution() public {
         uint256 amount = 1000 * 10**18;
         
@@ -110,7 +142,7 @@ contract ScenariosTest is Test {
         assertEq(expectedPoints, 1000 * 10**18);
     }
     
-    function testRewardHookCapProtection() public {
+    function testRewardHookCapProtection() public pure {
         // Test that rewards are capped at MAX_REWARD_AMOUNT (0.1 USDC)
         uint256 MAX_REWARD_AMOUNT = 100_000; // 0.1 USDC
         uint256 REWARD_RATE = 1000;
