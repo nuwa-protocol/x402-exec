@@ -45,6 +45,20 @@ export function useNetworkBalances(address: string | undefined) {
       loading: true,
       error: null,
     },
+    'base': {
+      network: 'base',
+      balance: '0',
+      raw: 0n,
+      loading: true,
+      error: null,
+    },
+    'x-layer': {
+      network: 'x-layer',
+      balance: '0',
+      raw: 0n,
+      loading: true,
+      error: null,
+    },
   });
 
   useEffect(() => {
@@ -60,6 +74,20 @@ export function useNetworkBalances(address: string | undefined) {
         },
         'x-layer-testnet': {
           network: 'x-layer-testnet',
+          balance: '0',
+          raw: 0n,
+          loading: false,
+          error: null,
+        },
+        'base': {
+          network: 'base',
+          balance: '0',
+          raw: 0n,
+          loading: false,
+          error: null,
+        },
+        'x-layer': {
+          network: 'x-layer',
           balance: '0',
           raw: 0n,
           loading: false,
