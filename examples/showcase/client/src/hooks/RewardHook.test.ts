@@ -11,36 +11,39 @@ describe("RewardHook", () => {
   describe("getAddress", () => {
     it("should throw error when address is not configured", () => {
       expect(() => RewardHook.getAddress("base-sepolia")).toThrow(
-        'RewardHook address not configured for network "base-sepolia"'
+        'RewardHook address not configured for network "base-sepolia"',
       );
     });
 
     it("should throw error with helpful message about env variable", () => {
       expect(() => RewardHook.getAddress("base-sepolia")).toThrow(
-        "Please set VITE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS in .env file"
+        "Please set VITE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS in .env file",
       );
     });
 
     it("should throw error for x-layer-testnet when not configured", () => {
       expect(() => RewardHook.getAddress("x-layer-testnet")).toThrow(
-        'RewardHook address not configured for network "x-layer-testnet"'
+        'RewardHook address not configured for network "x-layer-testnet"',
       );
       expect(() => RewardHook.getAddress("x-layer-testnet")).toThrow(
-        "Please set VITE_X_LAYER_TESTNET_REWARD_HOOK_ADDRESS in .env file"
+        "Please set VITE_X_LAYER_TESTNET_REWARD_HOOK_ADDRESS in .env file",
       );
     });
 
     it("should return address when configured", () => {
       // Mock environment variable
-      vi.stubEnv("VITE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS", "0x1234567890123456789012345678901234567890");
-      
+      vi.stubEnv(
+        "VITE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS",
+        "0x1234567890123456789012345678901234567890",
+      );
+
       const address = RewardHook.getAddress("base-sepolia");
       expect(address).toBe("0x1234567890123456789012345678901234567890");
     });
 
     it("should throw error for unknown network", () => {
       expect(() => RewardHook.getAddress("unknown-network")).toThrow(
-        'RewardHook address not configured for network "unknown-network"'
+        'RewardHook address not configured for network "unknown-network"',
       );
     });
   });
@@ -53,7 +56,7 @@ describe("RewardHook", () => {
       };
 
       const encoded = RewardHook.encode(config);
-      
+
       // Should return a hex string
       expect(encoded).toMatch(/^0x[0-9a-f]+$/);
       // Should be non-empty
@@ -61,4 +64,3 @@ describe("RewardHook", () => {
     });
   });
 });
-

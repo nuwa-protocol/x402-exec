@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useChainId } from 'wagmi';
-import { getServerUrl, getNetworkByChainId } from '../config';
-import { PaymentDialog } from '../components/PaymentDialog';
-import { CodeBlock } from '../components/CodeBlock';
-import premiumDownloadClientCode from '../code-examples/premium-download-client.ts?raw';
-import premiumDownloadServerCode from '../code-examples/premium-download-server.ts?raw';
+import { useState } from "react";
+import { useChainId } from "wagmi";
+import { getServerUrl, getNetworkByChainId } from "../config";
+import { PaymentDialog } from "../components/PaymentDialog";
+import { CodeBlock } from "../components/CodeBlock";
+import premiumDownloadClientCode from "../code-examples/premium-download-client.ts?raw";
+import premiumDownloadServerCode from "../code-examples/premium-download-server.ts?raw";
 
 interface DownloadResult {
   success: boolean;
@@ -17,8 +17,8 @@ interface DownloadResult {
 export function PremiumDownload() {
   const chainId = useChainId();
   const currentNetwork = chainId ? getNetworkByChainId(chainId) : undefined;
-  const isMainnet = currentNetwork === 'base' || currentNetwork === 'x-layer';
-  
+  const isMainnet = currentNetwork === "base" || currentNetwork === "x-layer";
+
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function PremiumDownload() {
   };
 
   const handlePaymentSuccess = (result: any) => {
-    console.log('[PremiumDownload] Payment successful:', result);
+    console.log("[PremiumDownload] Payment successful:", result);
     if (result.success && result.downloadUrl) {
       setDownloadResult(result as DownloadResult);
       setShowPaymentDialog(false);
@@ -41,17 +41,17 @@ export function PremiumDownload() {
   };
 
   const handlePaymentError = (errorMsg: string) => {
-    console.error('[PremiumDownload] Payment error:', errorMsg);
+    console.error("[PremiumDownload] Payment error:", errorMsg);
     setError(errorMsg);
   };
 
   const handleDownload = () => {
     if (downloadResult?.downloadUrl) {
       const serverUrl = getServerUrl();
-      const fullUrl = serverUrl 
-        ? `${serverUrl}${downloadResult.downloadUrl}` 
+      const fullUrl = serverUrl
+        ? `${serverUrl}${downloadResult.downloadUrl}`
         : downloadResult.downloadUrl;
-      window.open(fullUrl, '_blank');
+      window.open(fullUrl, "_blank");
     }
   };
 
@@ -70,28 +70,36 @@ export function PremiumDownload() {
 
       <div className="scenario-description">
         <p>
-          Purchase the exclusive <strong>"x402 Protocol Whitepaper"</strong> PDF for{' '}
-          <strong>$0.10 USDC</strong>. This content requires server-side processing for secure delivery.
+          Purchase the exclusive <strong>"x402 Protocol Whitepaper"</strong> PDF for{" "}
+          <strong>$0.10 USDC</strong>. This content requires server-side processing for secure
+          delivery.
         </p>
 
         {/* Mainnet Warning */}
         {isMainnet && (
           <div
             style={{
-              margin: '20px 0',
-              padding: '15px',
-              backgroundColor: '#fff3cd',
-              borderRadius: '8px',
-              borderLeft: '4px solid #ffc107',
+              margin: "20px 0",
+              padding: "15px",
+              backgroundColor: "#fff3cd",
+              borderRadius: "8px",
+              borderLeft: "4px solid #ffc107",
             }}
           >
-            <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>⚠️ Mainnet Not Supported</h4>
-            <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#856404', lineHeight: 1.6 }}>
-              Premium Download scenario is currently only available on testnets because it requires server-side verification.
-              Please switch to <strong>Base Sepolia</strong> or <strong>X Layer Testnet</strong> to try this feature.
+            <h4 style={{ margin: "0 0 10px 0", color: "#856404" }}>⚠️ Mainnet Not Supported</h4>
+            <p
+              style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#856404", lineHeight: 1.6 }}
+            >
+              Premium Download scenario is currently only available on testnets because it requires
+              server-side verification. Please switch to <strong>Base Sepolia</strong> or{" "}
+              <strong>X Layer Testnet</strong> to try this feature.
             </p>
-            <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
-              💡 <em>Other scenarios (Split Payment, NFT Mint, Reward Points) support both mainnet and testnet.</em>
+            <p style={{ margin: 0, fontSize: "13px", color: "#856404" }}>
+              💡{" "}
+              <em>
+                Other scenarios (Split Payment, NFT Mint, Reward Points) support both mainnet and
+                testnet.
+              </em>
             </p>
           </div>
         )}
@@ -99,28 +107,28 @@ export function PremiumDownload() {
         {/* Features */}
         <div
           style={{
-            margin: '20px 0',
-            padding: '15px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            borderLeft: '4px solid #667eea',
+            margin: "20px 0",
+            padding: "15px",
+            backgroundColor: "#f8f9fa",
+            borderRadius: "8px",
+            borderLeft: "4px solid #667eea",
           }}
         >
-          <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>✨ Features:</h4>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: "#333" }}>✨ Features:</h4>
+          <ul style={{ margin: 0, paddingLeft: "20px" }}>
+            <li style={{ margin: "8px 0", lineHeight: 1.6 }}>
               🔐 <strong>Server Verification</strong>: Payment verified before content access
             </li>
-            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+            <li style={{ margin: "8px 0", lineHeight: 1.6 }}>
               ⏱️ <strong>Temporary Links</strong>: Download URLs expire after 24 hours
             </li>
-            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+            <li style={{ margin: "8px 0", lineHeight: 1.6 }}>
               📊 <strong>Access Control</strong>: Server tracks and validates all downloads
             </li>
-            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+            <li style={{ margin: "8px 0", lineHeight: 1.6 }}>
               🖥️ <strong>Server Mode</strong>: Backend controls payment requirements
             </li>
-            <li style={{ margin: '8px 0', lineHeight: 1.6 }}>
+            <li style={{ margin: "8px 0", lineHeight: 1.6 }}>
               💰 <strong>Real Payment</strong>: Actual USDC payment (not returned in this demo)
             </li>
           </ul>
@@ -129,15 +137,25 @@ export function PremiumDownload() {
         {/* How It Works */}
         <div
           style={{
-            margin: '20px 0',
-            padding: '15px',
-            backgroundColor: '#f0f9ff',
-            borderRadius: '8px',
-            border: '1px solid #bfdbfe',
+            margin: "20px 0",
+            padding: "15px",
+            backgroundColor: "#f0f9ff",
+            borderRadius: "8px",
+            border: "1px solid #bfdbfe",
           }}
         >
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1e40af' }}>💡 How it works:</h4>
-          <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', lineHeight: '1.8', color: '#1e40af' }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#1e40af" }}>
+            💡 How it works:
+          </h4>
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: "20px",
+              fontSize: "13px",
+              lineHeight: "1.8",
+              color: "#1e40af",
+            }}
+          >
             <li>Click "Purchase & Download" button</li>
             <li>Server generates payment requirements with resource details</li>
             <li>Connect wallet and sign the payment authorization</li>
@@ -161,15 +179,33 @@ export function PremiumDownload() {
         />
 
         <p>
-          Upon successful payment, the server will generate a unique, time-limited download link for you.
+          Upon successful payment, the server will generate a unique, time-limited download link for
+          you.
         </p>
-        <div className="content-details" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '14px' }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📚 Content Details:</h4>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            <li style={{ marginBottom: '5px' }}><strong>Title:</strong> x402 Protocol Whitepaper</li>
-            <li style={{ marginBottom: '5px' }}><strong>Format:</strong> PDF</li>
-            <li style={{ marginBottom: '5px' }}><strong>Size:</strong> ~2.5 MB</li>
-            <li style={{ marginBottom: '5px' }}><strong>Price:</strong> $0.10 USDC</li>
+        <div
+          className="content-details"
+          style={{
+            marginTop: "20px",
+            padding: "15px",
+            backgroundColor: "#f8f9fa",
+            borderRadius: "8px",
+            fontSize: "14px",
+          }}
+        >
+          <h4 style={{ margin: "0 0 10px 0", color: "#333" }}>📚 Content Details:</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            <li style={{ marginBottom: "5px" }}>
+              <strong>Title:</strong> x402 Protocol Whitepaper
+            </li>
+            <li style={{ marginBottom: "5px" }}>
+              <strong>Format:</strong> PDF
+            </li>
+            <li style={{ marginBottom: "5px" }}>
+              <strong>Size:</strong> ~2.5 MB
+            </li>
+            <li style={{ marginBottom: "5px" }}>
+              <strong>Price:</strong> $0.10 USDC
+            </li>
           </ul>
         </div>
       </div>
@@ -180,15 +216,15 @@ export function PremiumDownload() {
           disabled={!!downloadResult || isMainnet}
           className="btn-pay"
           style={{
-            opacity: (downloadResult || isMainnet) ? 0.6 : 1,
-            cursor: (downloadResult || isMainnet) ? 'not-allowed' : 'pointer'
+            opacity: downloadResult || isMainnet ? 0.6 : 1,
+            cursor: downloadResult || isMainnet ? "not-allowed" : "pointer",
           }}
         >
-          {isMainnet 
-            ? '⚠️ Not Available on Mainnet' 
-            : downloadResult 
-              ? '✅ Purchased' 
-              : '💳 Purchase & Download ($0.1 USDC)'}
+          {isMainnet
+            ? "⚠️ Not Available on Mainnet"
+            : downloadResult
+              ? "✅ Purchased"
+              : "💳 Purchase & Download ($0.1 USDC)"}
         </button>
 
         {downloadResult && (
@@ -196,15 +232,11 @@ export function PremiumDownload() {
             <button
               onClick={handleDownload}
               className="btn-secondary"
-              style={{ marginTop: '10px' }}
+              style={{ marginTop: "10px" }}
             >
               ⬇️ Download "{downloadResult.fileName}"
             </button>
-            <button
-              onClick={handleReset}
-              className="btn-secondary"
-              style={{ marginTop: '10px' }}
-            >
+            <button onClick={handleReset} className="btn-secondary" style={{ marginTop: "10px" }}>
               Purchase Another
             </button>
           </>
@@ -212,71 +244,94 @@ export function PremiumDownload() {
       </div>
 
       {error && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '15px', 
-          backgroundColor: '#fee', 
-          borderRadius: '8px',
-          border: '1px solid #fcc'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#c00' }}>❌ Purchase Failed</h4>
-          <p style={{ margin: 0, fontSize: '14px', color: '#600' }}>{error}</p>
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "15px",
+            backgroundColor: "#fee",
+            borderRadius: "8px",
+            border: "1px solid #fcc",
+          }}
+        >
+          <h4 style={{ margin: "0 0 10px 0", color: "#c00" }}>❌ Purchase Failed</h4>
+          <p style={{ margin: 0, fontSize: "14px", color: "#600" }}>{error}</p>
         </div>
       )}
 
       {downloadResult && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '20px', 
-          backgroundColor: '#d4edda', 
-          borderRadius: '8px',
-          border: '1px solid #c3e6cb'
-        }}>
-          <h4 style={{ margin: '0 0 15px 0', color: '#155724' }}>✅ Purchase Successful!</h4>
-          
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ fontSize: '14px', color: '#155724', marginBottom: '5px', fontWeight: 'bold' }}>
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "20px",
+            backgroundColor: "#d4edda",
+            borderRadius: "8px",
+            border: "1px solid #c3e6cb",
+          }}
+        >
+          <h4 style={{ margin: "0 0 15px 0", color: "#155724" }}>✅ Purchase Successful!</h4>
+
+          <div style={{ marginBottom: "15px" }}>
+            <div
+              style={{
+                fontSize: "14px",
+                color: "#155724",
+                marginBottom: "5px",
+                fontWeight: "bold",
+              }}
+            >
               Download Link:
             </div>
-            <code style={{ 
-              display: 'block', 
-              backgroundColor: '#fff', 
-              padding: '10px', 
-              borderRadius: '4px', 
-              fontSize: '12px',
-              wordBreak: 'break-all',
-              fontFamily: 'monospace'
-            }}>
+            <code
+              style={{
+                display: "block",
+                backgroundColor: "#fff",
+                padding: "10px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                wordBreak: "break-all",
+                fontFamily: "monospace",
+              }}
+            >
               {downloadResult.downloadUrl}
             </code>
           </div>
 
-          <div style={{ marginBottom: '15px', fontSize: '14px', lineHeight: '1.8' }}>
-            <div><strong>📊 Purchase Details:</strong></div>
-            <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-              <li>Content: <strong>{downloadResult.fileName}</strong></li>
-              <li>Network: <strong>{downloadResult.network}</strong></li>
-              <li>Expires: <strong>{new Date(downloadResult.expiresAt).toLocaleString()}</strong></li>
-              <li>Mode: <strong>Server</strong> 📄</li>
+          <div style={{ marginBottom: "15px", fontSize: "14px", lineHeight: "1.8" }}>
+            <div>
+              <strong>📊 Purchase Details:</strong>
+            </div>
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              <li>
+                Content: <strong>{downloadResult.fileName}</strong>
+              </li>
+              <li>
+                Network: <strong>{downloadResult.network}</strong>
+              </li>
+              <li>
+                Expires: <strong>{new Date(downloadResult.expiresAt).toLocaleString()}</strong>
+              </li>
+              <li>
+                Mode: <strong>Server</strong> 📄
+              </li>
             </ul>
           </div>
 
           <button
             onClick={handleDownload}
             style={{
-              display: 'inline-block',
-              padding: '10px 20px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
+              display: "inline-block",
+              padding: "10px 20px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              transition: "background-color 0.2s",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#218838")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#28a745")}
           >
             ⬇️ Download Now →
           </button>
@@ -293,7 +348,7 @@ export function PremiumDownload() {
           endpoint="/api/purchase-download"
           getRequestBody={(userAddress) => ({
             walletAddress: userAddress,
-            contentId: 'x402-protocol-guide',
+            contentId: "x402-protocol-guide",
             // network will be added by PaymentDialog
           })}
           onSuccess={handlePaymentSuccess}

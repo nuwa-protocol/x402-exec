@@ -11,10 +11,12 @@ The showcase client is a React application that can be deployed to Cloudflare Pa
 The client uses environment variables to configure the backend server URL:
 
 **`VITE_SERVER_URL`** (Optional)
+
 - **Development**: Leave unset to use Vite's dev proxy (automatically proxies to `localhost:3001`)
 - **Production**: Set to your deployed showcase server URL
 
 Example values:
+
 ```bash
 # Production (Cloudflare Pages, Netlify, Vercel, etc.)
 VITE_SERVER_URL=https://x402-showcase-server.railway.app
@@ -37,12 +39,14 @@ VITE_SERVER_URL=
 #### Step 2: Configure Build Settings
 
 **Build Configuration**:
+
 - **Framework preset**: None
 - **Build command**: `git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:client`
 - **Build output directory**: `examples/showcase/client/dist`
 - **Root directory**: `/` (repository root)
 
 **Environment Variables** (in Cloudflare Pages dashboard):
+
 ```
 NODE_VERSION = 20
 PNPM_VERSION = 10.7.0
@@ -54,6 +58,7 @@ VITE_SERVER_URL = https://your-showcase-server.railway.app
 Cloudflare Pages will automatically build and deploy your application.
 
 **Custom Domain** (Optional):
+
 - Go to your Pages project → Custom domains
 - Add your domain (e.g., `showcase.x402.org`)
 - Follow DNS configuration instructions
@@ -68,6 +73,7 @@ If you want to deploy the client and server on the same domain:
 4. **Leave `VITE_SERVER_URL` unset** - the client will use relative paths
 
 Example with Express/Hono server:
+
 ```typescript
 // Serve client files
 app.use(express.static('public'));
@@ -80,6 +86,7 @@ app.post('/api/transfer-with-hook/payment', ...);
 ### Option 3: Vercel
 
 **vercel.json** in repository root:
+
 ```json
 {
   "buildCommand": "cd examples/showcase/client && pnpm install && pnpm run build",
@@ -93,6 +100,7 @@ app.post('/api/transfer-with-hook/payment', ...);
 ```
 
 Deploy:
+
 ```bash
 vercel --prod
 ```
@@ -100,11 +108,12 @@ vercel --prod
 ### Option 4: Netlify
 
 **netlify.toml** in repository root:
+
 ```toml
 [build]
   command = "git submodule update --init --recursive && pnpm install --frozen-lockfile && pnpm run build:client"
   publish = "examples/showcase/client/dist"
-  
+
 [build.environment]
   NODE_VERSION = "20"
   VITE_SERVER_URL = "https://your-showcase-server.railway.app"
@@ -113,6 +122,7 @@ vercel --prod
 ## Local Development
 
 ### Prerequisites
+
 - Node.js 20+
 - pnpm 10.7.0+
 
@@ -138,6 +148,7 @@ The dev server will run on `http://localhost:5173` and automatically proxy API r
 ### Development Environment
 
 Create a `.env` file in the client directory (optional, for local development):
+
 ```bash
 # .env (local development)
 # Leave empty to use Vite proxy
@@ -147,6 +158,7 @@ VITE_SERVER_URL=
 ## Configuration Flow
 
 ### Development Mode (Vite Dev Server)
+
 ```
 Browser → http://localhost:5173/api/health
          ↓ (Vite proxy)
@@ -154,6 +166,7 @@ Browser → http://localhost:5173/api/health
 ```
 
 ### Production Mode (with VITE_SERVER_URL)
+
 ```
 Browser → https://showcase.x402.org
          ↓ (JavaScript fetch)
@@ -161,6 +174,7 @@ Browser → https://showcase.x402.org
 ```
 
 ### Production Mode (same-origin)
+
 ```
 Browser → https://showcase.x402.org/api/health
          ↓ (relative path)
@@ -174,14 +188,14 @@ Browser → https://showcase.x402.org/api/health
 **Problem**: Browser console shows CORS errors when calling API
 
 **Solution**: Configure CORS on the showcase server to allow your client domain:
+
 ```typescript
 // In showcase server
-app.use(cors({
-  origin: [
-    'https://your-client-domain.pages.dev',
-    'https://showcase.x402.org'
-  ]
-}));
+app.use(
+  cors({
+    origin: ["https://your-client-domain.pages.dev", "https://showcase.x402.org"],
+  }),
+);
 ```
 
 ### API Calls Return 404
@@ -189,6 +203,7 @@ app.use(cors({
 **Problem**: API endpoints return 404 Not Found
 
 **Solutions**:
+
 1. Verify `VITE_SERVER_URL` is set correctly in production
 2. Check that server is running and accessible
 3. Verify server URL is accessible from your browser
@@ -199,6 +214,7 @@ app.use(cors({
 **Problem**: Build fails with submodule or dependency errors
 
 **Solutions**:
+
 1. Verify git submodules are configured correctly
 2. Check that build command includes `git submodule update --init --recursive`
 3. Verify `NODE_VERSION` and `PNPM_VERSION` are set in environment variables
@@ -209,6 +225,7 @@ app.use(cors({
 **Problem**: `VITE_SERVER_URL` is not being used
 
 **Solutions**:
+
 1. Verify the variable is prefixed with `VITE_` (required by Vite)
 2. Check that the variable is set in the hosting platform's dashboard
 3. Rebuild and redeploy after setting environment variables
@@ -227,6 +244,7 @@ pnpm run preview
 The preview server will run on `http://localhost:4173`.
 
 To test with production server URL:
+
 ```bash
 # Set environment variable for build
 VITE_SERVER_URL=https://your-server.railway.app pnpm run build
@@ -247,10 +265,10 @@ After deployment, verify the client can reach the server:
 ### Debug Mode
 
 The client includes detailed console logging for the payment flow:
+
 - Step-by-step payment process
 - API request/response details
 - Commitment calculation
 - Signature generation
 
 Enable browser console to see these logs during development and testing.
-

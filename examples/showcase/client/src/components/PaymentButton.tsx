@@ -1,6 +1,6 @@
 /**
  * PaymentButton Component
- * 
+ *
  * A standardized payment button with support for different states (idle, success).
  * Provides consistent styling and interaction patterns across payment scenarios.
  */
@@ -17,10 +17,10 @@ interface PaymentButtonProps {
 export function PaymentButton({
   onClick,
   isCompleted = false,
-  idleLabel = '💳 Pay Now',
-  completedLabel = '✅ Payment Complete',
+  idleLabel = "💳 Pay Now",
+  completedLabel = "✅ Payment Complete",
   disabled = false,
-  className = '',
+  className = "",
 }: PaymentButtonProps) {
   const isDisabled = disabled || isCompleted;
 
@@ -31,11 +31,10 @@ export function PaymentButton({
       className={`btn-pay ${className}`}
       style={{
         opacity: isDisabled ? 0.6 : 1,
-        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        cursor: isDisabled ? "not-allowed" : "pointer",
       }}
     >
       {isCompleted ? completedLabel : idleLabel}
     </button>
   );
 }
-

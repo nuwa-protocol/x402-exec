@@ -3,6 +3,7 @@
 ## Overview
 
 The showcase server handles Server Mode scenarios:
+
 - **Premium Content Download**: Server-controlled payment verification and content delivery with static file serving
 
 The server is deployed directly to Railway using Node.js (not Docker).
@@ -47,6 +48,7 @@ cmd = "cd examples/showcase/server && pnpm start"
 ```
 
 **Important**: The build process does:
+
 1. Compiles TypeScript (`tsc`)
 2. Copies static files to `dist/static/` (for PDF downloads, etc.)
 
@@ -55,18 +57,21 @@ cmd = "cd examples/showcase/server && pnpm start"
 Set the following in Railway dashboard → Variables:
 
 **Required**:
+
 - `FACILITATOR_URL` - URL of your facilitator service (e.g., `https://your-facilitator.railway.app`)
 - `DEFAULT_NETWORK` - Default blockchain network (e.g., `base-sepolia`, `xlayer-testnet`)
 - `RESOURCE_SERVER_ADDRESS` - Your resource server wallet address
 - `RESOURCE_SERVER_PRIVATE_KEY` - Private key for signing payment requirements
 
 **Network-Specific** (at least one network required):
+
 - `BASE_SEPOLIA_RPC_URL` - RPC endpoint for Base Sepolia
 - `BASE_SEPOLIA_USDC_ADDRESS` - USDC token address
 - `BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS` - Settlement router address
 - `BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS` - Transfer hook address
 
 **Optional**:
+
 - `PORT` - Port number (defaults to 3000)
 - `NODE_ENV` - Environment mode (production recommended)
 
@@ -75,6 +80,7 @@ Set the following in Railway dashboard → Variables:
 Railway will automatically build and deploy when you push to your connected branch.
 
 **Build Output**: The `dist/` directory contains:
+
 - `dist/*.js` - Compiled JavaScript from TypeScript
 - `dist/static/` - Static files (PDF, etc.) copied during build
 
@@ -128,6 +134,7 @@ Once deployed, the showcase server provides:
 **Symptoms**: PDF downloads return 404 error
 
 **Solutions**:
+
 1. Verify build completed successfully: `pnpm run build`
 2. Check `dist/static/` directory exists and contains files
 3. Review server logs for file path errors
@@ -159,6 +166,7 @@ Once deployed, the showcase server provides:
 ### Static File Storage
 
 For production with many files or large files:
+
 - Consider using cloud storage (S3, GCS, R2)
 - Generate signed URLs with expiration
 - Implement download tracking and analytics

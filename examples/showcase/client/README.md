@@ -38,10 +38,12 @@ Visit `http://localhost:5173` in your browser.
 The client connects to a showcase server for payment processing. Configuration is done via environment variables:
 
 **Development** (default):
+
 - Uses Vite proxy to connect to `localhost:3001`
 - No configuration needed
 
 **Production**:
+
 - Set `VITE_SERVER_URL` environment variable to your server URL
 - Example: `VITE_SERVER_URL=https://showcase-server.railway.app`
 
@@ -81,9 +83,9 @@ src/
 
 ## Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `VITE_SERVER_URL` | Backend server URL | No | Empty (uses relative paths/proxy) |
+| Variable          | Description        | Required | Default                           |
+| ----------------- | ------------------ | -------- | --------------------------------- |
+| `VITE_SERVER_URL` | Backend server URL | No       | Empty (uses relative paths/proxy) |
 
 ## Building for Production
 
@@ -100,6 +102,7 @@ The build output will be in the `dist/` directory.
 ## Deployment
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
+
 - Cloudflare Pages deployment
 - Vercel deployment
 - Netlify deployment
@@ -120,6 +123,7 @@ The client is configured for Base Sepolia testnet by default. To use a different
 ### Debugging Payments
 
 The client includes comprehensive console logging:
+
 - Open browser DevTools console
 - Look for logs prefixed with `[Payment]`
 - Check the Debug Panel in the UI for detailed information
@@ -127,6 +131,7 @@ The client includes comprehensive console logging:
 ### CORS Issues
 
 During development, if you see CORS errors:
+
 1. Ensure the server has CORS properly configured
 2. Verify the proxy configuration in `vite.config.ts`
 3. Check that `VITE_SERVER_URL` matches the server URL
@@ -141,7 +146,6 @@ MIT
 - [Facilitator Documentation](../../facilitator/README.md)
 - [x402 Protocol Specification](https://github.com/x402-protocol/x402-spec)
 
-
 ## 🔧 Development Configuration
 
 ### Facilitator URL Configuration
@@ -151,11 +155,13 @@ The showcase client supports configuring the facilitator URL for local developme
 #### Quick Start
 
 1. **Copy the environment template:**
+
    ```bash
    cp .env.example .env.local
    ```
 
 2. **For local facilitator development:**
+
    ```bash
    # .env.local
    VITE_FACILITATOR_URL=http://localhost:3001
@@ -171,7 +177,6 @@ The showcase client supports configuring the facilitator URL for local developme
 - `VITE_FACILITATOR_URL` - Facilitator service URL
   - Default: `https://facilitator.x402x.dev`
   - Local: `http://localhost:3001`
-  
 - `VITE_SERVER_URL` - Server URL (for Server Mode examples)
   - Default: Empty (uses relative paths/Vite proxy)
   - Local: `http://localhost:3000`
@@ -179,6 +184,7 @@ The showcase client supports configuring the facilitator URL for local developme
 #### Debug Panel
 
 The app includes a **Facilitator Debug Panel** in the bottom-right corner that shows:
+
 - Current facilitator URL
 - ⚠️ Warning when using local facilitator
 - Instructions for changing configuration
@@ -186,16 +192,19 @@ The app includes a **Facilitator Debug Panel** in the bottom-right corner that s
 #### Examples
 
 **Production (default):**
+
 ```env
 VITE_FACILITATOR_URL=https://facilitator.x402x.dev
 ```
 
 **Local development:**
+
 ```env
 VITE_FACILITATOR_URL=http://localhost:3001
 ```
 
 **Custom facilitator:**
+
 ```env
 VITE_FACILITATOR_URL=https://my-facilitator.example.com
 ```
@@ -203,12 +212,14 @@ VITE_FACILITATOR_URL=https://my-facilitator.example.com
 #### Testing Local Facilitator
 
 1. Start local facilitator:
+
    ```bash
    cd facilitator
    pnpm dev
    ```
 
 2. Configure showcase client:
+
    ```bash
    cd examples/showcase/client
    echo "VITE_FACILITATOR_URL=http://localhost:3001" > .env.local
@@ -217,7 +228,6 @@ VITE_FACILITATOR_URL=https://my-facilitator.example.com
 
 3. Check the debug panel - it should show a yellow warning indicating local mode.
 
-
 ## 🔧 Environment Variables
 
 The showcase client uses environment variables for configuration. All client-side variables must be prefixed with `VITE_`.
@@ -225,6 +235,7 @@ The showcase client uses environment variables for configuration. All client-sid
 ### Setup
 
 1. **Copy the example file:**
+
    ```bash
    cp .env.example .env
    ```
@@ -236,14 +247,14 @@ The showcase client uses environment variables for configuration. All client-sid
 
 ### Available Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_FACILITATOR_URL` | Facilitator service URL | `https://facilitator.x402x.dev` |
-| `VITE_SERVER_URL` | Server URL for Server Mode examples | Empty (uses proxy) |
-| `VITE_REWARD_HOOK_BASE_SEPOLIA` | RewardHook contract on Base Sepolia | `0x0000...` (throws error) |
-| `VITE_REWARD_HOOK_XLAYER_TESTNET` | RewardHook contract on X Layer Testnet | `0x0000...` (throws error) |
-| `VITE_NFT_MINT_HOOK_BASE_SEPOLIA` | NFTMintHook contract on Base Sepolia | `0x0000...` (throws error) |
-| `VITE_NFT_MINT_HOOK_XLAYER_TESTNET` | NFTMintHook contract on X Layer Testnet | `0x0000...` (throws error) |
+| Variable                            | Description                             | Default                         |
+| ----------------------------------- | --------------------------------------- | ------------------------------- |
+| `VITE_FACILITATOR_URL`              | Facilitator service URL                 | `https://facilitator.x402x.dev` |
+| `VITE_SERVER_URL`                   | Server URL for Server Mode examples     | Empty (uses proxy)              |
+| `VITE_REWARD_HOOK_BASE_SEPOLIA`     | RewardHook contract on Base Sepolia     | `0x0000...` (throws error)      |
+| `VITE_REWARD_HOOK_XLAYER_TESTNET`   | RewardHook contract on X Layer Testnet  | `0x0000...` (throws error)      |
+| `VITE_NFT_MINT_HOOK_BASE_SEPOLIA`   | NFTMintHook contract on Base Sepolia    | `0x0000...` (throws error)      |
+| `VITE_NFT_MINT_HOOK_XLAYER_TESTNET` | NFTMintHook contract on X Layer Testnet | `0x0000...` (throws error)      |
 
 ### File Priority
 

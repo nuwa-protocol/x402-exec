@@ -1,22 +1,29 @@
 /**
  * Payment processing hook
  * Handles x402 payment flow with commitment-based security
- * 
+ *
  * This implementation manually constructs the payment flow to use
  * commitment hash as the EIP-3009 nonce, ensuring all settlement
  * parameters are cryptographically bound to the user's signature.
  */
 
-import { useState, useEffect } from 'react';
-import { useAccount, useConnectorClient } from 'wagmi';
-import { createWalletClient, custom } from 'viem';
-import { signTypedData } from 'viem/actions';
-import { type Hex, type WalletClient } from 'viem';
-import { calculateCommitment, validateCommitmentParams } from '../utils/commitment';
-import { buildApiUrl, Network } from '../config';
-import { useNetworkSwitch } from './useNetworkSwitch';
+import { useState, useEffect } from "react";
+import { useAccount, useConnectorClient } from "wagmi";
+import { createWalletClient, custom } from "viem";
+import { signTypedData } from "viem/actions";
+import { type Hex, type WalletClient } from "viem";
+import { calculateCommitment, validateCommitmentParams } from "../utils/commitment";
+import { buildApiUrl, Network } from "../config";
+import { useNetworkSwitch } from "./useNetworkSwitch";
 
-export type PaymentStatus = 'idle' | 'preparing' | 'paying' | 'signing' | 'submitting' | 'success' | 'error';
+export type PaymentStatus =
+  | "idle"
+  | "preparing"
+  | "paying"
+  | "signing"
+  | "submitting"
+  | "success"
+  | "error";
 
 interface PaymentRequirements {
   scheme: string;
@@ -52,49 +59,51 @@ export interface DebugInfo {
 }
 
 export function usePayment() {
-  const [status, setStatus] = useState<PaymentStatus>('idle');
-  const [error, setError] = useState<string>('');
+  const [status, setStatus] = useState<PaymentStatus>("idle");
+  const [error, setError] = useState<string>("");
   const [result, setResult] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({});
-  
+
   // CRITICAL FIX: Use useConnectorClient with fallback to manual creation
   const { address, isConnected, connector, chain } = useAccount();
   const { data: connectorClient } = useConnectorClient();
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
-  
+
   // State for manually created wallet client (fallback for non-standard wallets)
   const [manualWalletClient, setManualWalletClient] = useState<WalletClient | null>(null);
-  
+
   // Fallback: Manually create wallet client if useConnectorClient fails
   useEffect(() => {
     const createManualClient = async () => {
       if (!connectorClient && connector && isConnected && address && chain) {
         try {
-          console.log('[Payment] useConnectorClient failed, trying manual creation...');
-          
+          console.log("[Payment] useConnectorClient failed, trying manual creation...");
+
           // Check if connector has getProvider method before calling it
-          if (typeof connector.getProvider === 'function') {
+          if (typeof connector.getProvider === "function") {
             const provider = await connector.getProvider();
-            
-            if (provider && typeof provider === 'object') {
+
+            if (provider && typeof provider === "object") {
               const client = createWalletClient({
                 account: address,
                 chain: chain,
                 transport: custom(provider as any), // Use 'as any' for non-standard wallet providers
               });
-              
-              console.log('[Payment] Manual wallet client created successfully');
+
+              console.log("[Payment] Manual wallet client created successfully");
               setManualWalletClient(client);
             } else {
-              console.error('[Payment] Failed to get provider from connector');
+              console.error("[Payment] Failed to get provider from connector");
               setManualWalletClient(null);
             }
           } else {
-            console.log('[Payment] Connector does not have getProvider method, skipping manual client creation');
+            console.log(
+              "[Payment] Connector does not have getProvider method, skipping manual client creation",
+            );
             setManualWalletClient(null);
           }
         } catch (err) {
-          console.error('[Payment] Failed to create manual wallet client:', err);
+          console.error("[Payment] Failed to create manual wallet client:", err);
           setManualWalletClient(null);
         }
       } else if (connectorClient) {
@@ -102,10 +111,10 @@ export function usePayment() {
         setManualWalletClient(null);
       }
     };
-    
+
     createManualClient();
   }, [connectorClient, connector, isConnected, address, chain]);
-  
+
   // Use connectorClient if available, otherwise use manual client
   const walletClient = (connectorClient || manualWalletClient) as WalletClient | undefined;
 
@@ -113,35 +122,35 @@ export function usePayment() {
     // Wallet connection validation - these checks are now handled by PaymentDialog
     // but we keep them here as a safety net
     if (!isConnected || !address) {
-      const errorMsg = 'Wallet not connected. Please connect your wallet and try again.';
-      console.error('[Payment] Wallet validation failed:', {
+      const errorMsg = "Wallet not connected. Please connect your wallet and try again.";
+      console.error("[Payment] Wallet validation failed:", {
         isConnected,
         address: !!address,
         connector: connector?.name,
       });
-      
+
       setError(errorMsg);
-      setStatus('error');
+      setStatus("error");
       throw new Error(errorMsg);
     }
 
     if (!walletClient) {
-      const errorMsg = `Unable to create wallet client for ${connector?.name || 'current wallet'}. This may be due to wallet compatibility issues. Please try disconnecting and reconnecting your wallet, or try a different wallet.`;
-      console.error('[Payment] Wallet client not available:', {
+      const errorMsg = `Unable to create wallet client for ${connector?.name || "current wallet"}. This may be due to wallet compatibility issues. Please try disconnecting and reconnecting your wallet, or try a different wallet.`;
+      console.error("[Payment] Wallet client not available:", {
         hasConnectorClient: !!connectorClient,
         hasManualClient: !!manualWalletClient,
         connector: connector?.name,
         connectorId: connector?.id,
-        hasGetProvider: connector && typeof connector.getProvider === 'function',
+        hasGetProvider: connector && typeof connector.getProvider === "function",
       });
-      
+
       setError(errorMsg);
-      setStatus('error');
+      setStatus("error");
       throw new Error(errorMsg);
     }
 
-    console.log('[Payment] Wallet client validated:', {
-      source: connectorClient ? 'useConnectorClient' : 'manual',
+    console.log("[Payment] Wallet client validated:", {
+      source: connectorClient ? "useConnectorClient" : "manual",
       hasWalletClient: !!walletClient,
       hasAccount: !!walletClient.account,
       address: walletClient.account?.address,
@@ -150,30 +159,30 @@ export function usePayment() {
     });
 
     // Switch to target network before payment
-    console.log('[Payment] Switching to network:', network);
+    console.log("[Payment] Switching to network:", network);
     const switched = await switchToNetwork(network);
     if (!switched) {
       const errorMsg = `Failed to switch to ${network}. Please switch manually and try again.`;
       setError(errorMsg);
-      setStatus('error');
+      setStatus("error");
       throw new Error(errorMsg);
     }
 
-    setStatus('preparing');
-    setError('');
+    setStatus("preparing");
+    setError("");
     setResult(null);
 
     try {
       // Build full API URL
       const fullUrl = buildApiUrl(endpoint);
-      console.log('[Payment] Step 1: Initial request to', fullUrl);
-      
+      console.log("[Payment] Step 1: Initial request to", fullUrl);
+
       // Step 1: Make initial request to get 402 response (include network in body)
       const requestBody = { ...body, network };
       const initialResponse = await fetch(fullUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
@@ -181,34 +190,38 @@ export function usePayment() {
       // If not 402, return the response directly
       if (initialResponse.status !== 402) {
         if (!initialResponse.ok) {
-          const errorData = await initialResponse.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `Request failed with status ${initialResponse.status}`);
+          const errorData = await initialResponse.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(
+            errorData.error || `Request failed with status ${initialResponse.status}`,
+          );
         }
         const data = await initialResponse.json();
         setResult(data);
-        setStatus('success');
+        setStatus("success");
         return data;
       }
 
       // Step 2: Parse 402 response to get payment requirements
       const paymentResponse: PaymentResponse = await initialResponse.json();
-      console.log('[Payment] Step 2: Received 402 response', paymentResponse);
-      
+      console.log("[Payment] Step 2: Received 402 response", paymentResponse);
+
       if (!paymentResponse.accepts || paymentResponse.accepts.length === 0) {
-        throw new Error('No payment requirements provided');
+        throw new Error("No payment requirements provided");
       }
 
       // Find the payment requirements that match the selected network
-      const paymentReq = paymentResponse.accepts.find(req => req.network === network);
+      const paymentReq = paymentResponse.accepts.find((req) => req.network === network);
       if (!paymentReq) {
-        throw new Error(`No payment requirements found for network: ${network}. Available networks: ${paymentResponse.accepts.map(r => r.network).join(', ')}`);
+        throw new Error(
+          `No payment requirements found for network: ${network}. Available networks: ${paymentResponse.accepts.map((r) => r.network).join(", ")}`,
+        );
       }
-      console.log('[Payment] Selected payment requirements for network:', network);
-      
+      console.log("[Payment] Selected payment requirements for network:", network);
+
       const x402Version = paymentResponse.x402Version || 1;
 
       // Store payment requirements for debugging
-      setDebugInfo(prev => ({ ...prev, paymentRequirements: paymentReq }));
+      setDebugInfo((prev) => ({ ...prev, paymentRequirements: paymentReq }));
 
       // Step 3: Extract settlement parameters from extra field
       const {
@@ -226,10 +239,10 @@ export function usePayment() {
       const isComplexSettlement = !!settlementRouter;
 
       if (isComplexSettlement && (!salt || !finalPayTo || !hook || !hookData)) {
-        throw new Error('Missing required settlement parameters in payment requirements');
+        throw new Error("Missing required settlement parameters in payment requirements");
       }
 
-      console.log('[Payment] Step 3: Settlement parameters', {
+      console.log("[Payment] Step 3: Settlement parameters", {
         isComplexSettlement,
         settlementRouter,
         salt,
@@ -238,18 +251,20 @@ export function usePayment() {
         hook,
       });
 
-      setStatus('preparing');
+      setStatus("preparing");
 
       // Step 4: Prepare EIP-3009 authorization parameters
       const chainId = walletClient.chain?.id;
       const from = walletClient.account?.address;
-      
+
       if (!chainId) {
-        throw new Error('Chain ID not available. Please ensure your wallet is connected to Base Sepolia network.');
+        throw new Error(
+          "Chain ID not available. Please ensure your wallet is connected to Base Sepolia network.",
+        );
       }
-      
+
       if (!from) {
-        throw new Error('No account address available');
+        throw new Error("No account address available");
       }
 
       const value = paymentReq.maxAmountRequired;
@@ -263,15 +278,15 @@ export function usePayment() {
         validAfter,
         validBefore,
       };
-      console.log('[Payment] Step 4: Authorization parameters', authParams);
-      
+      console.log("[Payment] Step 4: Authorization parameters", authParams);
+
       // Store authorization parameters for debugging
-      setDebugInfo(prev => ({ ...prev, authorizationParams: authParams }));
+      setDebugInfo((prev) => ({ ...prev, authorizationParams: authParams }));
 
       // Step 5: Calculate nonce
       // Two modes: commitment-based (for complex settlement) or random (for simple payment)
       let nonce: Hex;
-      
+
       if (isComplexSettlement) {
         // Complex settlement: Calculate commitment hash (this becomes the nonce)
         const commitmentParams = {
@@ -284,7 +299,7 @@ export function usePayment() {
           validBefore,
           salt: salt!,
           payTo: finalPayTo!,
-          facilitatorFee: facilitatorFee || '0',
+          facilitatorFee: facilitatorFee || "0",
           hook: hook!,
           hookData: hookData!,
         };
@@ -293,50 +308,50 @@ export function usePayment() {
         validateCommitmentParams(commitmentParams);
 
         nonce = calculateCommitment(commitmentParams) as Hex;
-        
-        console.log('[Payment] Step 5: Calculated commitment-based nonce', nonce);
-        
+
+        console.log("[Payment] Step 5: Calculated commitment-based nonce", nonce);
+
         // Store commitment params and calculated nonce for debugging
-        setDebugInfo(prev => ({ 
-          ...prev, 
+        setDebugInfo((prev) => ({
+          ...prev,
           commitmentParams,
-          calculatedNonce: nonce 
+          calculatedNonce: nonce,
         }));
       } else {
         // Simple direct payment: Generate random nonce
         const randomBytes = crypto.getRandomValues(new Uint8Array(32));
         nonce = `0x${Array.from(randomBytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')}` as Hex;
-        
-        console.log('[Payment] Step 5: Generated random nonce', nonce);
-        
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")}` as Hex;
+
+        console.log("[Payment] Step 5: Generated random nonce", nonce);
+
         // Store nonce for debugging
-        setDebugInfo(prev => ({ 
-          ...prev, 
+        setDebugInfo((prev) => ({
+          ...prev,
           calculatedNonce: nonce,
-          nonceType: 'random'
+          nonceType: "random",
         }));
       }
 
-      setStatus('signing');
+      setStatus("signing");
 
       // Step 6: Sign EIP-712 authorization (EIP-3009)
       const domain = {
-        name: name || 'USDC',
-        version: version || '2',
+        name: name || "USDC",
+        version: version || "2",
         chainId,
         verifyingContract: paymentReq.asset as Hex,
       };
 
       const types = {
         TransferWithAuthorization: [
-          { name: 'from', type: 'address' },
-          { name: 'to', type: 'address' },
-          { name: 'value', type: 'uint256' },
-          { name: 'validAfter', type: 'uint256' },
-          { name: 'validBefore', type: 'uint256' },
-          { name: 'nonce', type: 'bytes32' },
+          { name: "from", type: "address" },
+          { name: "to", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "validAfter", type: "uint256" },
+          { name: "validBefore", type: "uint256" },
+          { name: "nonce", type: "bytes32" },
         ],
       };
 
@@ -349,7 +364,7 @@ export function usePayment() {
         nonce,
       };
 
-      console.log('[Payment] Step 6: Signing EIP-712 message', { domain, message });
+      console.log("[Payment] Step 6: Signing EIP-712 message", { domain, message });
 
       // Use viem's signTypedData function instead of method call
       // This works with both standard and manually-created wallet clients
@@ -357,13 +372,13 @@ export function usePayment() {
         account: walletClient.account!,
         domain,
         types,
-        primaryType: 'TransferWithAuthorization',
+        primaryType: "TransferWithAuthorization",
         message,
       });
 
-      console.log('[Payment] Signature obtained', signature);
+      console.log("[Payment] Signature obtained", signature);
 
-      setStatus('submitting');
+      setStatus("submitting");
 
       // Step 7: Construct payment payload
       // IMPORTANT: Include the original paymentRequirements in the payload
@@ -376,7 +391,7 @@ export function usePayment() {
           signature,
           authorization: {
             from,
-            to: (isComplexSettlement ? settlementRouter : paymentReq.payTo),
+            to: isComplexSettlement ? settlementRouter : paymentReq.payTo,
             value,
             validAfter,
             validBefore,
@@ -389,47 +404,50 @@ export function usePayment() {
       // Step 8: Encode payment header (base64url)
       const paymentJson = JSON.stringify(paymentPayload);
       const paymentBase64 = btoa(paymentJson)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
 
-      console.log('[Payment] Step 8: Encoded payment header (first 100 chars)', paymentBase64.substring(0, 100));
+      console.log(
+        "[Payment] Step 8: Encoded payment header (first 100 chars)",
+        paymentBase64.substring(0, 100),
+      );
 
       // Step 9: Resend request with X-PAYMENT header (include network in body)
       const finalResponse = await fetch(fullUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-PAYMENT': paymentBase64,
+          "Content-Type": "application/json",
+          "X-PAYMENT": paymentBase64,
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('[Payment] Step 9: Final response status', finalResponse.status);
+      console.log("[Payment] Step 9: Final response status", finalResponse.status);
 
       if (!finalResponse.ok) {
-        const errorData = await finalResponse.json().catch(() => ({ error: 'Unknown error' }));
+        const errorData = await finalResponse.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || `Payment failed with status ${finalResponse.status}`);
       }
 
       const data = await finalResponse.json();
-      console.log('[Payment] Payment successful', data);
-      
+      console.log("[Payment] Payment successful", data);
+
       setResult(data);
-      setStatus('success');
-      
+      setStatus("success");
+
       return data;
     } catch (err: any) {
-      console.error('[Payment] Payment error:', err);
-      setError(err.message || 'Payment failed');
-      setStatus('error');
+      console.error("[Payment] Payment error:", err);
+      setError(err.message || "Payment failed");
+      setStatus("error");
       throw err;
     }
   };
 
   const reset = () => {
-    setStatus('idle');
-    setError('');
+    setStatus("idle");
+    setError("");
     setResult(null);
     setDebugInfo({});
   };
@@ -444,4 +462,3 @@ export function usePayment() {
     isSwitching,
   };
 }
-

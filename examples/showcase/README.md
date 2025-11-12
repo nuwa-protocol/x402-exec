@@ -15,14 +15,17 @@ x402-exec Showcase is built on the [x402 protocol](https://x402.org) and [x402-e
 ### Four Scenarios
 
 1. **🎣 Transfer with Hook**
+
    - Pay $0.11 → Basic x402x settlement with $0.01 facilitator fee
    - Entry-level scenario demonstrating Hook architecture
 
 2. **💰 Referral Revenue Split**
+
    - Pay $0.1 → Automatic 3-way split (70% merchant + 20% referrer + 10% platform)
    - Demonstrates multi-party distribution and dynamic parameters
 
 3. **🎨 Random NFT Mint**
+
    - Pay $0.1 → Automatic NFT minting + merchant payment
    - Demonstrates on-chain minting with supply cap (1000 NFTs)
 
@@ -97,6 +100,7 @@ cd ../../contracts
 ```
 
 After deployment, copy the output contract addresses and update `server/.env`:
+
 - `RANDOM_NFT_ADDRESS`
 - `REWARD_TOKEN_ADDRESS`
 - `REWARD_HOOK_ADDRESS`
@@ -109,6 +113,7 @@ npm run dev
 ```
 
 This starts both:
+
 - Server: http://localhost:3001
 - Frontend: http://localhost:5173
 
@@ -127,8 +132,9 @@ This starts both:
 **Core Contract**: `TransferHook.sol` (built-in Hook)
 
 **Workflow**:
+
 ```
-1. User clicks payment button  
+1. User clicks payment button
 2. Frontend calls /api/transfer-with-hook/payment
 3. Server generates PaymentRequirements (with TransferHook)
 4. User signs authorization for $0.11 USDC ($0.1 + $0.01 fee)
@@ -142,6 +148,7 @@ This starts both:
 **hookData**: Empty (`0x`) - TransferHook doesn't need any data
 
 **Key Features**:
+
 - Entry-level x402x scenario
 - Demonstrates facilitator fee mechanism
 - Minimal gas overhead (~8k gas vs direct transfer)
@@ -154,6 +161,7 @@ This starts both:
 **Core Contract**: `RevenueSplitHook.sol` (deployed in main project)
 
 **Workflow**:
+
 ```
 1. User enters referrer address (optional)
 2. Frontend calls /api/scenario-1/payment
@@ -167,25 +175,25 @@ This starts both:
 ```
 
 **hookData Encoding**:
+
 ```typescript
 const splits = [
   { recipient: merchantAddress, bips: 7000 },
   { recipient: referrerAddress, bips: 2000 },
-  { recipient: platformAddress, bips: 1000 }
+  { recipient: platformAddress, bips: 1000 },
 ];
-const hookData = ethers.AbiCoder.encode(
-  ['tuple(address recipient, uint16 bips)[]'],
-  [splits]
-);
+const hookData = ethers.AbiCoder.encode(["tuple(address recipient, uint16 bips)[]"], [splits]);
 ```
 
 ### Scenario 3: Random NFT Mint
 
-**Core Contracts**: 
+**Core Contracts**:
+
 - `RandomNFT.sol` (newly deployed) - ERC721 with 1000 supply cap
 - `NFTMintHook.sol` (pre-deployed)
 
 **Workflow**:
+
 ```
 1. Server queries current supply
 2. User clicks "Mint NFT"
@@ -199,26 +207,29 @@ const hookData = ethers.AbiCoder.encode(
 ```
 
 **hookData Encoding**:
+
 ```typescript
 const config = {
   nftContract: randomNFTAddress,
   tokenId: nextTokenId,
   recipient: userAddress,
-  merchant: merchantAddress
+  merchant: merchantAddress,
 };
 const hookData = ethers.AbiCoder.encode(
-  ['tuple(address,uint256,address,address)'],
-  [[config.nftContract, config.tokenId, config.recipient, config.merchant]]
+  ["tuple(address,uint256,address,address)"],
+  [[config.nftContract, config.tokenId, config.recipient, config.merchant]],
 );
 ```
 
 ### Scenario 4: Loyalty Points Reward
 
 **Core Contracts**:
+
 - `RewardToken.sol` (newly deployed) - ERC20 with 1M supply
 - `RewardHook.sol` (newly deployed)
 
 **Workflow**:
+
 ```
 1. User clicks "Earn Points"
 2. Frontend calls /api/scenario-3/payment
@@ -231,6 +242,7 @@ const hookData = ethers.AbiCoder.encode(
 ```
 
 **Reward Calculation**:
+
 ```solidity
 // 0.1 USDC = 100,000 (6 decimals)
 // Reward rate = 1000 points per 0.1 USDC
@@ -313,12 +325,12 @@ npm run dev:client
 
 The showcase client now supports both **testnets** and **mainnets**:
 
-| Network | Chain ID | Status | Default |
-|---------|----------|--------|---------|
-| Base Sepolia | 84532 | ✅ Active | ✓ |
-| X Layer Testnet | 1952 | ✅ Active | |
-| Base Mainnet | 8453 | 🎉 Live | |
-| X Layer Mainnet | 196 | 🎉 Live | |
+| Network         | Chain ID | Status    | Default |
+| --------------- | -------- | --------- | ------- |
+| Base Sepolia    | 84532    | ✅ Active | ✓       |
+| X Layer Testnet | 1952     | ✅ Active |         |
+| Base Mainnet    | 8453     | 🎉 Live   |         |
+| X Layer Mainnet | 196      | 🎉 Live   |         |
 
 ### Contract Addresses
 
@@ -326,11 +338,11 @@ The showcase client now supports both **testnets** and **mainnets**:
 
 These contracts are already deployed and configured in the SDK:
 
-| Network | SettlementRouter | TransferHook |
-|---------|------------------|--------------|
-| Base Sepolia | `0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb` | `0x4DE234059C6CcC94B8fE1eb1BD24804794083569` |
+| Network         | SettlementRouter                             | TransferHook                                 |
+| --------------- | -------------------------------------------- | -------------------------------------------- |
+| Base Sepolia    | `0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb` | `0x4DE234059C6CcC94B8fE1eb1BD24804794083569` |
 | X Layer Testnet | `0xba9980fb08771e2fd10c17450f52d39bcb9ed576` | `0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE` |
-| Base Mainnet | `0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B` | `0x081258287F692D61575387ee2a4075f34dd7Aef7` |
+| Base Mainnet    | `0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B` | `0x081258287F692D61575387ee2a4075f34dd7Aef7` |
 | X Layer Mainnet | `0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B` | `0x081258287F692D61575387ee2a4075f34dd7Aef7` |
 
 #### Showcase Example Contracts
@@ -339,9 +351,9 @@ These contracts need to be deployed for NFT Mint and Reward Points scenarios:
 
 **Testnet (Deployed):**
 
-| Network | NFTMintHook | RandomNFT | RewardHook | RewardToken |
-|---------|-------------|-----------|------------|-------------|
-| Base Sepolia | `0x261206558E6eEd104Cba4AD913b2Eec85D21108e` | `0x5756A67a33118F5Ad9840411f252E14d84Dd7c02` | `0xf05cE06e7ee4ffCb67a509003DbD73A6d95Cc960` | `0xb6854e33BfD428d15B4f5398cFf8e84d4196FDA6` |
+| Network         | NFTMintHook                                  | RandomNFT                                    | RewardHook                                   | RewardToken                                  |
+| --------------- | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| Base Sepolia    | `0x261206558E6eEd104Cba4AD913b2Eec85D21108e` | `0x5756A67a33118F5Ad9840411f252E14d84Dd7c02` | `0xf05cE06e7ee4ffCb67a509003DbD73A6d95Cc960` | `0xb6854e33BfD428d15B4f5398cFf8e84d4196FDA6` |
 | X Layer Testnet | `0x468F666314b070338841422012AB2f6539bfcE48` | `0xBA931bB5B2F2DC5354aFAED1d3996B0c6e417518` | `0xda8B270Ec442Ff797807b95604E3319e36Aad05d` | `0x348AFDE3B4B70dCb02053aF95588a4ab41e95FbC` |
 
 **Mainnet (To Be Deployed):**
@@ -358,6 +370,7 @@ cd contracts
 ```
 
 After deployment, update your `examples/showcase/client/.env`:
+
 ```env
 # Base Mainnet
 VITE_BASE_REWARD_HOOK_ADDRESS=<deployed_address>
@@ -374,12 +387,12 @@ VITE_X_LAYER_RANDOM_NFT_ADDRESS=<deployed_address>
 
 ### Scenario Support by Network
 
-| Scenario | Testnet | Mainnet | Notes |
-|----------|---------|---------|-------|
-| Split Payment | ✅ | ✅ | Uses TransferHook (pre-deployed) |
-| NFT Mint | ✅ | ✅ | Requires NFTMintHook + RandomNFT deployment |
-| Reward Points | ✅ | ✅ | Requires RewardHook + RewardToken deployment |
-| Premium Download | ✅ | ❌ | Server-only, testnet restricted |
+| Scenario         | Testnet | Mainnet | Notes                                        |
+| ---------------- | ------- | ------- | -------------------------------------------- |
+| Split Payment    | ✅      | ✅      | Uses TransferHook (pre-deployed)             |
+| NFT Mint         | ✅      | ✅      | Requires NFTMintHook + RandomNFT deployment  |
+| Reward Points    | ✅      | ✅      | Requires RewardHook + RewardToken deployment |
+| Premium Download | ✅      | ❌      | Server-only, testnet restricted              |
 
 ### Mainnet Usage Notes
 
@@ -394,6 +407,7 @@ VITE_X_LAYER_RANDOM_NFT_ADDRESS=<deployed_address>
 ### Network Switching
 
 Users can switch between networks directly in the app:
+
 1. Connect your wallet
 2. Use your wallet's network switcher (e.g., MetaMask)
 3. Select Base Mainnet, X Layer, or their testnets
@@ -401,12 +415,12 @@ Users can switch between networks directly in the app:
 
 ## 📊 Gas Estimates
 
-| Scenario | Gas Cost | Notes |
-|----------|----------|-------|
-| Transfer Hook | ~58k | TransferHook - adds ~8k gas (~16%) for router+hook |
-| Referral Split | ~120k | 1x settleAndExecute + 3x transfer |
-| NFT Mint | ~180k | 1x settleAndExecute + 1x mint + 1x transfer |
-| Points Reward | ~150k | 1x settleAndExecute + 1x ERC20 transfer + 1x transfer |
+| Scenario       | Gas Cost | Notes                                                 |
+| -------------- | -------- | ----------------------------------------------------- |
+| Transfer Hook  | ~58k     | TransferHook - adds ~8k gas (~16%) for router+hook    |
+| Referral Split | ~120k    | 1x settleAndExecute + 3x transfer                     |
+| NFT Mint       | ~180k    | 1x settleAndExecute + 1x mint + 1x transfer           |
+| Points Reward  | ~150k    | 1x settleAndExecute + 1x ERC20 transfer + 1x transfer |
 
 ## 🧪 Testing Guide
 
@@ -415,6 +429,7 @@ Users can switch between networks directly in the app:
 #### Base Sepolia
 
 1. **Base Sepolia ETH** (for gas)
+
    - [Coinbase Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet)
 
 2. **Base Sepolia USDC** (for payments)
@@ -424,6 +439,7 @@ Users can switch between networks directly in the app:
 #### X Layer Testnet
 
 1. **X Layer Testnet ETH** (for gas)
+
    - [OKX Faucet](https://www.okx.com/xlayer/faucet)
 
 2. **X Layer Testnet USDC** (for payments)
@@ -451,16 +467,19 @@ For mainnet testing, you'll need real assets:
 ### Testing Steps
 
 1. **Scenario 1**: Test transfer with hook
+
    - Pay $0.11 USDC ($0.1 + $0.01 fee)
    - Verify merchant received $0.1
    - Verify facilitator accumulated $0.01 fee
 
 2. **Scenario 2**: Test referral revenue split
+
    - Enter referrer address or leave empty
    - Pay $0.1 USDC
    - Verify 3 transfers in block explorer
 
 3. **Scenario 3**: Test NFT minting
+
    - Pay $0.1 USDC
    - Check NFT in wallet (#0-#999)
    - View NFT on OpenSea Testnet
@@ -514,4 +533,3 @@ Apache-2.0 License - see [LICENSE](../../LICENSE)
 
 - Submit [GitHub Issues](https://github.com/nuwa-protocol/x402-exec/issues)
 - Read [Documentation](../../README.md)
-

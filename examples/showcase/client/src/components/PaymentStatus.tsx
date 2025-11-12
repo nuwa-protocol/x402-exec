@@ -3,7 +3,7 @@
  * Displays current payment status and messages
  */
 
-import type { PaymentStatus } from '../hooks/usePayment';
+import type { PaymentStatus } from "../hooks/usePayment";
 
 interface PaymentStatusProps {
   status: PaymentStatus;
@@ -12,11 +12,11 @@ interface PaymentStatusProps {
 }
 
 export function PaymentStatus({ status, error, successMessage }: PaymentStatusProps) {
-  if (status === 'idle') return null;
+  if (status === "idle") return null;
 
   return (
     <div className={`payment-status status-${status}`}>
-      {status === 'preparing' && (
+      {status === "preparing" && (
         <div className="status-content">
           <div className="spinner"></div>
           <p>Preparing payment...</p>
@@ -24,7 +24,7 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
         </div>
       )}
 
-      {status === 'paying' && (
+      {status === "paying" && (
         <div className="status-content">
           <div className="spinner"></div>
           <p>Calculating commitment...</p>
@@ -32,7 +32,7 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
         </div>
       )}
 
-      {status === 'signing' && (
+      {status === "signing" && (
         <div className="status-content">
           <div className="spinner"></div>
           <p>Signing transaction...</p>
@@ -40,7 +40,7 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
         </div>
       )}
 
-      {status === 'submitting' && (
+      {status === "submitting" && (
         <div className="status-content">
           <div className="spinner"></div>
           <p>Submitting payment...</p>
@@ -48,14 +48,14 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
         </div>
       )}
 
-      {status === 'success' && (
+      {status === "success" && (
         <div className="status-content success">
           <div className="icon">✓</div>
-          <p>{successMessage || 'Payment successful!'}</p>
+          <p>{successMessage || "Payment successful!"}</p>
         </div>
       )}
 
-      {status === 'error' && (
+      {status === "error" && (
         <div className="status-content error">
           <div className="icon">✗</div>
           <p>Payment failed</p>
@@ -65,4 +65,3 @@ export function PaymentStatus({ status, error, successMessage }: PaymentStatusPr
     </div>
   );
 }
-

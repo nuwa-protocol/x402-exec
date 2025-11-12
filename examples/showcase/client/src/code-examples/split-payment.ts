@@ -1,12 +1,12 @@
 // @ts-nocheck
 // This file is for display purposes only and is not compiled
-import { X402Client } from '@x402x/client';
-import { TransferHook } from '@x402x/core';
+import { X402Client } from "@x402x/client";
+import { TransferHook } from "@x402x/core";
 
 // 1. Define split configuration
 const splits = [
-  { recipient: '0xAlice...', bips: 3000 },  // 30%
-  { recipient: '0xBob...', bips: 2000 },    // 20%
+  { recipient: "0xAlice...", bips: 3000 }, // 30%
+  { recipient: "0xBob...", bips: 2000 }, // 20%
   // Remainder (50%) goes to primary recipient
 ];
 
@@ -18,8 +18,8 @@ const client = new X402Client({ facilitatorUrl });
 await client.execute({
   hook: TransferHook.address,
   hookData,
-  amount: '100000',             // 0.1 USDC (6 decimals)
-  recipient: primaryRecipient,  // Receives remainder (50%)
+  amount: "100000", // 0.1 USDC (6 decimals)
+  recipient: primaryRecipient, // Receives remainder (50%)
 });
 
 // Result: Funds distributed atomically to all recipients

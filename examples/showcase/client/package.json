@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.51.0",
@@ -24,6 +26,7 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "prettier": "3.5.2",
     "typescript": "^5.5.0",
     "vite": "^5.3.0"
   }

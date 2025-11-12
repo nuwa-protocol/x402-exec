@@ -3,10 +3,10 @@
  * Supports multiple networks: Base Sepolia, X-Layer Testnet, Base Mainnet, X-Layer Mainnet
  */
 
-import { http, createConfig } from 'wagmi';
-import { base, baseSepolia } from 'wagmi/chains';
-import { injected, metaMask, coinbaseWallet } from 'wagmi/connectors';
-import { xLayerTestnet, xLayer } from './config';
+import { http, createConfig } from "wagmi";
+import { base, baseSepolia } from "wagmi/chains";
+import { injected, metaMask, coinbaseWallet } from "wagmi/connectors";
+import { xLayerTestnet, xLayer } from "./config";
 
 // Configure wagmi with multiple wallet connectors and chains
 export const config = createConfig({
@@ -15,7 +15,7 @@ export const config = createConfig({
     // Explicitly target specific wallets to avoid conflicts
     metaMask(),
     coinbaseWallet({
-      appName: 'x402x Protocol Demo',
+      appName: "x402x Protocol Demo",
     }),
     // Fallback to generic injected for other wallets
     injected(),
@@ -29,4 +29,3 @@ export const config = createConfig({
   // Enable multi-injected provider discovery (for multi-wallet support)
   multiInjectedProviderDiscovery: true,
 });
-

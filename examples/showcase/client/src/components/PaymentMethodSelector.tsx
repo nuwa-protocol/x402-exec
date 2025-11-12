@@ -3,9 +3,9 @@
  * Allows users to select which network to use for payment
  */
 
-import { Network, NETWORKS, getPreferredNetwork, setPreferredNetwork } from '../config';
-import { NetworkBalance } from '../hooks/useNetworkBalances';
-import './PaymentMethodSelector.css';
+import { Network, NETWORKS, getPreferredNetwork, setPreferredNetwork } from "../config";
+import { NetworkBalance } from "../hooks/useNetworkBalances";
+import "./PaymentMethodSelector.css";
 
 interface PaymentMethodSelectorProps {
   amount: string;
@@ -56,13 +56,17 @@ export function PaymentMethodSelector({
           const config = NETWORKS[network];
           const balance = balances[network];
           const isSelected = selectedNetwork === network;
-          const hasBalance = showBalances ? parseFloat(balance?.balance || '0') >= parseFloat(amount) : true;
-          const isAvailable = showBalances ? (!balance?.loading && !balance?.error && hasBalance) : true;
+          const hasBalance = showBalances
+            ? parseFloat(balance?.balance || "0") >= parseFloat(amount)
+            : true;
+          const isAvailable = showBalances
+            ? !balance?.loading && !balance?.error && hasBalance
+            : true;
 
           return (
             <button
               key={network}
-              className={`network-option ${isSelected ? 'selected' : ''} ${!isAvailable ? 'unavailable' : ''}`}
+              className={`network-option ${isSelected ? "selected" : ""} ${!isAvailable ? "unavailable" : ""}`}
               onClick={() => !disabled && handleSelect(network)}
               disabled={disabled}
             >
@@ -74,7 +78,7 @@ export function PaymentMethodSelector({
                     {isSelected && <span className="selected-badge">✓ Selected</span>}
                   </div>
                 </div>
-                <div className={`radio-indicator ${isSelected ? 'checked' : ''}`}>
+                <div className={`radio-indicator ${isSelected ? "checked" : ""}`}>
                   {isSelected && <span>●</span>}
                 </div>
               </div>
@@ -96,7 +100,9 @@ export function PaymentMethodSelector({
                   <>
                     <div className="balance-info">
                       <span className="balance-label">Balance:</span>
-                      <span className="balance-value">{balance.balance} {currency}</span>
+                      <span className="balance-value">
+                        {balance.balance} {currency}
+                      </span>
                     </div>
 
                     {!hasBalance && (
@@ -131,7 +137,7 @@ export function PaymentMethodSelector({
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       className="faucet-link"
-                      style={{ marginTop: '8px', display: 'block' }}
+                      style={{ marginTop: "8px", display: "block" }}
                     >
                       Get Test {currency} →
                     </a>
@@ -146,12 +152,14 @@ export function PaymentMethodSelector({
       {selectedNetwork && (
         <div className="selected-network-summary">
           <p>
-            You will pay <strong>{amount} {currency}</strong> on{' '}
-            <strong>{NETWORKS[selectedNetwork].displayName}</strong>
+            You will pay{" "}
+            <strong>
+              {amount} {currency}
+            </strong>{" "}
+            on <strong>{NETWORKS[selectedNetwork].displayName}</strong>
           </p>
         </div>
       )}
     </div>
   );
 }
-

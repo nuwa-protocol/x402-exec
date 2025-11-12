@@ -3,7 +3,7 @@
  * All hook data must be ABI-encoded according to the hook's expectations
  */
 
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
 /**
  * Split configuration for revenue splitting
@@ -37,10 +37,7 @@ export interface RewardConfig {
  */
 export function encodeRevenueSplitData(splits: Split[]): string {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-  const encoded = abiCoder.encode(
-    ['tuple(address recipient, uint16 bips)[]'],
-    [splits]
-  );
+  const encoded = abiCoder.encode(["tuple(address recipient, uint16 bips)[]"], [splits]);
   return encoded;
 }
 
@@ -52,8 +49,8 @@ export function encodeRevenueSplitData(splits: Split[]): string {
 export function encodeNFTMintData(config: MintConfig): string {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const encoded = abiCoder.encode(
-    ['tuple(address nftContract, uint256 tokenId, address merchant)'],
-    [[config.nftContract, config.tokenId, config.merchant]]
+    ["tuple(address nftContract, uint256 tokenId, address merchant)"],
+    [[config.nftContract, config.tokenId, config.merchant]],
   );
   return encoded;
 }
@@ -66,8 +63,8 @@ export function encodeNFTMintData(config: MintConfig): string {
 export function encodeRewardData(config: RewardConfig): string {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const encoded = abiCoder.encode(
-    ['tuple(address rewardToken, address merchant)'],
-    [[config.rewardToken, config.merchant]]
+    ["tuple(address rewardToken, address merchant)"],
+    [[config.rewardToken, config.merchant]],
   );
   return encoded;
 }
@@ -80,8 +77,8 @@ export function encodeRewardData(config: RewardConfig): string {
 export function decodeNFTMintData(hookData: string): MintConfig {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const [decoded] = abiCoder.decode(
-    ['tuple(address nftContract, uint256 tokenId, address merchant)'],
-    hookData
+    ["tuple(address nftContract, uint256 tokenId, address merchant)"],
+    hookData,
   );
   return {
     nftContract: decoded[0],
@@ -98,4 +95,3 @@ export function decodeNFTMintData(hookData: string): MintConfig {
 export function isValidAddress(address: string): boolean {
   return ethers.isAddress(address);
 }
-

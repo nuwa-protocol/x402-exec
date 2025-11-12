@@ -1,11 +1,11 @@
 /**
  * ScenarioCard Component
- * 
+ *
  * A container component for scenario pages providing consistent layout and styling.
  * Includes header with title and optional badge, description area, and form/action area.
  */
 
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 
 interface ScenarioCardProps {
   title: string;
@@ -20,7 +20,7 @@ export function ScenarioCard({
   badge,
   description,
   children,
-  className = '',
+  className = "",
 }: ScenarioCardProps) {
   return (
     <div className={`scenario-card ${className}`}>
@@ -50,4 +50,3 @@ export function ScenarioCard({
     </div>
   );
 }
-

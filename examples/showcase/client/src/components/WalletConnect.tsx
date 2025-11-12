@@ -3,7 +3,6 @@
  * Displays wallet connection status and connect/disconnect button
  */
 
-
 interface WalletConnectProps {
   address: string;
   isConnected: boolean;
@@ -22,12 +21,8 @@ export function WalletConnect({
   return (
     <div className="wallet-connect">
       {!isConnected ? (
-        <button
-          onClick={onConnect}
-          disabled={isConnecting}
-          className="btn-primary"
-        >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        <button onClick={onConnect} disabled={isConnecting} className="btn-primary">
+          {isConnecting ? "Connecting..." : "Connect Wallet"}
         </button>
       ) : (
         <div className="wallet-info">
@@ -42,4 +37,3 @@ export function WalletConnect({
     </div>
   );
 }
-

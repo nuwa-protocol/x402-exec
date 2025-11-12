@@ -1,14 +1,14 @@
 /**
  * usePaymentFlow Hook
- * 
+ *
  * A custom hook for managing payment flow state across all scenario components.
  * Provides consistent state management and event handlers for payment operations.
- * 
+ *
  * @example
  * ```typescript
  * function MyPaymentScenario() {
  *   const { paymentResult, error, handleSuccess, handleError, reset } = usePaymentFlow();
- *   
+ *
  *   return (
  *     <>
  *       <PaymentButton onClick={() => setShowDialog(true)} isCompleted={!!paymentResult} />
@@ -20,8 +20,8 @@
  * ```
  */
 
-import { useState } from 'react';
-import { type Network } from '../config';
+import { useState } from "react";
+import { type Network } from "../config";
 
 export interface PaymentResult {
   txHash: string;
@@ -46,7 +46,7 @@ export interface PaymentFlowState {
 
 /**
  * Custom hook for managing payment flow state
- * 
+ *
  * Centralizes payment state management logic that was previously duplicated
  * across all scenario components.
  */
@@ -55,13 +55,13 @@ export function usePaymentFlow(): PaymentFlowState {
   const [error, setError] = useState<string | null>(null);
 
   const handleSuccess = (result: PaymentResult) => {
-    console.log('[usePaymentFlow] Payment success:', result);
+    console.log("[usePaymentFlow] Payment success:", result);
     setPaymentResult(result);
     setError(null);
   };
 
   const handleError = (err: string) => {
-    console.error('[usePaymentFlow] Payment error:', err);
+    console.error("[usePaymentFlow] Payment error:", err);
     setError(err);
   };
 
@@ -79,4 +79,3 @@ export function usePaymentFlow(): PaymentFlowState {
     isCompleted: !!paymentResult,
   };
 }
-

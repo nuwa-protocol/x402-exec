@@ -1,14 +1,14 @@
 /**
  * Scenario: Premium Content Download
- * 
+ *
  * Demonstrates Server Mode use case where:
  * - Resource exists off-chain (downloadable file)
  * - Server verifies payment before granting access
  * - Generates temporary download URL with expiration
  */
 
-import type { Address } from 'viem';
-import { TransferHook } from '@x402x/core';
+import type { Address } from "viem";
+import { TransferHook } from "@x402x/core";
 
 export interface ContentItem {
   id: string;
@@ -37,14 +37,14 @@ export interface DownloadAccess {
  * Available premium content
  */
 const CONTENT_CATALOG: Record<string, ContentItem> = {
-  'x402-protocol-guide': {
-    id: 'x402-protocol-guide',
-    title: 'x402 Protocol Whitepaper',
-    description: 'Official whitepaper of the x402 payment protocol',
-    fileName: 'x402-whitepaper.pdf',
-    fileSize: '2.5 MB',
-    price: '$0.10',
-    mimeType: 'application/pdf',
+  "x402-protocol-guide": {
+    id: "x402-protocol-guide",
+    title: "x402 Protocol Whitepaper",
+    description: "Official whitepaper of the x402 payment protocol",
+    fileName: "x402-whitepaper.pdf",
+    fileSize: "2.5 MB",
+    price: "$0.10",
+    mimeType: "application/pdf",
   },
 };
 
@@ -67,14 +67,14 @@ export function getContentItem(contentId: string): ContentItem | null {
  */
 export function getScenarioInfo() {
   return {
-    name: 'Premium Content Download',
-    description: 'Purchase and download premium digital content with payment verification',
-    mode: 'server',
+    name: "Premium Content Download",
+    description: "Purchase and download premium digital content with payment verification",
+    mode: "server",
     features: [
-      'Off-chain resource delivery',
-      'Payment verification before access',
-      'Temporary download URLs',
-      'Access control and tracking',
+      "Off-chain resource delivery",
+      "Payment verification before access",
+      "Temporary download URLs",
+      "Access control and tracking",
     ],
     catalog: getContentCatalog(),
   };
@@ -90,7 +90,7 @@ export function getScenarioInfo() {
 export function generateDownloadUrl(
   contentId: string,
   walletAddress: Address,
-  expirationHours: number = 24
+  expirationHours: number = 24,
 ): DownloadAccess {
   const content = getContentItem(contentId);
   if (!content) {
@@ -105,8 +105,8 @@ export function generateDownloadUrl(
   // - Expiration timestamp
   // - HMAC signature to prevent tampering
   // For demo, use a simple URL with token
-  const token = Buffer.from(`${walletAddress}-${contentId}-${Date.now()}`).toString('base64');
-  
+  const token = Buffer.from(`${walletAddress}-${contentId}-${Date.now()}`).toString("base64");
+
   return {
     contentId,
     downloadUrl: `/api/download/${contentId}?token=${token}`,
@@ -126,10 +126,9 @@ export function generateDownloadUrl(
 export function verifyDownloadToken(contentId: string, token: string): boolean {
   try {
     // For demo, just check token format
-    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
     return decoded.includes(contentId);
   } catch {
     return false;
   }
 }
-

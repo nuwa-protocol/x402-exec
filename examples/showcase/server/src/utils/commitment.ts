@@ -9,4 +9,4 @@ export {
   calculateCommitment,
   generateSalt,
   validateCommitmentParams,
-} from '@x402x/core';
+} from "@x402x/core";
