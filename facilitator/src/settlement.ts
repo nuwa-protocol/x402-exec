@@ -231,6 +231,21 @@ export async function settleWithRouter(
     const authorization = evmPayload.authorization;
     const { signature } = parseErc6492Signature(evmPayload.signature as Hex);
 
+    // Log authorization details for debugging signature issues
+    logger.debug(
+      {
+        network,
+        from: authorization.from,
+        to: authorization.to,
+        value: authorization.value,
+        validAfter: authorization.validAfter,
+        validBefore: authorization.validBefore,
+        nonce: authorization.nonce,
+        asset,
+      },
+      "Settlement authorization details (before on-chain validation)",
+    );
+
     // 6. Calculate effective gas limit if config is provided
     let effectiveGasLimit: bigint | undefined;
     let gasLimitMode = "static";

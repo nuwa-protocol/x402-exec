@@ -64,6 +64,14 @@ export async function signAuthorization(
       verifyingContract: getAddress(settlement.token),
     };
 
+    console.log("[x402x/client] EIP-712 Domain for signing:", {
+      name: domain.name,
+      version: domain.version,
+      chainId: domain.chainId,
+      verifyingContract: domain.verifyingContract,
+      network: settlement.network,
+    });
+
     // Build EIP-712 message
     // The "to" address is the SettlementRouter (not the final recipient)
     // The "value" MUST be total amount (business amount + facilitator fee)
@@ -77,6 +85,15 @@ export async function signAuthorization(
       validBefore: BigInt(settlement.validBefore),
       nonce: settlement.commitment, // Use commitment as nonce
     };
+
+    console.log("[x402x/client] EIP-712 Message for signing:", {
+      from: message.from,
+      to: message.to,
+      value: message.value.toString(),
+      validAfter: message.validAfter.toString(),
+      validBefore: message.validBefore.toString(),
+      nonce: message.nonce,
+    });
 
     // Sign typed data
     const signature = await signTypedData(wallet, {
