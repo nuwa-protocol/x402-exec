@@ -49,7 +49,7 @@ Recipients (Merchant/Referrer/Platform) + NFT/Tokens
 - **Contracts**: Solidity 0.8.20 + Foundry
 - **Backend**: Hono + TypeScript + x402-hono
 - **Frontend**: React + TypeScript + Vite + x402-fetch
-- **Network**: Base Sepolia Testnet
+- **Networks**: Base Sepolia, X Layer Testnet, Base Mainnet, X Layer Mainnet
 
 ## 🚀 Quick Start
 
@@ -307,6 +307,98 @@ npm run dev:server
 npm run dev:client
 ```
 
+## 🌐 Network Support
+
+### Supported Networks
+
+The showcase client now supports both **testnets** and **mainnets**:
+
+| Network | Chain ID | Status | Default |
+|---------|----------|--------|---------|
+| Base Sepolia | 84532 | ✅ Active | ✓ |
+| X Layer Testnet | 1952 | ✅ Active | |
+| Base Mainnet | 8453 | 🎉 Live | |
+| X Layer Mainnet | 196 | 🎉 Live | |
+
+### Contract Addresses
+
+#### Core Contracts (Pre-deployed)
+
+These contracts are already deployed and configured in the SDK:
+
+| Network | SettlementRouter | TransferHook |
+|---------|------------------|--------------|
+| Base Sepolia | `0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb` | `0x4DE234059C6CcC94B8fE1eb1BD24804794083569` |
+| X Layer Testnet | `0xba9980fb08771e2fd10c17450f52d39bcb9ed576` | `0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE` |
+| Base Mainnet | `0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B` | `0x081258287F692D61575387ee2a4075f34dd7Aef7` |
+| X Layer Mainnet | `0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B` | `0x081258287F692D61575387ee2a4075f34dd7Aef7` |
+
+#### Showcase Example Contracts
+
+These contracts need to be deployed for NFT Mint and Reward Points scenarios:
+
+**Testnet (Deployed):**
+
+| Network | NFTMintHook | RandomNFT | RewardHook | RewardToken |
+|---------|-------------|-----------|------------|-------------|
+| Base Sepolia | `0x261206558E6eEd104Cba4AD913b2Eec85D21108e` | `0x5756A67a33118F5Ad9840411f252E14d84Dd7c02` | `0xf05cE06e7ee4ffCb67a509003DbD73A6d95Cc960` | `0xb6854e33BfD428d15B4f5398cFf8e84d4196FDA6` |
+| X Layer Testnet | `0x468F666314b070338841422012AB2f6539bfcE48` | `0xBA931bB5B2F2DC5354aFAED1d3996B0c6e417518` | `0xda8B270Ec442Ff797807b95604E3319e36Aad05d` | `0x348AFDE3B4B70dCb02053aF95588a4ab41e95FbC` |
+
+**Mainnet (To Be Deployed):**
+
+For mainnet deployment, use the following commands and update the `client/.env` file with the deployed addresses:
+
+```bash
+# Deploy to Base Mainnet
+cd contracts
+./deploy-network.sh base --showcase --verify
+
+# Deploy to X Layer Mainnet
+./deploy-network.sh xlayer --showcase --verify
+```
+
+After deployment, update your `examples/showcase/client/.env`:
+```env
+# Base Mainnet
+VITE_BASE_REWARD_HOOK_ADDRESS=<deployed_address>
+VITE_BASE_REWARD_TOKEN_ADDRESS=<deployed_address>
+VITE_BASE_NFT_MINT_HOOK_ADDRESS=<deployed_address>
+VITE_BASE_RANDOM_NFT_ADDRESS=<deployed_address>
+
+# X Layer Mainnet
+VITE_X_LAYER_REWARD_HOOK_ADDRESS=<deployed_address>
+VITE_X_LAYER_REWARD_TOKEN_ADDRESS=<deployed_address>
+VITE_X_LAYER_NFT_MINT_HOOK_ADDRESS=<deployed_address>
+VITE_X_LAYER_RANDOM_NFT_ADDRESS=<deployed_address>
+```
+
+### Scenario Support by Network
+
+| Scenario | Testnet | Mainnet | Notes |
+|----------|---------|---------|-------|
+| Split Payment | ✅ | ✅ | Uses TransferHook (pre-deployed) |
+| NFT Mint | ✅ | ✅ | Requires NFTMintHook + RandomNFT deployment |
+| Reward Points | ✅ | ✅ | Requires RewardHook + RewardToken deployment |
+| Premium Download | ✅ | ❌ | Server-only, testnet restricted |
+
+### Mainnet Usage Notes
+
+⚠️ **Important Considerations:**
+
+1. **Real Funds**: Mainnet uses real USDC. Payments are NOT refunded.
+2. **Gas Costs**: You need real ETH to pay for gas fees.
+3. **Not Audited**: These contracts are for demonstration purposes only and have not been audited.
+4. **Use at Own Risk**: Only use amounts you're willing to lose for testing.
+5. **Premium Download**: This scenario is disabled on mainnet as it requires server-side verification.
+
+### Network Switching
+
+Users can switch between networks directly in the app:
+1. Connect your wallet
+2. Use your wallet's network switcher (e.g., MetaMask)
+3. Select Base Mainnet, X Layer, or their testnets
+4. The app will automatically detect and adapt
+
 ## 📊 Gas Estimates
 
 | Scenario | Gas Cost | Notes |
@@ -320,12 +412,41 @@ npm run dev:client
 
 ### Get Testnet Tokens
 
+#### Base Sepolia
+
 1. **Base Sepolia ETH** (for gas)
    - [Coinbase Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet)
 
 2. **Base Sepolia USDC** (for payments)
    - [Circle Faucet](https://faucet.circle.com/)
    - Contract: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
+
+#### X Layer Testnet
+
+1. **X Layer Testnet ETH** (for gas)
+   - [OKX Faucet](https://www.okx.com/xlayer/faucet)
+
+2. **X Layer Testnet USDC** (for payments)
+   - Available through the same faucet
+   - Contract: `0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d`
+
+### Get Mainnet Assets
+
+For mainnet testing, you'll need real assets:
+
+#### Base Mainnet
+
+1. **ETH** (for gas): Bridge from Ethereum or purchase on exchanges
+   - [Base Bridge](https://bridge.base.org/)
+2. **USDC**: Bridge or swap on Base
+   - Contract: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+
+#### X Layer Mainnet
+
+1. **ETH** (for gas): Bridge from Ethereum
+   - [X Layer Bridge](https://www.okx.com/xlayer/bridge)
+2. **USDC**: Bridge from other chains
+   - Contract: `0x74b7f16337b8972027f6196a17a631ac6de26d22`
 
 ### Testing Steps
 
@@ -361,11 +482,21 @@ npm run dev:client
 - [ ] Enable HTTPS
 - [ ] Implement logging and monitoring
 
-### Testnet Warning
+### Important Warnings
+
+#### Testnet
 
 - ⚠️ This project is for demonstration and testing only
 - ⚠️ Do not use real private keys on testnet
-- ⚠️ Contracts are not audited, not production-ready
+- ⚠️ Testnet funds have no real value
+
+#### Mainnet
+
+- 🚨 **Contracts are NOT audited** - Use at your own risk
+- 🚨 **Real funds involved** - Only use amounts you can afford to lose
+- 🚨 **No refunds** - Payments are final and cannot be reversed
+- 🚨 **Demo purposes only** - Not intended for production use
+- 🚨 **Gas costs apply** - All transactions require real ETH for gas
 
 ## 📄 License
 
