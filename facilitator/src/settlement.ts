@@ -171,15 +171,23 @@ export async function settleWithRouter(
     // 3. Validate SettlementRouter address against whitelist (SECURITY)
     validateSettlementRouter(network, extra.settlementRouter, allowedRouters);
 
-    // 4. Parse authorization from payload
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = paymentPayload.payload as any;
-    if (!payload?.authorization) {
+    // 4. Parse authorization and signature from payload
+    const payload = paymentPayload.payload;
+
+    // Type guard: ensure this is an EVM payload with authorization and signature
+    if (!payload || typeof payload !== "object" || !("authorization" in payload)) {
       throw new Error("Missing authorization in payment payload");
     }
 
-    const authorization = payload.authorization;
-    const { signature } = parseErc6492Signature(paymentPayload.signature as Hex);
+    if (!("signature" in payload) || !payload.signature) {
+      throw new Error("Missing signature in payment payload");
+    }
+
+    // Now we can safely access the EVM payload fields
+    type EvmPayload = { authorization: any; signature: string };
+    const evmPayload = payload as EvmPayload;
+    const authorization = evmPayload.authorization;
+    const { signature } = parseErc6492Signature(evmPayload.signature as Hex);
 
     // 5. Calculate effective gas limit if config is provided
     let effectiveGasLimit: bigint | undefined;
@@ -352,9 +360,11 @@ export async function settleWithRouter(
     // Extract payer from payload if available
     let payer = "";
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const payload = paymentPayload.payload as any;
-      payer = payload?.authorization?.from || "";
+      const payload = paymentPayload.payload;
+      if (payload && typeof payload === "object" && "authorization" in payload) {
+        const auth = (payload as any).authorization;
+        payer = auth?.from || "";
+      }
     } catch {
       // Ignore extraction errors
     }

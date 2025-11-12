@@ -939,6 +939,7 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x8FbB2f214b3b3907BB733e77fa2cAaC16ddC
 ```
 
 **How it works:**
+
 1. Client provides `extra.settlementRouter` address in payment requirements
 2. Facilitator validates the address against the whitelist
 3. Transaction is rejected if router is not whitelisted
@@ -960,6 +961,7 @@ X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
 ```
 
 **Why optional?**
+
 - Development: Allows testing with any hook contract
 - Production: Enforces trusted hooks only
 - Default: Disabled for ease of development

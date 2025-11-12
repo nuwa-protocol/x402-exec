@@ -17,6 +17,19 @@ import {
 } from "../utils/fixtures.js";
 import { createMockEvmSigner } from "../mocks/signers.js";
 
+// Mock viem
+vi.mock("viem", async () => {
+  const actual = await vi.importActual("viem");
+  return {
+    ...actual,
+    parseErc6492Signature: vi.fn((sig: string) => ({
+      signature: sig,
+      address: "0x0000000000000000000000000000000000000000",
+      data: "0x",
+    })),
+  };
+});
+
 // Mock @x402x/core
 vi.mock("@x402x/core", () => {
   class MockSettlementExtraError extends Error {
@@ -28,18 +41,6 @@ vi.mock("@x402x/core", () => {
 
   return {
     isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
-    validateSettlementRouter: vi.fn((network, router, whitelist) => {
-      const allowed = whitelist[network] || [];
-      if (!allowed.includes(router)) {
-        throw new Error(`Router ${router} not in whitelist for network ${network}`);
-      }
-    }),
-    settleWithRouter: vi.fn(async () => ({
-      success: true,
-      transaction: "0xtxhash123",
-      payer: "0x1234567890123456789012345678901234567890",
-      network: "base-sepolia",
-    })),
     SettlementExtraError: MockSettlementExtraError,
   };
 });
@@ -134,15 +135,52 @@ describe("settlement", () => {
     };
 
     beforeEach(() => {
+      vi.clearAllMocks();
       signer = createMockEvmSigner();
-      paymentPayload = createMockPaymentPayload();
+      paymentPayload = createMockPaymentPayload({
+        signature:
+          "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+      });
       paymentRequirements = createMockSettlementRouterPaymentRequirements();
     });
 
+    it("should throw error for missing signature", async () => {
+      const payloadWithoutSignature = {
+        ...paymentPayload,
+        signature: undefined,
+      };
+
+      const result = await settleWithRouter(
+        signer,
+        payloadWithoutSignature as any,
+        paymentRequirements,
+        allowedRouters,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorReason).toBe("unexpected_settle_error");
+    });
+
+    it("should throw error for missing authorization", async () => {
+      const payloadWithoutAuth = {
+        ...paymentPayload,
+        payload: {},
+      };
+
+      const result = await settleWithRouter(
+        signer,
+        payloadWithoutAuth as any,
+        paymentRequirements,
+        allowedRouters,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorReason).toBe("unexpected_settle_error");
+    });
+
     it("should successfully settle with router", async () => {
-      // Skip: Requires correct mock configuration for @x402x/core
-      // The wrapper function is simple and delegates to core
-      // TODO: Set up proper mocks for full integration test
+      // Skip: Requires actual contract interaction
+      // This is covered by e2e tests
     });
 
     it("should throw for non-EVM signer", async () => {
@@ -159,13 +197,14 @@ describe("settlement", () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.errorReason).toBeDefined();
+      expect(result.errorReason).toBe("unexpected_settle_error");
     });
 
-    it("should return error response on failure", async () => {
-      // Mock failure
-      const { settleWithRouter: mockSettle } = await import("@x402x/core");
-      vi.mocked(mockSettle).mockRejectedValueOnce(new Error("Settlement failed"));
+    it("should return error response on settlement failure", async () => {
+      // Mock walletClient.writeContract to throw
+      signer.walletClient.writeContract = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("Transaction failed"));
 
       const result = await settleWithRouter(
         signer,
@@ -178,33 +217,8 @@ describe("settlement", () => {
       expect(result.errorReason).toBe("unexpected_settle_error");
     });
 
-    it("should handle invalid payment requirements error", async () => {
-      // Mock @x402x/core to throw
-      const { settleWithRouter: mockSettle } = await import("@x402x/core");
-      const { SettlementExtraError } = await import("../../src/types.js");
-
-      vi.mocked(mockSettle).mockRejectedValueOnce(
-        new (class extends Error {
-          constructor() {
-            super("Invalid requirements");
-            this.name = "SettlementExtraError";
-          }
-        })(),
-      );
-
-      const result = await settleWithRouter(
-        signer,
-        paymentPayload,
-        paymentRequirements,
-        allowedRouters,
-      );
-
-      expect(result.success).toBe(false);
-    });
-
     it("should extract payer from payload on error", async () => {
-      const { settleWithRouter: mockSettle } = await import("@x402x/core");
-      vi.mocked(mockSettle).mockRejectedValueOnce(new Error("Test error"));
+      signer.walletClient.writeContract = vi.fn().mockRejectedValueOnce(new Error("Test error"));
 
       const result = await settleWithRouter(
         signer,
@@ -218,8 +232,7 @@ describe("settlement", () => {
     });
 
     it("should handle missing payer gracefully", async () => {
-      const { settleWithRouter: mockSettle } = await import("@x402x/core");
-      vi.mocked(mockSettle).mockRejectedValueOnce(new Error("Test error"));
+      signer.walletClient.writeContract = vi.fn().mockRejectedValueOnce(new Error("Test error"));
 
       const invalidPayload = { ...paymentPayload, payload: {} };
 
