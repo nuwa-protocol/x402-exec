@@ -1,8 +1,11 @@
 /**
  * Hook to read NFT contract data from all networks
+ * 
+ * Data is fetched once on mount and can be manually refreshed.
+ * No automatic polling to avoid rate limiting.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPublicClient, http, type Address } from 'viem';
 import { NETWORKS, type Network } from '../config';
 
@@ -83,99 +86,89 @@ export function useAllNetworksNFTData() {
     },
   });
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchDataForNetwork = useCallback(async (network: Network): Promise<NFTNetworkData> => {
+    const nftAddress = NFT_ADDRESSES[network];
+    const config = NETWORKS[network];
 
-    const fetchDataForNetwork = async (network: Network): Promise<NFTNetworkData> => {
-      const nftAddress = NFT_ADDRESSES[network];
-      const config = NETWORKS[network];
+    // Check if address is configured
+    if (!nftAddress || nftAddress === '0x0000000000000000000000000000000000000000') {
+      return {
+        network,
+        totalSupply: 0,
+        maxSupply: 0,
+        remainingSupply: 0,
+        loading: false,
+        error: 'Not deployed',
+      };
+    }
 
-      // Check if address is configured
-      if (!nftAddress || nftAddress === '0x0000000000000000000000000000000000000000') {
-        return {
-          network,
-          totalSupply: 0,
-          maxSupply: 0,
-          remainingSupply: 0,
-          loading: false,
-          error: 'Not deployed',
-        };
-      }
+    try {
+      const client = createPublicClient({
+        chain: config.chain,
+        transport: http(),
+      });
 
-      try {
-        const client = createPublicClient({
-          chain: config.chain,
-          transport: http(),
-        });
+      console.log(`[useAllNetworksNFTData] Fetching data for ${network} from ${nftAddress}`);
 
-        console.log(`[useAllNetworksNFTData] Fetching data for ${network} from ${nftAddress}`);
+      const [totalSupply, maxSupply, remainingSupply] = await Promise.all([
+        client.readContract({
+          address: nftAddress as Address,
+          abi: NFT_ABI,
+          functionName: 'totalSupply',
+        }),
+        client.readContract({
+          address: nftAddress as Address,
+          abi: NFT_ABI,
+          functionName: 'MAX_SUPPLY',
+        }),
+        client.readContract({
+          address: nftAddress as Address,
+          abi: NFT_ABI,
+          functionName: 'remainingSupply',
+        }),
+      ]);
 
-        const [totalSupply, maxSupply, remainingSupply] = await Promise.all([
-          client.readContract({
-            address: nftAddress as Address,
-            abi: NFT_ABI,
-            functionName: 'totalSupply',
-          }),
-          client.readContract({
-            address: nftAddress as Address,
-            abi: NFT_ABI,
-            functionName: 'MAX_SUPPLY',
-          }),
-          client.readContract({
-            address: nftAddress as Address,
-            abi: NFT_ABI,
-            functionName: 'remainingSupply',
-          }),
-        ]);
+      console.log(`[useAllNetworksNFTData] ${network} - Total: ${totalSupply}, Max: ${maxSupply}, Remaining: ${remainingSupply}`);
 
-        console.log(`[useAllNetworksNFTData] ${network} - Total: ${totalSupply}, Max: ${maxSupply}, Remaining: ${remainingSupply}`);
-
-        return {
-          network,
-          totalSupply: Number(totalSupply),
-          maxSupply: Number(maxSupply),
-          remainingSupply: Number(remainingSupply),
-          loading: false,
-          error: null,
-        };
-      } catch (error) {
-        console.error(`[useAllNetworksNFTData] Failed to fetch NFT data for ${network}:`, error);
-        return {
-          network,
-          totalSupply: 0,
-          maxSupply: 0,
-          remainingSupply: 0,
-          loading: false,
-          error: 'Failed to load',
-        };
-      }
-    };
-
-    const fetchAllData = async () => {
-      const results = await Promise.all(
-        Object.keys(NETWORKS).map(network => fetchDataForNetwork(network as Network))
-      );
-
-      if (!cancelled) {
-        const newData = results.reduce((acc, result) => {
-          acc[result.network] = result;
-          return acc;
-        }, {} as Record<Network, NFTNetworkData>);
-        
-        setData(newData);
-      }
-    };
-
-    fetchAllData();
-
-    // Refresh every 10 seconds
-    const interval = setInterval(fetchAllData, 10000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+      return {
+        network,
+        totalSupply: Number(totalSupply),
+        maxSupply: Number(maxSupply),
+        remainingSupply: Number(remainingSupply),
+        loading: false,
+        error: null,
+      };
+    } catch (error) {
+      console.error(`[useAllNetworksNFTData] Failed to fetch NFT data for ${network}:`, error);
+      return {
+        network,
+        totalSupply: 0,
+        maxSupply: 0,
+        remainingSupply: 0,
+        loading: false,
+        error: 'Failed to load',
+      };
+    }
   }, []);
 
-  return data;
+  const fetchAllData = useCallback(async () => {
+    const results = await Promise.all(
+      Object.keys(NETWORKS).map(network => fetchDataForNetwork(network as Network))
+    );
+
+    const newData = results.reduce((acc, result) => {
+      acc[result.network] = result;
+      return acc;
+    }, {} as Record<Network, NFTNetworkData>);
+    
+    setData(newData);
+  }, [fetchDataForNetwork]);
+
+  // Fetch data once on mount
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // Return data and refresh function
+  return { data, refresh: fetchAllData };
 }

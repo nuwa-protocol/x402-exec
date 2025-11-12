@@ -28,7 +28,7 @@ export function ServerlessRandomNFT() {
   const { paymentResult, error, handleSuccess, handleError, reset, isCompleted } = usePaymentFlow();
   
   // Read NFT data from all networks
-  const allNetworksData = useAllNetworksNFTData();
+  const { data: allNetworksData, refresh: refreshNFTData } = useAllNetworksNFTData();
 
   // NFT mint preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
@@ -52,6 +52,14 @@ export function ServerlessRandomNFT() {
     });
 
     return { hook, hookData };
+  };
+
+  // Handle payment success and refresh NFT data
+  const handlePaymentSuccess = (result: any) => {
+    handleSuccess(result);
+    // Refresh NFT data after successful payment
+    console.log('[ServerlessRandomNFT] Payment successful, refreshing NFT data...');
+    setTimeout(() => refreshNFTData(), 2000); // Wait 2s for blockchain confirmation
   };
 
   return (
@@ -211,7 +219,7 @@ export function ServerlessRandomNFT() {
         amount={AMOUNT}
         recipient={connectedAddress || '0x0000000000000000000000000000000000000000'}
         prepareHookData={prepareNFTMintForNetwork}
-        onSuccess={handleSuccess}
+        onSuccess={handlePaymentSuccess}
         onError={handleError}
       />
 

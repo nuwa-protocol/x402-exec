@@ -1,8 +1,11 @@
 /**
  * Hook to read RewardToken contract data from all networks
+ * 
+ * Data is fetched once on mount and can be manually refreshed.
+ * No automatic polling to avoid rate limiting.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPublicClient, http, formatUnits, type Address } from 'viem';
 import { NETWORKS, type Network } from '../config';
 
@@ -83,105 +86,95 @@ export function useAllNetworksRewardTokenData(userAddress?: Address) {
     },
   });
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchDataForNetwork = useCallback(async (network: Network): Promise<RewardTokenNetworkData> => {
+    const tokenAddress = REWARD_TOKEN_ADDRESSES[network];
+    const config = NETWORKS[network];
 
-    const fetchDataForNetwork = async (network: Network): Promise<RewardTokenNetworkData> => {
-      const tokenAddress = REWARD_TOKEN_ADDRESSES[network];
-      const config = NETWORKS[network];
+    // Check if address is configured
+    if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
+      return {
+        network,
+        userBalance: '0',
+        contractBalance: '0',
+        totalSupply: '0',
+        loading: false,
+        error: 'Not deployed',
+      };
+    }
 
-      // Check if address is configured
-      if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
-        return {
-          network,
-          userBalance: '0',
-          contractBalance: '0',
-          totalSupply: '0',
-          loading: false,
-          error: 'Not deployed',
-        };
-      }
+    try {
+      const client = createPublicClient({
+        chain: config.chain,
+        transport: http(),
+      });
 
-      try {
-        const client = createPublicClient({
-          chain: config.chain,
-          transport: http(),
-        });
+      console.log(`[useAllNetworksRewardTokenData] Fetching data for ${network} from ${tokenAddress}`);
 
-        console.log(`[useAllNetworksRewardTokenData] Fetching data for ${network} from ${tokenAddress}`);
-
-        // Fetch user balance if address provided
-        const userBalancePromise = userAddress
-          ? client.readContract({
-              address: tokenAddress as Address,
-              abi: ERC20_ABI,
-              functionName: 'balanceOf',
-              args: [userAddress],
-            })
-          : Promise.resolve(0n);
-
-        const [userBalanceRaw, totalSupplyRaw, remainingRewardsRaw] = await Promise.all([
-          userBalancePromise,
-          client.readContract({
+      // Fetch user balance if address provided
+      const userBalancePromise = userAddress
+        ? client.readContract({
             address: tokenAddress as Address,
             abi: ERC20_ABI,
-            functionName: 'totalSupply',
-          }),
-          client.readContract({
-            address: tokenAddress as Address,
-            abi: ERC20_ABI,
-            functionName: 'remainingRewards',
-          }),
-        ]);
+            functionName: 'balanceOf',
+            args: [userAddress],
+          })
+        : Promise.resolve(0n);
 
-        console.log(`[useAllNetworksRewardTokenData] ${network} - User: ${userBalanceRaw}, Total: ${totalSupplyRaw}, Remaining: ${remainingRewardsRaw}`);
+      const [userBalanceRaw, totalSupplyRaw, remainingRewardsRaw] = await Promise.all([
+        userBalancePromise,
+        client.readContract({
+          address: tokenAddress as Address,
+          abi: ERC20_ABI,
+          functionName: 'totalSupply',
+        }),
+        client.readContract({
+          address: tokenAddress as Address,
+          abi: ERC20_ABI,
+          functionName: 'remainingRewards',
+        }),
+      ]);
 
-        return {
-          network,
-          userBalance: formatUnits(userBalanceRaw, 18),
-          contractBalance: formatUnits(remainingRewardsRaw, 18),
-          totalSupply: formatUnits(totalSupplyRaw, 18),
-          loading: false,
-          error: null,
-        };
-      } catch (error) {
-        console.error(`[useAllNetworksRewardTokenData] Failed to fetch token data for ${network}:`, error);
-        return {
-          network,
-          userBalance: '0',
-          contractBalance: '0',
-          totalSupply: '0',
-          loading: false,
-          error: 'Failed to load',
-        };
-      }
-    };
+      console.log(`[useAllNetworksRewardTokenData] ${network} - User: ${userBalanceRaw}, Total: ${totalSupplyRaw}, Remaining: ${remainingRewardsRaw}`);
 
-    const fetchAllData = async () => {
-      const results = await Promise.all(
-        Object.keys(NETWORKS).map(network => fetchDataForNetwork(network as Network))
-      );
-
-      if (!cancelled) {
-        const newData = results.reduce((acc, result) => {
-          acc[result.network] = result;
-          return acc;
-        }, {} as Record<Network, RewardTokenNetworkData>);
-        
-        setData(newData);
-      }
-    };
-
-    fetchAllData();
-
-    // Refresh every 10 seconds
-    const interval = setInterval(fetchAllData, 10000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+      return {
+        network,
+        userBalance: formatUnits(userBalanceRaw, 18),
+        contractBalance: formatUnits(remainingRewardsRaw, 18),
+        totalSupply: formatUnits(totalSupplyRaw, 18),
+        loading: false,
+        error: null,
+      };
+    } catch (error) {
+      console.error(`[useAllNetworksRewardTokenData] Failed to fetch token data for ${network}:`, error);
+      return {
+        network,
+        userBalance: '0',
+        contractBalance: '0',
+        totalSupply: '0',
+        loading: false,
+        error: 'Failed to load',
+      };
+    }
   }, [userAddress]);
 
-  return data;
+  const fetchAllData = useCallback(async () => {
+    const results = await Promise.all(
+      Object.keys(NETWORKS).map(network => fetchDataForNetwork(network as Network))
+    );
+
+    const newData = results.reduce((acc, result) => {
+      acc[result.network] = result;
+      return acc;
+    }, {} as Record<Network, RewardTokenNetworkData>);
+    
+    setData(newData);
+  }, [fetchDataForNetwork]);
+
+  // Fetch data once on mount, and re-fetch when userAddress changes
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // Return data and refresh function
+  return { data, refresh: fetchAllData };
 }

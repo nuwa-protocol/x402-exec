@@ -28,7 +28,7 @@ export function ServerlessPointsReward() {
   const { paymentResult, error, handleSuccess, handleError, reset, isCompleted } = usePaymentFlow();
   
   // Read reward token data from all networks
-  const allNetworksData = useAllNetworksRewardTokenData(connectedAddress);
+  const { data: allNetworksData, refresh: refreshRewardData } = useAllNetworksRewardTokenData(connectedAddress);
 
   // Reward preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
@@ -52,6 +52,14 @@ export function ServerlessPointsReward() {
     });
 
     return { hook, hookData };
+  };
+
+  // Handle payment success and refresh reward data
+  const handlePaymentSuccess = (result: any) => {
+    handleSuccess(result);
+    // Refresh reward data after successful payment
+    console.log('[ServerlessPointsReward] Payment successful, refreshing reward data...');
+    setTimeout(() => refreshRewardData(), 2000); // Wait 2s for blockchain confirmation
   };
 
   return (
@@ -211,7 +219,7 @@ export function ServerlessPointsReward() {
         amount={AMOUNT}
         recipient={connectedAddress || '0x0000000000000000000000000000000000000000'}
         prepareHookData={prepareRewardForNetwork}
-        onSuccess={handleSuccess}
+        onSuccess={handlePaymentSuccess}
         onError={handleError}
       />
 
