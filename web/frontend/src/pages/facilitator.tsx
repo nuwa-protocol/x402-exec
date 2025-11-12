@@ -1,21 +1,16 @@
-import { Check, Copy } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-
+import { NetworkHeader } from "@/components/site/network-header";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -25,6 +20,8 @@ import {
   ISSUE_SUBMIT_URL,
   SUPPORTED_NETWORKS,
 } from "@/constants/facilitator";
+import { Check, Copy } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function FacilitatorPage() {
   const [copied, setCopied] = useState(false);
@@ -130,27 +127,11 @@ export default function FacilitatorPage() {
           {SUPPORTED_NETWORKS.map((network) => (
             <Card key={network.network} className="h-full">
               <CardHeader className="space-y-2 flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-8 rounded-md">
-                    {network.logoUrl ? (
-                      <AvatarImage
-                        src={network.logoUrl}
-                        alt={`${network.name} logo`}
-                      />
-                    ) : null}
-                    <AvatarFallback className="text-xs font-semibold">
-                      {network.name?.[0] ?? "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <CardTitle className="text-lg">{network.name}</CardTitle>
-                  <Badge
-                    variant={
-                      network.status === "Mainnet" ? "default" : "secondary"
-                    }
-                  >
-                    {network.status}
-                  </Badge>
-                </div>
+                <NetworkHeader
+                  networkKey={network.network}
+                  name={network.name}
+                  status={network.status}
+                />
                 <CardDescription className="font-mono text-xs sr-only">
                   {network.network}
                 </CardDescription>

@@ -1,5 +1,4 @@
-import supportedPaymentTokensData from "@/constants/data/supported-payment-tokens.json";
-import supportedNetworksData from "@/constants/data/supported-networks.json";
+import { getNetworkConfig, getSupportedNetworks } from "@x402x/core";
 
 export const FACILITATOR_HOSTED_URL = "https://facilitator.x402x.dev/" as const;
 const ISSUE_DEFAULT_TITLE =
@@ -207,29 +206,47 @@ export type SupportedNetwork = {
   explorerUrl: string;
   // Optional base URL to view transactions for this network (e.g., https://basescan.org/tx/)
   txExplorerBaseUrl?: string;
-  // Optional logo URL to display for this network on the Facilitator page
-  logoUrl?: string;
   paymentTokens: PaymentToken[];
 };
 
-type SupportedNetworkData = Omit<SupportedNetwork, "paymentTokens">;
+// Build supported payment tokens from the SDK's per-network config.
+// Today each network supports a single USDC token.
+export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
+  const result: Record<string, PaymentToken[]> = {};
+  for (const n of getSupportedNetworks()) {
+    const cfg = getNetworkConfig(n);
+    const addressBase = cfg.addressExplorerBaseUrl;
+    const usdcAddress = cfg.usdc.address;
 
-const supportedPaymentTokens =
-	supportedPaymentTokensData as Record<string, PaymentToken[]>;
-const supportedNetworks =
-	supportedNetworksData as SupportedNetworkData[];
+		result[n] = [
+			{
+				symbol: "USDC",
+				label: "USDC",
+				address: usdcAddress,
+				explorerUrl: addressBase ? `${addressBase}${usdcAddress}` : undefined,
+			},
+		];
+	}
+	return result;
+})();
 
-export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> =
-	Object.fromEntries(
-		Object.entries(supportedPaymentTokens).map(([network, tokens]) => [
-			network,
-			tokens.map((token) => ({ ...token })),
-		]),
-	);
-
-export const SUPPORTED_NETWORKS: SupportedNetwork[] = supportedNetworks.map(
-	(network) => ({
-		...network,
-		paymentTokens: SUPPORTED_PAYMENT_TOKENS[network.network] ?? [],
-	}),
-);
+// Build supported networks list from SDK + meta config
+export const SUPPORTED_NETWORKS: SupportedNetwork[] = (() => {
+  const list: SupportedNetwork[] = [];
+  for (const n of getSupportedNetworks()) {
+    const cfg = getNetworkConfig(n);
+    list.push({
+      name: cfg.name ?? n,
+      network: n,
+      chainId: cfg.chainId,
+      status: cfg.type === "mainnet" ? "Mainnet" : "Testnet",
+      settlementRouter: cfg.settlementRouter,
+      explorerUrl: cfg.addressExplorerBaseUrl
+        ? `${cfg.addressExplorerBaseUrl}${cfg.settlementRouter}`
+        : "",
+      txExplorerBaseUrl: cfg.txExplorerBaseUrl,
+      paymentTokens: SUPPORTED_PAYMENT_TOKENS[n] ?? [],
+    });
+  }
+  return list;
+})();

@@ -9,9 +9,9 @@
 		"pnpm": ">=10.7.0"
 	},
 	"scripts": {
-		"dev": "vite",
-		"build": "tsc -b && vite build",
-		"build:prod": "vite build",
+    "dev": "pnpm -C ../../typescript/packages/core build && vite",
+    "build": "pnpm -C ../../typescript/packages/core build && tsc -b && vite build",
+    "build:prod": "pnpm -C ../../typescript/packages/core build && vite build",
 		"typecheck": "tsc -b --pretty false",
 		"lint": "biome lint .",
 		"check": "biome check .",
@@ -21,6 +21,7 @@
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",
 		"@icons-pack/react-simple-icons": "^13.8.0",
+		"@x402x/core": "workspace:*",
 		"@mdx-js/react": "^3.1.1",
 		"@radix-ui/react-accordion": "^1.2.12",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
