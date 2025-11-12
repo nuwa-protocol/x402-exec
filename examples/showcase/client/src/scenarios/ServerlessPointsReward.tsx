@@ -47,9 +47,9 @@ export function ServerlessPointsReward() {
     const rewardToken = RewardHook.getTokenAddress(network);
     
     // Encode hookData using RewardHook.encode() for correct format
+    // After refactoring: only rewardToken is needed, merchant is passed via recipient
     const hookData = RewardHook.encode({
       rewardToken,
-      merchant: connectedAddress as Address // merchant = payer (funds return to user)
     });
 
     return { hook, hookData };

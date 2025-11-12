@@ -3,15 +3,20 @@
 import { X402Client } from '@x402x/client';
 import { encodeAbiParameters } from 'viem';
 
-// 1. Configure reward distribution with merchant as payer
+// 1. Configure reward distribution (simplified - no merchant field)
 const hookData = encodeAbiParameters(
   [
-    { name: 'rewardToken', type: 'address' },
-    { name: 'merchant', type: 'address' }
+    {
+      type: 'tuple',
+      components: [
+        { name: 'rewardToken', type: 'address' }
+      ]
+    }
   ],
   [
-    '0xRewardToken...',
-    payerAddress  // ← USDC returns to this address
+    {
+      rewardToken: '0xRewardToken...'
+    }
   ]
 );
 
@@ -21,7 +26,7 @@ await client.execute({
   hook: rewardHookAddress,
   hookData,
   amount: '100000',       // 0.1 USDC (6 decimals)
-  recipient: payerAddress // USDC returns here after hook
+  recipient: merchantAddress // ← Merchant receives payment
 });
 
-// Result: Reward points sent to payer + USDC returned to payer
+// Result: Payment to merchant + 1000 reward points to payer

@@ -16,9 +16,10 @@
  * // Encode hookData for NFT minting
  * const hookData = NFTMintHook.encode({
  *   nftContract: '0x...',
- *   tokenId: 0n, // 0 for random mint
- *   merchant: '0x...',
  * });
+ * 
+ * // The merchant address is passed via the `recipient` parameter in execute()
+ * // The hook will transfer payment to `recipient` (merchant) and mint NFT to payer
  * ```
  */
 
@@ -29,14 +30,14 @@ import type { Address } from "viem";
  * NFT Mint Configuration
  * 
  * Defines the parameters needed to mint an NFT during payment settlement.
+ * 
+ * Note: After refactoring, the merchant address is passed via the `recipient`
+ * parameter in the execute call, not in hookData. This simplifies the encoding
+ * and makes it consistent with the SettlementRouter's `payTo` parameter.
  */
 export interface MintConfig {
   /** Address of the NFT contract to mint from */
   nftContract: Address;
-  /** Token ID to mint (use 0n for random mint if contract supports it) */
-  tokenId: bigint;
-  /** Address that receives the payment (merchant) */
-  merchant: Address;
 }
 
 /**
@@ -127,15 +128,16 @@ export class NFTMintHook {
    * The NFTMintHook contract expects a specific ABI-encoded struct format.
    * This method handles the encoding for you.
    * 
+   * After refactoring, the config only contains the NFT contract address.
+   * The merchant address is passed via the `recipient` parameter in execute().
+   * 
    * @param config - The mint configuration
    * @returns ABI-encoded hookData ready to use with x402x execute
    * 
    * @example
    * ```typescript
    * const hookData = NFTMintHook.encode({
-   *   nftContract: '0x123...',
-   *   tokenId: 42n,
-   *   merchant: '0xabc...'
+   *   nftContract: '0x123...'
    * });
    * 
    * // Use with x402x client
@@ -143,16 +145,15 @@ export class NFTMintHook {
    *   hook: NFTMintHook.getAddress('base-sepolia'),
    *   hookData,
    *   amount: '100000',
-   *   recipient: merchantAddress
+   *   recipient: merchantAddress  // ← Merchant receives payment here
    * });
+   * // NFT is minted to the payer, payment goes to merchant
    * ```
    */
   static encode(config: MintConfig): `0x${string}` {
     // Encode as tuple matching the Solidity struct:
     // struct MintConfig {
     //   address nftContract;
-    //   uint256 tokenId;
-    //   address merchant;
     // }
     return encodeAbiParameters(
       [
@@ -160,16 +161,12 @@ export class NFTMintHook {
           type: "tuple",
           components: [
             { name: "nftContract", type: "address" },
-            { name: "tokenId", type: "uint256" },
-            { name: "merchant", type: "address" },
           ],
         },
       ],
       [
         {
           nftContract: config.nftContract,
-          tokenId: config.tokenId,
-          merchant: config.merchant,
         },
       ],
     );

@@ -3,17 +3,20 @@
 import { X402Client } from '@x402x/client';
 import { encodeAbiParameters } from 'viem';
 
-// 1. Configure NFT mint with merchant as payer (for zero-cost demo)
+// 1. Configure NFT mint (simplified - no merchant field)
 const hookData = encodeAbiParameters(
   [
-    { name: 'nftContract', type: 'address' },
-    { name: 'tokenId', type: 'uint256' },
-    { name: 'merchant', type: 'address' }
+    {
+      type: 'tuple',
+      components: [
+        { name: 'nftContract', type: 'address' }
+      ]
+    }
   ],
   [
-    '0xYourNFTContract...',
-    0n,           // 0 = random mint
-    payerAddress  // ← USDC returns to this address
+    {
+      nftContract: '0xYourNFTContract...'
+    }
   ]
 );
 
@@ -23,7 +26,7 @@ await client.execute({
   hook: nftMintHookAddress,
   hookData,
   amount: '100000',       // 0.1 USDC (6 decimals)
-  recipient: payerAddress // USDC returns here after hook
+  recipient: payerAddress // ← Merchant address (USDC goes here)
 });
 
-// Result: NFT minted to payer + USDC returned to payer
+// Result: NFT minted to payer + payment transferred to merchant

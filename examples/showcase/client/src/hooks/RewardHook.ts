@@ -16,8 +16,10 @@
  * // Encode hookData for reward distribution
  * const hookData = RewardHook.encode({
  *   rewardToken: '0x...',
- *   merchant: '0x...',
  * });
+ * 
+ * // The merchant address is passed via the `recipient` parameter in execute()
+ * // The hook will transfer payment to `recipient` (merchant) and distribute rewards to payer
  * ```
  */
 
@@ -28,12 +30,14 @@ import type { Address } from "viem";
  * Reward Hook Configuration
  * 
  * Defines the parameters needed to distribute rewards during payment settlement.
+ * 
+ * Note: After refactoring, the merchant address is passed via the `recipient`
+ * parameter in the execute call, not in hookData. This simplifies the encoding
+ * and makes it consistent with the SettlementRouter's `payTo` parameter.
  */
 export interface RewardConfig {
   /** Address of the ERC20 reward token contract */
   rewardToken: Address;
-  /** Address that receives the payment (merchant) */
-  merchant: Address;
 }
 
 /**
@@ -124,14 +128,16 @@ export class RewardHook {
    * The RewardHook contract expects a specific ABI-encoded struct format.
    * This method handles the encoding for you.
    * 
+   * After refactoring, the config only contains the reward token address.
+   * The merchant address is passed via the `recipient` parameter in execute().
+   * 
    * @param config - The reward configuration
    * @returns ABI-encoded hookData ready to use with x402x execute
    * 
    * @example
    * ```typescript
    * const hookData = RewardHook.encode({
-   *   rewardToken: '0x123...',
-   *   merchant: '0xabc...'
+   *   rewardToken: '0x123...'
    * });
    * 
    * // Use with x402x client
@@ -139,7 +145,7 @@ export class RewardHook {
    *   hook: RewardHook.getAddress('base-sepolia'),
    *   hookData,
    *   amount: '100000',
-   *   recipient: merchantAddress
+   *   recipient: merchantAddress  // ← Merchant receives payment here
    * });
    * // Payer automatically receives reward tokens!
    * ```
@@ -148,7 +154,6 @@ export class RewardHook {
     // Encode as tuple matching the Solidity struct:
     // struct RewardConfig {
     //   address rewardToken;
-    //   address merchant;
     // }
     return encodeAbiParameters(
       [
@@ -156,14 +161,12 @@ export class RewardHook {
           type: "tuple",
           components: [
             { name: "rewardToken", type: "address" },
-            { name: "merchant", type: "address" },
           ],
         },
       ],
       [
         {
           rewardToken: config.rewardToken,
-          merchant: config.merchant,
         },
       ],
     );
