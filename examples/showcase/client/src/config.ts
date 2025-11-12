@@ -13,13 +13,13 @@
 import { Chain } from 'viem';
 import { evm } from 'x402/types';
 
-// Re-export xLayerTestnet from evm namespace
-const { xLayerTestnet } = evm;
+// Re-export chains from evm namespace
+const { xLayerTestnet, xLayer } = evm;
 
 /**
  * Supported network identifiers
  */
-export type Network = 'base-sepolia' | 'x-layer-testnet';
+export type Network = 'base-sepolia' | 'x-layer-testnet' | 'base' | 'x-layer';
 
 /**
  * UI-specific network configuration
@@ -61,6 +61,16 @@ export const NETWORK_UI_CONFIG: Record<Network, NetworkUIConfig> = {
     displayName: 'X Layer Testnet',
     faucetUrl: 'https://www.okx.com/xlayer/faucet',
   },
+  'base': {
+    icon: '🔵',
+    displayName: 'Base Mainnet',
+    faucetUrl: 'https://docs.base.org/docs/tools/bridge-funds/',
+  },
+  'x-layer': {
+    icon: '⭕',
+    displayName: 'X Layer',
+    faucetUrl: 'https://www.okx.com/xlayer/bridge',
+  },
 };
 
 /**
@@ -94,6 +104,8 @@ export function getNetworkConfig(network: Network): NetworkConfig {
 export const NETWORKS: Record<Network, NetworkConfig> = {
   'base-sepolia': getNetworkConfig('base-sepolia'),
   'x-layer-testnet': getNetworkConfig('x-layer-testnet'),
+  'base': getNetworkConfig('base'),
+  'x-layer': getNetworkConfig('x-layer'),
 };
 
 /**
@@ -182,5 +194,5 @@ export const config = {
   networks: NETWORKS,
 };
 
-// Re-export xLayerTestnet for wagmi config (from evm namespace)
-export { xLayerTestnet };
+// Re-export chains for wagmi config
+export { xLayerTestnet, xLayer };

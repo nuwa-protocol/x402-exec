@@ -34,6 +34,8 @@ const NFT_ABI = [
 const NFT_ADDRESSES: Record<string, string> = {
   'base-sepolia': import.meta.env.VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
   'x-layer-testnet': import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
+  'base': import.meta.env.VITE_BASE_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
+  'x-layer': import.meta.env.VITE_X_LAYER_RANDOM_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
 };
 
 export interface NFTNetworkData {
@@ -57,6 +59,22 @@ export function useAllNetworksNFTData() {
     },
     'x-layer-testnet': {
       network: 'x-layer-testnet',
+      totalSupply: 0,
+      maxSupply: 0,
+      remainingSupply: 0,
+      loading: true,
+      error: null,
+    },
+    'base': {
+      network: 'base',
+      totalSupply: 0,
+      maxSupply: 0,
+      remainingSupply: 0,
+      loading: true,
+      error: null,
+    },
+    'x-layer': {
+      network: 'x-layer',
       totalSupply: 0,
       maxSupply: 0,
       remainingSupply: 0,

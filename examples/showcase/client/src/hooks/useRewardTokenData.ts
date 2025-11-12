@@ -34,6 +34,8 @@ const ERC20_ABI = [
 const REWARD_TOKEN_ADDRESSES: Record<string, string> = {
   'base-sepolia': import.meta.env.VITE_BASE_SEPOLIA_REWARD_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
   'x-layer-testnet': import.meta.env.VITE_X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
+  'base': import.meta.env.VITE_BASE_REWARD_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
+  'x-layer': import.meta.env.VITE_X_LAYER_REWARD_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
 };
 
 export interface RewardTokenNetworkData {
@@ -57,6 +59,22 @@ export function useAllNetworksRewardTokenData(userAddress?: Address) {
     },
     'x-layer-testnet': {
       network: 'x-layer-testnet',
+      userBalance: '0',
+      contractBalance: '0',
+      totalSupply: '0',
+      loading: true,
+      error: null,
+    },
+    'base': {
+      network: 'base',
+      userBalance: '0',
+      contractBalance: '0',
+      totalSupply: '0',
+      loading: true,
+      error: null,
+    },
+    'x-layer': {
+      network: 'x-layer',
       userBalance: '0',
       contractBalance: '0',
       totalSupply: '0',

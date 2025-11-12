@@ -50,6 +50,8 @@ function getNFTMintHookAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
     "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "base": (import.meta.env.VITE_BASE_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer": (import.meta.env.VITE_X_LAYER_NFT_MINT_HOOK_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -63,6 +65,8 @@ function getRandomNFTAddresses(): Record<string, Address> {
   return {
     "base-sepolia": (import.meta.env.VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
     "x-layer-testnet": (import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "base": (import.meta.env.VITE_BASE_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
+    "x-layer": (import.meta.env.VITE_X_LAYER_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000") as Address,
   };
 }
 
@@ -84,9 +88,23 @@ export class NFTMintHook {
     const address = addresses[network];
     
     if (!address || address === "0x0000000000000000000000000000000000000000") {
-      const envVarName = network === 'base-sepolia' 
-        ? 'VITE_BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS'
-        : 'VITE_X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS';
+      let envVarName: string;
+      switch (network) {
+        case 'base-sepolia':
+          envVarName = 'VITE_BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS';
+          break;
+        case 'x-layer-testnet':
+          envVarName = 'VITE_X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS';
+          break;
+        case 'base':
+          envVarName = 'VITE_BASE_NFT_MINT_HOOK_ADDRESS';
+          break;
+        case 'x-layer':
+          envVarName = 'VITE_X_LAYER_NFT_MINT_HOOK_ADDRESS';
+          break;
+        default:
+          envVarName = `VITE_${network.toUpperCase().replace(/-/g, '_')}_NFT_MINT_HOOK_ADDRESS`;
+      }
       throw new Error(
         `NFTMintHook address not configured for network "${network}". ` +
         `Please set ${envVarName} in .env file.`
@@ -110,9 +128,23 @@ export class NFTMintHook {
     const address = addresses[network];
     
     if (!address || address === "0x0000000000000000000000000000000000000000") {
-      const envVarName = network === 'base-sepolia' 
-        ? 'VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS'
-        : 'VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS';
+      let envVarName: string;
+      switch (network) {
+        case 'base-sepolia':
+          envVarName = 'VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS';
+          break;
+        case 'x-layer-testnet':
+          envVarName = 'VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS';
+          break;
+        case 'base':
+          envVarName = 'VITE_BASE_RANDOM_NFT_ADDRESS';
+          break;
+        case 'x-layer':
+          envVarName = 'VITE_X_LAYER_RANDOM_NFT_ADDRESS';
+          break;
+        default:
+          envVarName = `VITE_${network.toUpperCase().replace(/-/g, '_')}_RANDOM_NFT_ADDRESS`;
+      }
       throw new Error(
         `Random NFT contract address not configured for network "${network}". ` +
         `Please set ${envVarName} in .env file.`

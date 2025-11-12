@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { getServerUrl } from '../config';
+import { useChainId } from 'wagmi';
+import { getServerUrl, getNetworkByChainId } from '../config';
 import { PaymentDialog } from '../components/PaymentDialog';
 import { CodeBlock } from '../components/CodeBlock';
 import premiumDownloadClientCode from '../code-examples/premium-download-client.ts?raw';
@@ -14,6 +15,10 @@ interface DownloadResult {
 }
 
 export function PremiumDownload() {
+  const chainId = useChainId();
+  const currentNetwork = chainId ? getNetworkByChainId(chainId) : undefined;
+  const isMainnet = currentNetwork === 'base' || currentNetwork === 'x-layer';
+  
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +73,28 @@ export function PremiumDownload() {
           Purchase the exclusive <strong>"x402 Protocol Whitepaper"</strong> PDF for{' '}
           <strong>$0.10 USDC</strong>. This content requires server-side processing for secure delivery.
         </p>
+
+        {/* Mainnet Warning */}
+        {isMainnet && (
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '15px',
+              backgroundColor: '#fff3cd',
+              borderRadius: '8px',
+              borderLeft: '4px solid #ffc107',
+            }}
+          >
+            <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>⚠️ Mainnet Not Supported</h4>
+            <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#856404', lineHeight: 1.6 }}>
+              Premium Download scenario is currently only available on testnets because it requires server-side verification.
+              Please switch to <strong>Base Sepolia</strong> or <strong>X Layer Testnet</strong> to try this feature.
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
+              💡 <em>Other scenarios (Split Payment, NFT Mint, Reward Points) support both mainnet and testnet.</em>
+            </p>
+          </div>
+        )}
 
         {/* Features */}
         <div
@@ -150,14 +177,18 @@ export function PremiumDownload() {
       <div className="scenario-form">
         <button
           onClick={handlePurchase}
-          disabled={!!downloadResult}
+          disabled={!!downloadResult || isMainnet}
           className="btn-pay"
           style={{
-            opacity: downloadResult ? 0.6 : 1,
-            cursor: downloadResult ? 'not-allowed' : 'pointer'
+            opacity: (downloadResult || isMainnet) ? 0.6 : 1,
+            cursor: (downloadResult || isMainnet) ? 'not-allowed' : 'pointer'
           }}
         >
-          {downloadResult ? '✅ Purchased' : '💳 Purchase & Download ($0.1 USDC)'}
+          {isMainnet 
+            ? '⚠️ Not Available on Mainnet' 
+            : downloadResult 
+              ? '✅ Purchased' 
+              : '💳 Purchase & Download ($0.1 USDC)'}
         </button>
 
         {downloadResult && (

@@ -1,16 +1,16 @@
 /**
  * Wagmi configuration for wallet connection
- * Supports multiple networks: Base Sepolia and X-Layer Testnet
+ * Supports multiple networks: Base Sepolia, X-Layer Testnet, Base Mainnet, X-Layer Mainnet
  */
 
 import { http, createConfig } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { base, baseSepolia } from 'wagmi/chains';
 import { injected, metaMask, coinbaseWallet } from 'wagmi/connectors';
-import { xLayerTestnet } from './config';
+import { xLayerTestnet, xLayer } from './config';
 
 // Configure wagmi with multiple wallet connectors and chains
 export const config = createConfig({
-  chains: [baseSepolia, xLayerTestnet],
+  chains: [baseSepolia, xLayerTestnet, base, xLayer],
   connectors: [
     // Explicitly target specific wallets to avoid conflicts
     metaMask(),
@@ -23,6 +23,8 @@ export const config = createConfig({
   transports: {
     [baseSepolia.id]: http(),
     [xLayerTestnet.id]: http(),
+    [base.id]: http(),
+    [xLayer.id]: http(),
   },
   // Enable multi-injected provider discovery (for multi-wallet support)
   multiInjectedProviderDiscovery: true,
