@@ -13,4 +13,4 @@ packages:
   - 'examples/showcase/client'
 
   # Website Project
-  - 'web'
+  - 'web/frontend'
