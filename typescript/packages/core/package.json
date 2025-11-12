@@ -36,7 +36,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "viem": "^2.17.0",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.2"
+    "x402": "npm:@x402x/x402@0.6.6-patch.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

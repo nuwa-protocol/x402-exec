@@ -58,7 +58,8 @@ describe("networks", () => {
   it("should have valid USDC configuration for x-layer mainnet", () => {
     const usdc = networks["x-layer"].usdc;
     expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(usdc.name).toBe("USDC");
+    // Note: x-layer uses "USD Coin" as the name, not "USDC"
+    expect(usdc.name).toBe("USD Coin");
     expect(usdc.version).toBe("2");
   });
 
