@@ -29,7 +29,6 @@ export type {
   CommitmentParams,
   NetworkConfig,
   SettlementExtra,
-  FacilitatorConfig,
   PaymentRequirements,
   PaymentPayload,
   SettleResponse,
@@ -55,13 +54,12 @@ export { TransferHook } from "./hooks/index.js";
 // Export helper functions
 export { addSettlementExtra } from "./utils.js";
 
-// Export facilitator utilities
+// Export facilitator API client utilities
 export {
-  isSettlementMode,
-  settleWithRouter,
-  validateSettlementRouter,
   calculateFacilitatorFee,
   clearFeeCache,
+  isSettlementMode,
+  parseSettlementExtra,
 } from "./facilitator.js";
 
 export type { FeeCalculationResult } from "./facilitator.js";

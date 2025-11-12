@@ -104,7 +104,7 @@ describe("settlement", () => {
           "0x32431D4511e061F1133520461B07eC42afF157D6",
           allowedRouters,
         ),
-      ).toThrow("not in whitelist");
+      ).toThrow("No allowed settlement routers configured");
     });
 
     it("should handle multiple routers in whitelist", () => {

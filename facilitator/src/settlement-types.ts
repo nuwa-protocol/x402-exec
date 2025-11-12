@@ -40,4 +40,3 @@ export interface SettlementConfig {
  * Re-exported from @x402x/core for convenience
  */
 export { SettlementExtraError } from "@x402x/core";
-

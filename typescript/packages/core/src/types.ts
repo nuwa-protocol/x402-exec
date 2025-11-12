@@ -85,20 +85,6 @@ export interface SettlementExtra {
 }
 
 /**
- * Facilitator configuration
- */
-export interface FacilitatorConfig {
-  /** Allowed SettlementRouter addresses per network */
-  allowedRouters: Record<string, string[]>;
-  /** Allowed Hook addresses per network (optional, for security) */
-  allowedHooks?: Record<string, string[]>;
-  /** Maximum gas limit for settlement transactions (optional, for security) */
-  maxGasLimit?: number;
-  /** Gas limit for the settlement transaction (optional, overrides maxGasLimit if provided) */
-  gasLimit?: number;
-}
-
-/**
  * Error thrown when settlement extra parameters are invalid
  */
 export class SettlementExtraError extends Error {
@@ -107,4 +93,3 @@ export class SettlementExtraError extends Error {
     this.name = "SettlementExtraError";
   }
 }
-
