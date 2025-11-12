@@ -92,11 +92,16 @@ export function createFeeValidationMiddleware(
         });
       }
 
-      // Compare fees
+      // Compare fees with tolerance
       const providedFee = BigInt(facilitatorFee);
       const requiredFee = BigInt(feeCalculation.minFacilitatorFee);
 
-      if (providedFee < requiredFee) {
+      // Apply validation tolerance: threshold = requiredFee * (1 - tolerance)
+      // This allows for small price fluctuations between fee calculation and validation
+      const toleranceMultiplier = 1 - config.validationTolerance;
+      const threshold = BigInt(Math.floor(Number(requiredFee) * toleranceMultiplier));
+
+      if (providedFee < threshold) {
         logger.warn(
           {
             network,
@@ -104,16 +109,21 @@ export function createFeeValidationMiddleware(
             providedFee: facilitatorFee,
             requiredFee: feeCalculation.minFacilitatorFee,
             requiredFeeUSD: feeCalculation.minFacilitatorFeeUSD,
+            threshold: threshold.toString(),
+            validationTolerance: config.validationTolerance,
+            tolerancePercent: `${(config.validationTolerance * 100).toFixed(1)}%`,
           },
-          "Facilitator fee below minimum requirement",
+          "Facilitator fee below minimum requirement (with tolerance)",
         );
 
         return res.status(400).json({
           error: "Insufficient facilitator fee",
-          message: `Facilitator fee ${facilitatorFee} is below minimum requirement ${feeCalculation.minFacilitatorFee} (${feeCalculation.minFacilitatorFeeUSD} USD)`,
+          message: `Facilitator fee ${facilitatorFee} is below minimum requirement ${feeCalculation.minFacilitatorFee} (${feeCalculation.minFacilitatorFeeUSD} USD) with ${(config.validationTolerance * 100).toFixed(1)}% tolerance`,
           providedFee: facilitatorFee,
           minFacilitatorFee: feeCalculation.minFacilitatorFee,
           minFacilitatorFeeUSD: feeCalculation.minFacilitatorFeeUSD,
+          threshold: threshold.toString(),
+          validationTolerance: config.validationTolerance,
           breakdown: {
             gasLimit: feeCalculation.gasLimit,
             maxGasLimit: feeCalculation.maxGasLimit,
@@ -133,6 +143,9 @@ export function createFeeValidationMiddleware(
           hook,
           providedFee: facilitatorFee,
           requiredFee: feeCalculation.minFacilitatorFee,
+          threshold: threshold.toString(),
+          validationTolerance: config.validationTolerance,
+          margin: `${(((Number(providedFee) - Number(threshold)) / Number(threshold)) * 100).toFixed(2)}%`,
         },
         "Facilitator fee validated successfully",
       );

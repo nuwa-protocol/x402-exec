@@ -25,6 +25,7 @@ export interface GasCostConfig {
   maxGasLimit: number;
   hookWhitelistEnabled: boolean;
   allowedHooks: Record<string, string[]>;
+  validationTolerance: number; // Tolerance for fee validation (0-1, e.g., 0.1 = 10%)
 }
 
 /**

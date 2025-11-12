@@ -367,6 +367,7 @@ function parseGasCostConfig(): GasCostConfig {
     maxGasLimit: parseInt(process.env.GAS_COST_MAX_GAS_LIMIT || "500000"),
     hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true", // Disabled by default
     allowedHooks: parseAllowedHooks(),
+    validationTolerance: parseFloat(process.env.GAS_COST_VALIDATION_TOLERANCE || "0.1"), // 10% tolerance by default
   };
 }
 

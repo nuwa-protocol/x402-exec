@@ -59,9 +59,10 @@ Or clone and run from source (see [Development](#development) section below).
   - Configurable gas limit cap per transaction (default: 500k)
   - Prevents excessive gas consumption even from whitelisted Hooks
   - Additional safety layer against gas attacks
-- **Facilitator Fee Validation** 🆕: Ensures profitability
+- **Facilitator Fee Validation** 🆕: Ensures profitability with dynamic tolerance
   - Automatic minimum fee calculation based on gas costs
   - Validates fees cover transaction costs before execution
+  - 10% tolerance for price fluctuations between calculation and validation
   - Prevents facilitator from accepting unprofitable settlements
 - **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
@@ -165,11 +166,11 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Testnet SettlementRou
 # Server port (default: 3000)
 PORT=3000
 
-# Rate Limiting (生产环境推荐启用)
+# Rate Limiting (recommended for production)
 RATE_LIMIT_ENABLED=true
-RATE_LIMIT_VERIFY_MAX=100  # verify 端点每分钟最大请求数
-RATE_LIMIT_SETTLE_MAX=20   # settle 端点每分钟最大请求数
-RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
+RATE_LIMIT_VERIFY_MAX=100
+RATE_LIMIT_SETTLE_MAX=20
+RATE_LIMIT_WINDOW_MS=60000
 
 # CORS Configuration (for client-side SDK support)
 # CORS_ORIGIN=*                    # Allow all origins (default, for testing)
@@ -177,7 +178,7 @@ RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
 # CORS_ORIGIN=https://app1.com,https://app2.com  # Multiple origins (comma-separated)
 
 # Input Validation
-REQUEST_BODY_LIMIT=1mb     # 请求体大小限制
+REQUEST_BODY_LIMIT=1mb
 
 # Logging level (default: info)
 LOG_LEVEL=info
@@ -337,6 +338,11 @@ HOOK_WHITELIST_ENABLED=true
 
 # Enable fee validation (default: true)
 GAS_COST_VALIDATION_ENABLED=true
+
+# Fee validation tolerance (default: 0.1 = 10%)
+# Allows provided fee to be up to 10% below the calculated minimum
+# This handles price fluctuations between fee calculation and validation
+GAS_COST_VALIDATION_TOLERANCE=0.1
 
 # Maximum gas limit per transaction
 GAS_COST_MAX_GAS_LIMIT=500000

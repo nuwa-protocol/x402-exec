@@ -18,21 +18,31 @@ import {
 import { createMockEvmSigner } from "../mocks/signers.js";
 
 // Mock @x402x/core
-vi.mock("@x402x/core", () => ({
-  isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
-  validateSettlementRouter: vi.fn((network, router, whitelist) => {
-    const allowed = whitelist[network] || [];
-    if (!allowed.includes(router)) {
-      throw new Error(`Router ${router} not in whitelist for network ${network}`);
+vi.mock("@x402x/core", () => {
+  class MockSettlementExtraError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "SettlementExtraError";
     }
-  }),
-  settleWithRouter: vi.fn(async () => ({
-    success: true,
-    transaction: "0xtxhash123",
-    payer: "0x1234567890123456789012345678901234567890",
-    network: "base-sepolia",
-  })),
-}));
+  }
+
+  return {
+    isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
+    validateSettlementRouter: vi.fn((network, router, whitelist) => {
+      const allowed = whitelist[network] || [];
+      if (!allowed.includes(router)) {
+        throw new Error(`Router ${router} not in whitelist for network ${network}`);
+      }
+    }),
+    settleWithRouter: vi.fn(async () => ({
+      success: true,
+      transaction: "0xtxhash123",
+      payer: "0x1234567890123456789012345678901234567890",
+      network: "base-sepolia",
+    })),
+    SettlementExtraError: MockSettlementExtraError,
+  };
+});
 
 describe("settlement", () => {
   describe("isSettlementMode", () => {
