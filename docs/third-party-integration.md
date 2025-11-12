@@ -17,7 +17,7 @@ This is the simplest approach, using npm's alias feature to automatically replac
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@^0.6.6-patch.1"
+    "x402": "npm:@x402x/x402@0.6.6-patch.2"
   }
 }
 ```
@@ -29,17 +29,17 @@ This is the simplest approach, using npm's alias feature to automatically replac
 
 **Using npm:**
 ```bash
-npm install x402@npm:@x402x/x402@^0.6.6-patch.1
+npm install x402@npm:@x402x/x402@0.6.6-patch.2
 ```
 
 **Using pnpm:**
 ```bash
-pnpm add x402@npm:@x402x/x402@^0.6.6-patch.1
+pnpm add x402@npm:@x402x/x402@0.6.6-patch.2
 ```
 
 **Using yarn:**
 ```bash
-yarn add x402@npm:@x402x/x402@^0.6.6-patch.1
+yarn add x402@npm:@x402x/x402@0.6.6-patch.2
 ```
 
 ### Method 2: Direct Installation
@@ -118,7 +118,7 @@ async function handlePayment(paymentPayload: PaymentPayload) {
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@^0.6.6-patch.1",
+    "x402": "npm:@x402x/x402@0.6.6-patch.2",
     "x402-fetch": "^0.6.6",     // Use official version
     "x402-hono": "^0.6.5",       // Use official version
     "x402-express": "^0.6.6"     // Use official version

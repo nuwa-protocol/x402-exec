@@ -62,15 +62,7 @@ export async function signAuthorization(
       version: settlement.networkConfig.usdc.version,
       chainId: settlement.networkConfig.chainId,
       verifyingContract: getAddress(settlement.token),
-    };
-
-    console.log("[x402x/client] EIP-712 Domain for signing:", {
-      name: domain.name,
-      version: domain.version,
-      chainId: domain.chainId,
-      verifyingContract: domain.verifyingContract,
-      network: settlement.network,
-    });
+    }; 
 
     // Build EIP-712 message
     // The "to" address is the SettlementRouter (not the final recipient)
