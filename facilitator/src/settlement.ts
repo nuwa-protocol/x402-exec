@@ -4,25 +4,32 @@
  * This module provides functions for detecting and handling settlement mode payments
  * that use the SettlementRouter contract for extended business logic via Hooks.
  *
- * Most functionality is re-exported from @x402x/core with added logging.
+ * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
-import type { PaymentPayload, PaymentRequirements, SettleResponse, Signer } from "x402/types";
+import type { PaymentPayload, PaymentRequirements, Signer } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import {
+  SettlementExtraError,
+  SETTLEMENT_ROUTER_ABI,
   isSettlementMode as isSettlementModeCore,
-  validateSettlementRouter as validateSettlementRouterCore,
-  settleWithRouter as settleWithRouterCore,
-  type GasMetrics,
-  type SettleResponseWithMetrics,
+  parseSettlementExtra as parseSettlementExtraCore,
+  getNetworkConfig,
 } from "@x402x/core";
-import { SettlementExtraError } from "./types.js";
+import type { Address, Hex } from "viem";
+import { parseErc6492Signature } from "viem/utils";
 import { getLogger } from "./telemetry.js";
+import { calculateGasMetrics } from "./gas-metrics.js";
+import type { SettleResponseWithMetrics } from "./settlement-types.js";
+import { calculateEffectiveGasLimit, type GasCostConfig } from "./gas-cost.js";
+import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
+
+const logger = getLogger();
 
 /**
  * Check if a payment request requires SettlementRouter mode
  *
- * Re-exported from @x402x/core for backward compatibility
+ * Re-exported from @x402x/core for convenience.
  *
  * @param paymentRequirements - The payment requirements from the 402 response
  * @returns True if settlement mode is required (extra.settlementRouter exists)
@@ -34,8 +41,6 @@ export function isSettlementMode(paymentRequirements: PaymentRequirements): bool
 /**
  * Validate SettlementRouter address against whitelist
  *
- * Wrapper around @x402x/core's validateSettlementRouter with additional logging
- *
  * @param network - The network name (e.g., "base-sepolia", "x-layer-testnet")
  * @param routerAddress - The SettlementRouter address to validate
  * @param allowedRouters - Whitelist of allowed router addresses per network
@@ -46,53 +51,129 @@ export function validateSettlementRouter(
   routerAddress: string,
   allowedRouters: Record<string, string[]>,
 ): void {
-  const logger = getLogger();
+  const allowedForNetwork = allowedRouters[network];
 
-  try {
-    // Use core validation logic
-    validateSettlementRouterCore(network, routerAddress, allowedRouters);
-
-    // Log success
-    logger.info(
-      {
-        network,
-        routerAddress,
-      },
-      "Settlement router validated",
-    );
-  } catch (error) {
-    // Log validation failure
+  if (!allowedForNetwork || allowedForNetwork.length === 0) {
     logger.error(
       {
         network,
         routerAddress,
-        allowedAddresses: allowedRouters[network] || [],
-        error: error instanceof Error ? error.message : String(error),
       },
-      "Settlement router validation failed",
+      "No allowed settlement routers configured for network",
     );
-    throw error;
+    throw new SettlementExtraError(
+      `No allowed settlement routers configured for network: ${network}`,
+    );
   }
+
+  const normalizedRouter = routerAddress.toLowerCase();
+  const isAllowed = allowedForNetwork.some((allowed) => allowed.toLowerCase() === normalizedRouter);
+
+  if (!isAllowed) {
+    logger.error(
+      {
+        network,
+        routerAddress,
+        allowedAddresses: allowedForNetwork,
+      },
+      "Settlement router not in whitelist",
+    );
+    throw new SettlementExtraError(
+      `Settlement router ${routerAddress} is not in whitelist for network ${network}. ` +
+        `Allowed: ${allowedForNetwork.join(", ")}`,
+    );
+  }
+
+  logger.info(
+    {
+      network,
+      routerAddress,
+    },
+    "Settlement router validated",
+  );
+}
+
+/**
+ * Validate token address (only USDC is currently supported)
+ *
+ * @param network - The network name (e.g., "base-sepolia", "x-layer-testnet")
+ * @param tokenAddress - The token address to validate
+ * @throws SettlementExtraError if token is not supported
+ */
+export function validateTokenAddress(network: string, tokenAddress: string): void {
+  const networkConfig = getNetworkConfig(network);
+  const expectedUsdcAddress = networkConfig.usdc.address.toLowerCase();
+  const actualTokenAddress = tokenAddress.toLowerCase();
+
+  if (actualTokenAddress !== expectedUsdcAddress) {
+    logger.error(
+      {
+        network,
+        providedToken: tokenAddress,
+        expectedToken: networkConfig.usdc.address,
+      },
+      "Unsupported token address detected in settlement",
+    );
+    throw new SettlementExtraError(
+      `Only USDC is currently supported for settlement on ${network}. ` +
+        `Expected: ${networkConfig.usdc.address}, Got: ${tokenAddress}`,
+    );
+  }
+
+  logger.debug(
+    {
+      network,
+      tokenAddress: networkConfig.usdc.address,
+    },
+    "Token address validated",
+  );
+}
+
+/**
+ * Parse and validate settlement extra parameters
+ *
+ * Uses @x402x/core's parseSettlementExtra for validation.
+ *
+ * @param extra - Extra field from PaymentRequirements
+ * @returns Parsed settlement extra parameters
+ * @throws SettlementExtraError if parameters are invalid
+ */
+function parseSettlementExtra(extra: unknown): {
+  settlementRouter: string;
+  salt: string;
+  payTo: string;
+  facilitatorFee: string;
+  hook: string;
+  hookData: string;
+} {
+  return parseSettlementExtraCore(extra);
 }
 
 /**
  * Settle payment using SettlementRouter contract
  *
- * Wrapper around @x402x/core's settleWithRouter with additional logging and observability.
- * The core implementation:
- * 1. Validates SettlementRouter address against whitelist (SECURITY)
- * 2. Verifies the EIP-3009 authorization
- * 3. Transfers tokens from payer to Router
- * 4. Deducts facilitator fee
- * 5. Executes the Hook with remaining amount
- * 6. Ensures Router doesn't hold funds
+ * Directly calls SettlementRouter.settleAndExecute which:
+ * 1. Verifies the EIP-3009 authorization
+ * 2. Transfers tokens from payer to Router
+ * 3. Deducts facilitator fee
+ * 4. Executes the Hook with remaining amount
+ * 5. Ensures Router doesn't hold funds
+ *
+ * This function implements:
+ * - Router whitelist validation (SECURITY)
+ * - Dynamic gas limit calculation based on facilitator fee
+ * - Gas cost tracking and profitability metrics
+ * - Detailed logging for monitoring
+ * - Warning on unprofitable settlements
  *
  * @param signer - The facilitator's wallet signer (must support EVM)
  * @param paymentPayload - The payment payload with authorization and signature
  * @param paymentRequirements - The payment requirements with settlement extra parameters
  * @param allowedRouters - Whitelist of allowed SettlementRouter addresses per network
+ * @param gasCostConfig - Gas cost configuration for dynamic gas limit
+ * @param dynamicGasPriceConfig - Dynamic gas price configuration
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
- * @returns SettleResponse indicating success or failure with gas metrics
+ * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
 export async function settleWithRouter(
@@ -100,108 +181,214 @@ export async function settleWithRouter(
   paymentPayload: PaymentPayload,
   paymentRequirements: PaymentRequirements,
   allowedRouters: Record<string, string[]>,
+  gasCostConfig?: GasCostConfig,
+  dynamicGasPriceConfig?: DynamicGasPriceConfig,
   nativeTokenPrices?: Record<string, number>,
 ): Promise<SettleResponseWithMetrics> {
-  const logger = getLogger();
-
   try {
-    // Ensure signer is EVM signer
+    // 1. Ensure signer is EVM signer
     if (!isEvmSignerWallet(signer)) {
       throw new Error("Settlement Router requires an EVM signer");
     }
 
+    const network = paymentRequirements.network;
+    const asset = paymentRequirements.asset;
+
+    // 2. Validate token address (SECURITY: only USDC is currently supported)
+    validateTokenAddress(network, asset);
+
+    // 3. Parse settlement extra parameters
+    const extra = parseSettlementExtra(paymentRequirements.extra);
+
     logger.debug(
       {
-        network: paymentRequirements.network,
-        router: paymentRequirements.extra?.settlementRouter,
+        network,
+        asset,
+        router: extra.settlementRouter,
+        facilitatorFee: extra.facilitatorFee,
       },
       "Starting settlement with router",
     );
 
-    // Use @x402x/core's settleWithRouter (includes validation)
-    const result = await settleWithRouterCore(signer as any, paymentPayload, paymentRequirements, {
-      allowedRouters,
-    });
+    // 4. Validate SettlementRouter address against whitelist (SECURITY)
+    validateSettlementRouter(network, extra.settlementRouter, allowedRouters);
 
-    // Enhance gas metrics with actual native token price if available
-    if (result.success && result.gasMetrics && nativeTokenPrices) {
-      const network = paymentRequirements.network;
-      const nativePrice = nativeTokenPrices[network];
+    // 5. Parse authorization and signature from payload
+    const payload = paymentPayload.payload;
 
-      if (nativePrice && nativePrice > 0) {
-        // Recalculate USD values with actual token price
-        const actualGasCostNative = parseFloat(result.gasMetrics.actualGasCostNative);
-        const actualGasCostUSD = (actualGasCostNative * nativePrice).toFixed(6);
-        const facilitatorFeeUSD = result.gasMetrics.facilitatorFeeUSD;
-        const profitUSD = (parseFloat(facilitatorFeeUSD) - parseFloat(actualGasCostUSD)).toFixed(6);
-        const profitMarginPercent =
-          parseFloat(facilitatorFeeUSD) > 0
-            ? ((parseFloat(profitUSD) / parseFloat(facilitatorFeeUSD)) * 100).toFixed(2)
-            : "0.00";
-
-        // Update gas metrics
-        result.gasMetrics.actualGasCostUSD = actualGasCostUSD;
-        result.gasMetrics.profitUSD = profitUSD;
-        result.gasMetrics.profitMarginPercent = profitMarginPercent;
-        result.gasMetrics.profitable = parseFloat(profitUSD) >= 0;
-        result.gasMetrics.nativeTokenPriceUSD = nativePrice.toFixed(2);
-      }
+    // Type guard: ensure this is an EVM payload with authorization and signature
+    if (!payload || typeof payload !== "object" || !("authorization" in payload)) {
+      throw new Error("Missing authorization in payment payload");
     }
 
-    // Log settlement success with gas metrics
-    if (result.success && result.gasMetrics) {
-      const metrics = result.gasMetrics;
+    if (!("signature" in payload) || !payload.signature) {
+      throw new Error("Missing signature in payment payload");
+    }
 
-      logger.info(
-        {
-          transaction: result.transaction,
-          payer: result.payer,
-          network: paymentRequirements.network,
-          hook: paymentRequirements.extra?.hook,
-          gasMetrics: {
-            gasUsed: metrics.gasUsed,
-            effectiveGasPrice: metrics.effectiveGasPrice,
-            actualGasCostNative: metrics.actualGasCostNative,
-            actualGasCostUSD: metrics.actualGasCostUSD,
-            facilitatorFee: metrics.facilitatorFee,
-            facilitatorFeeUSD: metrics.facilitatorFeeUSD,
-            profitUSD: metrics.profitUSD,
-            profitMarginPercent: metrics.profitMarginPercent,
-            profitable: metrics.profitable,
+    // Now we can safely access the EVM payload fields
+    type EvmPayload = { authorization: any; signature: string };
+    const evmPayload = payload as EvmPayload;
+    const authorization = evmPayload.authorization;
+    const { signature } = parseErc6492Signature(evmPayload.signature as Hex);
+
+    // 6. Calculate effective gas limit if config is provided
+    let effectiveGasLimit: bigint | undefined;
+    let gasLimitMode = "static";
+
+    if (gasCostConfig && dynamicGasPriceConfig) {
+      try {
+        // Get current gas price for the network
+        const gasPrice = await getGasPrice(network, gasCostConfig, dynamicGasPriceConfig);
+
+        // Get native token price
+        const nativePrice = nativeTokenPrices?.[network] || 0;
+
+        // Calculate effective gas limit with triple constraints
+        const calculatedLimit = calculateEffectiveGasLimit(
+          extra.facilitatorFee,
+          gasPrice,
+          nativePrice,
+          gasCostConfig,
+        );
+
+        effectiveGasLimit = BigInt(calculatedLimit);
+        gasLimitMode = gasCostConfig.dynamicGasLimitMargin > 0 ? "dynamic" : "static";
+
+        logger.debug(
+          {
+            network,
+            facilitatorFee: extra.facilitatorFee,
+            gasPrice,
+            nativePrice,
+            effectiveGasLimit: calculatedLimit,
+            mode: gasLimitMode,
+            minGasLimit: gasCostConfig.minGasLimit,
+            maxGasLimit: gasCostConfig.maxGasLimit,
+            dynamicMargin: gasCostConfig.dynamicGasLimitMargin,
           },
-        },
-        "SettlementRouter transaction confirmed with gas metrics",
-      );
-
-      // Warn if unprofitable
-      if (!metrics.profitable) {
-        const lossPercent = Math.abs(parseFloat(metrics.profitMarginPercent));
+          "Calculated effective gas limit for settlement",
+        );
+      } catch (error) {
         logger.warn(
           {
-            transaction: result.transaction,
-            network: paymentRequirements.network,
-            hook: metrics.hook,
-            facilitatorFeeUSD: metrics.facilitatorFeeUSD,
-            actualGasCostUSD: metrics.actualGasCostUSD,
-            lossUSD: metrics.profitUSD,
-            lossPercent: `${lossPercent}%`,
+            error,
+            network,
           },
-          "⚠️ UNPROFITABLE SETTLEMENT: Facilitator fee did not cover gas costs",
+          "Failed to calculate dynamic gas limit, using default",
         );
+        // Continue with default gas limit
       }
-    } else {
-      // Log without gas metrics (fallback)
-      logger.info(
-        {
-          transaction: result.transaction,
-          payer: result.payer,
-          success: result.success,
-        },
-        "SettlementRouter transaction confirmed",
+    }
+
+    // 7. Call SettlementRouter.settleAndExecute
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = signer as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const publicClient = signer as any;
+
+    if (!walletClient.writeContract || !publicClient.waitForTransactionReceipt) {
+      throw new Error(
+        "Signer must be an EVM wallet client with writeContract and waitForTransactionReceipt methods",
       );
     }
 
-    return result;
+    const tx = await walletClient.writeContract({
+      address: extra.settlementRouter as Address,
+      abi: SETTLEMENT_ROUTER_ABI,
+      functionName: "settleAndExecute",
+      args: [
+        paymentRequirements.asset as Address,
+        authorization.from as Address,
+        BigInt(authorization.value),
+        BigInt(authorization.validAfter),
+        BigInt(authorization.validBefore),
+        authorization.nonce as Hex,
+        signature,
+        extra.salt as Hex,
+        extra.payTo as Address,
+        BigInt(extra.facilitatorFee),
+        extra.hook as Address,
+        extra.hookData as Hex,
+      ],
+      // Add gas limit if configured (for security against malicious hooks)
+      ...(effectiveGasLimit ? { gas: effectiveGasLimit } : {}),
+    });
+
+    // 8. Wait for transaction confirmation
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+
+    if (receipt.status !== "success") {
+      return {
+        success: false,
+        errorReason: "invalid_transaction_state",
+        transaction: tx,
+        network: paymentPayload.network,
+        payer: authorization.from,
+      };
+    }
+
+    // 9. Calculate gas metrics
+    const nativePrice = nativeTokenPrices?.[network] || 0;
+    const gasMetrics = calculateGasMetrics(
+      receipt,
+      extra.facilitatorFee,
+      extra.hook,
+      network,
+      nativePrice.toString(),
+      6, // USDC decimals (all current settlements use USDC)
+    );
+
+    // 10. Log settlement success with gas metrics
+    logger.info(
+      {
+        transaction: tx,
+        payer: authorization.from,
+        network,
+        hook: extra.hook,
+        gasLimit: {
+          value: effectiveGasLimit?.toString(),
+          mode: gasLimitMode,
+        },
+        gasMetrics: {
+          gasUsed: gasMetrics.gasUsed,
+          effectiveGasPrice: gasMetrics.effectiveGasPrice,
+          actualGasCostNative: gasMetrics.actualGasCostNative,
+          actualGasCostUSD: gasMetrics.actualGasCostUSD,
+          facilitatorFee: gasMetrics.facilitatorFee,
+          facilitatorFeeUSD: gasMetrics.facilitatorFeeUSD,
+          profitUSD: gasMetrics.profitUSD,
+          profitMarginPercent: gasMetrics.profitMarginPercent,
+          profitable: gasMetrics.profitable,
+        },
+      },
+      "SettlementRouter transaction confirmed with gas metrics",
+    );
+
+    // 11. Warn if unprofitable
+    if (!gasMetrics.profitable) {
+      const lossPercent = Math.abs(parseFloat(gasMetrics.profitMarginPercent));
+      logger.warn(
+        {
+          transaction: tx,
+          network,
+          hook: gasMetrics.hook,
+          facilitatorFeeUSD: gasMetrics.facilitatorFeeUSD,
+          actualGasCostUSD: gasMetrics.actualGasCostUSD,
+          lossUSD: gasMetrics.profitUSD,
+          lossPercent: `${lossPercent}%`,
+        },
+        "⚠️ UNPROFITABLE SETTLEMENT: Facilitator fee did not cover gas costs",
+      );
+    }
+
+    // 12. Return successful settlement response with gas metrics
+    return {
+      success: true,
+      transaction: tx,
+      network: paymentPayload.network,
+      payer: authorization.from,
+      gasMetrics,
+    };
   } catch (error) {
     logger.error(
       {
@@ -215,10 +402,11 @@ export async function settleWithRouter(
     // Extract payer from payload if available
     let payer = "";
     try {
-      const payload = paymentPayload.payload as {
-        authorization: { from: string };
-      };
-      payer = payload.authorization.from;
+      const payload = paymentPayload.payload;
+      if (payload && typeof payload === "object" && "authorization" in payload) {
+        const auth = (payload as any).authorization;
+        payer = auth?.from || "";
+      }
     } catch {
       // Ignore extraction errors
     }

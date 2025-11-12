@@ -29,13 +29,11 @@ export type {
   CommitmentParams,
   NetworkConfig,
   SettlementExtra,
-  FacilitatorConfig,
+  SettlementExtraCore,
   PaymentRequirements,
   PaymentPayload,
   SettleResponse,
   Signer,
-  GasMetrics,
-  SettleResponseWithMetrics,
 } from "./types.js";
 
 export { SettlementExtraError } from "./types.js";
@@ -57,13 +55,12 @@ export { TransferHook } from "./hooks/index.js";
 // Export helper functions
 export { addSettlementExtra } from "./utils.js";
 
-// Export facilitator utilities
+// Export facilitator API client utilities
 export {
-  isSettlementMode,
-  settleWithRouter,
-  validateSettlementRouter,
   calculateFacilitatorFee,
   clearFeeCache,
+  isSettlementMode,
+  parseSettlementExtra,
 } from "./facilitator.js";
 
 export type { FeeCalculationResult } from "./facilitator.js";

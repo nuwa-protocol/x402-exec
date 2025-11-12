@@ -76,13 +76,9 @@ export interface NetworkConfig {
 }
 
 /**
- * Settlement extra parameters for PaymentRequirements
+ * Core settlement parameters (without EIP-712 domain info)
  */
-export interface SettlementExtra {
-	/** USDC contract name (for EIP-712) */
-	name: string;
-	/** USDC contract version (for EIP-712) */
-	version: string;
+export interface SettlementExtraCore {
 	/** SettlementRouter contract address */
 	settlementRouter: string;
 	/** Unique salt for idempotency (32 bytes) */
@@ -98,15 +94,14 @@ export interface SettlementExtra {
 }
 
 /**
- * Facilitator configuration
+ * Settlement extra parameters for PaymentRequirements
+ * Includes EIP-712 domain info (name, version) for USDC signature validation
  */
-export interface FacilitatorConfig {
-	/** Allowed SettlementRouter addresses per network */
-	allowedRouters: Record<string, string[]>;
-	/** Allowed Hook addresses per network (optional, for security) */
-	allowedHooks?: Record<string, string[]>;
-	/** Maximum gas limit for settlement transactions (optional, for security) */
-	maxGasLimit?: number;
+export interface SettlementExtra extends SettlementExtraCore {
+	/** USDC contract name (for EIP-712) */
+	name: string;
+	/** USDC contract version (for EIP-712) */
+	version: string;
 }
 
 /**
@@ -117,40 +112,4 @@ export class SettlementExtraError extends Error {
 		super(message);
 		this.name = "SettlementExtraError";
 	}
-}
-
-/**
- * Gas metrics for settlement transaction monitoring
- */
-export interface GasMetrics {
-	/** Actual gas used by the transaction */
-	gasUsed: string;
-	/** Effective gas price (in Wei) */
-	effectiveGasPrice: string;
-	/** Actual gas cost in native token (ETH/BNB/etc.) */
-	actualGasCostNative: string;
-	/** Actual gas cost in USD */
-	actualGasCostUSD: string;
-	/** Facilitator fee that was charged (in token's smallest unit) */
-	facilitatorFee: string;
-	/** Facilitator fee in USD */
-	facilitatorFeeUSD: string;
-	/** Profit/loss amount (facilitatorFee - actualGasCost, in USD) */
-	profitUSD: string;
-	/** Profit margin as percentage */
-	profitMarginPercent: string;
-	/** Whether this settlement was profitable */
-	profitable: boolean;
-	/** Hook address for this settlement */
-	hook: string;
-	/** Network native token price in USD */
-	nativeTokenPriceUSD: string;
-}
-
-/**
- * Extended SettleResponse with gas metrics
- */
-export interface SettleResponseWithMetrics extends SettleResponse {
-	/** Gas metrics for monitoring (only present on successful settlements) */
-	gasMetrics?: GasMetrics;
 }

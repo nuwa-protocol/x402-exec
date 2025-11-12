@@ -55,13 +55,16 @@ Or clone and run from source (see [Development](#development) section below).
   - Only pre-approved Hooks are accepted
   - Network-specific Hook whitelists
   - Prevents unknown/malicious contracts from draining facilitator funds
-- **Gas Limit Protection** 🆕: Maximum gas limit enforcement
-  - Configurable gas limit cap per transaction (default: 500k)
-  - Prevents excessive gas consumption even from whitelisted Hooks
-  - Additional safety layer against gas attacks
-- **Facilitator Fee Validation** 🆕: Ensures profitability
+- **Dynamic Gas Limit Protection** 🆕: Prevents losses from malicious gas-consuming hooks
+  - Automatically calculates gas limit based on facilitator fee (enabled by default)
+  - Triple constraint system: minimum (ensure execution) / maximum (safety cap) / dynamic (profitability)
+  - Configurable profit margin (default 20%) reserved from fee
+  - Static maximum gas limit (5M) as absolute safety cap for L2 chains
+  - Can be disabled to use static limit only
+- **Facilitator Fee Validation** 🆕: Ensures profitability with dynamic tolerance
   - Automatic minimum fee calculation based on gas costs
   - Validates fees cover transaction costs before execution
+  - 10% tolerance for price fluctuations between calculation and validation
   - Prevents facilitator from accepting unprofitable settlements
 - **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
@@ -165,11 +168,11 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...  # X-Layer Testnet SettlementRou
 # Server port (default: 3000)
 PORT=3000
 
-# Rate Limiting (生产环境推荐启用)
+# Rate Limiting (recommended for production)
 RATE_LIMIT_ENABLED=true
-RATE_LIMIT_VERIFY_MAX=100  # verify 端点每分钟最大请求数
-RATE_LIMIT_SETTLE_MAX=20   # settle 端点每分钟最大请求数
-RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
+RATE_LIMIT_VERIFY_MAX=100
+RATE_LIMIT_SETTLE_MAX=20
+RATE_LIMIT_WINDOW_MS=60000
 
 # CORS Configuration (for client-side SDK support)
 # CORS_ORIGIN=*                    # Allow all origins (default, for testing)
@@ -177,7 +180,7 @@ RATE_LIMIT_WINDOW_MS=60000 # 时间窗口（毫秒）
 # CORS_ORIGIN=https://app1.com,https://app2.com  # Multiple origins (comma-separated)
 
 # Input Validation
-REQUEST_BODY_LIMIT=1mb     # 请求体大小限制
+REQUEST_BODY_LIMIT=1mb
 
 # Logging level (default: info)
 LOG_LEVEL=info
@@ -270,9 +273,10 @@ Malicious Resource Servers could specify Hooks that consume excessive gas, causi
 
 **Layer 2: Gas Limit Cap** (Secondary Defense)
 
-- Maximum gas limit enforced per transaction (default: 500k)
+- Maximum gas limit enforced per transaction (default: 5M)
 - Protects even against whitelisted Hook issues
 - Configurable via `GAS_COST_MAX_GAS_LIMIT`
+- Note: Dynamic gas limit provides primary economic protection based on facilitatorFee
 
 **Layer 3: Fee Validation** (Financial Protection)
 
@@ -335,16 +339,34 @@ GAS_PRICE_UPDATE_INTERVAL=60     # 1 minute
 # Enable Hook whitelist (default: false, enable for production)
 HOOK_WHITELIST_ENABLED=true
 
-# Enable fee validation (default: true)
-GAS_COST_VALIDATION_ENABLED=true
+# === Gas Cost & Security Configuration ===
 
-# Maximum gas limit per transaction
-GAS_COST_MAX_GAS_LIMIT=500000
+# Fee validation tolerance (default: 0.1 = 10%)
+# Allows provided fee to be up to 10% below the calculated minimum
+# This handles price fluctuations between fee calculation and validation
+GAS_COST_VALIDATION_TOLERANCE=0.1
 
-# Add trusted Hooks to whitelist
+# === Gas Limit Configuration ===
+# Minimum gas limit to ensure transaction can execute (default: 150000)
+GAS_COST_MIN_GAS_LIMIT=150000
+
+# Maximum gas limit per transaction - absolute upper bound (default: 5000000)
+# Acts as absolute safety cap for L2 chains (Base, X-Layer)
+# Note: Dynamic gas limit calculation provides primary economic protection
+GAS_COST_MAX_GAS_LIMIT=5000000
+
+# Profit margin reserved when calculating dynamic gas limit (default: 0.2 = 20%)
+# Higher margin = more profit reserved = lower gas limit
+# Set to 0 to disable dynamic gas limit (use static maxGasLimit only)
+GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN=0.2
+
+# === Hook Security ===
+# Add trusted Hooks to whitelist (disabled by default)
+# HOOK_WHITELIST_ENABLED=true
 BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
 X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
 
+# === Fallback Prices ===
 # Native token prices (update periodically)
 # ETH: https://www.coingecko.com/en/coins/ethereum
 # OKB: https://www.coingecko.com/en/coins/okb
@@ -367,7 +389,6 @@ X_LAYER_TESTNET_TARGET_GAS_PRICE=100000000 # 0.1 gwei
 
 # ⚠️ Warning: Only for development/testing
 HOOK_WHITELIST_ENABLED=false
-GAS_COST_VALIDATION_ENABLED=false
 ```
 
 **For Maximum Accuracy (Dynamic Strategy):**
@@ -660,7 +681,7 @@ Settles an x402 payment. Automatically detects and routes between standard and S
 **Security Validations:**
 
 - Hook whitelist check (if SettlementRouter mode)
-- Gas limit validation (max: 500k)
+- Gas limit validation (max: 5M, with dynamic calculation based on fee)
 - Facilitator fee minimum requirement check
 
 ### GET /min-facilitator-fee 🆕
@@ -683,7 +704,7 @@ Query minimum facilitator fee for a specific network and hook. Resource Servers 
   "minFacilitatorFeeUSD": "45.00",
   "breakdown": {
     "gasLimit": 200000,
-    "maxGasLimit": 500000,
+    "maxGasLimit": 5000000,
     "gasPrice": "50000000000",
     "gasCostNative": "0.01",
     "gasCostUSD": "30.00",
@@ -896,7 +917,54 @@ The facilitator handles various error scenarios:
 
 ### Security Hardening
 
-The facilitator includes production-grade security features enabled by default:
+The facilitator includes production-grade security features:
+
+#### Settlement Router Whitelist ✅ **Always Enabled**
+
+**Critical Security**: Settlement Router addresses are **always validated** and cannot be bypassed.
+
+- ✅ Router addresses MUST be in the whitelist
+- ✅ Validation is mandatory for all settlement transactions
+- ✅ Prevents execution of malicious or untrusted routers
+- ❌ Cannot be disabled (this is a security feature, not a bug)
+
+**Configuration:**
+
+```env
+# Required: Configure allowed Settlement Router addresses
+BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x32431D4511e061F1133520461B07eC42afF157D6
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x8FbB2f214b3b3907BB733e77fa2cAaC16ddCe82e
+
+# Fallback: Uses addresses from @x402x/core if not specified
+```
+
+**How it works:**
+
+1. Client provides `extra.settlementRouter` address in payment requirements
+2. Facilitator validates the address against the whitelist
+3. Transaction is rejected if router is not whitelisted
+4. Transaction proceeds only with approved routers
+
+#### Hook Whitelist 🔧 **Optional (for production)**
+
+Hook addresses can optionally be validated against a whitelist:
+
+**Configuration:**
+
+```env
+# Enable hook whitelist (default: false, recommended: true for production)
+HOOK_WHITELIST_ENABLED=true
+
+# Configure allowed Hook addresses per network
+BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
+X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
+```
+
+**Why optional?**
+
+- Development: Allows testing with any hook contract
+- Production: Enforces trusted hooks only
+- Default: Disabled for ease of development
 
 #### Rate Limiting
 

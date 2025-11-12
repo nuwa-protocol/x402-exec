@@ -16,6 +16,8 @@ export function createMockEvmSigner(options?: {
   signMessageReject?: Error;
   sendTransactionResolve?: string;
   sendTransactionReject?: Error;
+  writeContractResolve?: string;
+  writeContractReject?: Error;
 }): Signer {
   const address = options?.address || "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
 
@@ -33,6 +35,13 @@ export function createMockEvmSigner(options?: {
     sendTransaction.mockResolvedValue(options?.sendTransactionResolve || "0xtxhash");
   }
 
+  const writeContract = vi.fn();
+  if (options?.writeContractReject) {
+    writeContract.mockRejectedValue(options.writeContractReject);
+  } else {
+    writeContract.mockResolvedValue(options?.writeContractResolve || "0xtxhash");
+  }
+
   return {
     account: {
       address,
@@ -40,5 +49,8 @@ export function createMockEvmSigner(options?: {
     signMessage,
     signTransaction: vi.fn(),
     sendTransaction,
+    walletClient: {
+      writeContract,
+    },
   } as any;
 }

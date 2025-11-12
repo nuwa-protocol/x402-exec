@@ -24,6 +24,7 @@ import type { PoolManager } from "../pool-manager.js";
 import { isStandardX402Allowed } from "../config.js";
 import type { RequestHandler } from "express";
 import type { GasCostConfig } from "../gas-cost.js";
+import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 
 const logger = getLogger();
 
@@ -42,7 +43,8 @@ export interface SettleRouteDependencies {
   poolManager: PoolManager;
   allowedSettlementRouters: Record<string, string[]>;
   x402Config?: X402Config;
-  gasCost?: GasCostConfig; // Optional gas cost config for metrics
+  gasCost?: GasCostConfig; // Gas cost config for fee validation and dynamic gas limit
+  dynamicGasPrice?: DynamicGasPriceConfig; // Dynamic gas price config for gas limit calculation
 }
 
 /**
@@ -135,6 +137,8 @@ export function createSettleRoutes(
                   paymentPayload,
                   paymentRequirements,
                   deps.allowedSettlementRouters,
+                  deps.gasCost, // Pass gas cost config for dynamic gas limit
+                  deps.dynamicGasPrice, // Pass dynamic gas price config
                   deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
                 ),
               {

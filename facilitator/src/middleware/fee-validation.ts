@@ -8,8 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 import type { PaymentRequirements } from "x402/types";
 import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
-import { isSettlementMode } from "../settlement.js";
-import { getNetworkConfig } from "@x402x/core";
+import { isSettlementMode, validateTokenAddress } from "../settlement.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
 
@@ -30,11 +29,6 @@ export function createFeeValidationMiddleware(
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Skip if validation is disabled
-      if (!config.enabled) {
-        return next();
-      }
-
       // Get payment requirements from request body
       const paymentRequirements: PaymentRequirements | undefined = req.body?.paymentRequirements;
 
@@ -50,10 +44,41 @@ export function createFeeValidationMiddleware(
         return next();
       }
 
+      // Validate token address (only USDC is currently supported)
+      const network = paymentRequirements.network;
+      const asset = paymentRequirements.asset;
+
+      try {
+        validateTokenAddress(network, asset);
+      } catch (error) {
+        logger.warn(
+          {
+            network,
+            asset,
+            error,
+          },
+          "Token validation failed in fee validation middleware",
+        );
+
+        // Return appropriate error response
+        if (error instanceof Error) {
+          return res.status(400).json({
+            error: "Unsupported token",
+            message: error.message,
+            providedAsset: asset,
+          });
+        }
+
+        return res.status(400).json({
+          error: "Token validation failed",
+          message: "Failed to validate token address",
+          providedAsset: asset,
+        });
+      }
+
       // Extract settlement parameters
       const hook = paymentRequirements.extra?.hook;
       const facilitatorFee = paymentRequirements.extra?.facilitatorFee;
-      const network = paymentRequirements.network;
 
       if (!hook || typeof hook !== "string") {
         return res.status(400).json({
@@ -70,7 +95,8 @@ export function createFeeValidationMiddleware(
       }
 
       // Get token decimals
-      const networkConfig = getNetworkConfig(network);
+      //const networkConfig = getNetworkConfig(network);
+      // TODO: In future, fetch token decimals dynamically from network config.
       const tokenDecimals = 6; // USDC has 6 decimals (networkConfig.usdc would have this info)
 
       // Calculate minimum required fee
@@ -92,11 +118,17 @@ export function createFeeValidationMiddleware(
         });
       }
 
-      // Compare fees
+      // Compare fees with tolerance
       const providedFee = BigInt(facilitatorFee);
       const requiredFee = BigInt(feeCalculation.minFacilitatorFee);
 
-      if (providedFee < requiredFee) {
+      // Apply validation tolerance: threshold = requiredFee * (1 - tolerance)
+      // This allows for small price fluctuations between fee calculation and validation
+      // Use BigInt arithmetic to avoid precision loss for large values
+      const tolerancePercent = BigInt(Math.floor(config.validationTolerance * 10000)); // Convert to basis points (0.01 = 100)
+      const threshold = (requiredFee * (10000n - tolerancePercent)) / 10000n;
+
+      if (providedFee < threshold) {
         logger.warn(
           {
             network,
@@ -104,16 +136,21 @@ export function createFeeValidationMiddleware(
             providedFee: facilitatorFee,
             requiredFee: feeCalculation.minFacilitatorFee,
             requiredFeeUSD: feeCalculation.minFacilitatorFeeUSD,
+            threshold: threshold.toString(),
+            validationTolerance: config.validationTolerance,
+            tolerancePercent: `${(config.validationTolerance * 100).toFixed(1)}%`,
           },
-          "Facilitator fee below minimum requirement",
+          "Facilitator fee below minimum requirement (with tolerance)",
         );
 
         return res.status(400).json({
           error: "Insufficient facilitator fee",
-          message: `Facilitator fee ${facilitatorFee} is below minimum requirement ${feeCalculation.minFacilitatorFee} (${feeCalculation.minFacilitatorFeeUSD} USD)`,
+          message: `Facilitator fee ${facilitatorFee} is below minimum requirement ${feeCalculation.minFacilitatorFee} (${feeCalculation.minFacilitatorFeeUSD} USD) with ${(config.validationTolerance * 100).toFixed(1)}% tolerance`,
           providedFee: facilitatorFee,
           minFacilitatorFee: feeCalculation.minFacilitatorFee,
           minFacilitatorFeeUSD: feeCalculation.minFacilitatorFeeUSD,
+          threshold: threshold.toString(),
+          validationTolerance: config.validationTolerance,
           breakdown: {
             gasLimit: feeCalculation.gasLimit,
             maxGasLimit: feeCalculation.maxGasLimit,
@@ -133,6 +170,9 @@ export function createFeeValidationMiddleware(
           hook,
           providedFee: facilitatorFee,
           requiredFee: feeCalculation.minFacilitatorFee,
+          threshold: threshold.toString(),
+          validationTolerance: config.validationTolerance,
+          margin: `${(Number(((providedFee - threshold) * 10000n) / threshold) / 100).toFixed(2)}%`,
         },
         "Facilitator fee validated successfully",
       );

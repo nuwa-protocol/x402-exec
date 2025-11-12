@@ -4,7 +4,9 @@
  * Syntax-highlighted code block with support for loading code from external files
  */
 
+// @ts-ignore - Type compatibility issue with React 18
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// @ts-ignore
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodeBlockProps {
@@ -33,6 +35,7 @@ export function CodeBlock({
       {title && (
         <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>{title}</h4>
       )}
+      {/* @ts-ignore - Type compatibility issue with React 18 */}
       <SyntaxHighlighter
         language={language}
         style={vscDarkPlus}

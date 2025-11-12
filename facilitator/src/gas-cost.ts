@@ -14,17 +14,30 @@ const logger = getLogger();
 
 /**
  * Gas cost configuration
+ *
+ * Simplified configuration for gas cost calculation and validation.
+ * Dynamic gas limit is enabled by default for profitability protection.
  */
 export interface GasCostConfig {
-  enabled: boolean;
-  baseGasLimit: number;
-  hookGasOverhead: Record<string, number>;
-  safetyMultiplier: number;
-  networkGasPrice: Record<string, string>;
-  nativeTokenPrice: Record<string, number>;
-  maxGasLimit: number;
-  hookWhitelistEnabled: boolean;
-  allowedHooks: Record<string, string[]>;
+  // Gas Limit Configuration
+  minGasLimit: number; // Minimum gas limit to ensure transaction can execute (default: 150000)
+  maxGasLimit: number; // Absolute upper limit for gas to defend against malicious hooks (default: 5000000)
+  dynamicGasLimitMargin: number; // Profit margin reserved when calculating dynamic limit (0-1, default: 0.2 = 20%)
+
+  // Gas Overhead Configuration
+  hookGasOverhead: Record<string, number>; // Additional gas required by different hook types
+  safetyMultiplier: number; // Safety multiplier for gas estimation (default: 1.5)
+
+  // Fee Validation
+  validationTolerance: number; // Tolerance for fee validation to handle price fluctuations (0-1, default: 0.1 = 10%)
+
+  // Hook Security
+  hookWhitelistEnabled: boolean; // Enable hook whitelist validation (default: false)
+  allowedHooks: Record<string, string[]>; // Whitelist of allowed hook addresses per network
+
+  // Fallback Prices (used when dynamic pricing is unavailable)
+  networkGasPrice: Record<string, string>; // Static gas prices per network (Wei)
+  nativeTokenPrice: Record<string, number>; // Static native token prices per network (USD)
 }
 
 /**
@@ -113,7 +126,7 @@ export function getGasLimit(network: string, hook: string, config: GasCostConfig
 
   // Calculate gas limit
   const overhead = config.hookGasOverhead[hookType] || config.hookGasOverhead.custom || 100000;
-  const gasLimit = config.baseGasLimit + overhead;
+  const gasLimit = config.minGasLimit + overhead;
 
   // Validate against maximum
   if (gasLimit > config.maxGasLimit) {
@@ -127,7 +140,7 @@ export function getGasLimit(network: string, hook: string, config: GasCostConfig
       network,
       hook,
       hookType,
-      baseGasLimit: config.baseGasLimit,
+      minGasLimit: config.minGasLimit,
       overhead,
       gasLimit,
     },
@@ -191,6 +204,81 @@ export function convertUsdToToken(usdAmount: string, decimals: number): string {
 }
 
 /**
+ * Calculate effective gas limit with triple constraints
+ *
+ * This function implements dynamic gas limit calculation based on the facilitator fee,
+ * while maintaining absolute safety bounds:
+ * 1. Minimum limit: Ensures transaction can execute (basic settlement operations)
+ * 2. Maximum limit: Absolute cap to defend against malicious hooks
+ * 3. Dynamic limit: Based on facilitator fee to prevent unprofitable settlements
+ *
+ * Dynamic gas limit is always enabled. To use static limit only, set
+ * dynamicGasLimitMargin to 0, which makes all fees available for gas.
+ *
+ * @param facilitatorFee - Facilitator fee in token's smallest unit (e.g., USDC with 6 decimals)
+ * @param gasPrice - Current gas price in Wei
+ * @param nativeTokenPrice - Native token price in USD (e.g., ETH price)
+ * @param config - Gas cost configuration
+ * @returns Effective gas limit to use for the transaction
+ *
+ * @example
+ * ```typescript
+ * // Fee = 1 USDC, Gas = 10 gwei, ETH = $3000, Margin = 20%
+ * // Available for gas = $1.00 * 0.8 = $0.80
+ * // Max affordable gas = $0.80 / $3000 * 1e18 / 10e9 = 26,666 gas
+ * // Result = max(150000, min(26666, 500000)) = 150000 (use minimum)
+ *
+ * // Fee = 10 USDC
+ * // Available = $8.00
+ * // Max affordable = 266,666 gas
+ * // Result = max(150000, min(266666, 500000)) = 266,666 (use dynamic)
+ *
+ * // Fee = 100 USDC
+ * // Max affordable = 2,666,666 gas
+ * // Result = max(150000, min(2666666, 500000)) = 500,000 (use maximum)
+ * ```
+ */
+export function calculateEffectiveGasLimit(
+  facilitatorFee: string,
+  gasPrice: string,
+  nativeTokenPrice: number,
+  config: GasCostConfig,
+): number {
+  // Convert facilitator fee to USD (assuming 6 decimals for USDC)
+  const feeUSD = parseFloat(facilitatorFee) / 1e6;
+
+  // Calculate available amount for gas (after reserving profit margin)
+  const availableForGasUSD = feeUSD * (1 - config.dynamicGasLimitMargin);
+
+  // Protect against invalid token price (zero or negative)
+  // If price is invalid, return minimum gas limit as safety fallback
+  if (nativeTokenPrice <= 0 || !Number.isFinite(nativeTokenPrice)) {
+    return config.minGasLimit;
+  }
+
+  // Calculate how much gas we can afford
+  // Formula: (availableUSD / tokenPrice) * 1e18 Wei / gasPrice Wei
+  const gasPriceBigInt = BigInt(gasPrice);
+
+  // Convert available USD to Wei that can be spent on gas
+  const availableWei = (availableForGasUSD / nativeTokenPrice) * 1e18;
+
+  // Calculate maximum affordable gas
+  const maxAffordableGas = Math.floor(availableWei / Number(gasPriceBigInt));
+
+  // Apply triple constraints:
+  // 1. Not less than minimum (ensure transaction can execute)
+  // 2. Not more than maximum (absolute safety cap)
+  // 3. Not more than affordable (profit protection)
+  const effectiveGasLimit = Math.max(
+    config.minGasLimit,
+    Math.min(maxAffordableGas, config.maxGasLimit),
+  );
+
+  return effectiveGasLimit;
+}
+
+/**
  * Calculate minimum facilitator fee
  *
  * @param network - Network name
@@ -210,22 +298,6 @@ export async function calculateMinFacilitatorFee(
   dynamicConfig?: DynamicGasPriceConfig,
   tokenPriceConfig?: TokenPriceConfig,
 ): Promise<FeeCalculationResult> {
-  // Check if validation is enabled
-  if (!config.enabled) {
-    return {
-      minFacilitatorFee: "0",
-      minFacilitatorFeeUSD: "0.00",
-      gasLimit: 0,
-      maxGasLimit: config.maxGasLimit,
-      gasPrice: "0",
-      gasCostNative: "0",
-      gasCostUSD: "0.00",
-      safetyMultiplier: config.safetyMultiplier,
-      finalCostUSD: "0.00",
-      hookAllowed: true,
-    };
-  }
-
   // Check if hook is allowed
   const hookAllowed = isHookAllowed(network, hook, config);
   if (!hookAllowed) {
