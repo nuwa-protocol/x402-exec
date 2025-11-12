@@ -71,6 +71,9 @@ export async function getGasPrice(
 
 /**
  * Get static gas price from configuration
+ *
+ * @param network
+ * @param config
  */
 function getStaticGasPrice(network: string, config: GasCostConfig): string {
   const gasPrice = config.networkGasPrice[network];
@@ -82,6 +85,10 @@ function getStaticGasPrice(network: string, config: GasCostConfig): string {
 
 /**
  * Get dynamic gas price from chain (with caching)
+ *
+ * @param network
+ * @param config
+ * @param dynamicConfig
  */
 async function getDynamicGasPrice(
   network: string,
@@ -131,6 +138,10 @@ async function getDynamicGasPrice(
 
 /**
  * Get hybrid gas price (try dynamic, fallback to static)
+ *
+ * @param network
+ * @param config
+ * @param dynamicConfig
  */
 async function getHybridGasPrice(
   network: string,

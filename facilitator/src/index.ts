@@ -13,6 +13,7 @@ import { createMemoryCache, createTokenCache, type TokenCache } from "./cache/in
 import { createApp } from "./app.js";
 import { startGasPriceUpdater } from "./dynamic-gas-price.js";
 import { startTokenPriceUpdater } from "./token-price.js";
+import { createBalanceChecker, type BalanceChecker } from "./balance-check.js";
 
 // Initialize telemetry first
 initTelemetry();
@@ -28,6 +29,8 @@ const shutdownManager = initShutdown({
 
 // Initialize cache
 let tokenCache: TokenCache | undefined = undefined;
+let balanceChecker: BalanceChecker | undefined = undefined;
+
 if (config.cache.enabled) {
   const memoryCache = createMemoryCache({
     stdTTL: config.cache.ttlTokenVersion,
@@ -39,17 +42,29 @@ if (config.cache.enabled) {
     metadataTTL: config.cache.ttlTokenMetadata,
   });
 
+  // Create dedicated cache instance for balance checks to avoid cache conflicts
+  const balanceCache = createMemoryCache({
+    stdTTL: 30, // 30 seconds TTL for balance checks
+    maxKeys: config.cache.maxKeys,
+  });
+
+  balanceChecker = createBalanceChecker(balanceCache, {
+    cacheTTL: 30, // 30 seconds TTL for balance checks
+    maxCacheKeys: config.cache.maxKeys,
+  });
+
   logger.info(
     {
       enabled: true,
       versionTTL: config.cache.ttlTokenVersion,
       metadataTTL: config.cache.ttlTokenMetadata,
+      balanceCacheTTL: 30,
       maxKeys: config.cache.maxKeys,
     },
-    "Token cache initialized",
+    "Token cache and balance checker initialized",
   );
 } else {
-  logger.info("Token cache disabled");
+  logger.info("Token cache and balance checker disabled");
 }
 
 /**
@@ -160,6 +175,7 @@ async function main() {
         evmAccountPools: poolManager.getEvmAccountPools(),
         evmAccountCount: poolManager.getEvmAccountCount(),
         tokenCache,
+        balanceChecker,
         allowedSettlementRouters: config.allowedSettlementRouters,
         x402Config: config.x402Config,
         gasCost: config.gasCost,

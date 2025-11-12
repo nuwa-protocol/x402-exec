@@ -23,6 +23,7 @@ import { calculateGasMetrics } from "./gas-metrics.js";
 import type { SettleResponseWithMetrics } from "./settlement-types.js";
 import { calculateEffectiveGasLimit, type GasCostConfig } from "./gas-cost.js";
 import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
+import type { BalanceChecker } from "./balance-check.js";
 
 const logger = getLogger();
 
@@ -173,6 +174,7 @@ function parseSettlementExtra(extra: unknown): {
  * @param gasCostConfig - Gas cost configuration for dynamic gas limit
  * @param dynamicGasPriceConfig - Dynamic gas price configuration
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
+ * @param balanceChecker - Optional balance checker for defensive balance validation
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
@@ -184,6 +186,7 @@ export async function settleWithRouter(
   gasCostConfig?: GasCostConfig,
   dynamicGasPriceConfig?: DynamicGasPriceConfig,
   nativeTokenPrices?: Record<string, number>,
+  balanceChecker?: BalanceChecker,
 ): Promise<SettleResponseWithMetrics> {
   try {
     // 1. Ensure signer is EVM signer
@@ -295,7 +298,63 @@ export async function settleWithRouter(
       }
     }
 
-    // 7. Call SettlementRouter.settleAndExecute
+    // 7. Defensive balance check (verify stage should have already caught this)
+    if (balanceChecker) {
+      try {
+        const balanceCheck = await balanceChecker.checkBalance(
+          signer as any, // Signer has readContract method needed for balance checks
+          authorization.from as `0x${string}`,
+          asset as `0x${string}`,
+          authorization.value,
+          network,
+        );
+
+        if (!balanceCheck.hasSufficient) {
+          logger.error(
+            {
+              payer: authorization.from,
+              network,
+              balance: balanceCheck.balance,
+              required: balanceCheck.required,
+              cached: balanceCheck.cached,
+            },
+            "Insufficient balance detected during settlement (defensive check)",
+          );
+
+          return {
+            success: false,
+            errorReason: "INSUFFICIENT_FUNDS",
+            transaction: "",
+            network: paymentPayload.network,
+            payer: authorization.from,
+          };
+        } else {
+          logger.debug(
+            {
+              payer: authorization.from,
+              network,
+              balance: balanceCheck.balance,
+              required: balanceCheck.required,
+              cached: balanceCheck.cached,
+            },
+            "Balance check passed during settlement (defensive check)",
+          );
+        }
+      } catch (error) {
+        logger.error(
+          {
+            error,
+            payer: authorization.from,
+            network,
+          },
+          "Balance check failed during settlement, proceeding with transaction",
+        );
+        // If balance check fails, we continue with the transaction
+        // This ensures settlement can still work even if balance check has issues
+      }
+    }
+
+    // 8. Call SettlementRouter.settleAndExecute
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const walletClient = signer as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

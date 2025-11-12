@@ -19,6 +19,10 @@ export class MemoryCache implements CacheInterface {
   private hits = 0;
   private misses = 0;
 
+  /**
+   * Constructor for MemoryCache
+   * @param config - Cache configuration
+   */
   constructor(config?: CacheConfig) {
     const defaultConfig: CacheConfig = {
       stdTTL: 3600, // 1 hour default
@@ -54,6 +58,10 @@ export class MemoryCache implements CacheInterface {
     });
   }
 
+  /**
+   * Get a value from the cache by key.
+   * @param key The key to retrieve from the cache.
+   */
   get<T>(key: string): T | undefined {
     const value = this.cache.get<T>(key);
 
@@ -68,6 +76,12 @@ export class MemoryCache implements CacheInterface {
     return undefined;
   }
 
+  /**
+   * Set a value in the cache with optional TTL.
+   * @param key The cache key.
+   * @param value The value to store.
+   * @param ttl Optional time-to-live in seconds.
+   */
   set<T>(key: string, value: T, ttl?: number): void {
     const success = this.cache.set(key, value, ttl || 0);
 
@@ -78,6 +92,10 @@ export class MemoryCache implements CacheInterface {
     }
   }
 
+  /**
+   * Delete a value from the cache by key.
+   * @param key
+   */
   del(key: string): boolean {
     const deleted = this.cache.del(key) > 0;
 
@@ -88,10 +106,18 @@ export class MemoryCache implements CacheInterface {
     return deleted;
   }
 
+  /**
+   * Check if a key exists in the cache.
+   * @param key - The cache key to check.
+   * @returns True if the key exists, false otherwise.
+   */
   has(key: string): boolean {
     return this.cache.has(key);
   }
 
+  /**
+   * Clear all entries from the cache and reset hit/miss counters.
+   */
   flush(): void {
     this.cache.flushAll();
     this.hits = 0;
@@ -99,6 +125,10 @@ export class MemoryCache implements CacheInterface {
     logger.info("Cache flushed");
   }
 
+  /**
+   * Get cache statistics including hits, misses, and key count.
+   * @returns {CacheStats} Statistics about the cache usage.
+   */
   getStats(): CacheStats {
     const nodeStats = this.cache.getStats();
 
@@ -122,6 +152,8 @@ export class MemoryCache implements CacheInterface {
 
 /**
  * Create a memory cache instance with optional configuration
+ *
+ * @param config
  */
 export function createMemoryCache(config?: CacheConfig): MemoryCache {
   return new MemoryCache(config);
