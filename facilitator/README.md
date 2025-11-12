@@ -917,7 +917,52 @@ The facilitator handles various error scenarios:
 
 ### Security Hardening
 
-The facilitator includes production-grade security features enabled by default:
+The facilitator includes production-grade security features:
+
+#### Settlement Router Whitelist ✅ **Always Enabled**
+
+**Critical Security**: Settlement Router addresses are **always validated** and cannot be bypassed.
+
+- ✅ Router addresses MUST be in the whitelist
+- ✅ Validation is mandatory for all settlement transactions
+- ✅ Prevents execution of malicious or untrusted routers
+- ❌ Cannot be disabled (this is a security feature, not a bug)
+
+**Configuration:**
+
+```env
+# Required: Configure allowed Settlement Router addresses
+BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x32431D4511e061F1133520461B07eC42afF157D6
+X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x8FbB2f214b3b3907BB733e77fa2cAaC16ddCe82e
+
+# Fallback: Uses addresses from @x402x/core if not specified
+```
+
+**How it works:**
+1. Client provides `extra.settlementRouter` address in payment requirements
+2. Facilitator validates the address against the whitelist
+3. Transaction is rejected if router is not whitelisted
+4. Transaction proceeds only with approved routers
+
+#### Hook Whitelist 🔧 **Optional (for production)**
+
+Hook addresses can optionally be validated against a whitelist:
+
+**Configuration:**
+
+```env
+# Enable hook whitelist (default: false, recommended: true for production)
+HOOK_WHITELIST_ENABLED=true
+
+# Configure allowed Hook addresses per network
+BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
+X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
+```
+
+**Why optional?**
+- Development: Allows testing with any hook contract
+- Production: Enforces trusted hooks only
+- Default: Disabled for ease of development
 
 #### Rate Limiting
 

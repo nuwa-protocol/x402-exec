@@ -94,9 +94,20 @@ export const RATE_LIMIT_DEFAULTS = {
 
 /**
  * Hook security default configuration
+ *
+ * Note: Settlement Router address validation is ALWAYS enabled and cannot be disabled.
+ * Only Hook address validation can be optionally enabled via whitelist.
  */
 export const HOOK_SECURITY_DEFAULTS = {
-  /** Enable hook whitelist validation */
+  /**
+   * Enable hook whitelist validation (default: false)
+   *
+   * When enabled, only hooks in the whitelist can be executed.
+   * When disabled, any hook address can be used (less secure, for development only).
+   *
+   * Important: This only controls HOOK validation. Settlement Router addresses
+   * are ALWAYS validated against a whitelist for security.
+   */
   WHITELIST_ENABLED: false,
 } as const;
 
