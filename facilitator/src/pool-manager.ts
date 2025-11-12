@@ -18,10 +18,10 @@ export class PoolManager {
   private evmAccountPools: Map<string, AccountPool> = new Map();
 
   /**
-   *
-   * @param evmPrivateKeys
-   * @param networkConfig
-   * @param accountPoolConfig
+   * Constructor for PoolManager
+   * @param evmPrivateKeys - Array of EVM private keys
+   * @param networkConfig - Network configuration
+   * @param accountPoolConfig - Account pool configuration
    */
   constructor(
     private evmPrivateKeys: string[],

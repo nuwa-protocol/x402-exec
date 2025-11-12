@@ -302,7 +302,7 @@ export async function settleWithRouter(
     if (balanceChecker) {
       try {
         const balanceCheck = await balanceChecker.checkBalance(
-          signer, // signer can be used as client for balance checks
+          signer as any, // Signer has readContract method needed for balance checks
           authorization.from as `0x${string}`,
           asset as `0x${string}`,
           authorization.value,

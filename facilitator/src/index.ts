@@ -42,8 +42,13 @@ if (config.cache.enabled) {
     metadataTTL: config.cache.ttlTokenMetadata,
   });
 
-  // Create balance checker with same cache instance for balance checks
-  balanceChecker = createBalanceChecker(memoryCache, {
+  // Create dedicated cache instance for balance checks to avoid cache conflicts
+  const balanceCache = createMemoryCache({
+    stdTTL: 30, // 30 seconds TTL for balance checks
+    maxKeys: config.cache.maxKeys,
+  });
+
+  balanceChecker = createBalanceChecker(balanceCache, {
     cacheTTL: 30, // 30 seconds TTL for balance checks
     maxCacheKeys: config.cache.maxKeys,
   });

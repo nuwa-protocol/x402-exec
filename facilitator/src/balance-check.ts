@@ -190,8 +190,7 @@ export class BalanceChecker {
    * Clear all cached balance data
    */
   clearCache(): void {
-    // Note: We can't selectively clear balance cache, so we flush all
-    // In production, we might want a separate cache instance for balances
+    // Balance checker uses a dedicated cache instance, so this only clears balance data
     this.cache.flush();
     logger.info("Balance cache cleared");
   }

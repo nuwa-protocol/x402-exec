@@ -23,7 +23,7 @@ const mockCache: CacheInterface = {
 const mockClient = {
   readContract: vi.fn(),
   chain: { id: 11155111 }, // Sepolia testnet
-} as unknown as ConnectedClient;
+} as any; // Use any to match the implementation's client parameter type
 
 describe("BalanceChecker", () => {
   let balanceChecker: ReturnType<typeof createBalanceChecker>;
@@ -159,7 +159,7 @@ describe("BalanceChecker", () => {
       );
 
       await expect(
-        balanceChecker.checkBalance(mockClient, userAddress, requiredAmount, network),
+        balanceChecker.checkBalance(mockClient, userAddress, tokenAddress, requiredAmount, network),
       ).rejects.toThrow("RPC error");
 
       expect(mockCache.set).not.toHaveBeenCalled();
@@ -169,7 +169,7 @@ describe("BalanceChecker", () => {
       const mainnetClient = {
         ...mockClient,
         chain: { id: 1 }, // Ethereum mainnet
-      } as ConnectedClient;
+      } as any;
 
       const balance = 2000000n;
 

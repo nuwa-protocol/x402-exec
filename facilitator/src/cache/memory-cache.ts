@@ -20,8 +20,8 @@ export class MemoryCache implements CacheInterface {
   private misses = 0;
 
   /**
-   *
-   * @param config
+   * Constructor for MemoryCache
+   * @param config - Cache configuration
    */
   constructor(config?: CacheConfig) {
     const defaultConfig: CacheConfig = {
