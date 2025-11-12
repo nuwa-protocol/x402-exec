@@ -8,7 +8,6 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
-import type { Address } from 'viem';
 import { ServerlessPaymentDialog } from '../components/ServerlessPaymentDialog';
 import { ScenarioCard } from '../components/ScenarioCard';
 import { PaymentButton } from '../components/PaymentButton';
