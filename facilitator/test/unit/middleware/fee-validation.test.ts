@@ -25,6 +25,7 @@ vi.mock("../../../src/gas-cost.js", async () => {
 
 vi.mock("../../../src/settlement.js", () => ({
   isSettlementMode: vi.fn(),
+  validateTokenAddress: vi.fn(), // Mock the new function
 }));
 
 vi.mock("@x402x/core", () => ({

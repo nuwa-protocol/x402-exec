@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 import type { PaymentRequirements } from "x402/types";
 import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
-import { isSettlementMode } from "../settlement.js";
+import { isSettlementMode, validateTokenAddress } from "../settlement.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
 
@@ -44,10 +44,41 @@ export function createFeeValidationMiddleware(
         return next();
       }
 
+      // Validate token address (only USDC is currently supported)
+      const network = paymentRequirements.network;
+      const asset = paymentRequirements.asset;
+
+      try {
+        validateTokenAddress(network, asset);
+      } catch (error) {
+        logger.warn(
+          {
+            network,
+            asset,
+            error,
+          },
+          "Token validation failed in fee validation middleware",
+        );
+
+        // Return appropriate error response
+        if (error instanceof Error) {
+          return res.status(400).json({
+            error: "Unsupported token",
+            message: error.message,
+            providedAsset: asset,
+          });
+        }
+
+        return res.status(400).json({
+          error: "Token validation failed",
+          message: "Failed to validate token address",
+          providedAsset: asset,
+        });
+      }
+
       // Extract settlement parameters
       const hook = paymentRequirements.extra?.hook;
       const facilitatorFee = paymentRequirements.extra?.facilitatorFee;
-      const network = paymentRequirements.network;
 
       if (!hook || typeof hook !== "string") {
         return res.status(400).json({

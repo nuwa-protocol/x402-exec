@@ -7,13 +7,14 @@
  * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
-import type { PaymentPayload, PaymentRequirements, Signer, SettleResponse } from "x402/types";
+import type { PaymentPayload, PaymentRequirements, Signer } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import {
   SettlementExtraError,
   SETTLEMENT_ROUTER_ABI,
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
+  getNetworkConfig,
 } from "@x402x/core";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
@@ -93,6 +94,42 @@ export function validateSettlementRouter(
 }
 
 /**
+ * Validate token address (only USDC is currently supported)
+ *
+ * @param network - The network name (e.g., "base-sepolia", "x-layer-testnet")
+ * @param tokenAddress - The token address to validate
+ * @throws SettlementExtraError if token is not supported
+ */
+export function validateTokenAddress(network: string, tokenAddress: string): void {
+  const networkConfig = getNetworkConfig(network);
+  const expectedUsdcAddress = networkConfig.usdc.address.toLowerCase();
+  const actualTokenAddress = tokenAddress.toLowerCase();
+
+  if (actualTokenAddress !== expectedUsdcAddress) {
+    logger.error(
+      {
+        network,
+        providedToken: tokenAddress,
+        expectedToken: networkConfig.usdc.address,
+      },
+      "Unsupported token address detected in settlement",
+    );
+    throw new SettlementExtraError(
+      `Only USDC is currently supported for settlement on ${network}. ` +
+        `Expected: ${networkConfig.usdc.address}, Got: ${tokenAddress}`,
+    );
+  }
+
+  logger.debug(
+    {
+      network,
+      tokenAddress: networkConfig.usdc.address,
+    },
+    "Token address validated",
+  );
+}
+
+/**
  * Parse and validate settlement extra parameters
  *
  * Uses @x402x/core's parseSettlementExtra for validation.
@@ -155,23 +192,28 @@ export async function settleWithRouter(
     }
 
     const network = paymentRequirements.network;
+    const asset = paymentRequirements.asset;
 
-    // 2. Parse settlement extra parameters
+    // 2. Validate token address (SECURITY: only USDC is currently supported)
+    validateTokenAddress(network, asset);
+
+    // 3. Parse settlement extra parameters
     const extra = parseSettlementExtra(paymentRequirements.extra);
 
     logger.debug(
       {
         network,
+        asset,
         router: extra.settlementRouter,
         facilitatorFee: extra.facilitatorFee,
       },
       "Starting settlement with router",
     );
 
-    // 3. Validate SettlementRouter address against whitelist (SECURITY)
+    // 4. Validate SettlementRouter address against whitelist (SECURITY)
     validateSettlementRouter(network, extra.settlementRouter, allowedRouters);
 
-    // 4. Parse authorization and signature from payload
+    // 5. Parse authorization and signature from payload
     const payload = paymentPayload.payload;
 
     // Type guard: ensure this is an EVM payload with authorization and signature
@@ -189,7 +231,7 @@ export async function settleWithRouter(
     const authorization = evmPayload.authorization;
     const { signature } = parseErc6492Signature(evmPayload.signature as Hex);
 
-    // 5. Calculate effective gas limit if config is provided
+    // 6. Calculate effective gas limit if config is provided
     let effectiveGasLimit: bigint | undefined;
     let gasLimitMode = "static";
 
@@ -238,7 +280,7 @@ export async function settleWithRouter(
       }
     }
 
-    // 6. Call SettlementRouter.settleAndExecute
+    // 7. Call SettlementRouter.settleAndExecute
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const walletClient = signer as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,7 +314,7 @@ export async function settleWithRouter(
       ...(effectiveGasLimit ? { gas: effectiveGasLimit } : {}),
     });
 
-    // 7. Wait for transaction confirmation
+    // 8. Wait for transaction confirmation
     const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
 
     if (receipt.status !== "success") {
@@ -285,7 +327,7 @@ export async function settleWithRouter(
       };
     }
 
-    // 8. Calculate gas metrics
+    // 9. Calculate gas metrics
     const nativePrice = nativeTokenPrices?.[network] || 0;
     const gasMetrics = calculateGasMetrics(
       receipt,
@@ -296,7 +338,7 @@ export async function settleWithRouter(
       6, // USDC decimals (all current settlements use USDC)
     );
 
-    // 9. Log settlement success with gas metrics
+    // 10. Log settlement success with gas metrics
     logger.info(
       {
         transaction: tx,
@@ -322,7 +364,7 @@ export async function settleWithRouter(
       "SettlementRouter transaction confirmed with gas metrics",
     );
 
-    // 10. Warn if unprofitable
+    // 11. Warn if unprofitable
     if (!gasMetrics.profitable) {
       const lossPercent = Math.abs(parseFloat(gasMetrics.profitMarginPercent));
       logger.warn(
@@ -339,7 +381,7 @@ export async function settleWithRouter(
       );
     }
 
-    // 11. Return successful settlement response with gas metrics
+    // 12. Return successful settlement response with gas metrics
     return {
       success: true,
       transaction: tx,
