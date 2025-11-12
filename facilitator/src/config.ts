@@ -18,6 +18,7 @@ import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { TokenPriceConfig } from "./token-price.js";
 import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
+import { DEFAULTS } from "./defaults.js";
 
 // Load environment variables
 loadEnv();
@@ -90,9 +91,13 @@ export interface AppConfig {
 function parseCacheConfig(): CacheConfig {
   return {
     enabled: process.env.CACHE_ENABLED !== "false",
-    ttlTokenVersion: parseInt(process.env.CACHE_TTL_TOKEN_VERSION || "3600"),
-    ttlTokenMetadata: parseInt(process.env.CACHE_TTL_TOKEN_METADATA || "3600"),
-    maxKeys: parseInt(process.env.CACHE_MAX_KEYS || "1000"),
+    ttlTokenVersion: parseInt(
+      process.env.CACHE_TTL_TOKEN_VERSION || String(DEFAULTS.cache.TTL_TOKEN_VERSION),
+    ),
+    ttlTokenMetadata: parseInt(
+      process.env.CACHE_TTL_TOKEN_METADATA || String(DEFAULTS.cache.TTL_TOKEN_METADATA),
+    ),
+    maxKeys: parseInt(process.env.CACHE_MAX_KEYS || String(DEFAULTS.cache.MAX_KEYS)),
   };
 }
 
@@ -102,7 +107,7 @@ function parseCacheConfig(): CacheConfig {
  * @returns Account pool configuration object
  */
 function parseAccountPoolConfig(): AccountPoolConfig {
-  const strategy = process.env.ACCOUNT_SELECTION_STRATEGY || "round_robin";
+  const strategy = process.env.ACCOUNT_SELECTION_STRATEGY || DEFAULTS.accountPool.STRATEGY;
   if (strategy !== "round_robin" && strategy !== "random") {
     throw new Error(`Invalid ACCOUNT_SELECTION_STRATEGY: ${strategy}`);
   }
@@ -131,9 +136,9 @@ function parseNetworkConfig(): NetworkConfig {
  */
 function parseServerConfig(): ServerConfig {
   return {
-    port: parseInt(process.env.PORT || "3000"),
-    shutdownTimeoutMs: 30000, // 30 seconds
-    requestBodyLimit: process.env.REQUEST_BODY_LIMIT || "1mb",
+    port: parseInt(process.env.PORT || String(DEFAULTS.server.PORT)),
+    shutdownTimeoutMs: DEFAULTS.server.SHUTDOWN_TIMEOUT_MS,
+    requestBodyLimit: process.env.REQUEST_BODY_LIMIT || DEFAULTS.server.REQUEST_BODY_LIMIT,
   };
 }
 
@@ -145,9 +150,9 @@ function parseServerConfig(): ServerConfig {
 function parseRateLimitConfig(): RateLimitConfig {
   return {
     enabled: process.env.RATE_LIMIT_ENABLED !== "false", // Enabled by default
-    verifyMax: parseInt(process.env.RATE_LIMIT_VERIFY_MAX || "100"),
-    settleMax: parseInt(process.env.RATE_LIMIT_SETTLE_MAX || "20"),
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000"), // 1 minute
+    verifyMax: parseInt(process.env.RATE_LIMIT_VERIFY_MAX || String(DEFAULTS.rateLimit.VERIFY_MAX)),
+    settleMax: parseInt(process.env.RATE_LIMIT_SETTLE_MAX || String(DEFAULTS.rateLimit.SETTLE_MAX)),
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || String(DEFAULTS.rateLimit.WINDOW_MS)),
   };
 }
 
@@ -315,8 +320,13 @@ function parseGasCostConfig(): GasCostConfig {
 
   // Parse hook gas overhead
   const hookGasOverhead: Record<string, number> = {
-    transfer: parseInt(process.env.GAS_COST_HOOK_TRANSFER_OVERHEAD || "50000"),
-    custom: parseInt(process.env.GAS_COST_HOOK_CUSTOM_OVERHEAD || "100000"),
+    transfer: parseInt(
+      process.env.GAS_COST_HOOK_TRANSFER_OVERHEAD ||
+        String(DEFAULTS.gasCost.HOOK_TRANSFER_OVERHEAD),
+    ),
+    custom: parseInt(
+      process.env.GAS_COST_HOOK_CUSTOM_OVERHEAD || String(DEFAULTS.gasCost.HOOK_CUSTOM_OVERHEAD),
+    ),
   };
 
   // Parse network gas prices (used as fallback for dynamic strategy)
@@ -348,27 +358,38 @@ function parseGasCostConfig(): GasCostConfig {
     } else {
       // Default prices (conservative estimates)
       if (network.includes("base")) {
-        nativeTokenPrice[network] = 3000; // ETH price
+        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.ETH;
       } else if (network.includes("x-layer")) {
-        nativeTokenPrice[network] = 50; // OKB price
+        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.OKB;
       } else {
-        nativeTokenPrice[network] = 100; // Generic default
+        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.GENERIC;
       }
     }
   }
 
   return {
     // Gas Limit Configuration
-    minGasLimit: parseInt(process.env.GAS_COST_MIN_GAS_LIMIT || "150000"),
-    maxGasLimit: parseInt(process.env.GAS_COST_MAX_GAS_LIMIT || "500000"),
-    dynamicGasLimitMargin: parseFloat(process.env.GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN || "0.2"),
+    minGasLimit: parseInt(
+      process.env.GAS_COST_MIN_GAS_LIMIT || String(DEFAULTS.gasCost.MIN_GAS_LIMIT),
+    ),
+    maxGasLimit: parseInt(
+      process.env.GAS_COST_MAX_GAS_LIMIT || String(DEFAULTS.gasCost.MAX_GAS_LIMIT),
+    ),
+    dynamicGasLimitMargin: parseFloat(
+      process.env.GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN ||
+        String(DEFAULTS.gasCost.DYNAMIC_GAS_LIMIT_MARGIN),
+    ),
 
     // Gas Overhead Configuration
     hookGasOverhead,
-    safetyMultiplier: parseFloat(process.env.GAS_COST_SAFETY_MULTIPLIER || "1.5"),
+    safetyMultiplier: parseFloat(
+      process.env.GAS_COST_SAFETY_MULTIPLIER || String(DEFAULTS.gasCost.SAFETY_MULTIPLIER),
+    ),
 
     // Fee Validation
-    validationTolerance: parseFloat(process.env.GAS_COST_VALIDATION_TOLERANCE || "0.1"),
+    validationTolerance: parseFloat(
+      process.env.GAS_COST_VALIDATION_TOLERANCE || String(DEFAULTS.gasCost.VALIDATION_TOLERANCE),
+    ),
 
     // Hook Security
     hookWhitelistEnabled: process.env.HOOK_WHITELIST_ENABLED === "true",

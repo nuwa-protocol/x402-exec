@@ -12,6 +12,7 @@ import type { DynamicGasPriceConfig } from "../../../src/dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../../../src/token-price.js";
 import { calculateMinFacilitatorFee } from "../../../src/gas-cost.js";
 import { isSettlementMode } from "../../../src/settlement.js";
+import { DEFAULTS } from "../../../src/defaults.js";
 
 // Mock dependencies
 vi.mock("../../../src/gas-cost.js", async () => {
@@ -62,19 +63,19 @@ describe("Fee Validation Middleware", () => {
 
     config = {
       // Gas Limit Configuration
-      minGasLimit: 150000,
-      maxGasLimit: 500000,
-      dynamicGasLimitMargin: 0.2,
+      minGasLimit: DEFAULTS.gasCost.MIN_GAS_LIMIT,
+      maxGasLimit: DEFAULTS.gasCost.MAX_GAS_LIMIT,
+      dynamicGasLimitMargin: DEFAULTS.gasCost.DYNAMIC_GAS_LIMIT_MARGIN,
 
       // Gas Overhead Configuration
       hookGasOverhead: {
-        transfer: 50000,
-        custom: 100000,
+        transfer: DEFAULTS.gasCost.HOOK_TRANSFER_OVERHEAD,
+        custom: DEFAULTS.gasCost.HOOK_CUSTOM_OVERHEAD,
       },
-      safetyMultiplier: 1.5,
+      safetyMultiplier: DEFAULTS.gasCost.SAFETY_MULTIPLIER,
 
       // Fee Validation
-      validationTolerance: 0.1, // 10% tolerance
+      validationTolerance: DEFAULTS.gasCost.VALIDATION_TOLERANCE, // 10% tolerance
 
       // Hook Security
       hookWhitelistEnabled: false,

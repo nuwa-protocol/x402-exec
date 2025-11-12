@@ -21,7 +21,7 @@ const logger = getLogger();
 export interface GasCostConfig {
   // Gas Limit Configuration
   minGasLimit: number; // Minimum gas limit to ensure transaction can execute (default: 150000)
-  maxGasLimit: number; // Absolute upper limit for gas to defend against malicious hooks (default: 500000)
+  maxGasLimit: number; // Absolute upper limit for gas to defend against malicious hooks (default: 5000000)
   dynamicGasLimitMargin: number; // Profit margin reserved when calculating dynamic limit (0-1, default: 0.2 = 20%)
 
   // Gas Overhead Configuration

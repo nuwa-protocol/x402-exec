@@ -59,7 +59,7 @@ Or clone and run from source (see [Development](#development) section below).
   - Automatically calculates gas limit based on facilitator fee (enabled by default)
   - Triple constraint system: minimum (ensure execution) / maximum (safety cap) / dynamic (profitability)
   - Configurable profit margin (default 20%) reserved from fee
-  - Static maximum gas limit (500k) as absolute safety cap
+  - Static maximum gas limit (5M) as absolute safety cap for L2 chains
   - Can be disabled to use static limit only
 - **Facilitator Fee Validation** 🆕: Ensures profitability with dynamic tolerance
   - Automatic minimum fee calculation based on gas costs
@@ -273,9 +273,10 @@ Malicious Resource Servers could specify Hooks that consume excessive gas, causi
 
 **Layer 2: Gas Limit Cap** (Secondary Defense)
 
-- Maximum gas limit enforced per transaction (default: 500k)
+- Maximum gas limit enforced per transaction (default: 5M)
 - Protects even against whitelisted Hook issues
 - Configurable via `GAS_COST_MAX_GAS_LIMIT`
+- Note: Dynamic gas limit provides primary economic protection based on facilitatorFee
 
 **Layer 3: Fee Validation** (Financial Protection)
 
@@ -338,32 +339,34 @@ GAS_PRICE_UPDATE_INTERVAL=60     # 1 minute
 # Enable Hook whitelist (default: false, enable for production)
 HOOK_WHITELIST_ENABLED=true
 
-# Enable fee validation (default: true)
-GAS_COST_VALIDATION_ENABLED=true
+# === Gas Cost & Security Configuration ===
 
 # Fee validation tolerance (default: 0.1 = 10%)
 # Allows provided fee to be up to 10% below the calculated minimum
 # This handles price fluctuations between fee calculation and validation
 GAS_COST_VALIDATION_TOLERANCE=0.1
 
-# Maximum gas limit per transaction (absolute upper bound)
-GAS_COST_MAX_GAS_LIMIT=500000
-
-# Dynamic gas limit calculation (enabled by default)
-# Automatically calculates gas limit based on facilitator fee to prevent unprofitable settlements
-GAS_COST_ENABLE_DYNAMIC_GAS_LIMIT=true
-
-# Profit margin to reserve when calculating dynamic gas limit (default: 0.2 = 20%)
-# Higher margin = more profit reserved = lower gas limit
-GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN=0.2
-
-# Minimum gas limit to ensure basic transaction can execute (default: same as base limit)
+# === Gas Limit Configuration ===
+# Minimum gas limit to ensure transaction can execute (default: 150000)
 GAS_COST_MIN_GAS_LIMIT=150000
 
-# Add trusted Hooks to whitelist
+# Maximum gas limit per transaction - absolute upper bound (default: 5000000)
+# Acts as absolute safety cap for L2 chains (Base, X-Layer)
+# Note: Dynamic gas limit calculation provides primary economic protection
+GAS_COST_MAX_GAS_LIMIT=5000000
+
+# Profit margin reserved when calculating dynamic gas limit (default: 0.2 = 20%)
+# Higher margin = more profit reserved = lower gas limit
+# Set to 0 to disable dynamic gas limit (use static maxGasLimit only)
+GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN=0.2
+
+# === Hook Security ===
+# Add trusted Hooks to whitelist (disabled by default)
+# HOOK_WHITELIST_ENABLED=true
 BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
 X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
 
+# === Fallback Prices ===
 # Native token prices (update periodically)
 # ETH: https://www.coingecko.com/en/coins/ethereum
 # OKB: https://www.coingecko.com/en/coins/okb
@@ -386,7 +389,6 @@ X_LAYER_TESTNET_TARGET_GAS_PRICE=100000000 # 0.1 gwei
 
 # ⚠️ Warning: Only for development/testing
 HOOK_WHITELIST_ENABLED=false
-GAS_COST_VALIDATION_ENABLED=false
 ```
 
 **For Maximum Accuracy (Dynamic Strategy):**
@@ -679,7 +681,7 @@ Settles an x402 payment. Automatically detects and routes between standard and S
 **Security Validations:**
 
 - Hook whitelist check (if SettlementRouter mode)
-- Gas limit validation (max: 500k)
+- Gas limit validation (max: 5M, with dynamic calculation based on fee)
 - Facilitator fee minimum requirement check
 
 ### GET /min-facilitator-fee 🆕
@@ -702,7 +704,7 @@ Query minimum facilitator fee for a specific network and hook. Resource Servers 
   "minFacilitatorFeeUSD": "45.00",
   "breakdown": {
     "gasLimit": 200000,
-    "maxGasLimit": 500000,
+    "maxGasLimit": 5000000,
     "gasPrice": "50000000000",
     "gasCostNative": "0.01",
     "gasCostUSD": "30.00",

@@ -63,7 +63,7 @@ describe("Security Features E2E", () => {
           nativeTokenPrice: {
             "base-sepolia": 3000,
           },
-          maxGasLimit: 500000,
+          maxGasLimit: 5000000,
           hookWhitelistEnabled: false,
           allowedHooks: {},
         },
