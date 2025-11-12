@@ -106,38 +106,3 @@ export class SettlementExtraError extends Error {
   }
 }
 
-/**
- * Gas metrics for settlement transaction monitoring
- */
-export interface GasMetrics {
-  /** Actual gas used by the transaction */
-  gasUsed: string;
-  /** Effective gas price (in Wei) */
-  effectiveGasPrice: string;
-  /** Actual gas cost in native token (ETH/BNB/etc.) */
-  actualGasCostNative: string;
-  /** Actual gas cost in USD */
-  actualGasCostUSD: string;
-  /** Facilitator fee that was charged (in token's smallest unit) */
-  facilitatorFee: string;
-  /** Facilitator fee in USD */
-  facilitatorFeeUSD: string;
-  /** Profit/loss amount (facilitatorFee - actualGasCost, in USD) */
-  profitUSD: string;
-  /** Profit margin as percentage */
-  profitMarginPercent: string;
-  /** Whether this settlement was profitable */
-  profitable: boolean;
-  /** Hook address for this settlement */
-  hook: string;
-  /** Network native token price in USD */
-  nativeTokenPriceUSD: string;
-}
-
-/**
- * Extended SettleResponse with gas metrics
- */
-export interface SettleResponseWithMetrics extends SettleResponse {
-  /** Gas metrics for monitoring (only present on successful settlements) */
-  gasMetrics?: GasMetrics;
-}
