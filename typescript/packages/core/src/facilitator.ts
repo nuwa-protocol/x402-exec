@@ -6,7 +6,7 @@
  * helper functions for settlement mode detection and validation.
  */
 
-import type { PaymentRequirements } from "./types.js";
+import type { PaymentRequirements, SettlementExtraCore } from "./types.js";
 import { SettlementExtraError } from "./types.js";
 
 /**
@@ -52,14 +52,7 @@ export function isSettlementMode(paymentRequirements: PaymentRequirements): bool
  * }
  * ```
  */
-export function parseSettlementExtra(extra: unknown): {
-  settlementRouter: string;
-  salt: string;
-  payTo: string;
-  facilitatorFee: string;
-  hook: string;
-  hookData: string;
-} {
+export function parseSettlementExtra(extra: unknown): SettlementExtraCore {
   if (!extra || typeof extra !== "object") {
     throw new SettlementExtraError("Missing or invalid extra field");
   }

@@ -29,6 +29,7 @@ export type {
   CommitmentParams,
   NetworkConfig,
   SettlementExtra,
+  SettlementExtraCore,
   PaymentRequirements,
   PaymentPayload,
   SettleResponse,

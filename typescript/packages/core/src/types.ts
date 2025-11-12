@@ -63,13 +63,9 @@ export interface NetworkConfig {
 }
 
 /**
- * Settlement extra parameters for PaymentRequirements
+ * Core settlement parameters (without EIP-712 domain info)
  */
-export interface SettlementExtra {
-  /** USDC contract name (for EIP-712) */
-  name: string;
-  /** USDC contract version (for EIP-712) */
-  version: string;
+export interface SettlementExtraCore {
   /** SettlementRouter contract address */
   settlementRouter: string;
   /** Unique salt for idempotency (32 bytes) */
@@ -82,6 +78,17 @@ export interface SettlementExtra {
   hook: string;
   /** Encoded hook parameters */
   hookData: string;
+}
+
+/**
+ * Settlement extra parameters for PaymentRequirements
+ * Includes EIP-712 domain info (name, version) for USDC signature validation
+ */
+export interface SettlementExtra extends SettlementExtraCore {
+  /** USDC contract name (for EIP-712) */
+  name: string;
+  /** USDC contract version (for EIP-712) */
+  version: string;
 }
 
 /**
