@@ -208,7 +208,7 @@ export function ServerlessPaymentDialog({
         amount,
         recipient: recipient as `0x${string}`,
         facilitatorFee: feeInfo.facilitatorFee,
-      }, false); // waitForConfirmation = false - no wait for transaction confirmation, show facilitator result directly
+      }, false); // waitForConfirmation = false - don't wait for transaction confirmation, show facilitator result directly
 
       console.log('[ServerlessPaymentDialog] Execute result:', result);
       console.log('[ServerlessPaymentDialog] Selected network:', selectedNetwork);

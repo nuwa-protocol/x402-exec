@@ -70,7 +70,7 @@ export function useX402Execute(): UseX402ExecuteReturn {
 
       // Step 3: Execute settlement (SDK handles address normalization automatically)
       setStatus('signing');
-      const executeResult = await client.execute(params, false); // waitForConfirmation = false - 不等待链上确认，直接展示 facilitator 返回结果
+      const executeResult = await client.execute(params, false); // waitForConfirmation = false - don't wait for on-chain confirmation, show facilitator result immediately
 
       console.log('[x402x] Settlement successful:', executeResult);
       
