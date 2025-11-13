@@ -81,7 +81,7 @@ async function queryFacilitatorFee(
  *   hook: TransferHook.getAddress('base-sepolia'),
  *   hookData: TransferHook.encode(),
  *   amount: '1000000',
- *   recipient: '0x...',
+ *   payTo: '0x...',
  *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  * ```
@@ -90,7 +90,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   // 1. Validate parameters
   validateAddress(params.hook, "hook");
   validateHex(params.hookData, "hookData");
-  validateAddress(params.recipient, "recipient");
+  validateAddress(params.payTo, "payTo");
 
   // 2. Validate and parse amount
   let atomicAmount: string;
@@ -171,7 +171,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     validAfter: timeWindow.validAfter,
     validBefore: timeWindow.validBefore,
     salt,
-    payTo: params.recipient,
+    payTo: params.payTo,
     facilitatorFee,
     hook: params.hook,
     hookData: params.hookData,
@@ -187,7 +187,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     validAfter: timeWindow.validAfter,
     validBefore: timeWindow.validBefore,
     salt,
-    payTo: params.recipient,
+    payTo: params.payTo,
     facilitatorFee,
     hook: params.hook,
     hookData: params.hookData,

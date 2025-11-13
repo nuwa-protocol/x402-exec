@@ -185,7 +185,7 @@ export class NFTMintHook {
    *   hook: NFTMintHook.getAddress('base-sepolia'),
    *   hookData,
    *   amount: '100000',
-   *   recipient: merchantAddress  // ← Merchant receives payment here
+   *   payTo: merchantAddress  // ← Merchant receives payment here
    * });
    * // NFT is minted to the payer, payment goes to merchant
    * ```

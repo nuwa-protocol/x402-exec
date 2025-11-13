@@ -40,14 +40,14 @@ export interface X402ClientConfig {
  * Parameters for executing a settlement
  */
 export interface ExecuteParams {
-  /** Hook contract address */
-  hook: Address;
-  /** Encoded hook data */
-  hookData: Hex;
+  /** Optional: Hook contract address (defaults to TransferHook) */
+  hook?: Address;
+  /** Optional: Encoded hook data (defaults to "0x" for no hook data) */
+  hookData?: Hex;
   /** Payment amount in token's smallest unit (e.g., USDC has 6 decimals) */
   amount: string;
   /** Primary recipient address */
-  recipient: Address;
+  payTo: Address;
   /** Optional: Facilitator fee amount (will query if not provided) */
   facilitatorFee?: string;
   /** Optional: Custom salt for idempotency (will generate if not provided) */
@@ -121,7 +121,7 @@ export interface PrepareParams {
   /** Payment amount */
   amount: string;
   /** Primary recipient address */
-  recipient: Address;
+  payTo: Address;
   /** Optional: Facilitator fee (will query if not provided) */
   facilitatorFee?: string;
   /** Optional: Custom salt */

@@ -15,11 +15,10 @@
  *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  *
+ * // Simple transfer (hook and hookData are optional, defaults to TransferHook)
  * const result = await client.execute({
- *   hook: TransferHook.getAddress('base-sepolia'),
- *   hookData: TransferHook.encode(),
  *   amount: '1000000',
- *   recipient: '0x...'
+ *   payTo: '0x...'
  * });
  * ```
  *

@@ -24,7 +24,7 @@ await client.execute({
   hook: rewardHookAddress,
   hookData,
   amount: "100000", // 0.1 USDC (6 decimals)
-  recipient: merchantAddress, // ← Merchant receives payment
+  payTo: merchantAddress, // ← Merchant receives payment
 });
 
 // Result: Payment to merchant + 1000 reward points to payer

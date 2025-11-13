@@ -6,7 +6,7 @@
  */
 
 import type { Address, Hex, TransactionReceipt } from "viem";
-import { calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core";
+import { calculateFacilitatorFee, type FeeCalculationResult, TransferHook } from "@x402x/core";
 import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
 import { prepareSettlement } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
@@ -60,11 +60,10 @@ interface InternalConfig extends X402ClientConfig {
  *   facilitatorUrl: 'https://custom-facilitator.example.com'
  * });
  *
+ * // Simple transfer (hook and hookData are optional)
  * const result = await client.execute({
- *   hook: TransferHook.getAddress('base-sepolia'),
- *   hookData: TransferHook.encode(),
  *   amount: '1000000',
- *   recipient: '0x...'
+ *   payTo: '0x...'
  * });
  * ```
  */
@@ -115,25 +114,39 @@ export class X402Client {
    * @throws FacilitatorError if facilitator request fails
    * @throws TransactionError if transaction fails
    *
-   * @example
+   * @example Simple transfer (uses TransferHook by default)
+   * ```typescript
+   * const result = await client.execute({
+   *   amount: '1000000',
+   *   payTo: '0x...'
+   * });
+   * console.log('Transaction:', result.txHash);
+   * ```
+   *
+   * @example Custom hook
    * ```typescript
    * const result = await client.execute({
    *   hook: '0x...',
    *   hookData: '0x...',
    *   amount: '1000000',
-   *   recipient: '0x...'
+   *   payTo: '0x...'
    * });
-   * console.log('Transaction:', result.txHash);
    * ```
    */
   async execute(
     params: ExecuteParams,
-    waitForConfirmation: boolean = true,
+    waitForConfirmation: boolean = false,
   ): Promise<ExecuteResult> {
     // 1. Validate and normalize parameters
-    const hook = normalizeAddress(params.hook, "hook");
-    const recipient = normalizeAddress(params.recipient, "recipient");
-    validateHex(params.hookData, "hookData");
+    const hook: Address = params.hook
+      ? normalizeAddress(params.hook, "hook")
+      : (TransferHook.getAddress(this.config.network) as Address);
+    const payTo = normalizeAddress(params.payTo, "payTo");
+    const hookData = params.hookData || "0x";
+
+    if (params.hookData) {
+      validateHex(params.hookData, "hookData");
+    }
     validateAmount(params.amount, "amount");
 
     // 2. Prepare settlement with normalized addresses
@@ -141,9 +154,9 @@ export class X402Client {
       wallet: this.config.wallet,
       network: this.config.network,
       hook,
-      hookData: params.hookData,
+      hookData,
       amount: params.amount,
-      recipient,
+      payTo,
       facilitatorFee: params.facilitatorFee,
       customSalt: params.customSalt,
       validAfter: params.validAfter,

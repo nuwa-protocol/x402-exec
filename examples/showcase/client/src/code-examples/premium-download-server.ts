@@ -17,7 +17,7 @@ app.post(
       return {
         amount: "100000", // 0.1 USDC (6 decimals)
         currency: "USDC",
-        recipient: merchantAddress,
+        payTo: merchantAddress,
         memo: `Purchase: ${content.title}`,
       };
     },
