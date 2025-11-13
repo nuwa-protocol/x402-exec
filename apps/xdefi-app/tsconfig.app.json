@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@x402x/core": [
+        "../../typescript/packages/core/dist"
       ]
     }
   },

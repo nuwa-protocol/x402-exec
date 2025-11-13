@@ -1,3 +1,4 @@
+import ThemeSwitch from "@/components/theme-switch";
 import {
     FaDiscord,
     FaGithub,
@@ -62,7 +63,7 @@ export default function Footer() {
                     className={`flex flex-col gap-8 py-8 md:py-12 lg:grid lg:grid-cols-12 lg:gap-10 border-t [border-image:linear-gradient(to_right,transparent,theme(colors.slate.200),transparent)1]`}
                 >
                     {/* Logo block */}
-                    <div className="lg:col-span-4 flex flex-col items-start justify-start">
+                    <div className="lg:col-span-4 flex flex-col items-start justify-start gap-3">
                         <span className="text-xs pt-2 md:text-sm text-gray-600">
                             &copy; xdefi.app - A project from{" "}
                             <a
@@ -85,6 +86,8 @@ export default function Footer() {
                                 x402x Protocol
                             </a>
                         </span>
+                        {/* Moved from nav: theme switcher now lives in the footer */}
+                        <ThemeSwitch />
                     </div>
 
                     <div className="hidden lg:block lg:col-span-4"></div>

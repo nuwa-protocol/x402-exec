@@ -1,6 +1,6 @@
+import { SwapComponent } from "@/components/crypto-swap";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import Seo from "@/components/Seo";
-import { SwapComponent } from "@/components/ui/crypto-swap";
 
 export default function SwapPage() {
   return (

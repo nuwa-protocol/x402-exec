@@ -47,6 +47,18 @@ on:
 - [shadcn-ui](https://github.com/shadcn-ui/ui/)
 - [react-router-dom](https://www.npmjs.com/package/react-router-dom)
 
+### Wallet Connection (AppKit + viem)
+
+This app includes wallet connection via WalletConnect AppKit (wagmi/viem).
+
+Environment variable required at runtime:
+
+```
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id_here
+```
+
+Create a project id at https://cloud.walletconnect.com.
+
 ## Project Structure
 
 ```md
