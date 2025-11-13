@@ -135,7 +135,7 @@ export class X402Client {
    */
   async execute(
     params: ExecuteParams,
-    waitForConfirmation: boolean = true,
+    waitForConfirmation: boolean = false,
   ): Promise<ExecuteResult> {
     // 1. Validate and normalize parameters
     const hook: Address = params.hook
