@@ -61,6 +61,8 @@ The SettlementRouter will use the `extra.payTo` value to determine where funds s
 Important: The client should include this `paymentRequirements` in its final `X-PAYMENT` header so
 the facilitator can validate the same parameters (salt, hook, fee, etc.).
 
+For more information about facilitator fees, how they're calculated, and how to work with them, see the [Facilitator Fee documentation](./facilitator-fee.mdx).
+
 ## 3) Client: Create X‑PAYMENT
 
 - Standard x402 mode: random 32‑byte nonce; `to = payTo`
