@@ -15,8 +15,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY typescript/packages ./typescript/packages
 COPY facilitator/package.json ./facilitator/
 
-# Install all dependencies
-RUN pnpm install --frozen-lockfile
+# Install only the workspace packages needed for facilitator builds
+RUN pnpm install --frozen-lockfile --filter "." --filter "@x402x/*"
 
 # ==============================================================================
 # Stage 2: Build
@@ -76,8 +76,8 @@ COPY --from=builder /app/typescript/packages/react/package.json ./typescript/pac
 # Copy facilitator package.json
 COPY facilitator/package.json ./facilitator/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install production dependencies for facilitator and its SDK runtime
+RUN pnpm install --frozen-lockfile --prod --filter "@x402x/*"
 
 # Copy built SDK packages from builder (with correct directory structure)
 COPY --from=builder /app/typescript/packages/core/dist ./typescript/packages/core/dist
