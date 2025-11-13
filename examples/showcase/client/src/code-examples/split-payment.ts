@@ -19,7 +19,7 @@ await client.execute({
   hook: TransferHook.address,
   hookData,
   amount: "100000", // 0.1 USDC (6 decimals)
-  recipient: primaryRecipient, // Receives remainder (50%)
+  payTo: primaryRecipient, // Receives remainder (50%)
 });
 
 // Result: Funds distributed atomically to all recipients

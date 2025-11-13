@@ -24,7 +24,7 @@ interface ServerlessPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
-  recipient: string; // Recipient address
+  payTo: string; // Recipient address
   hook?: `0x${string}`; // Optional: custom hook address (defaults to TransferHook)
   hookData?: `0x${string}`; // Optional: custom hook data (defaults to empty TransferHook)
   prepareHookData?: (network: Network) => { hook: `0x${string}`; hookData: `0x${string}` }; // Optional: function to prepare hook/hookData per network
@@ -36,7 +36,7 @@ export function ServerlessPaymentDialog({
   isOpen,
   onClose,
   amount,
-  recipient,
+  payTo: recipient,
   hook: customHook,
   hookData: customHookData,
   prepareHookData,
@@ -226,7 +226,7 @@ export function ServerlessPaymentDialog({
           hook,
           hookData,
           amount,
-          recipient: recipient as `0x${string}`,
+          payTo: recipient as `0x${string}`,
           facilitatorFee: feeInfo.facilitatorFee,
         },
         false,

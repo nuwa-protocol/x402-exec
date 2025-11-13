@@ -316,7 +316,7 @@ export function ServerlessPointsReward() {
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
-        recipient={connectedAddress || "0x0000000000000000000000000000000000000000"}
+        payTo={connectedAddress || "0x0000000000000000000000000000000000000000"}
         prepareHookData={prepareRewardForNetwork}
         onSuccess={handlePaymentSuccess}
         onError={handleError}

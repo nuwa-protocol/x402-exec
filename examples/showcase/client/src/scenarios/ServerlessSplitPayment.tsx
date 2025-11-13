@@ -531,7 +531,7 @@ export function ServerlessSplitPayment() {
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount={AMOUNT}
-        recipient={payTo}
+        payTo={payTo}
         hookData={hookData}
         onSuccess={handleSuccess}
         onError={handleError}

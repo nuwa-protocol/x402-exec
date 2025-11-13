@@ -24,7 +24,7 @@ await client.execute({
   hook: nftMintHookAddress,
   hookData,
   amount: "100000", // 0.1 USDC (6 decimals)
-  recipient: payerAddress, // ← Merchant address (USDC goes here)
+  payTo: payerAddress, // ← Merchant address (USDC goes here)
 });
 
 // Result: NFT minted to payer + payment transferred to merchant

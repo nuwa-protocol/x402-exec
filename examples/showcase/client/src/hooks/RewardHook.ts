@@ -185,7 +185,7 @@ export class RewardHook {
    *   hook: RewardHook.getAddress('base-sepolia'),
    *   hookData,
    *   amount: '100000',
-   *   recipient: merchantAddress  // ← Merchant receives payment here
+   *   payTo: merchantAddress  // ← Merchant receives payment here
    * });
    * // Payer automatically receives reward tokens!
    * ```
