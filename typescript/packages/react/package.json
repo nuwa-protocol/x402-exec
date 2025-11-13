@@ -51,13 +51,13 @@
     "react-dom": "^18.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "viem": "^2.17.0",
+    "viem": "^2.21.26",
     "vitest": "^1.0.0",
-    "wagmi": "^2.0.0"
+    "wagmi": "^2.15.6"
   },
   "peerDependencies": {
     "react": "^18.0.0",
-    "viem": "^2.0.0",
-    "wagmi": "^2.0.0"
+    "viem": "^2.21.26",
+    "wagmi": "^2.15.6"
   }
 }

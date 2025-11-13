@@ -43,12 +43,12 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@x402x/core": "workspace:*",
-    "viem": "^2.21.54",
+    "viem": "^2.21.26",
     "x402": "npm:@x402x/x402@0.6.6-patch.2"
   },
   "peerDependencies": {
     "react": "^18.0.0",
-    "wagmi": "^2.0.0"
+    "wagmi": "^2.15.6"
   },
   "peerDependenciesMeta": {
     "react": {

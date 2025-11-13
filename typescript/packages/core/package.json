@@ -35,7 +35,7 @@
   "author": "Nuwa Protocol",
   "license": "Apache-2.0",
   "dependencies": {
-    "viem": "^2.17.0",
+    "viem": "^2.21.26",
     "x402": "npm:@x402x/x402@0.6.6-patch.2"
   },
   "devDependencies": {
