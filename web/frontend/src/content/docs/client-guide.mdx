@@ -35,15 +35,23 @@ const client = new X402Client({
   facilitatorUrl: "https://facilitator.x402x.dev",
 });
 
-// Simple transfer (net amount goes to recipient, fee is handled automatically)
-const res = await client.execute({
-  hook: TransferHook.getAddress("base-sepolia"),
-  hookData: TransferHook.encode(), // "0x" for simple transfer
-  amount: "1000000",               // 1.00 USDC
+// Example 1: Simple transfer (hook defaults to TransferHook, no splits)
+const res1 = await client.execute({
+  amount: "1000000",     // 1.00 USDC
   payTo: "0xMerchant...",
 });
+console.log("Simple transfer:", res1.txHash);
 
-console.log(res.txHash);
+// Example 2: Revenue split (70% to merchant, 30% to platform)
+const res2 = await client.execute({
+  hook: TransferHook.getAddress("base-sepolia"),
+  hookData: TransferHook.encode([
+    { recipient: "0xPlatform...", bips: 3000 }, // 30% to platform
+  ]),
+  amount: "1000000",     // 1.00 USDC (merchant gets remaining 70%)
+  payTo: "0xMerchant...", // Primary recipient gets remaining amount
+});
+console.log("Revenue split:", res2.txHash);
 ```
 
 Under the hood the client:
