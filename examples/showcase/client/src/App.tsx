@@ -7,14 +7,16 @@
  * - Server: Server-controlled (Premium Download)
  */
 
-import { useState } from "react";
-import { UnifiedDebugPanel } from "./components/UnifiedDebugPanel";
+import { useState, Suspense, lazy } from "react";
 import { ServerlessSplitPayment } from "./scenarios/ServerlessSplitPayment";
 import { ServerlessRandomNFT } from "./scenarios/ServerlessRandomNFT";
 import { ServerlessPointsReward } from "./scenarios/ServerlessPointsReward";
 import { PremiumDownload } from "./scenarios/PremiumDownload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "./App.css";
+
+// Lazy load UnifiedDebugPanel to avoid WagmiProvider context issues
+const UnifiedDebugPanel = lazy(() => import("./components/UnifiedDebugPanel"));
 
 type ScenarioTab = "split-payment" | "nft-mint" | "points-reward" | "premium-download";
 
@@ -139,7 +141,11 @@ function App() {
       </footer>
 
       {/* Unified Debug Panel - floating panel */}
-      <UnifiedDebugPanel visible={showDebug} />
+      {showDebug && (
+        <Suspense fallback={<div>Loading debug panel...</div>}>
+          <UnifiedDebugPanel visible={true} />
+        </Suspense>
+      )}
     </div>
   );
 }

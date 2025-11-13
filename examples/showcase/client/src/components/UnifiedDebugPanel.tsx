@@ -18,10 +18,9 @@ interface UnifiedDebugPanelProps {
 
 type DebugTab = "wallet" | "config";
 
-export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
+function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
   const [activeTab, setActiveTab] = useState<DebugTab>("wallet");
 
-  // Wallet-related hooks
   const { address, isConnected, connector: activeConnector, chain } = useAccount();
   const { data: walletClient } = useWalletClient({ account: address });
   const { data: connectorClient } = useConnectorClient();
@@ -242,3 +241,5 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
     </Card>
   );
 }
+
+export default UnifiedDebugPanel;
