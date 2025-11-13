@@ -6,6 +6,8 @@
  */
 
 import { ReactNode } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 type MessageType = "success" | "error" | "warning" | "info";
 
@@ -16,54 +18,46 @@ interface StatusMessageProps {
   className?: string;
 }
 
-const typeConfig: Record<
-  MessageType,
-  { icon: string; bgColor: string; borderColor: string; titleColor: string }
-> = {
-  success: {
-    icon: "✅",
-    bgColor: "#d4edda",
-    borderColor: "#c3e6cb",
-    titleColor: "#155724",
-  },
-  error: {
-    icon: "❌",
-    bgColor: "#fee",
-    borderColor: "#fcc",
-    titleColor: "#c00",
-  },
-  warning: {
-    icon: "⚠️",
-    bgColor: "#fff3cd",
-    borderColor: "#ffeaa7",
-    titleColor: "#856404",
-  },
-  info: {
-    icon: "ℹ️",
-    bgColor: "#d1ecf1",
-    borderColor: "#bee5eb",
-    titleColor: "#0c5460",
-  },
+const getVariant = (type: MessageType) => {
+  switch (type) {
+    case "success":
+      return "default" as const;
+    case "error":
+      return "destructive" as const;
+    case "warning":
+      return "default" as const;
+    case "info":
+      return "default" as const;
+    default:
+      return "default" as const;
+  }
+};
+
+const getIcon = (type: MessageType) => {
+  switch (type) {
+    case "success":
+      return "✅";
+    case "error":
+      return "❌";
+    case "warning":
+      return "⚠️";
+    case "info":
+      return "ℹ️";
+    default:
+      return "ℹ️";
+  }
 };
 
 export function StatusMessage({ type, title, children, className = "" }: StatusMessageProps) {
-  const config = typeConfig[type];
+  const variant = getVariant(type);
+  const icon = getIcon(type);
 
   return (
-    <div
-      className={`status-message ${className}`}
-      style={{
-        marginTop: "20px",
-        padding: "15px",
-        backgroundColor: config.bgColor,
-        borderRadius: "8px",
-        border: `1px solid ${config.borderColor}`,
-      }}
-    >
-      <h4 style={{ margin: "0 0 10px 0", color: config.titleColor }}>
-        {config.icon} {title}
-      </h4>
-      {children && <div style={{ fontSize: "14px", color: config.titleColor }}>{children}</div>}
-    </div>
+    <Alert className={cn("mt-5", className)} variant={variant}>
+      <AlertTitle className="flex items-center gap-2">
+        {icon} {title}
+      </AlertTitle>
+      {children && <AlertDescription>{children}</AlertDescription>}
+    </Alert>
   );
 }

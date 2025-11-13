@@ -9,6 +9,8 @@ import { useEffect } from "react";
 import { createWalletClient, custom } from "viem";
 import { type WalletClient } from "viem";
 import { getFacilitatorUrl, getServerUrl } from "../config";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface UnifiedDebugPanelProps {
   visible?: boolean;
@@ -63,92 +65,25 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
   const finalClient = connectorClient || manualClient;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        backgroundColor: "#f8f9fa",
-        border: "2px solid #dee2e6",
-        borderRadius: "8px",
-        maxWidth: "450px",
-        maxHeight: "80vh",
-        overflow: "hidden",
-        fontSize: "12px",
-        fontFamily: "monospace",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Header with Tabs */}
-      <div
-        style={{
-          display: "flex",
-          borderBottom: "2px solid #dee2e6",
-          backgroundColor: "#fff",
-        }}
-      >
-        <button
-          onClick={() => setActiveTab("wallet")}
-          style={{
-            flex: 1,
-            padding: "12px 16px",
-            border: "none",
-            backgroundColor: activeTab === "wallet" ? "#f8f9fa" : "#fff",
-            borderBottom: activeTab === "wallet" ? "3px solid #007bff" : "3px solid transparent",
-            cursor: "pointer",
-            fontWeight: activeTab === "wallet" ? "bold" : "normal",
-            fontSize: "13px",
-            fontFamily: "system-ui",
-            color: activeTab === "wallet" ? "#007bff" : "#6c757d",
-            transition: "all 0.2s",
-          }}
-        >
-          🔍 Wallet
-        </button>
-        <button
-          onClick={() => setActiveTab("config")}
-          style={{
-            flex: 1,
-            padding: "12px 16px",
-            border: "none",
-            backgroundColor: activeTab === "config" ? "#f8f9fa" : "#fff",
-            borderBottom: activeTab === "config" ? "3px solid #007bff" : "3px solid transparent",
-            cursor: "pointer",
-            fontWeight: activeTab === "config" ? "bold" : "normal",
-            fontSize: "13px",
-            fontFamily: "system-ui",
-            color: activeTab === "config" ? "#007bff" : "#6c757d",
-            transition: "all 0.2s",
-          }}
-        >
-          🔧 Config
-        </button>
-      </div>
+    <Card className="fixed bottom-5 right-5 w-full max-w-md max-h-[80vh] overflow-hidden z-50 flex flex-col font-mono text-xs shadow-brand-xl bg-white">
+      <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as DebugTab)}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="wallet">🔍 Wallet</TabsTrigger>
+          <TabsTrigger value="config">🔧 Config</TabsTrigger>
+        </TabsList>
 
-      {/* Content Area */}
-      <div
-        style={{
-          padding: "15px",
-          overflow: "auto",
-          flex: 1,
-        }}
-      >
-        {/* Wallet Tab */}
-        {activeTab === "wallet" && (
-          <div>
-            <div style={{ fontWeight: "bold", marginBottom: "12px", fontSize: "14px" }}>
+        <div className="p-4 overflow-auto flex-1">
+          <TabsContent value="wallet" className="mt-0">
+            <div className="font-bold mb-3 text-sm">
               Wallet Debug Info
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>useAccount:</strong>
-              <div style={{ paddingLeft: "10px", marginTop: "4px" }}>
+              <div className="pl-2.5 mt-1">
                 <div>
                   isConnected:{" "}
-                  <span style={{ color: isConnected ? "green" : "red" }}>
+                  <span className={isConnected ? "text-green-600" : "text-red-600"}>
                     {String(isConnected)}
                   </span>
                 </div>
@@ -161,12 +96,12 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
               </div>
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>useWalletClient:</strong>
-              <div style={{ paddingLeft: "10px", marginTop: "4px" }}>
+              <div className="pl-2.5 mt-1">
                 <div>
                   exists:{" "}
-                  <span style={{ color: walletClient ? "green" : "red" }}>
+                  <span className={walletClient ? "text-green-600" : "text-red-600"}>
                     {String(!!walletClient)}
                   </span>
                 </div>
@@ -184,12 +119,12 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
               </div>
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>useConnectorClient:</strong>
-              <div style={{ paddingLeft: "10px", marginTop: "4px" }}>
+              <div className="pl-2.5 mt-1">
                 <div>
                   exists:{" "}
-                  <span style={{ color: connectorClient ? "green" : "red" }}>
+                  <span className={connectorClient ? "text-green-600" : "text-red-600"}>
                     {String(!!connectorClient)}
                   </span>
                 </div>
@@ -207,12 +142,12 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
               </div>
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>Manual Client (Fallback):</strong>
-              <div style={{ paddingLeft: "10px", marginTop: "4px" }}>
+              <div className="pl-2.5 mt-1">
                 <div>
                   exists:{" "}
-                  <span style={{ color: manualClient ? "green" : "red" }}>
+                  <span className={manualClient ? "text-green-600" : "text-red-600"}>
                     {String(!!manualClient)}
                   </span>
                 </div>
@@ -230,14 +165,14 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
               </div>
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>Available Connectors:</strong>
-              <div style={{ paddingLeft: "10px", marginTop: "4px" }}>
+              <div className="pl-2.5 mt-1">
                 {connectors.map((connector, idx) => (
-                  <div key={connector.uid} style={{ marginBottom: "4px" }}>
+                  <div key={connector.uid} className="mb-1">
                     {idx + 1}. {connector.name}{" "}
                     <span
-                      style={{ color: connector.id === activeConnector?.id ? "green" : "gray" }}
+                      className={connector.id === activeConnector?.id ? "text-green-600" : "text-gray-500"}
                     >
                       {connector.id === activeConnector?.id ? " (active)" : ""}
                     </span>
@@ -246,109 +181,64 @@ export function UnifiedDebugPanel({ visible = false }: UnifiedDebugPanelProps) {
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: "12px",
-                padding: "10px",
-                backgroundColor: finalClient ? "#d4edda" : "#f8d7da",
-                borderRadius: "4px",
-                border: `1px solid ${finalClient ? "#c3e6cb" : "#f5c6cb"}`,
-                fontSize: "11px",
-                fontFamily: "system-ui",
-              }}
-            >
+            <div className={`mt-3 p-2.5 rounded text-xs font-system ${
+              finalClient
+                ? "bg-green-100 border border-green-200 text-green-800"
+                : "bg-red-100 border border-red-200 text-red-800"
+            }`}>
               <strong>💡 Status:</strong>{" "}
               {finalClient
                 ? `✅ ${connectorClient ? "Using connectorClient" : "Using manual fallback client"} - Ready for payment!`
                 : "❌ No wallet client available. Try refreshing the page or reconnecting your wallet."}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Config Tab */}
-        {activeTab === "config" && (
-          <div>
-            <div style={{ fontWeight: "bold", marginBottom: "12px", fontSize: "14px" }}>
+          <TabsContent value="config" className="mt-0">
+            <div className="font-bold mb-3 text-sm">
               Configuration Info
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>Facilitator:</strong>
-              <div
-                style={{
-                  marginTop: "4px",
-                  padding: "8px",
-                  backgroundColor: isLocalFacilitator ? "#fff3cd" : "#e9ecef",
-                  borderRadius: "4px",
-                  wordBreak: "break-all",
-                  fontSize: "11px",
-                  border: isLocalFacilitator ? "1px solid #ffc107" : "none",
-                }}
-              >
+              <div className={`mt-1 p-2 rounded break-all text-xs ${
+                isLocalFacilitator
+                  ? "bg-yellow-100 border border-yellow-400"
+                  : "bg-gray-200"
+              }`}>
                 {facilitatorUrl}
               </div>
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
+            <div className="mb-2.5">
               <strong>Server:</strong>
-              <div
-                style={{
-                  marginTop: "4px",
-                  padding: "8px",
-                  backgroundColor: isLocalServer ? "#fff3cd" : "#e9ecef",
-                  borderRadius: "4px",
-                  wordBreak: "break-all",
-                  fontSize: "11px",
-                  border: isLocalServer ? "1px solid #ffc107" : "none",
-                }}
-              >
+              <div className={`mt-1 p-2 rounded break-all text-xs ${
+                isLocalServer
+                  ? "bg-yellow-100 border border-yellow-400"
+                  : "bg-gray-200"
+              }`}>
                 {serverUrl || "(relative - Vite proxy)"}
               </div>
             </div>
 
             {(isLocalFacilitator || isLocalServer) && (
-              <div
-                style={{
-                  marginTop: "12px",
-                  padding: "10px",
-                  backgroundColor: "#fff",
-                  borderRadius: "4px",
-                  border: "1px solid #ffc107",
-                }}
-              >
-                <div
-                  style={{
-                    color: "#856404",
-                    fontWeight: "bold",
-                    marginBottom: "6px",
-                    fontSize: "12px",
-                  }}
-                >
+              <div className="mt-3 p-2.5 bg-white border border-yellow-400 rounded">
+                <div className="text-yellow-800 font-bold mb-1.5 text-xs">
                   ⚠️ Local Development Mode
                 </div>
-                <div style={{ color: "#856404", fontSize: "11px", fontFamily: "system-ui" }}>
+                <div className="text-yellow-800 text-xs font-system">
                   {isLocalFacilitator && <div>• Facilitator: localhost</div>}
                   {isLocalServer && <div>• Server: localhost</div>}
-                  <div style={{ marginTop: "6px" }}>Make sure local services are running!</div>
+                  <div className="mt-1.5">Make sure local services are running!</div>
                 </div>
               </div>
             )}
 
-            <div
-              style={{
-                marginTop: "12px",
-                paddingTop: "10px",
-                borderTop: "1px solid #dee2e6",
-                fontSize: "11px",
-                color: "#6c757d",
-                fontFamily: "system-ui",
-              }}
-            >
+            <div className="mt-3 pt-2.5 border-t border-gray-300 text-xs text-gray-600 font-system">
               💡 To change: Edit <code>.env</code> and restart dev server
             </div>
-          </div>
-        )}
-      </div>
-    </div>
+          </TabsContent>
+        </div>
+      </Tabs>
+    </Card>
   );
 }
