@@ -14,8 +14,8 @@ Core utilities and network configuration.
 - Settlement helpers: `addSettlementExtra(requirements, { hook, hookData, facilitatorFee?, payTo?, salt? })`
 - Commitment: `calculateCommitment(params)`, `generateSalt()`
 - Built‑in hooks: `TransferHook.getAddress(network)`, `TransferHook.encode(splits?)`
-- Facilitator helpers: `isSettlementMode(req)`, `validateSettlementRouter(...)`,
-  `settleWithRouter(signer, payload, requirements, config)`, `calculateFacilitatorFee(url, network, hook, hookData?)`
+- Facilitator helpers: `isSettlementMode(req)`, `parseSettlementExtra(extra)`,
+  `settle(facilitatorUrl, paymentPayload, paymentRequirements)`, `calculateFacilitatorFee(url, network, hook, hookData?)`
 
 Example:
 
@@ -76,11 +76,11 @@ Serverless client SDK for talking to the facilitator directly.
 
 - Class: `new X402Client({ wallet, network, facilitatorUrl, ... })`
 - Methods: `execute({...})`
-- Primitives: `prepareSettlement`, `signAuthorization`, `submitToFacilitator`
+- Primitives: `prepareSettlement`, `signAuthorization`, `settle`
 
 ```client-example.ts
 const client = new X402Client({ wallet, network: "base-sepolia", facilitatorUrl: url });
-await client.execute({ hook, hookData, amount, recipient });
+await client.execute({ hook, hookData, amount, payTo });
 ```
 
 ## Facilitator Service

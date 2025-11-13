@@ -40,7 +40,7 @@ const res = await client.execute({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(), // "0x" for simple transfer
   amount: "1000000",               // 1.00 USDC
-  recipient: "0xMerchant...",
+  payTo: "0xMerchant...",
 });
 
 console.log(res.txHash);
@@ -56,7 +56,7 @@ Under the hood the client:
 ## Low‑Level Primitives
 
 ```low-level.ts
-import { prepareSettlement, signAuthorization, submitToFacilitator } from "@x402x/client";
+import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
 import { TransferHook } from "@x402x/core";
 
 const settlement = await prepareSettlement({
@@ -65,12 +65,19 @@ const settlement = await prepareSettlement({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(),
   amount: "1000000",
-  recipient: "0xMerchant...",
+  payTo: "0xMerchant...",
   // facilitatorFee?: string  // optional; will be queried if omitted
 });
 
 const signed = await signAuthorization(wallet, settlement);
-const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
+const result = await settle("https://facilitator.x402x.dev", signed);
+
+console.log('Settlement result:', {
+  success: result.success,
+  transaction: result.transaction,
+  network: result.network,
+  payer: result.payer
+});
 ```
 
 ## React Hook

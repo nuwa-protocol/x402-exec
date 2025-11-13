@@ -50,9 +50,13 @@ const withSettlement = addSettlementExtra(base, {
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(),
   facilitatorFee: "10000", // or compute dynamically; see middlewares
-  // payTo: merchant address (defaults to base.payTo before override)
+  payTo: "0xMerchantAddress...", // Final recipient (merchant) address
 });
 ```
+
+**Note:** The `payTo` parameter in `addSettlementExtra` specifies the final recipient (merchant) address.
+This is different from the base `requirements.payTo` which points to the SettlementRouter for the EIP-3009 authorization.
+The SettlementRouter will use the `extra.payTo` value to determine where funds should ultimately go.
 
 Important: The client should include this `paymentRequirements` in its final `X-PAYMENT` header so
 the facilitator can validate the same parameters (salt, hook, fee, etc.).
