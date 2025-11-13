@@ -35,15 +35,23 @@ const client = new X402Client({
   facilitatorUrl: "https://facilitator.x402x.dev",
 });
 
-// Simple transfer (net amount goes to recipient, fee is handled automatically)
-const res = await client.execute({
-  hook: TransferHook.getAddress("base-sepolia"),
-  hookData: TransferHook.encode(), // "0x" for simple transfer
-  amount: "1000000",               // 1.00 USDC
-  recipient: "0xMerchant...",
+// Example 1: Simple transfer (hook defaults to TransferHook, no splits)
+const res1 = await client.execute({
+  amount: "1000000",     // 1.00 USDC
+  payTo: "0xMerchant...",
 });
+console.log("Simple transfer:", res1.txHash);
 
-console.log(res.txHash);
+// Example 2: Revenue split (70% to merchant, 30% to platform)
+const res2 = await client.execute({
+  hook: TransferHook.getAddress("base-sepolia"),
+  hookData: TransferHook.encode([
+    { recipient: "0xPlatform...", bips: 3000 }, // 30% to platform
+  ]),
+  amount: "1000000",     // 1.00 USDC (merchant gets remaining 70%)
+  payTo: "0xMerchant...", // Primary recipient gets remaining amount
+});
+console.log("Revenue split:", res2.txHash);
 ```
 
 Under the hood the client:
@@ -53,10 +61,12 @@ Under the hood the client:
 - Signs EIP‑3009 with EIP‑712
 - Submits to the facilitator and waits for confirmation (optional)
 
+See the [Facilitator Fee documentation](./facilitator-fee.mdx) for detailed information about how fees work and how to manage them in your client applications.
+
 ## Low‑Level Primitives
 
 ```low-level.ts
-import { prepareSettlement, signAuthorization, submitToFacilitator } from "@x402x/client";
+import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
 import { TransferHook } from "@x402x/core";
 
 const settlement = await prepareSettlement({
@@ -65,12 +75,19 @@ const settlement = await prepareSettlement({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(),
   amount: "1000000",
-  recipient: "0xMerchant...",
+  payTo: "0xMerchant...",
   // facilitatorFee?: string  // optional; will be queried if omitted
 });
 
 const signed = await signAuthorization(wallet, settlement);
-const result = await submitToFacilitator("https://facilitator.x402x.dev", signed);
+const result = await settle("https://facilitator.x402x.dev", signed);
+
+console.log('Settlement result:', {
+  success: result.success,
+  transaction: result.transaction,
+  network: result.network,
+  payer: result.payer
+});
 ```
 
 ## React Hook

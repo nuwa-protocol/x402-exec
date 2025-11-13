@@ -194,13 +194,11 @@ cd contracts
 
 教学模板和参考实现，位于 [`contracts/examples/`](./contracts/examples/)：
 
-- **RevenueSplitHook**：多方支付分配 ([源码](./contracts/examples/revenue-split/))
+- **TransferHook**：简单转账和收入分成（内置，无需单独合约）
 - **NFTMintHook**：原子化 NFT 铸造与支付 ([源码](./contracts/examples/nft-mint/))
 - **RewardHook**：会员积分分发 ([源码](./contracts/examples/reward-points/))
 
-## 🌐 部署信息
 
-> ⚠️ **开发状态**：正在积极开发中，尚未经过审计。仅用于演示和测试目的。
 
 ### SettlementRouter 合约
 

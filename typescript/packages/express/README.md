@@ -135,18 +135,20 @@ app.get("/api/basic", (req, res) => {
 ## Custom Settlement Hooks
 
 ```typescript
-// Use custom hook for revenue split
+// Use TransferHook for revenue split (built-in)
+import { TransferHook } from "@x402x/core";
+
 app.post(
   "/api/referral",
   paymentMiddleware("0xMerchantAddress", {
     price: "$0.10",
     network: "base-sepolia",
-    hook: "0xRevenueSplitHookAddress",
-    hookData: encodeRevenueSplitData({
-      merchant: "0xMerchantAddress",
-      referrer: "0xReferrerAddress",
-      platform: "0xPlatformAddress",
-    }),
+    hook: TransferHook.getAddress("base-sepolia"),
+    hookData: TransferHook.encode([
+      { recipient: "0xReferrerAddress", bips: 2000 }, // 20% to referrer
+      { recipient: "0xPlatformAddress", bips: 1000 }, // 10% to platform
+      // Merchant gets remaining 70%
+    ]),
   }),
   (req, res) => {
     res.json({ message: "Revenue split executed" });
