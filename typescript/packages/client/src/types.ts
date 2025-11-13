@@ -47,7 +47,7 @@ export interface ExecuteParams {
   /** Payment amount in token's smallest unit (e.g., USDC has 6 decimals) */
   amount: string;
   /** Primary recipient address */
-  recipient: Address;
+  payTo: Address;
   /** Optional: Facilitator fee amount (will query if not provided) */
   facilitatorFee?: string;
   /** Optional: Custom salt for idempotency (will generate if not provided) */
@@ -121,7 +121,7 @@ export interface PrepareParams {
   /** Payment amount */
   amount: string;
   /** Primary recipient address */
-  recipient: Address;
+  payTo: Address;
   /** Optional: Facilitator fee (will query if not provided) */
   facilitatorFee?: string;
   /** Optional: Custom salt */

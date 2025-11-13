@@ -64,7 +64,7 @@ interface InternalConfig extends X402ClientConfig {
  *   hook: TransferHook.getAddress('base-sepolia'),
  *   hookData: TransferHook.encode(),
  *   amount: '1000000',
- *   recipient: '0x...'
+ *   payTo: '0x...'
  * });
  * ```
  */
@@ -117,12 +117,12 @@ export class X402Client {
    *
    * @example
    * ```typescript
-   * const result = await client.execute({
-   *   hook: '0x...',
-   *   hookData: '0x...',
-   *   amount: '1000000',
-   *   recipient: '0x...'
-   * });
+ * const result = await client.execute({
+ *   hook: '0x...',
+ *   hookData: '0x...',
+ *   amount: '1000000',
+ *   payTo: '0x...'
+ * });
    * console.log('Transaction:', result.txHash);
    * ```
    */
@@ -132,7 +132,7 @@ export class X402Client {
   ): Promise<ExecuteResult> {
     // 1. Validate and normalize parameters
     const hook = normalizeAddress(params.hook, "hook");
-    const recipient = normalizeAddress(params.recipient, "recipient");
+    const payTo = normalizeAddress(params.payTo, "payTo");
     validateHex(params.hookData, "hookData");
     validateAmount(params.amount, "amount");
 
@@ -143,7 +143,7 @@ export class X402Client {
       hook,
       hookData: params.hookData,
       amount: params.amount,
-      recipient,
+      payTo,
       facilitatorFee: params.facilitatorFee,
       customSalt: params.customSalt,
       validAfter: params.validAfter,

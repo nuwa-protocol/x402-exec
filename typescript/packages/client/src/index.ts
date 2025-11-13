@@ -19,7 +19,7 @@
  *   hook: TransferHook.getAddress('base-sepolia'),
  *   hookData: TransferHook.encode(),
  *   amount: '1000000',
- *   recipient: '0x...'
+ *   payTo: '0x...'
  * });
  * ```
  *

@@ -63,7 +63,7 @@ const CHAIN_ID_TO_NETWORK: Record<number, string> = {
  *       hook: '0x...',
  *       hookData: '0x...',
  *       amount: '1000000',
- *       recipient: '0x...'
+ *       payTo: '0x...'
  *     });
  *   };
  *
