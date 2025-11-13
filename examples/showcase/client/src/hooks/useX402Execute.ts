@@ -37,9 +37,8 @@ export interface UseX402ExecuteReturn {
  * const { execute, status, error, result } = useX402Execute();
  *
  * const handlePay = async () => {
+ *   // Simple transfer (hook and hookData are optional)
  *   await execute({
- *     hook: TransferHook.getAddress('base-sepolia'),
- *     hookData: TransferHook.encode(),
  *     amount: '1000000',
  *     payTo: '0x...'
  *   }, 'base-sepolia');

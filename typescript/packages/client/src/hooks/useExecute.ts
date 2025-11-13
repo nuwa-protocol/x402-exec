@@ -52,9 +52,8 @@ export interface UseExecuteReturn {
  *
  *   const handlePay = async () => {
  *     try {
+ *       // Simple transfer (hook and hookData are optional)
  *       const result = await execute({
- *         hook: TransferHook.getAddress('base-sepolia'),
- *         hookData: TransferHook.encode(),
  *         amount: '1000000',
  *         payTo: '0x...'
  *       });
