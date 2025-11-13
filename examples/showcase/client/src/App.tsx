@@ -14,7 +14,6 @@ import { ServerlessRandomNFT } from "./scenarios/ServerlessRandomNFT";
 import { ServerlessPointsReward } from "./scenarios/ServerlessPointsReward";
 import { PremiumDownload } from "./scenarios/PremiumDownload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import "./App.css";
 
 type ScenarioTab = "split-payment" | "nft-mint" | "points-reward" | "premium-download";
