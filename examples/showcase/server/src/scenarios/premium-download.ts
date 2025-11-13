@@ -37,8 +37,8 @@ export interface DownloadAccess {
  * Available premium content
  */
 const CONTENT_CATALOG: Record<string, ContentItem> = {
-  "x402-protocol-guide": {
-    id: "x402-protocol-guide",
+  "x402-whitepaper": {
+    id: "x402-whitepaper",
     title: "x402 Protocol Whitepaper",
     description: "Official whitepaper of the x402 payment protocol",
     fileName: "x402-whitepaper.pdf",

@@ -13,6 +13,7 @@ import { ServerlessSplitPayment } from "./scenarios/ServerlessSplitPayment";
 import { ServerlessRandomNFT } from "./scenarios/ServerlessRandomNFT";
 import { ServerlessPointsReward } from "./scenarios/ServerlessPointsReward";
 import { PremiumDownload } from "./scenarios/PremiumDownload";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "./App.css";
 
 type ScenarioTab = "split-payment" | "nft-mint" | "points-reward" | "premium-download";
@@ -33,95 +34,75 @@ function App() {
       </header>
 
       <main className="app-main">
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === "split-payment" ? "active" : ""}`}
-            onClick={() => setActiveTab("split-payment")}
-          >
-            <span className="tab-number">1</span>
-            <span>💸 Split Payment</span>
-            <span
-              className="tab-badge"
-              style={{
-                marginLeft: "8px",
-                fontSize: "11px",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                backgroundColor: "#dbeafe",
-                color: "#1e40af",
-              }}
-            >
-              Serverless
-            </span>
-          </button>
-          <button
-            className={`tab ${activeTab === "nft-mint" ? "active" : ""}`}
-            onClick={() => setActiveTab("nft-mint")}
-          >
-            <span className="tab-number">2</span>
-            <span>🎨 Pay & Mint NFT</span>
-            <span
-              className="tab-badge"
-              style={{
-                marginLeft: "8px",
-                fontSize: "11px",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                backgroundColor: "#dbeafe",
-                color: "#1e40af",
-              }}
-            >
-              Serverless
-            </span>
-          </button>
-          <button
-            className={`tab ${activeTab === "points-reward" ? "active" : ""}`}
-            onClick={() => setActiveTab("points-reward")}
-          >
-            <span className="tab-number">3</span>
-            <span>🎁 Pay & Earn Points</span>
-            <span
-              className="tab-badge"
-              style={{
-                marginLeft: "8px",
-                fontSize: "11px",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                backgroundColor: "#dbeafe",
-                color: "#1e40af",
-              }}
-            >
-              Serverless
-            </span>
-          </button>
-          <button
-            className={`tab ${activeTab === "premium-download" ? "active" : ""}`}
-            onClick={() => setActiveTab("premium-download")}
-          >
-            <span className="tab-number">4</span>
-            <span>📥 Premium Download</span>
-            <span
-              className="tab-badge"
-              style={{
-                marginLeft: "8px",
-                fontSize: "11px",
-                padding: "2px 6px",
-                borderRadius: "4px",
-                backgroundColor: "#fef3c7",
-                color: "#92400e",
-              }}
-            >
-              Server
-            </span>
-          </button>
-        </div>
+        <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as ScenarioTab)} className="custom-tabs mb-8">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="split-payment" className="flex flex-col items-center gap-1 h-auto py-3">
+              <span className="tab-number">1</span>
+              <span className="text-center leading-tight">💸 Split<br/>Payment</span>
+            </TabsTrigger>
+            <TabsTrigger value="nft-mint" className="flex flex-col items-center gap-1 h-auto py-3">
+              <span className="tab-number">2</span>
+              <span className="text-center leading-tight">🎨 Pay & Mint<br/>NFT</span>
+            </TabsTrigger>
+            <TabsTrigger value="points-reward" className="flex flex-col items-center gap-1 h-auto py-3">
+              <span className="tab-number">3</span>
+              <span className="text-center leading-tight">🎁 Pay & Earn<br/>Points</span>
+            </TabsTrigger>
+            <TabsTrigger value="premium-download" className="flex flex-col items-center gap-1 h-auto py-3">
+              <span className="tab-number">4</span>
+              <span className="text-center leading-tight">📥 Premium<br/>Download</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="scenario-container">
-          {activeTab === "split-payment" && <ServerlessSplitPayment />}
-          {activeTab === "nft-mint" && <ServerlessRandomNFT />}
-          {activeTab === "points-reward" && <ServerlessPointsReward />}
-          {activeTab === "premium-download" && <PremiumDownload />}
-        </div>
+          <TabsContent 
+            value="split-payment" 
+            className="mt-0" 
+            style={{
+              padding: '32px',
+              background: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <ServerlessSplitPayment />
+          </TabsContent>
+          <TabsContent 
+            value="nft-mint" 
+            className="mt-0" 
+            style={{
+              padding: '32px',
+              background: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <ServerlessRandomNFT />
+          </TabsContent>
+          <TabsContent 
+            value="points-reward" 
+            className="mt-0" 
+            style={{
+              padding: '32px',
+              background: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <ServerlessPointsReward />
+          </TabsContent>
+          <TabsContent 
+            value="premium-download" 
+            className="mt-0" 
+            style={{
+              padding: '32px',
+              background: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <PremiumDownload />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <footer className="app-footer">
