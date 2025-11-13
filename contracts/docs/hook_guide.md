@@ -35,7 +35,7 @@ Educational templates and reference implementations:
 
 | Hook | Location | Purpose |
 |------|----------|---------|
-| **RevenueSplitHook** | `examples/revenue-split/` | Multi-party payment distribution |
+| **TransferHook** | Built-in (no separate contract) | Simple transfers and revenue splitting |
 | **NFTMintHook** | `examples/nft-mint/` | Atomic NFT minting with payment |
 | **RewardHook** | `examples/reward-points/` | Loyalty points distribution |
 

@@ -414,31 +414,29 @@ function MintNFT() {
 
 ```typescript
 import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
-import { calculateFacilitatorFee } from "@x402x/core";
-import { RevenueSplitHook } from "@x402x/core";
+import { calculateFacilitatorFee, TransferHook } from "@x402x/core";
 
 // 1. Query minimum fee
+const hookData = TransferHook.encode([
+  { recipient: "0xAlice...", bips: 6000 }, // 60% to Alice
+  { recipient: "0xBob...", bips: 4000 },   // 40% to Bob
+]);
+
 const feeEstimate = await calculateFacilitatorFee(
   "https://facilitator.x402x.dev",
   "base-sepolia",
-  RevenueSplitHook.getAddress("base-sepolia"),
-  RevenueSplitHook.encode({
-    recipients: ["0x...", "0x..."],
-    shares: [60, 40], // 60/40 split
-  }),
+  TransferHook.getAddress("base-sepolia"),
+  hookData,
 );
 
 // 2. Prepare settlement
 const settlement = await prepareSettlement({
   wallet: walletClient,
   network: "base-sepolia",
-  hook: RevenueSplitHook.getAddress("base-sepolia"),
-  hookData: RevenueSplitHook.encode({
-    recipients: ["0x...", "0x..."],
-    shares: [60, 40], // 60/40 split
-  }),
+  hook: TransferHook.getAddress("base-sepolia"),
+  hookData,
   amount: "10000000", // 10 USDC
-  recipient: "0x...", // Primary recipient
+  payTo: "0xCharity...", // Receives 0% (full split)
   facilitatorFee: feeEstimate.facilitatorFee,
 });
 

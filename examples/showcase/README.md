@@ -42,7 +42,7 @@ Facilitator
     ↓ settleAndExecute()
 SettlementRouter
     ↓
-Hook (RevenueSplitHook/NFTMintHook/RewardHook)
+Hook (TransferHook/NFTMintHook/RewardHook)
     ↓
 Recipients (Merchant/Referrer/Platform) + NFT/Tokens
 ```
@@ -81,7 +81,6 @@ cp .env.example .env
 
 # Edit .env file with:
 # - SETTLEMENT_ROUTER_ADDRESS: Deployed SettlementRouter address
-# - REVENUE_SPLIT_HOOK_ADDRESS: Deployed RevenueSplitHook address
 # - NFT_MINT_HOOK_ADDRESS: Deployed NFTMintHook address
 # - MERCHANT_ADDRESS: Merchant address (receives payments)
 # - PLATFORM_ADDRESS: Platform address (receives fees)
@@ -158,16 +157,16 @@ This starts both:
 
 ### Scenario 2: Referral Revenue Split
 
-**Core Contract**: `RevenueSplitHook.sol` (deployed in main project)
+**Core Contract**: `TransferHook` (built-in, no separate deployment needed)
 
 **Workflow**:
 
 ```
 1. User enters referrer address (optional)
-2. Frontend calls /api/scenario-1/payment
+2. Frontend calls /api/scenario-2/payment
 3. Server generates PaymentRequirements (with hookData)
 4. User signs authorization for $0.1 USDC
-5. SettlementRouter calls RevenueSplitHook
+5. SettlementRouter calls TransferHook (built-in)
 6. Hook automatically distributes:
    - 70% → Merchant
    - 20% → Referrer (or platform if none)

@@ -801,7 +801,7 @@ When detected, the facilitator calls `SettlementRouter.settleAndExecute()` inste
 
 The facilitator works with any Hook that implements the `ISettlementHook` interface:
 
-- **RevenueSplitHook**: Multi-party payment distribution
+- **TransferHook**: Simple transfers and revenue splitting (built-in)
 - **NFTMintHook**: Atomic NFT minting with payment
 - **RewardHook**: Loyalty points distribution
 - **Custom Hooks**: Any business logic you can imagine!

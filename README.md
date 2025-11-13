@@ -194,13 +194,11 @@ Protocol-level Hooks deployed once per network for universal use:
 
 Educational templates and reference implementations in [`contracts/examples/`](./contracts/examples/):
 
-- **RevenueSplitHook**: Multi-party payment distribution ([source](./contracts/examples/revenue-split/))
+- **TransferHook**: Simple transfers and revenue splitting (built-in, no separate contract needed)
 - **NFTMintHook**: Atomic NFT minting with payment ([source](./contracts/examples/nft-mint/))
 - **RewardHook**: Loyalty points distribution ([source](./contracts/examples/reward-points/))
 
-## 🌐 Deployments
 
-> ⚠️ **Development Status**: Under active development and not yet audited. For demonstration and testing purposes only.
 
 ### SettlementRouter Contract
 

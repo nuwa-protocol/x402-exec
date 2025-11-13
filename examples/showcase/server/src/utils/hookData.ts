@@ -6,14 +6,6 @@
 import { ethers } from "ethers";
 
 /**
- * Split configuration for revenue splitting
- */
-export interface Split {
-  recipient: string;
-  bips: number; // Basis points (1-10000)
-}
-
-/**
  * NFT mint configuration
  */
 export interface MintConfig {
@@ -28,17 +20,6 @@ export interface MintConfig {
 export interface RewardConfig {
   rewardToken: string;
   merchant: string;
-}
-
-/**
- * Encodes split array for RevenueSplitHook
- * @param splits Array of split configurations
- * @returns Hex-encoded hook data
- */
-export function encodeRevenueSplitData(splits: Split[]): string {
-  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-  const encoded = abiCoder.encode(["tuple(address recipient, uint16 bips)[]"], [splits]);
-  return encoded;
 }
 
 /**

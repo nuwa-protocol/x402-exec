@@ -135,7 +135,7 @@ Does your payment need custom business logic?
 │        ✅ Minimal gas cost
 │
 └─ Yes → Use appropriate Example Hook or create custom Hook
-         - Revenue split → RevenueSplitHook
+         - Revenue split → TransferHook (built-in)
          - NFT minting → NFTMintHook
          - Loyalty points → RewardHook
          - Custom logic → Implement ISettlementHook

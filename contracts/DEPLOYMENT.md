@@ -69,10 +69,11 @@ cd contracts
 ```
 
 This will:
-1. ✅ Deploy `SettlementRouter`
-2. ✅ Deploy `RevenueSplitHook`
-3. ✅ Deploy `NFTMintHook` + `RandomNFT`
-4. ✅ Deploy `RewardHook` + `RewardToken`
+1. ✅ Deploy `SettlementRouter` (built-in TransferHook available)
+2. ✅ Deploy `NFTMintHook` + `RandomNFT`
+3. ✅ Deploy `RewardHook` + `RewardToken`
+
+**Note:** RevenueSplitHook has been deprecated. Use TransferHook (built-in) for revenue splitting instead.
 
 ### 5. Save Deployed Addresses
 
@@ -323,7 +324,6 @@ Always verify contracts on mainnet deployments:
 
 | Contract | Estimated Gas (X-Layer) | Estimated Cost (OKB) |
 |----------|-------------------------|----------------------|
-| RevenueSplitHook | ~800K gas | ~0.0005 OKB |
 | NFTMintHook | ~1.2M gas | ~0.0008 OKB |
 | RandomNFT | ~2M gas | ~0.001 OKB |
 | RewardHook | ~800K gas | ~0.0005 OKB |
