@@ -53,12 +53,12 @@ export function ServerlessPaymentDialog({
   const { address, isConnected, chain } = useAccount();
   const facilitatorUrl = getFacilitatorUrl(); // Get facilitator URL from config
   
-  // ELEGANT FIX: Pass selectedNetwork explicitly to useX402Client
+  // Fix: Pass selectedNetwork explicitly to useX402Client
   // This ensures the client is recreated whenever the user selects a different network,
   // guaranteeing that calculateFee() and execute() always use the correct network.
   const client = useX402Client({ 
     facilitatorUrl,
-    network: selectedNetwork || undefined  // Explicitly use the selected network
+    network: selectedNetwork ?? undefined  // Explicitly use the selected network
   });
   
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
