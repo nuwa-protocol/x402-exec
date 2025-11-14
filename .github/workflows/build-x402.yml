@@ -1,0 +1,103 @@
+---
+name: Build and Publish X402
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'deps/x402/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'deps/x402/**'
+  workflow_dispatch:
+    inputs:
+      publish_version:
+        description: 'Version to publish (e.g., 0.6.6-patch.3)'
+        required: false
+        type: string
+      publish_tag:
+        description: 'NPM tag to publish'
+        required: false
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+          - alpha
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Build x402 dependencies
+        run: pnpm run build:x402-dev
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          TURBO_CONCURRENCY: 2
+
+      - name: Run x402 tests
+        working-directory: deps/x402
+        run: pnpm test
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Publish to npm (manual trigger)
+        if: >
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish_version != ''
+        run: |
+          ./scripts/publish-x402.sh \
+            "${{ inputs.publish_version }}" \
+            "${{ inputs.publish_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release (manual trigger)
+        if: >
+          github.event_name == 'workflow_dispatch' &&
+          inputs.publish_version != ''
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: x402-${{ inputs.publish_version }}
+          release_name: X402 ${{ inputs.publish_version }}
+          body: |
+            Automated release of @x402x/x402@${{ inputs.publish_version }}
+
+            ## Changes
+            - See commit history for details
+
+            ## Installation
+            ```bash
+            npm install x402@npm:@x402x/x402@${{ inputs.publish_version }}
+            ```
+
+            ## Usage
+            This is a patched version of x402 with paymentRequirements
+            support for x402-exec.

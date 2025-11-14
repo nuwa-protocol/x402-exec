@@ -1,14 +1,11 @@
 packages:
-  # X402 core and adapter packages
-  - 'deps/x402/typescript/packages/*'
-  
   # X402x SDK packages
   - 'typescript/packages/*'
-  
+
   # Facilitator (Production-ready component)
   - 'facilitator'
-  
-  # Examples (use npm alias for x402, but managed in workspace for convenience)
+
+  # Examples (x402 dependency resolved via npm alias: npm:@x402x/x402@0.6.6-patch.2)
   - 'examples/showcase/server'
   - 'examples/showcase/client'
 
