@@ -3,10 +3,9 @@
  */
 
 /**
- * Settlement Router ABI (minimal, only settleAndExecute function)
+ * Settlement Router ABI
  *
- * This ABI contains only the settleAndExecute function which is used by
- * facilitators to execute settlement transactions.
+ * Contains functions used by facilitators for settlement and fee management.
  */
 export const SETTLEMENT_ROUTER_ABI = [
   {
@@ -26,6 +25,23 @@ export const SETTLEMENT_ROUTER_ABI = [
       { name: "hook", type: "address" },
       { name: "hookData", type: "bytes" },
     ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getPendingFees",
+    inputs: [
+      { name: "facilitator", type: "address" },
+      { name: "token", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "claimFees",
+    inputs: [{ name: "tokens", type: "address[]" }],
     outputs: [],
     stateMutability: "nonpayable",
   },

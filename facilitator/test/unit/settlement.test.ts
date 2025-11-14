@@ -38,6 +38,7 @@ vi.mock("@x402x/core", () => {
   class MockSettlementExtraError extends Error {
     /**
      * Constructor for MockSettlementExtraError
+     *
      * @param message - Error message
      */
     constructor(message: string) {

@@ -67,6 +67,14 @@ export interface RateLimitConfig {
 }
 
 /**
+ * Fee claim configuration
+ */
+export interface FeeClaimConfig {
+  /** Minimum claim amount per token (token address => amount) */
+  minClaimAmount: Record<string, bigint>;
+}
+
+/**
  * Application configuration
  */
 export interface AppConfig {
@@ -81,6 +89,7 @@ export interface AppConfig {
   gasCost: GasCostConfig;
   dynamicGasPrice: DynamicGasPriceConfig;
   tokenPrice: TokenPriceConfig;
+  feeClaim: FeeClaimConfig;
 }
 
 /**
@@ -459,6 +468,38 @@ function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
 }
 
 /**
+ * Parse fee claim configuration from environment variables
+ *
+ * @returns Fee claim configuration object
+ */
+function parseFeeClaimConfig(): FeeClaimConfig {
+  const minClaimAmountUsdc =
+    process.env.FEE_CLAIM_MIN_AMOUNT_USDC || DEFAULTS.feeClaim.MIN_CLAIM_AMOUNT_USDC;
+
+  // Build minimum claim amounts map
+  const minClaimAmount: Record<string, bigint> = {};
+
+  // Get all supported networks to determine USDC addresses
+  const supportedNetworks = getSupportedNetworks();
+  for (const network of supportedNetworks) {
+    try {
+      const networkConfig = getNetworkConfig(network);
+      const usdcAddress = networkConfig.usdc.address.toLowerCase();
+
+      // Use the same minimum amount for all USDC tokens (currently only USDC is supported)
+      minClaimAmount[usdcAddress] = BigInt(minClaimAmountUsdc);
+    } catch {
+      // Skip networks without USDC configuration
+      continue;
+    }
+  }
+
+  return {
+    minClaimAmount,
+  };
+}
+
+/**
  * Parse token price configuration from environment variables
  *
  * @returns Token price configuration object
@@ -506,5 +547,6 @@ export function loadConfig(): AppConfig {
     gasCost: parseGasCostConfig(),
     dynamicGasPrice: parseDynamicGasPriceConfig(),
     tokenPrice: parseTokenPriceConfig(),
+    feeClaim: parseFeeClaimConfig(),
   };
 }

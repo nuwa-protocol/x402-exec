@@ -165,6 +165,14 @@ export const GAS_PRICE_DEFAULTS = {
 } as const;
 
 /**
+ * Fee claim default configuration
+ */
+export const FEE_CLAIM_DEFAULTS = {
+  /** Minimum claim amount for USDC (6 decimals, 1 USDC = 1000000) */
+  MIN_CLAIM_AMOUNT_USDC: "1000000", // 1 USDC
+} as const;
+
+/**
  * Complete default configuration type
  */
 export interface DefaultConfig {
@@ -178,6 +186,7 @@ export interface DefaultConfig {
   tokenPrice: typeof TOKEN_PRICE_DEFAULTS;
   nativeTokenPrice: typeof NATIVE_TOKEN_PRICE_DEFAULTS;
   gasPrice: typeof GAS_PRICE_DEFAULTS;
+  feeClaim: typeof FEE_CLAIM_DEFAULTS;
 }
 
 /**
@@ -194,4 +203,5 @@ export const DEFAULTS: DefaultConfig = {
   tokenPrice: TOKEN_PRICE_DEFAULTS,
   nativeTokenPrice: NATIVE_TOKEN_PRICE_DEFAULTS,
   gasPrice: GAS_PRICE_DEFAULTS,
+  feeClaim: FEE_CLAIM_DEFAULTS,
 } as const;

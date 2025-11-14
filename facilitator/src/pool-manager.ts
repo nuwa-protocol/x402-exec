@@ -19,6 +19,7 @@ export class PoolManager {
 
   /**
    * Constructor for PoolManager
+   *
    * @param evmPrivateKeys - Array of EVM private keys
    * @param networkConfig - Network configuration
    * @param accountPoolConfig - Account pool configuration
