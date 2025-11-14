@@ -83,9 +83,11 @@ if ! npm whoami &> /dev/null; then
     # In CI environment, try to authenticate using NPM_TOKEN
     if [ -n "$NPM_TOKEN" ]; then
         print_info "Authenticating with NPM_TOKEN..."
-        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-        # Wait a moment for auth to take effect
-        sleep 2
+        AUTH_LINE="//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+        if ! grep -Fxq "$AUTH_LINE" ~/.npmrc 2>/dev/null; then
+            echo "$AUTH_LINE" >> ~/.npmrc
+        fi
+        # Auth via .npmrc takes effect immediately
         if ! npm whoami &> /dev/null; then
             print_error "NPM_TOKEN authentication failed"
             exit 1
