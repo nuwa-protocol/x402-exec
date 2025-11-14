@@ -6,8 +6,6 @@
  */
 
 import { type Network, NETWORKS } from "../config";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface DetailItem {
   label: string;
@@ -32,66 +30,110 @@ export function TransactionResult({
   const networkConfig = NETWORKS[network];
 
   return (
-    <Card className="mt-5 border-green-200 bg-green-50 shadow-brand-lg">
-      <CardHeader>
-        <CardTitle className="text-green-800 flex items-center gap-2">
-          ✅ Transaction Successful!
-        </CardTitle>
-      </CardHeader>
+    <div
+      style={{
+        marginTop: "20px",
+        padding: "20px",
+        backgroundColor: "#d4edda",
+        borderRadius: "8px",
+        border: "1px solid #c3e6cb",
+      }}
+    >
+      <h4 style={{ margin: "0 0 15px 0", color: "#155724" }}>
+        ✅ Transaction Successful!
+      </h4>
 
-      <CardContent className="space-y-4">
-        {/* Transaction Hash */}
-        <div>
-          <div className="text-sm font-bold text-green-800 mb-2">
-            Transaction Hash:
-          </div>
-          <code className="block bg-white p-3 rounded text-xs font-mono break-all border">
-            {txHash}
-          </code>
+      {/* Transaction Hash */}
+      <div style={{ marginBottom: "15px" }}>
+        <div
+          style={{
+            fontSize: "14px",
+            color: "#155724",
+            marginBottom: "5px",
+            fontWeight: "bold",
+          }}
+        >
+          Transaction Hash:
         </div>
+        <code
+          style={{
+            display: "block",
+            backgroundColor: "#fff",
+            padding: "10px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            wordBreak: "break-all",
+            fontFamily: "monospace",
+          }}
+        >
+          {txHash}
+        </code>
+      </div>
 
-        {/* Details */}
-        {details.length > 0 && (
-          <div className="text-sm leading-relaxed">
-            <div className="font-bold text-green-800 mb-2">
-              📊 Transaction Details:
-            </div>
-            <ul className="mt-2 ml-5 space-y-1">
-              {details.map((item, index) => (
-                <li key={index}>
-                  {item.label}: {item.value}
-                </li>
-              ))}
-              <li>
-                Network: <strong>{networkConfig.name}</strong>
+      {/* Details */}
+      {details.length > 0 && (
+        <div style={{ marginBottom: "15px", fontSize: "14px", lineHeight: "1.8" }}>
+          <div>
+            <strong>📊 Transaction Details:</strong>
+          </div>
+          <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+            {details.map((item, index) => (
+              <li key={index}>
+                {item.label}: {item.value}
               </li>
-            </ul>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-2">
-          <Button asChild className="bg-green-600 hover:bg-green-700">
-            <a
-              href={`${networkConfig.explorerUrl}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              🔍 View on Explorer →
-            </a>
-          </Button>
-
-          {onNewTransaction && (
-            <Button
-              onClick={onNewTransaction}
-              variant="outline"
-              size="default"
-            >
-              {newTransactionLabel}
-            </Button>
-          )}
+            ))}
+            <li>
+              Network: <strong>{networkConfig.name}</strong>
+            </li>
+          </ul>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Explorer Link */}
+      <a
+        href={`${networkConfig.explorerUrl}/tx/${txHash}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-block",
+          padding: "10px 20px",
+          backgroundColor: "#28a745",
+          color: "white",
+          textDecoration: "none",
+          borderRadius: "6px",
+          fontSize: "14px",
+          fontWeight: "bold",
+          transition: "background-color 0.2s",
+          marginRight: onNewTransaction ? "10px" : "0",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#218838")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#28a745")}
+      >
+        🔍 View on Explorer →
+      </a>
+
+      {/* New Transaction Button */}
+      {onNewTransaction && (
+        <button
+          onClick={onNewTransaction}
+          style={{
+            display: "inline-block",
+            padding: "10px 20px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "14px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            transition: "background-color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#0056b3")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#007bff")}
+        >
+          {newTransactionLabel}
+        </button>
+      )}
+    </div>
   );
 }

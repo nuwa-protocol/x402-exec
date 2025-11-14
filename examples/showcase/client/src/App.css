@@ -24,6 +24,30 @@
   cursor: not-allowed;
 }
 
+/* Secondary Button - for "Earn More Rewards", "Mint Another NFT", etc. */
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  background: var(--bg-color);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Custom Tabs - Card-style design matching original */
 .custom-tabs [role="tablist"] {
   display: flex;
