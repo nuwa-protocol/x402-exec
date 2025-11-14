@@ -305,9 +305,13 @@ forge build
 print_success "Contracts built successfully"
 echo ""
 
-# Prepare verification flag
+# Prepare verification
+# Note: For dedicated contract verification after deployment, use verify-contracts.sh
 VERIFY_FLAG=""
 if [ "$VERIFY" = true ]; then
+    print_info "Contract verification enabled"
+    print_warning "Note: Forge's built-in verification may timeout for complex contracts"
+    print_warning "If verification fails, run: ./verify-contracts.sh $NETWORK"
     VERIFY_FLAG="--verify"
 fi
 
@@ -439,6 +443,16 @@ echo "========================================="
 echo ""
 print_success "All contracts deployed to $NETWORK_NAME"
 echo ""
+
+# Offer verification if not done during deployment
+if [ "$VERIFY" != true ] && [ "$DEPLOY_MODE" = "settlement" ] || [ "$DEPLOY_MODE" = "all" ]; then
+    print_info "Contract verification was not performed during deployment"
+    print_info "To verify deployed contracts, run:"
+    echo ""
+    echo "  cd contracts && ./verify-contracts.sh $NETWORK"
+    echo ""
+fi
+
 print_warning "Next Steps:"
 echo "1. Copy deployed addresses from above"
 echo "2. Update .env files:"
