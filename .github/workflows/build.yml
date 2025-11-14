@@ -58,12 +58,6 @@ jobs:
           flags: contracts
           fail_ci_if_error: false
 
-      - name: Build x402 dependencies
-        run: pnpm run build:x402
-        env:
-          NODE_OPTIONS: --max-old-space-size=6144
-          TURBO_CONCURRENCY: 2
-
       - name: Build x402x SDK
         run: pnpm run build:sdk
         env:

@@ -7,8 +7,8 @@
 	"scripts": {
 		"install:web": "pnpm install -C web --ignore-workspace",
 		"install:all": "pnpm install",
-		"build": "pnpm run build:x402 && pnpm run build:sdk && pnpm run build:examples && pnpm run build:facilitator",
-		"build:x402": "pnpm --filter='./deps/x402/typescript/packages/**' run build",
+		"build": "pnpm run build:sdk && pnpm run build:examples && pnpm run build:facilitator",
+		"build:x402-dev": "cd deps/x402/typescript/packages/x402 && npm run build",
 		"build:sdk": "pnpm --filter='./typescript/packages/**' run build",
 		"build:examples": "pnpm --filter='./examples/**' run build",
 		"build:showcase": "pnpm run build:sdk && pnpm --filter='./examples/showcase/**' run build",

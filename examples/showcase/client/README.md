@@ -24,7 +24,6 @@ A React-based showcase application demonstrating the x402 payment protocol with 
 # From repository root
 pnpm install
 git submodule update --init --recursive
-pnpm run build:x402
 
 # Start development server
 cd examples/showcase/client

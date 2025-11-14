@@ -80,8 +80,23 @@ print_info "Preparing to publish: $PACKAGE_NAME@$CURRENT_VERSION"
 
 # Check if logged in to npm
 if ! npm whoami &> /dev/null; then
-    print_error "Not logged in to npm, please run: npm login"
-    exit 1
+    # In CI environment, try to authenticate using NPM_TOKEN
+    if [ -n "$NPM_TOKEN" ]; then
+        print_info "Authenticating with NPM_TOKEN..."
+        AUTH_LINE="//registry.npmjs.org/:_authToken=${NPM_TOKEN}"
+        if ! grep -Fxq "$AUTH_LINE" ~/.npmrc 2>/dev/null; then
+            echo "$AUTH_LINE" >> ~/.npmrc
+        fi
+        # Auth via .npmrc takes effect immediately
+        if ! npm whoami &> /dev/null; then
+            print_error "NPM_TOKEN authentication failed"
+            exit 1
+        fi
+    else
+        print_error "Not logged in to npm, please run: npm login"
+        print_error "Or set NPM_TOKEN environment variable for CI"
+        exit 1
+    fi
 fi
 
 print_info "Current npm user: $(npm whoami)"
@@ -92,12 +107,19 @@ if [ ! -d "dist" ]; then
     npm run build
 else
     print_info "dist directory exists"
-    read -p "Rebuild? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_info "Rebuilding..."
+    # In CI environment, skip interactive prompt and rebuild
+    if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
+        print_info "CI environment detected, rebuilding automatically..."
         rm -rf dist
         npm run build
+    else
+        read -p "Rebuild? (y/N) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Rebuilding..."
+            rm -rf dist
+            npm run build
+        fi
     fi
 fi
 
@@ -108,11 +130,17 @@ npm pack --dry-run
 # Confirm publication
 echo ""
 print_warning "About to publish $PACKAGE_NAME@$CURRENT_VERSION (tag: $TAG)"
-read -p "Confirm publish? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    print_info "Publication cancelled"
-    exit 0
+
+# In CI environment, skip confirmation
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
+    print_info "CI environment detected, proceeding with publication..."
+else
+    read -p "Confirm publish? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Publication cancelled"
+        exit 0
+    fi
 fi
 
 # Publish to npm

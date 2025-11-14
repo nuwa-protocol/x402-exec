@@ -135,9 +135,6 @@ pnpm install
 # Initialize submodules
 git submodule update --init --recursive
 
-# Build x402 dependencies
-pnpm run build:x402
-
 # Start development server
 cd examples/showcase/client
 pnpm run dev
