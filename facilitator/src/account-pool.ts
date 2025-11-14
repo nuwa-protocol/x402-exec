@@ -16,6 +16,7 @@ import pLimit from "p-limit";
 import type { Signer } from "x402/types";
 import { createSigner } from "x402/types";
 import { getLogger, recordMetric } from "./telemetry.js";
+import { QueueOverloadError } from "./errors.js";
 
 const logger = getLogger();
 
@@ -27,6 +28,11 @@ export interface AccountPoolConfig {
   strategy?: "round_robin" | "random";
   /** Enable detailed logging */
   verbose?: boolean;
+
+  /** Maximum queue depth per account (prevent request accumulation) */
+  maxQueueDepth?: number;
+  /** Queue depth warning threshold */
+  queueDepthWarning?: number;
 }
 
 /**
@@ -56,26 +62,32 @@ export class AccountPool {
   private roundRobinIndex = 0;
   private strategy: "round_robin" | "random";
   private network: string;
+  private config: AccountPoolConfig;
 
   /**
    * Create an account pool
    *
-   * @param privateKeys - Array of private keys
    * @param network - Network name (e.g., "base-sepolia", "solana-devnet")
-   * @param config - Optional configuration
-   * @param strategy
+   * @param strategy - Account selection strategy
+   * @param config - Account pool configuration
    */
-  private constructor(network: string, strategy: "round_robin" | "random") {
+  private constructor(
+    network: string,
+    strategy: "round_robin" | "random",
+    config: AccountPoolConfig,
+  ) {
     this.network = network;
     this.strategy = strategy;
+    this.config = config;
   }
 
   /**
    * Create an account pool (async factory method)
    *
-   * @param privateKeys
-   * @param network
-   * @param config
+   * @param privateKeys - Array of private keys
+   * @param network - Network name
+   * @param config - Optional configuration
+   * @returns Account pool instance
    */
   static async create(
     privateKeys: string[],
@@ -86,8 +98,10 @@ export class AccountPool {
       throw new Error("At least one private key is required");
     }
 
-    const strategy = config?.strategy || "round_robin";
-    const pool = new AccountPool(network, strategy);
+    const defaultConfig: AccountPoolConfig = {};
+    const finalConfig = { ...defaultConfig, ...config };
+    const strategy = finalConfig.strategy || "round_robin";
+    const pool = new AccountPool(network, strategy, finalConfig);
 
     logger.info(
       {
@@ -164,25 +178,58 @@ export class AccountPool {
    */
   async execute<T>(fn: (signer: Signer) => Promise<T>): Promise<T> {
     const account = this.selectAccount();
+    const queueDepth = account.queue.activeCount + account.queue.pendingCount;
+
+    // Check queue depth limit
+    if (this.config.maxQueueDepth && queueDepth >= this.config.maxQueueDepth) {
+      logger.warn(
+        {
+          address: account.address,
+          queueDepth,
+          maxQueueDepth: this.config.maxQueueDepth,
+        },
+        "Queue depth limit exceeded, rejecting request",
+      );
+
+      // Record queue rejection metric
+      recordMetric("facilitator.account.queue_rejected", 1, {
+        account: account.address,
+        network: this.network,
+        queueDepth: queueDepth.toString(),
+      });
+
+      throw new QueueOverloadError(
+        `Account queue is full (depth: ${queueDepth}/${this.config.maxQueueDepth}). ` +
+          `Please retry later.`,
+      );
+    }
+
+    // Queue depth warning
+    if (this.config.queueDepthWarning && queueDepth >= this.config.queueDepthWarning) {
+      logger.warn(
+        {
+          address: account.address,
+          queueDepth,
+          warningThreshold: this.config.queueDepthWarning,
+        },
+        "Queue depth approaching limit",
+      );
+    }
 
     logger.debug(
       {
         address: account.address,
-        queueDepth: account.queue.activeCount + account.queue.pendingCount,
+        queueDepth,
         strategy: this.strategy,
       },
       "Selected account for execution",
     );
 
     // Record queue depth metric
-    recordMetric(
-      "facilitator.account.queue_depth",
-      account.queue.activeCount + account.queue.pendingCount,
-      {
-        account: account.address,
-        network: this.network,
-      },
-    );
+    recordMetric("facilitator.account.queue_depth", queueDepth, {
+      account: account.address,
+      network: this.network,
+    });
 
     // Execute in account's serial queue
     const result = await account.queue(async () => {

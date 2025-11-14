@@ -535,6 +535,20 @@ export class DecodingError extends FacilitatorError {
 }
 
 /**
+ * Queue overload error - thrown when account queue is full
+ */
+export class QueueOverloadError extends FacilitatorError {
+  /**
+   * @param message
+   * @param details
+   * @param cause
+   */
+  constructor(message: string, details?: Record<string, unknown>, cause?: Error) {
+    super(message, "QUEUE_OVERLOAD", true, ErrorSeverity.WARNING, details, cause);
+  }
+}
+
+/**
  * Helper function to classify unknown errors
  *
  * @param error

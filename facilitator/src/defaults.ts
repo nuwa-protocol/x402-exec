@@ -54,14 +54,6 @@ export const CACHE_DEFAULTS = {
 } as const;
 
 /**
- * Account pool default configuration
- */
-export const ACCOUNT_POOL_DEFAULTS = {
-  /** Account selection strategy */
-  STRATEGY: "round_robin" as const,
-} as const;
-
-/**
  * Server default configuration
  */
 export const SERVER_DEFAULTS = {
@@ -90,6 +82,20 @@ export const RATE_LIMIT_DEFAULTS = {
 
   /** Rate limit time window (milliseconds) */
   WINDOW_MS: 60000,
+} as const;
+
+/**
+ * Account pool default configuration
+ */
+export const ACCOUNT_POOL_DEFAULTS = {
+  /** Account selection strategy */
+  STRATEGY: "round_robin" as const,
+
+  /** Maximum queue depth per account (prevent request accumulation) */
+  MAX_QUEUE_DEPTH: 10,
+
+  /** Queue depth warning threshold */
+  QUEUE_DEPTH_WARNING: 5,
 } as const;
 
 /**

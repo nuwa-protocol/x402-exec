@@ -38,6 +38,8 @@ export interface CacheConfig {
  */
 export interface AccountPoolConfig {
   strategy: "round_robin" | "random";
+  maxQueueDepth?: number;
+  queueDepthWarning?: number;
 }
 
 /**
@@ -120,7 +122,20 @@ function parseAccountPoolConfig(): AccountPoolConfig {
   if (strategy !== "round_robin" && strategy !== "random") {
     throw new Error(`Invalid ACCOUNT_SELECTION_STRATEGY: ${strategy}`);
   }
-  return { strategy };
+
+  const maxQueueDepth = process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH
+    ? parseInt(process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH)
+    : DEFAULTS.accountPool.MAX_QUEUE_DEPTH;
+
+  const queueDepthWarning = process.env.ACCOUNT_POOL_QUEUE_DEPTH_WARNING
+    ? parseInt(process.env.ACCOUNT_POOL_QUEUE_DEPTH_WARNING)
+    : DEFAULTS.accountPool.QUEUE_DEPTH_WARNING;
+
+  return {
+    strategy,
+    maxQueueDepth,
+    queueDepthWarning,
+  };
 }
 
 /**

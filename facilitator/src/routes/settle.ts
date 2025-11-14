@@ -26,6 +26,7 @@ import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
+import { QueueOverloadError } from "../errors.js";
 
 const logger = getLogger();
 
@@ -300,6 +301,16 @@ export function createSettleRoutes(
       res.json(result);
     } catch (error) {
       logger.error({ error }, "Settle error");
+
+      // Check for queue overload errors first
+      if (error instanceof QueueOverloadError) {
+        res.status(503).json({
+          error: "Service temporarily overloaded",
+          message: error.message,
+          retryAfter: 60, // Suggest retry after 60 seconds
+        });
+        return;
+      }
 
       // Distinguish between validation errors and other errors
       if (error instanceof Error && error.name === "ZodError") {

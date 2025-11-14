@@ -47,6 +47,10 @@ Or clone and run from source (see [Development](#development) section below).
   - `/settle`: 20 req/min per IP (default)
   - Health/monitoring endpoints unlimited
   - Returns HTTP 429 with `Retry-After` header when exceeded
+- **Queue Management** 🆕: Prevents signature expiration gas waste
+  - Per-account queue depth limits (default: 10 requests/account)
+  - Immediate rejection when queues full (HTTP 503)
+  - Prevents expired signatures from wasting gas on failed transactions
 - **Input Validation**: Deep validation beyond TypeScript types
   - Request body size limits (default: 1MB)
   - Zod schema validation for all inputs
@@ -993,6 +997,78 @@ RATE_LIMIT_WINDOW_MS=60000 # Time window (1 minute)
 
 - Development: Can disable with `RATE_LIMIT_ENABLED=false`
 - Production: **Keep enabled** to prevent abuse
+
+#### Queue Management 🆕
+
+**Critical Protection Against Gas Waste**: Prevents expired signatures from wasting gas by limiting queue depth per account.
+
+**Problem Solved:**
+
+- **Signature Expiration**: Requests queue up, signatures expire before processing, but transactions still attempt to execute
+- **Gas Waste**: Expired authorization leads to failed transactions, wasting facilitator gas fees
+- **Service Degradation**: Unlimited queues can cause memory exhaustion under high load
+
+**How It Works:**
+
+- **Per-Account Serial Queues**: Each facilitator account processes transactions serially to avoid nonce conflicts
+- **Queue Depth Limits**: Prevents unlimited request accumulation
+- **Immediate Rejection**: When queues are full, new requests are rejected with HTTP 503 immediately
+- **Smart Retry Logic**: Clients receive `retryAfter: 60` seconds suggestion
+
+**Configuration:**
+
+```env
+# Maximum queue depth per account (default: 10)
+# Prevents request accumulation that leads to signature expiration
+ACCOUNT_POOL_MAX_QUEUE_DEPTH=10
+
+# Queue depth warning threshold (default: 5)
+# Logs warnings when approaching capacity limits
+ACCOUNT_POOL_QUEUE_DEPTH_WARNING=5
+```
+
+**Default Values (Recommended):**
+
+- **Single Account**: `MAX_QUEUE_DEPTH: 10` (each tx ~10-30s, 10 requests = 2-5 minutes processing)
+- **Multi Account**: `MAX_QUEUE_DEPTH: 5` per account (scale with account count)
+- **Warning Threshold**: 50% of max depth for proactive monitoring
+
+**Behavior:**
+
+- **Normal Operation**: Requests process normally within queue limits
+- **Queue Full**: Returns HTTP 503 with `Service temporarily overloaded` message
+- **Client Handling**: Should implement exponential backoff retry with jitter
+- **Monitoring**: Track queue depth and rejection rates for capacity planning
+
+**HTTP 503 Response Example:**
+
+```json
+{
+  "error": "Service temporarily overloaded",
+  "message": "Account queue is full (depth: 10/10). Please retry later.",
+  "retryAfter": 60
+}
+```
+
+**Integration Guide for Clients:**
+
+1. **Detect 503 Errors**: Check for `Service temporarily overloaded` error
+2. **Implement Retry**: Use exponential backoff (1s, 2s, 4s, 8s...) with jitter
+3. **Respect retryAfter**: Honor the suggested retry delay
+4. **Circuit Breaker**: Implement circuit breaker for sustained 503 responses
+5. **Load Balancing**: Distribute load across multiple facilitator instances
+
+**Monitoring Metrics:**
+
+- `facilitator.account.queue_depth` - Current queue depth per account
+- `facilitator.account.queue_rejected` - Queue rejection count
+- `facilitator.account.tx_count` - Transaction processing rate
+
+**Alert Thresholds:**
+
+- Queue rejection rate > 5%: Consider increasing account count or queue limits
+- Average queue depth > 70% of limit: Monitor for capacity issues
+- Sustained high queue depths: May indicate processing bottlenecks
 
 #### Input Validation
 

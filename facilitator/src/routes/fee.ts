@@ -109,7 +109,6 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
           },
           "Failed to calculate minimum facilitator fee",
         );
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
         // Check if it's a hook whitelist error
         if (error instanceof Error && error.message.includes("whitelist")) {
