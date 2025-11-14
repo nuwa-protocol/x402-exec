@@ -9,7 +9,7 @@
 
 import { verify } from "x402/facilitator";
 import { createConnectedClient } from "x402/types";
-import type { PaymentPayload, PaymentRequirements, Signer } from "x402/types";
+import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import {
   SettlementExtraError,
@@ -177,6 +177,7 @@ function parseSettlementExtra(extra: unknown): {
  * @param dynamicGasPriceConfig - Dynamic gas price configuration
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
  * @param balanceChecker - Optional balance checker for defensive balance validation
+ * @param x402Config - Optional x402 configuration for verification
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
@@ -189,6 +190,7 @@ export async function settleWithRouter(
   dynamicGasPriceConfig?: DynamicGasPriceConfig,
   nativeTokenPrices?: Record<string, number>,
   balanceChecker?: BalanceChecker,
+  x402Config?: X402Config,
 ): Promise<SettleResponseWithMetrics> {
   try {
     // 1. Ensure signer is EVM signer
@@ -251,46 +253,50 @@ export async function settleWithRouter(
       "Settlement authorization details (before on-chain validation)",
     );
 
-    // 5.5. Validate authorization timestamps using x402 SDK (SECURITY: prevent expired signatures from wasting gas)
+    // 5.5. Validate payment using x402 SDK (SECURITY: prevent any invalid payments from wasting gas)
     const client = createConnectedClient(network);
-    const verifyResult = await verify(client, paymentPayload, paymentRequirements);
+    const verifyResult = await verify(client, paymentPayload, paymentRequirements, x402Config);
 
     if (!verifyResult.isValid) {
-      // Check if this is a timestamp-related validation error
+      // x402 SDK verification failed - return error to prevent gas waste on guaranteed-to-fail transactions
+      // This catches: invalid signatures, wrong recipients, insufficient balance, expired timestamps, etc.
       const invalidReason = verifyResult.invalidReason || "";
-      const isTimestampError =
-        invalidReason.includes("authorization_valid_before") ||
-        invalidReason.includes("authorization_valid_after");
+      const payer = verifyResult.payer || authorization.from;
 
-      if (isTimestampError) {
-        logger.warn(
-          {
-            network,
-            from: authorization.from,
-            validAfter: authorization.validAfter,
-            validBefore: authorization.validBefore,
-            currentTime: Math.floor(Date.now() / 1000),
-            invalidReason,
-          },
-          "Authorization timestamp validation failed using x402 SDK - preventing wasted gas transaction",
-        );
+      logger.warn(
+        {
+          network,
+          from: authorization.from,
+          payer,
+          invalidReason,
+          validAfter: authorization.validAfter,
+          validBefore: authorization.validBefore,
+          currentTime: Math.floor(Date.now() / 1000),
+        },
+        "x402 SDK verification failed - preventing wasted gas transaction",
+      );
 
-        // Map x402 SDK error reasons to our error reasons
-        let errorReason = "AUTHORIZATION_TIMESTAMP_INVALID";
-        if (invalidReason.includes("valid_before")) {
-          errorReason = "AUTHORIZATION_EXPIRED";
-        } else if (invalidReason.includes("valid_after")) {
-          errorReason = "AUTHORIZATION_NOT_YET_VALID";
-        }
-
-        return {
-          success: false,
-          errorReason,
-          transaction: "",
-          network: paymentPayload.network,
-          payer: authorization.from,
-        };
+      // Map x402 SDK error reasons to our error reasons for better user experience
+      let errorReason = "PAYMENT_VERIFICATION_FAILED";
+      if (invalidReason.includes("authorization_valid_before")) {
+        errorReason = "AUTHORIZATION_EXPIRED";
+      } else if (invalidReason.includes("authorization_valid_after")) {
+        errorReason = "AUTHORIZATION_NOT_YET_VALID";
+      } else if (invalidReason.includes("signature")) {
+        errorReason = "INVALID_SIGNATURE";
+      } else if (invalidReason.includes("recipient")) {
+        errorReason = "INVALID_RECIPIENT";
+      } else if (invalidReason.includes("insufficient_funds")) {
+        errorReason = "INSUFFICIENT_FUNDS";
       }
+
+      return {
+        success: false,
+        errorReason,
+        transaction: "",
+        network: paymentPayload.network,
+        payer,
+      };
     }
 
     // 6. Calculate effective gas limit if config is provided

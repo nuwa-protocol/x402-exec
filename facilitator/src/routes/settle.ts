@@ -143,6 +143,7 @@ export function createSettleRoutes(
                   deps.dynamicGasPrice, // Pass dynamic gas price config
                   deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
                   deps.balanceChecker, // Pass balance checker for defensive checks
+                  deps.x402Config, // Pass x402 config for verification
                 ),
               {
                 network: paymentRequirements.network,
