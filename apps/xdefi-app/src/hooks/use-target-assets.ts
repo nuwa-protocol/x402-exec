@@ -11,6 +11,7 @@ export type TargetToken = {
   balance: string;
   change24h: number;
   logoUrl?: string;
+  decimals?: number;
 };
 
 export type TargetNetwork = {
@@ -68,6 +69,7 @@ export function useTargetAssets({ mode, fromNetworkId }: UseTargetAssetsParams) 
                 balance: '0',
                 change24h: 0,
                 logoUrl: tok.logoURI,
+                decimals: tok.decimals,
               }));
 
             // If OKX returned nothing, fall back to our minimal supported token list (USDC)
@@ -78,6 +80,7 @@ export function useTargetAssets({ mode, fromNetworkId }: UseTargetAssetsParams) 
               price: 1,
               balance: '0',
               change24h: 0,
+              decimals: x.symbol.toUpperCase() === 'USDC' ? 6 : 18,
             }));
 
             const tokens: TargetToken[] = mapped.length > 0 ? mapped : fallbackList;
@@ -91,6 +94,7 @@ export function useTargetAssets({ mode, fromNetworkId }: UseTargetAssetsParams) 
               price: 1,
               balance: '0',
               change24h: 0,
+              decimals: x.symbol.toUpperCase() === 'USDC' ? 6 : 18,
             }));
             return { id: t.key, name: t.name, tokens: fallbackList } as TargetNetwork;
           }

@@ -1,4 +1,3 @@
-import ThemeSwitch from "@/components/theme-switch";
 import {
     FaDiscord,
     FaGithub,
@@ -76,7 +75,7 @@ export default function Footer() {
                             </a>
                             .
                             <br />
-                            Powered by {' '}
+                            Powered by{" "}
                             <a
                                 href="https://x.com/NuwaDev"
                                 target="_blank"
@@ -87,13 +86,12 @@ export default function Footer() {
                             </a>
                         </span>
                         {/* Moved from nav: theme switcher now lives in the footer */}
-                        <ThemeSwitch />
                     </div>
 
                     <div className="hidden lg:block lg:col-span-4"></div>
 
                     {/* Social block */}
-                    <div className="space-y-4 sm:w-full lg:col-span-4">
+                    <div className="space-y-4">
                         <ul className="flex gap-3 md:gap-2">
                             {SOCIAL_LINKS.map((social) => (
                                 <li key={social.label}>

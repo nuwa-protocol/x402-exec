@@ -1,30 +1,32 @@
 "use client";
 
-import AssetLogo from "@/components/asset-logo";
-import {
-  SUPPORTED_NETWORKS,
-  SUPPORTED_PAYMENT_TOKENS,
-} from "@/constants/networks";
-import { useTargetAssets } from "@/hooks/use-target-assets";
-import { cn } from "@/lib/utils";
+import { modal as appKitModal } from "@reown/appkit/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   ArrowDown,
   CheckCircle,
   ChevronDown,
-  Search,
   Loader2,
+  Search,
   Settings,
   Zap,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { formatUnits, parseUnits } from "viem";
+import { useAccount, useBalance } from "wagmi";
 // Wallet connection guard: use wagmi account state + AppKit modal
 // Import the shared modal instance to open on demand without using the hook
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { modal as appKitModal } from "@reown/appkit/react";
-import { useAccount } from "wagmi";
+import AssetLogo from "@/components/asset-logo";
+import {
+  SUPPORTED_NETWORKS,
+  SUPPORTED_PAYMENT_TOKENS,
+} from "@/constants/networks";
+import { useTargetAssets } from "@/hooks/use-target-assets";
+import { okxGetQuote, okxGetTokenPrice } from "@/lib/okx";
+import { cn } from "@/lib/utils";
 
 // Hook for click outside functionality
 function useClickOutside(
@@ -65,6 +67,7 @@ interface Token {
   price: number;
   change24h: number;
   address: string;
+  decimals?: number;
 }
 
 interface Network {
@@ -99,6 +102,8 @@ function buildNetworksFromSDK(): Network[] {
         price: t.symbol.toUpperCase() === "USDC" ? 1 : 1, // default to 1; pricing is out of scope here
         change24h: 0,
         address: t.address,
+        // Default decimals: USDC=6; otherwise assume 18
+        decimals: t.symbol.toUpperCase() === "USDC" ? 6 : 18,
       }),
     );
     // Remove the word "Mainnet" from display name when showing
@@ -122,13 +127,10 @@ function CryptoSwapBase({
   mode: Mode;
   networks?: Network[];
 }) {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   // Memoize fromNetworks so effects don't retrigger on every render
   const fromNetworks = React.useMemo(
-    () =>
-      networks && networks.length > 0
-        ? networks
-        : buildNetworksFromSDK(),
+    () => (networks && networks.length > 0 ? networks : buildNetworksFromSDK()),
     [networks],
   );
   const initialFromNetwork = fromNetworks[0];
@@ -157,7 +159,9 @@ function CryptoSwapBase({
     const nextFrom = fromNetworks?.[0];
     if (!nextFrom) return;
     setSwapState((prev) => {
-      const stillValid = fromNetworks.some((n) => n.id === prev.fromNetwork?.id);
+      const stillValid = fromNetworks.some(
+        (n) => n.id === prev.fromNetwork?.id,
+      );
       if (stillValid) return prev;
       return {
         ...prev,
@@ -168,18 +172,21 @@ function CryptoSwapBase({
   }, [fromNetworks]);
 
   // Initialize or reconcile the To side whenever its candidate list changes
-  // Keep the user's manual selection intact if still valid; only reset if invalid or empty
+  // Always adopt the latest token list for the selected "to" network so the UI is populated on first load.
+  // Preserve the previously selected token if it exists in the new list; otherwise default to the first token.
   useEffect(() => {
     const nextTo = toNetworks?.[0];
     if (!nextTo) return;
     setSwapState((prev) => {
-      const stillValid = (toNetworks ?? []).some((n) => n.id === prev.toNetwork?.id);
-      if (stillValid) return prev;
+      const prevAddr = prev.toToken?.address?.toLowerCase?.();
+      const nextTokens = (nextTo.tokens as any[]) ?? [];
+      const matched =
+        nextTokens.find((t) => t?.address?.toLowerCase?.() === prevAddr) ??
+        (nextTokens[0] as any);
       return {
         ...prev,
         toNetwork: nextTo as any,
-        toToken: nextTo.tokens[0] as any,
-        toAmount: "",
+        toToken: matched,
       };
     });
   }, [toNetworks]);
@@ -197,6 +204,216 @@ function CryptoSwapBase({
   const containerRef = useRef<HTMLDivElement>(null);
   const tokenSelectorRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Helpers to map our network ids to chainIds used by wagmi
+  const fromChainId = React.useMemo(() => {
+    return (
+      SUPPORTED_NETWORKS.find((n) => n.network === swapState.fromNetwork?.id)
+        ?.chainId ?? undefined
+    );
+  }, [swapState.fromNetwork?.id]);
+  const toChainId = React.useMemo(() => {
+    return (
+      SUPPORTED_NETWORKS.find((n) => n.network === swapState.toNetwork?.id)
+        ?.chainId ?? undefined
+    );
+  }, [swapState.toNetwork?.id]);
+
+  // Live balances from connected wallet for selected tokens (ERC-20)
+  // We scope reads to the currently selected tokens to avoid spamming RPCs.
+  const fromBalance = useBalance({
+    address,
+    token: swapState.fromToken?.address as `0x${string}`,
+    chainId: fromChainId,
+    query: {
+      enabled: Boolean(
+        isConnected && address && fromChainId && swapState.fromToken?.address,
+      ),
+    },
+  });
+  const toBalance = useBalance({
+    address,
+    token: swapState.toToken?.address as `0x${string}`,
+    chainId: toChainId,
+    query: {
+      enabled: Boolean(
+        isConnected && address && toChainId && swapState.toToken?.address,
+      ),
+    },
+  });
+
+  // Render-friendly string (trim trailing zeros, keep a few decimals)
+  function fmtBalance(v?: string): string {
+    if (!v) return "0";
+    const [ints, decs = ""] = String(v).split(".");
+    const trimmed = decs.replace(/0+$/, "").slice(0, 6); // max 6 decimals
+    return trimmed ? `${ints}.${trimmed}` : ints;
+  }
+
+  // Compact USD formatting for trade fee; trims trailing zeros and caps decimals
+  function fmtTradeFeeUSD(x?: string | number): string {
+    if (x == null) return "—";
+    const v = typeof x === "string" ? Number.parseFloat(x) : x;
+    if (!Number.isFinite(v) || v < 0) return "—";
+    if (v === 0) return "~$0.00";
+    if (v < 0.01) return "~<$0.01";
+    if (v < 1) return `~$${v.toFixed(4).replace(/0+$/, "").replace(/\.$/, "")}`;
+    if (v < 100) return `~$${v.toFixed(2)}`;
+    return `~$${Math.round(v)}`;
+  }
+
+  // Price loading state for UI feedback when fetching real-time quotes
+  const [fromPriceLoading, setFromPriceLoading] = useState(false);
+  const [toPriceLoading, setToPriceLoading] = useState(false);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [lastQuoteOut, setLastQuoteOut] = useState<string | null>(null);
+  const [lastQuoteMeta, setLastQuoteMeta] = useState<{
+    tradeFeeUSD?: string;
+    priceImpactPercent?: string;
+  } | null>(null);
+
+  // Fetch real-time price for the selected From token
+  useEffect(() => {
+    let cancelled = false;
+    const tokenAddr = swapState.fromToken?.address;
+    if (!fromChainId || !tokenAddr) return;
+    setFromPriceLoading(true);
+    (async () => {
+      try {
+        const result = await okxGetTokenPrice({
+          chainId: fromChainId,
+          tokenAddress: tokenAddr,
+        });
+        if (cancelled) return;
+        setSwapState((prev) => ({
+          ...prev,
+          fromToken: {
+            ...prev.fromToken,
+            price:
+              result && result.price > 0 ? result.price : prev.fromToken.price,
+          },
+        }));
+      } finally {
+        if (!cancelled) setFromPriceLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fromChainId, swapState.fromToken?.address]);
+
+  // Fetch real-time price for the selected To token
+  useEffect(() => {
+    let cancelled = false;
+    const tokenAddr = swapState.toToken?.address;
+    if (!toChainId || !tokenAddr) return;
+    setToPriceLoading(true);
+    (async () => {
+      try {
+        const result = await okxGetTokenPrice({
+          chainId: toChainId,
+          tokenAddress: tokenAddr,
+        });
+        if (cancelled) return;
+        setSwapState((prev) => ({
+          ...prev,
+          toToken: {
+            ...prev.toToken,
+            price:
+              result && result.price > 0 ? result.price : prev.toToken.price,
+          },
+        }));
+      } finally {
+        if (!cancelled) setToPriceLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [toChainId, swapState.toToken?.address]);
+
+  // Fetch live swap quote for the entered amount and selected tokens
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <>
+  useEffect(() => {
+    let cancelled = false;
+    const amt = swapState.fromAmount?.trim();
+    const fromAddr = swapState.fromToken?.address;
+    const toAddr = swapState.toToken?.address;
+    if (!fromChainId || !toChainId || !fromAddr || !toAddr) return;
+    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) {
+      // Reset when amount is invalid/empty
+      setSwapState((prev) => ({ ...prev, toAmount: "" }));
+      return;
+    }
+    setLastQuoteOut(null);
+    setLastQuoteMeta(null);
+    setQuoteLoading(true);
+    (async () => {
+      try {
+        const decimals = swapState.fromToken?.decimals ?? 18;
+        let amountRaw = "0";
+        try {
+          amountRaw = parseUnits(amt, decimals).toString();
+        } catch {
+          amountRaw = "0";
+        }
+        const q = await okxGetQuote({
+          chainId: fromChainId,
+          tokenIn: fromAddr,
+          tokenOut: toAddr,
+          amountRaw,
+          swapMode: "exactIn",
+          // Optional knobs available:
+          // priceImpactProtectionPercent: '90',
+          // feePercent: '0',
+          // directRoute: false,
+          slippage: swapState.slippage,
+          userAddress: address,
+        });
+        if (cancelled) return;
+        if (q && (q.rawAmountOut || q.amountOut)) {
+          // Convert raw out units to decimal string using toToken decimals
+          // Prefer decimals from the quote response if present; fallback to known token decimals
+          const qToDecRaw = (q as any)?.data?.toToken?.decimal;
+          const qToDecimals =
+            typeof qToDecRaw === "string" ? Number.parseInt(qToDecRaw, 10) : undefined;
+          const toDecimals = Number.isFinite(qToDecimals as number)
+            ? (qToDecimals as number)
+            : (swapState.toToken?.decimals ?? 18);
+          const rawOut = q.rawAmountOut || q.amountOut || "0";
+          let display = "0";
+          try {
+            display = formatUnits(BigInt(rawOut), toDecimals);
+          } catch { }
+          // trim trailing zeros, keep 6 decimals max
+          const [i, d = ""] = display.split(".");
+          const t = d.replace(/0+$/, "").slice(0, 6);
+          display = t ? `${i}.${t}` : i;
+          setLastQuoteOut(display);
+          setLastQuoteMeta({
+            tradeFeeUSD: q.tradeFeeUSD,
+            priceImpactPercent: q.priceImpactPercent,
+          });
+          setSwapState((prev) => ({ ...prev, toAmount: display }));
+        }
+      } catch {
+        // Silently ignore; the price-ratio effect already filled an estimate
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    fromChainId,
+    toChainId,
+    swapState.fromToken?.address,
+    swapState.toToken?.address,
+    swapState.fromAmount,
+    swapState.slippage,
+    address,
+  ]);
 
   useClickOutside(tokenSelectorRef, () => setShowTokenSelector(null));
   useClickOutside(settingsRef, () => setShowSettings(false));
@@ -229,11 +446,12 @@ function CryptoSwapBase({
 
   // Note: The combined effect above replaces the previous 'from-only' reset effect.
 
-  // Calculate exchange rate and amounts
+  // Calculate fallback estimate ONLY when no fresh quote is available or in-flight
   useEffect(() => {
-    if (swapState.fromAmount && !isNaN(Number(swapState.fromAmount))) {
-      const fromValue =
-        Number(swapState.fromAmount) * swapState.fromToken.price;
+    const amt = swapState.fromAmount;
+    if (quoteLoading || lastQuoteOut != null) return;
+    if (amt && !isNaN(Number(amt))) {
+      const fromValue = Number(amt) * swapState.fromToken.price;
       const toAmount = (fromValue / swapState.toToken.price).toFixed(6);
       setSwapState((prev) => ({ ...prev, toAmount }));
     } else {
@@ -243,6 +461,8 @@ function CryptoSwapBase({
     swapState.fromAmount,
     swapState.fromToken.price,
     swapState.toToken.price,
+    quoteLoading,
+    lastQuoteOut,
   ]);
 
   const handleTokenSelect = (token: Token) => {
@@ -271,7 +491,7 @@ function CryptoSwapBase({
     if (!isConnected) {
       try {
         await appKitModal?.open();
-      } catch {}
+      } catch { }
       return;
     }
 
@@ -409,7 +629,9 @@ function CryptoSwapBase({
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-muted-foreground">From</span>
                 <span className="text-sm text-muted-foreground">
-                  Balance: {swapState.fromToken.balance}
+                  Balance:{" "}
+                  {fmtBalance(fromBalance.data?.formatted) ||
+                    swapState.fromToken.balance}
                 </span>
               </div>
 
@@ -433,7 +655,7 @@ function CryptoSwapBase({
                     <span className="font-semibold">
                       {swapState.fromToken.symbol}
                     </span>
-                    <span className="text-xs text-muted-foreground flex gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-2">
                       <span className="truncate max-w-[8rem] sm:max-w-[10rem]">
                         {swapState.fromNetwork.name}
                       </span>
@@ -458,12 +680,21 @@ function CryptoSwapBase({
 
               <div className="flex justify-between items-center mt-2">
                 <span className="text-xs text-muted-foreground"></span>
-                <span className="text-xs text-muted-foreground">
-                  ≈ $
-                  {(
-                    Number(swapState.fromAmount || 0) *
-                    swapState.fromToken.price
-                  ).toFixed(2)}
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  {fromPriceLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Fetching price…</span>
+                    </>
+                  ) : (
+                    <>
+                      ≈ $
+                      {(
+                        Number(swapState.fromAmount || 0) *
+                        swapState.fromToken.price
+                      ).toFixed(2)}
+                    </>
+                  )}
                 </span>
               </div>
             </div>
@@ -496,7 +727,11 @@ function CryptoSwapBase({
                     </>
                   )}
                   {!toLoading && (
-                    <>Balance: {swapState.toToken.balance}</>
+                    <>
+                      Balance:{" "}
+                      {fmtBalance(toBalance.data?.formatted) ||
+                        swapState.toToken.balance}
+                    </>
                   )}
                 </span>
               </div>
@@ -505,7 +740,9 @@ function CryptoSwapBase({
                 <motion.button
                   className={cn(
                     "flex items-start gap-2 bg-background/50 rounded-xl px-3 py-2 transition-colors shrink-0",
-                    toLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-background/80",
+                    toLoading
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:bg-background/80",
                   )}
                   whileHover={toLoading ? undefined : { scale: 1.02 }}
                   whileTap={toLoading ? undefined : { scale: 0.98 }}
@@ -526,28 +763,43 @@ function CryptoSwapBase({
                     <span className="font-semibold">
                       {swapState.toToken.symbol}
                     </span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-2">
                       <span className="truncate max-w-[8rem] sm:max-w-[10rem]">
                         {swapState.toNetwork.name}
                       </span>
-                      {toLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground self-center" />
                 </motion.button>
 
                 <div className="flex-1 min-w-0 text-right text-2xl font-semibold text-muted-foreground truncate">
-                  {swapState.toAmount || "0.0"}
+                  {quoteLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />—
+                    </span>
+                  ) : (
+                    swapState.toAmount || "0.0"
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-between items-center mt-2">
                 <span className="text-xs text-muted-foreground"></span>
-                <span className="text-xs text-muted-foreground">
-                  ≈ $
-                  {(
-                    Number(swapState.toAmount || 0) * swapState.toToken.price
-                  ).toFixed(2)}
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  {toPriceLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Fetching price…</span>
+                    </>
+                  ) : (
+                    <>
+                      ≈ $
+                      {(
+                        Number(swapState.toAmount || 0) *
+                        swapState.toToken.price
+                      ).toFixed(2)}
+                    </>
+                  )}
                 </span>
               </div>
             </div>
@@ -563,12 +815,21 @@ function CryptoSwapBase({
             >
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Rate</span>
-                <span>
-                  1 {swapState.fromToken.symbol} ={" "}
-                  {(
-                    swapState.toToken.price / swapState.fromToken.price
-                  ).toFixed(6)}{" "}
-                  {swapState.toToken.symbol}
+                <span className="inline-flex items-center gap-2">
+                  {fromPriceLoading || toPriceLoading || quoteLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Updating…
+                    </>
+                  ) : (
+                    <>
+                      1 {swapState.fromToken.symbol} ={" "}
+                      {(
+                        swapState.toToken.price / swapState.fromToken.price
+                      ).toFixed(6)}{" "}
+                      {swapState.toToken.symbol}
+                    </>
+                  )}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -576,9 +837,21 @@ function CryptoSwapBase({
                 <span>{swapState.slippage}%</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Network Fee</span>
-                <span>~$2.50</span>
+                <span className="text-muted-foreground">Trade Fee</span>
+                <span className="inline-flex items-center gap-2">
+                  {quoteLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Estimating…</span>
+                    </>
+                  ) : lastQuoteMeta?.tradeFeeUSD ? (
+                    <>{fmtTradeFeeUSD(lastQuoteMeta.tradeFeeUSD)}</>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </span>
               </div>
+              {/* Price Impact intentionally hidden per product requirement */}
             </motion.div>
           )}
 
@@ -595,7 +868,7 @@ function CryptoSwapBase({
                     : !swapState.fromAmount || Number(swapState.fromAmount) <= 0
                       ? "bg-muted text-muted-foreground cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700",
-          )}
+            )}
             whileHover={
               !swapState.isLoading && swapState.fromAmount
                 ? { scale: 1.02 }
@@ -681,39 +954,42 @@ function CryptoSwapBase({
                 <div className="flex gap-2 mb-3 overflow-x-auto">
                   {showTokenSelector === "to" && toLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Fetching assets…
+                      <Loader2 className="w-4 h-4 animate-spin" /> Fetching
+                      assets…
                     </div>
                   ) : (
-                    (showTokenSelector === "from" ? fromNetworks : toNetworks).map(
-                      (net) => (
-                        <button
-                          type="button"
-                          key={net.id}
-                          className={cn(
-                            "px-3 py-1.5 rounded-full text-sm border",
-                            (selectorNetwork?.id ??
-                              (showTokenSelector === "from"
-                                ? swapState.fromNetwork.id
-                                : swapState.toNetwork.id)) === net.id
-                              ? "bg-muted text-foreground border-border"
-                              : "bg-background text-muted-foreground border-border/50",
-                          )}
-                          onClick={() => setSelectorNetwork(net)}
-                        >
-                          <span className="mr-1 inline-flex align-middle">
-                            <AssetLogo kind="network" id={net.id} size={16} />
-                          </span>
-                          <span className="align-middle">{net.name}</span>
-                        </button>
-                      ),
-                    )
+                    (showTokenSelector === "from"
+                      ? fromNetworks
+                      : toNetworks
+                    ).map((net) => (
+                      <button
+                        type="button"
+                        key={net.id}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-sm border",
+                          (selectorNetwork?.id ??
+                            (showTokenSelector === "from"
+                              ? swapState.fromNetwork.id
+                              : swapState.toNetwork.id)) === net.id
+                            ? "bg-muted text-foreground border-border"
+                            : "bg-background text-muted-foreground border-border/50",
+                        )}
+                        onClick={() => setSelectorNetwork(net)}
+                      >
+                        <span className="mr-1 inline-flex align-middle">
+                          <AssetLogo kind="network" id={net.id} size={16} />
+                        </span>
+                        <span className="align-middle">{net.name}</span>
+                      </button>
+                    ))
                   )}
                 </div>
                 {/* Tokens list */}
                 <div className="space-y-2 max-h-80 overflow-y-auto">
                   {showTokenSelector === "to" && toLoading ? (
                     <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading tokens…
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading
+                      tokens…
                     </div>
                   ) : (
                     (
@@ -731,29 +1007,34 @@ function CryptoSwapBase({
                         );
                       })
                       .map((token, index) => (
-                      <motion.button
-                        key={token.address}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleTokenSelect(token)}
-                      >
-                        <AssetLogo kind="token" id={token.symbol} size={36} src={(token as any).logoUrl} />
-                        <div className="flex-1 text-left">
-                          <div className="font-semibold">{token.symbol}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {token.name}
+                        <motion.button
+                          key={token.address}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleTokenSelect(token)}
+                        >
+                          <AssetLogo
+                            kind="token"
+                            id={token.symbol}
+                            size={36}
+                            src={(token as any).logoUrl}
+                          />
+                          <div className="flex-1 text-left">
+                            <div className="font-semibold">{token.symbol}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {token.name}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold">{token.balance}</div>
-                          {/* Change is not tracked here; omit the delta color bar */}
-                        </div>
-                      </motion.button>
-                    ))
+                          <div className="text-right">
+                            <div className="font-semibold">{token.balance}</div>
+                            {/* Change is not tracked here; omit the delta color bar */}
+                          </div>
+                        </motion.button>
+                      ))
                   )}
                 </div>
               </motion.div>
