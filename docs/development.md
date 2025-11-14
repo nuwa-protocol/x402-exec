@@ -233,12 +233,12 @@ pnpm run build
 
 ```bash
 cd contracts
-./deploy-network.sh [NETWORK] [OPTIONS]
+./deploy-contract.sh [NETWORK] [OPTIONS]
 
 # Examples:
-./deploy-network.sh xlayer-testnet --all         # Deploy everything
-./deploy-network.sh base-sepolia --settlement    # Deploy SettlementRouter only
-./deploy-network.sh xlayer --hooks --verify      # Deploy hooks with verification
+./deploy-contract.sh xlayer-testnet --all         # Deploy everything
+./deploy-contract.sh base-sepolia --settlement    # Deploy SettlementRouter only
+./deploy-contract.sh xlayer --hooks --verify      # Deploy hooks with verification
 ```
 
 ### Cloud Deployment

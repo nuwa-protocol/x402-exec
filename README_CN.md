@@ -154,12 +154,12 @@ forge test
 
 ```bash
 cd contracts
-./deploy-network.sh [网络] [选项]  # 先配置 .env 文件
+./deploy-contract.sh [网络] [选项]  # 先配置 .env 文件
 
 # 示例：
-./deploy-network.sh base-sepolia --all --verify    # 在测试网部署所有内容
-./deploy-network.sh base --settlement --verify     # 在主网部署 SettlementRouter
-./deploy-network.sh xlayer --hooks --verify        # 部署内置 hooks
+./deploy-contract.sh base-sepolia --all --verify    # 在测试网部署所有内容
+./deploy-contract.sh base --settlement --verify     # 在主网部署 SettlementRouter
+./deploy-contract.sh xlayer --hooks --verify        # 部署内置 hooks
 ```
 
 ## 💡 使用示例

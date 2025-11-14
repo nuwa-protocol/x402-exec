@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared network configurations for x402-settle
-# This file is sourced by both deploy-network.sh and verify-contracts.sh
+# This file is sourced by both deploy-contract.sh and verify-contracts.sh
 
 # Network configurations array
 # Format: "network_key|network_name|chain_id|rpc_url|explorer_url|verifier|verifier_url|api_key_var|requires_real_key"

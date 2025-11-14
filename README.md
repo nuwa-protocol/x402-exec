@@ -154,12 +154,12 @@ forge test
 
 ```bash
 cd contracts
-./deploy-network.sh [NETWORK] [OPTIONS]  # Configure .env first
+./deploy-contract.sh [NETWORK] [OPTIONS]  # Configure .env first
 
 # Examples:
-./deploy-network.sh base-sepolia --all --verify    # Deploy everything on testnet
-./deploy-network.sh base --settlement --verify     # Deploy SettlementRouter on mainnet
-./deploy-network.sh xlayer --hooks --verify        # Deploy built-in hooks
+./deploy-contract.sh base-sepolia --all --verify    # Deploy everything on testnet
+./deploy-contract.sh base --settlement --verify     # Deploy SettlementRouter on mainnet
+./deploy-contract.sh xlayer --hooks --verify        # Deploy built-in hooks
 ```
 
 ## 💡 Usage Examples

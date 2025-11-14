@@ -65,7 +65,7 @@ Deploy both SettlementRouter and all showcase scenarios:
 
 ```bash
 cd contracts
-./deploy-network.sh xlayer-testnet --all
+./deploy-contract.sh xlayer-testnet --all
 ```
 
 This will:
@@ -111,7 +111,7 @@ If you have `OKLINK_API_KEY` set and used `--verify` flag:
 ### Deploy Only SettlementRouter
 
 ```bash
-./deploy-network.sh xlayer-testnet --settlement
+./deploy-contract.sh xlayer-testnet --settlement
 ```
 
 After deployment, save the address:
@@ -148,14 +148,14 @@ Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
 
 ```bash
 # Make sure X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS is set in .env
-./deploy-network.sh xlayer-testnet --showcase
+./deploy-contract.sh xlayer-testnet --showcase
 ```
 
 ### Deploy with Verification
 
 ```bash
 # Requires OKLINK_API_KEY in .env
-./deploy-network.sh xlayer-testnet --all --verify
+./deploy-contract.sh xlayer-testnet --all --verify
 ```
 
 ### Non-Interactive Deployment
@@ -163,7 +163,7 @@ Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
 Skip confirmation prompts:
 
 ```bash
-./deploy-network.sh xlayer-testnet --all --yes
+./deploy-contract.sh xlayer-testnet --all --yes
 ```
 
 ## 🔧 Legacy Deployment Scripts
@@ -194,7 +194,7 @@ export RPC_URL=https://sepolia.base.org
 **After (Multi-Network):**
 ```bash
 # Just specify the network!
-./deploy-network.sh base-sepolia --all
+./deploy-contract.sh base-sepolia --all
 ```
 
 ## 🌐 Deploy to Other Networks
@@ -207,7 +207,7 @@ BASE_RPC_URL=https://mainnet.base.org
 BASESCAN_API_KEY=your_api_key
 
 # Deploy
-./deploy-network.sh base --all --verify
+./deploy-contract.sh base --all --verify
 ```
 
 ### X-Layer Mainnet
@@ -218,7 +218,7 @@ X_LAYER_RPC_URL=https://rpc.xlayer.tech
 OKLINK_API_KEY=your_api_key
 
 # Deploy
-./deploy-network.sh xlayer --all --verify
+./deploy-contract.sh xlayer --all --verify
 ```
 
 ## 🛠️ Troubleshooting
@@ -263,7 +263,7 @@ Cannot deploy showcase: SETTLEMENT_ROUTER_ADDRESS not set
 ```
 
 **Solution:** Either:
-1. Deploy SettlementRouter first: `./deploy-network.sh xlayer-testnet --settlement`
+1. Deploy SettlementRouter first: `./deploy-contract.sh xlayer-testnet --settlement`
 2. Or use `--all` to deploy everything at once
 
 ## 📝 Deployment Checklist
@@ -303,7 +303,7 @@ Cannot deploy showcase: SETTLEMENT_ROUTER_ADDRESS not set
 
 Always verify contracts on mainnet deployments:
 ```bash
-./deploy-network.sh xlayer --all --verify
+./deploy-contract.sh xlayer --all --verify
 ```
 
 ## 📊 Gas Costs (Estimates)
@@ -353,7 +353,7 @@ Always verify contracts on mainnet deployments:
 
 ```bash
 # Redeploy everything
-./deploy-network.sh xlayer-testnet --all
+./deploy-contract.sh xlayer-testnet --all
 
 ```
 

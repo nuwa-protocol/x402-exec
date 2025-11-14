@@ -7,7 +7,7 @@ The verification script (`verify-contracts.sh`) uses a shared configuration file
 ```
 network-config.sh          # Shared network configurations (single source of truth)
     ↓
-├── deploy-network.sh      # Uses configs for deployment
+├── deploy-contract.sh     # Uses configs for deployment
 └── verify-contracts.sh    # Uses configs for verification
 ```
 
@@ -88,7 +88,7 @@ declare -a NETWORK_CONFIGS=(
 ./verify-contracts.sh arbitrum
 
 # Test deployment (if applicable)
-./deploy-network.sh arbitrum --settlement
+./deploy-contract.sh arbitrum --settlement
 ```
 
 ### 2. No Code Changes Needed!
@@ -110,7 +110,7 @@ Once added, users can immediately use:
 ./verify-contracts.sh all                # Includes new networks
 
 # Deployment (if deployment network)
-./deploy-network.sh arbitrum --settlement
+./deploy-contract.sh arbitrum --settlement
 ```
 
 ## Supported Verifiers
@@ -142,7 +142,7 @@ Once added, users can immediately use:
 
 ## Network Naming Conventions
 
-### For Deployment Networks (used in `deploy-network.sh`)
+### For Deployment Networks (used in `deploy-contract.sh`)
 Use simple network names:
 ```
 base-sepolia    # Testnet

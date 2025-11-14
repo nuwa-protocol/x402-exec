@@ -91,11 +91,11 @@ cp .env.example .env
 
 ```bash
 cd ../../contracts
-./deploy-network.sh xlayer-testnet --all
+./deploy-contract.sh xlayer-testnet --all
 
 # Or deploy to other networks:
-# ./deploy-network.sh base-sepolia --all --verify
-# ./deploy-network.sh xlayer --settlement
+# ./deploy-contract.sh base-sepolia --all --verify
+# ./deploy-contract.sh xlayer --settlement
 ```
 
 After deployment, copy the output contract addresses and update `server/.env`:
@@ -259,7 +259,7 @@ showcase/
 │   │   ├── RewardToken.sol
 │   │   └── RewardHook.sol
 │   ├── script/Deploy.s.sol
-│   └── deploy-network.sh      # Unified deployment script
+│   └── deploy-contract.sh     # Unified deployment script
 │
 ├── server/                 # Hono backend service
 │   ├── src/
@@ -362,10 +362,10 @@ For mainnet deployment, use the following commands and update the `client/.env` 
 ```bash
 # Deploy to Base Mainnet
 cd contracts
-./deploy-network.sh base --showcase --verify
+./deploy-contract.sh base --showcase --verify
 
 # Deploy to X Layer Mainnet
-./deploy-network.sh xlayer --showcase --verify
+./deploy-contract.sh xlayer --showcase --verify
 ```
 
 After deployment, update your `examples/showcase/client/.env`:
