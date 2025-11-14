@@ -93,9 +93,6 @@ export const ACCOUNT_POOL_DEFAULTS = {
 
   /** Maximum queue depth per account (prevent request accumulation) */
   MAX_QUEUE_DEPTH: 10,
-
-  /** Queue depth warning threshold */
-  QUEUE_DEPTH_WARNING: 5,
 } as const;
 
 /**

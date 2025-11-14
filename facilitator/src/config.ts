@@ -123,13 +123,25 @@ function parseAccountPoolConfig(): AccountPoolConfig {
     throw new Error(`Invalid ACCOUNT_SELECTION_STRATEGY: ${strategy}`);
   }
 
-  const maxQueueDepth = process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH
-    ? parseInt(process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH)
-    : DEFAULTS.accountPool.MAX_QUEUE_DEPTH;
+  // Parse and validate maxQueueDepth
+  let maxQueueDepth: number = DEFAULTS.accountPool.MAX_QUEUE_DEPTH;
+  if (process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH) {
+    const parsed = parseInt(process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH);
+    if (isNaN(parsed) || parsed <= 0) {
+      throw new Error(
+        `Invalid ACCOUNT_POOL_MAX_QUEUE_DEPTH: ${process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH}. Must be a positive integer.`,
+      );
+    }
+    if (parsed > 1000) {
+      throw new Error(
+        `ACCOUNT_POOL_MAX_QUEUE_DEPTH too large: ${parsed}. Maximum allowed is 1000.`,
+      );
+    }
+    maxQueueDepth = parsed;
+  }
 
-  const queueDepthWarning = process.env.ACCOUNT_POOL_QUEUE_DEPTH_WARNING
-    ? parseInt(process.env.ACCOUNT_POOL_QUEUE_DEPTH_WARNING)
-    : DEFAULTS.accountPool.QUEUE_DEPTH_WARNING;
+  // Calculate queueDepthWarning as 80% of maxQueueDepth (rounded up)
+  const queueDepthWarning = Math.ceil(maxQueueDepth * 0.8);
 
   return {
     strategy,

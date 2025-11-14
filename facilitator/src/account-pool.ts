@@ -17,6 +17,7 @@ import type { Signer } from "x402/types";
 import { createSigner } from "x402/types";
 import { getLogger, recordMetric } from "./telemetry.js";
 import { QueueOverloadError } from "./errors.js";
+import { DEFAULTS } from "./defaults.js";
 
 const logger = getLogger();
 
@@ -98,7 +99,10 @@ export class AccountPool {
       throw new Error("At least one private key is required");
     }
 
-    const defaultConfig: AccountPoolConfig = {};
+    const defaultConfig: AccountPoolConfig = {
+      strategy: DEFAULTS.accountPool.STRATEGY,
+      maxQueueDepth: DEFAULTS.accountPool.MAX_QUEUE_DEPTH,
+    };
     const finalConfig = { ...defaultConfig, ...config };
     const strategy = finalConfig.strategy || "round_robin";
     const pool = new AccountPool(network, strategy, finalConfig);

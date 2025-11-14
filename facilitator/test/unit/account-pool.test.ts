@@ -70,6 +70,24 @@ describe("account-pool", () => {
 
         expect(pool).toBeDefined();
       });
+
+      it("should use default config values when partial config provided", async () => {
+        const pool = await AccountPool.create(
+          ["0x0000000000000000000000000000000000000000000000000000000000000001"],
+          "base-sepolia",
+          { strategy: "random" }, // Only provide strategy, not maxQueueDepth
+        );
+
+        // Access the private config property for testing
+        const accountsInfo = pool.getAccountsInfo();
+        expect(accountsInfo).toHaveLength(1);
+
+        // The pool should have been created with default maxQueueDepth of 10
+        // and the config should be accessible through internal means
+        // We can't directly test the config values without exposing them,
+        // but the pool creation should succeed with defaults applied
+        expect(pool.getAccountCount()).toBe(1);
+      });
     });
 
     describe("execute", () => {

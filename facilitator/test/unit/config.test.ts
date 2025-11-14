@@ -102,6 +102,68 @@ describe("config", () => {
 
       expect(() => loadConfig()).toThrow("Invalid ACCOUNT_SELECTION_STRATEGY");
     });
+
+    it("should load default queue depth values", () => {
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      const config = loadConfig();
+
+      expect(config.accountPool.maxQueueDepth).toBe(10);
+      expect(config.accountPool.queueDepthWarning).toBe(8); // 80% of 10, rounded up
+    });
+
+    it("should load custom queue depth values", () => {
+      process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH = "25";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      const config = loadConfig();
+
+      expect(config.accountPool.maxQueueDepth).toBe(25);
+      expect(config.accountPool.queueDepthWarning).toBe(20); // 80% of 25, rounded up
+    });
+
+    it("should calculate queue depth warning correctly for odd numbers", () => {
+      process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH = "7";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      const config = loadConfig();
+
+      expect(config.accountPool.maxQueueDepth).toBe(7);
+      expect(config.accountPool.queueDepthWarning).toBe(6); // 80% of 7 = 5.6, rounded up to 6
+    });
+
+    it("should throw on invalid maxQueueDepth (NaN)", () => {
+      process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH = "invalid";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      expect(() => loadConfig()).toThrow(
+        "Invalid ACCOUNT_POOL_MAX_QUEUE_DEPTH: invalid. Must be a positive integer.",
+      );
+    });
+
+    it("should throw on invalid maxQueueDepth (negative)", () => {
+      process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH = "-5";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      expect(() => loadConfig()).toThrow(
+        "Invalid ACCOUNT_POOL_MAX_QUEUE_DEPTH: -5. Must be a positive integer.",
+      );
+    });
+
+    it("should throw on maxQueueDepth too large", () => {
+      process.env.ACCOUNT_POOL_MAX_QUEUE_DEPTH = "2000";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+      expect(() => loadConfig()).toThrow(
+        "ACCOUNT_POOL_MAX_QUEUE_DEPTH too large: 2000. Maximum allowed is 1000.",
+      );
+    });
   });
 
   describe("private keys loading", () => {

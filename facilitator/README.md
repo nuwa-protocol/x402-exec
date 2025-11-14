@@ -49,6 +49,7 @@ Or clone and run from source (see [Development](#development) section below).
   - Returns HTTP 429 with `Retry-After` header when exceeded
 - **Queue Management** 🆕: Prevents signature expiration gas waste
   - Per-account queue depth limits (default: 10 requests/account)
+  - Automatic warning threshold (80% of max depth)
   - Immediate rejection when queues full (HTTP 503)
   - Prevents expired signatures from wasting gas on failed transactions
 - **Input Validation**: Deep validation beyond TypeScript types
@@ -1020,18 +1021,15 @@ RATE_LIMIT_WINDOW_MS=60000 # Time window (1 minute)
 ```env
 # Maximum queue depth per account (default: 10)
 # Prevents request accumulation that leads to signature expiration
+# Warning threshold is automatically set to 80% of max depth
 ACCOUNT_POOL_MAX_QUEUE_DEPTH=10
-
-# Queue depth warning threshold (default: 5)
-# Logs warnings when approaching capacity limits
-ACCOUNT_POOL_QUEUE_DEPTH_WARNING=5
 ```
 
 **Default Values (Recommended):**
 
 - **Single Account**: `MAX_QUEUE_DEPTH: 10` (each tx ~10-30s, 10 requests = 2-5 minutes processing)
 - **Multi Account**: `MAX_QUEUE_DEPTH: 5` per account (scale with account count)
-- **Warning Threshold**: 50% of max depth for proactive monitoring
+- **Warning Threshold**: 80% of max depth for proactive monitoring
 
 **Behavior:**
 
