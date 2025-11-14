@@ -7,6 +7,8 @@
  * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
+import { verify } from "x402/facilitator";
+import { createConnectedClient } from "x402/types";
 import type { PaymentPayload, PaymentRequirements, Signer } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
 import {
@@ -248,6 +250,48 @@ export async function settleWithRouter(
       },
       "Settlement authorization details (before on-chain validation)",
     );
+
+    // 5.5. Validate authorization timestamps using x402 SDK (SECURITY: prevent expired signatures from wasting gas)
+    const client = createConnectedClient(network);
+    const verifyResult = await verify(client, paymentPayload, paymentRequirements);
+
+    if (!verifyResult.isValid) {
+      // Check if this is a timestamp-related validation error
+      const invalidReason = verifyResult.invalidReason || "";
+      const isTimestampError =
+        invalidReason.includes("authorization_valid_before") ||
+        invalidReason.includes("authorization_valid_after");
+
+      if (isTimestampError) {
+        logger.warn(
+          {
+            network,
+            from: authorization.from,
+            validAfter: authorization.validAfter,
+            validBefore: authorization.validBefore,
+            currentTime: Math.floor(Date.now() / 1000),
+            invalidReason,
+          },
+          "Authorization timestamp validation failed using x402 SDK - preventing wasted gas transaction",
+        );
+
+        // Map x402 SDK error reasons to our error reasons
+        let errorReason = "AUTHORIZATION_TIMESTAMP_INVALID";
+        if (invalidReason.includes("valid_before")) {
+          errorReason = "AUTHORIZATION_EXPIRED";
+        } else if (invalidReason.includes("valid_after")) {
+          errorReason = "AUTHORIZATION_NOT_YET_VALID";
+        }
+
+        return {
+          success: false,
+          errorReason,
+          transaction: "",
+          network: paymentPayload.network,
+          payer: authorization.from,
+        };
+      }
+    }
 
     // 6. Calculate effective gas limit if config is provided
     let effectiveGasLimit: bigint | undefined;
