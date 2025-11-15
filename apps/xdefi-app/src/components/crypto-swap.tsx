@@ -197,6 +197,10 @@ function CryptoSwapBase({
   const [selectorNetwork, setSelectorNetwork] = useState<Network | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
+  // Track which side the user is actively editing to choose exactIn/exactOut
+  // - 'from': user types the input amount -> quote exactIn and fill toAmount
+  // - 'to':   user types the output amount -> quote exactOut and fill fromAmount
+  const [amountSide, setAmountSide] = useState<"from" | "to">("from");
   // no-op swap animation; we no longer flip from/to in UI
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -332,37 +336,53 @@ function CryptoSwapBase({
     };
   }, [toChainId, swapState.toToken?.address]);
 
-  // Fetch live swap quote for the entered amount and selected tokens
+  // Fetch live swap quote for the entered amount and selected tokens.
+  // Supports both directions:
+  // - amountSide === 'from' -> exactIn (compute toAmount)
+  // - amountSide === 'to'   -> exactOut (compute fromAmount)
   // biome-ignore lint/correctness/useExhaustiveDependencies: <>
   useEffect(() => {
     let cancelled = false;
-    const amt = swapState.fromAmount?.trim();
     const fromAddr = swapState.fromToken?.address;
     const toAddr = swapState.toToken?.address;
     if (!fromChainId || !toChainId || !fromAddr || !toAddr) return;
-    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) {
-      // Reset when amount is invalid/empty
-      setSwapState((prev) => ({ ...prev, toAmount: "" }));
+
+    const activeAmt = (amountSide === "from"
+      ? swapState.fromAmount
+      : swapState.toAmount
+    )?.trim();
+
+    // Reset counterpart when active input is invalid/empty
+    if (!activeAmt || isNaN(Number(activeAmt)) || Number(activeAmt) <= 0) {
+      setSwapState((prev) => (
+        amountSide === "from" ? { ...prev, toAmount: "" } : { ...prev, fromAmount: "" }
+      ));
       return;
     }
+
     setLastQuoteOut(null);
     setLastQuoteMeta(null);
     setQuoteLoading(true);
     (async () => {
       try {
-        const decimals = swapState.fromToken?.decimals ?? 18;
+        // Parse raw amount using the correct token decimals for the active side
+        const activeDecimals =
+          amountSide === "from"
+            ? (swapState.fromToken?.decimals ?? 18)
+            : (swapState.toToken?.decimals ?? 18);
         let amountRaw = "0";
         try {
-          amountRaw = parseUnits(amt, decimals).toString();
+          amountRaw = parseUnits(activeAmt!, activeDecimals).toString();
         } catch {
           amountRaw = "0";
         }
+
         const q = await okxGetQuote({
           chainId: fromChainId,
           tokenIn: fromAddr,
           tokenOut: toAddr,
           amountRaw,
-          swapMode: "exactIn",
+          swapMode: amountSide === "from" ? "exactIn" : "exactOut",
           // Optional knobs available:
           // priceImpactProtectionPercent: '90',
           // feePercent: '0',
@@ -371,33 +391,56 @@ function CryptoSwapBase({
           userAddress: address,
         });
         if (cancelled) return;
-        if (q && (q.rawAmountOut || q.amountOut)) {
-          // Convert raw out units to decimal string using toToken decimals
-          // Prefer decimals from the quote response if present; fallback to known token decimals
-          const qToDecRaw = (q as any)?.data?.toToken?.decimal;
-          const qToDecimals =
-            typeof qToDecRaw === "string" ? Number.parseInt(qToDecRaw, 10) : undefined;
-          const toDecimals = Number.isFinite(qToDecimals as number)
-            ? (qToDecimals as number)
-            : (swapState.toToken?.decimals ?? 18);
-          const rawOut = q.rawAmountOut || q.amountOut || "0";
-          let display = "0";
-          try {
-            display = formatUnits(BigInt(rawOut), toDecimals);
-          } catch { }
-          // trim trailing zeros, keep 6 decimals max
-          const [i, d = ""] = display.split(".");
-          const t = d.replace(/0+$/, "").slice(0, 6);
-          display = t ? `${i}.${t}` : i;
-          setLastQuoteOut(display);
-          setLastQuoteMeta({
-            tradeFeeUSD: q.tradeFeeUSD,
-            priceImpactPercent: q.priceImpactPercent,
-          });
-          setSwapState((prev) => ({ ...prev, toAmount: display }));
+
+        if (q) {
+          if (amountSide === "from") {
+            // We need to fill toAmount from rawAmountOut
+            const qToDecRaw = (q as any)?.data?.toToken?.decimal;
+            const qToDecimals =
+              typeof qToDecRaw === "string" ? Number.parseInt(qToDecRaw, 10) : undefined;
+            const toDecimals = Number.isFinite(qToDecimals as number)
+              ? (qToDecimals as number)
+              : (swapState.toToken?.decimals ?? 18);
+            const rawOut = q.rawAmountOut || q.amountOut || "0";
+            let display = "0";
+            try {
+              display = formatUnits(BigInt(rawOut), toDecimals);
+            } catch { }
+            const [i, d = ""] = display.split(".");
+            const t = d.replace(/0+$/, "").slice(0, 6);
+            display = t ? `${i}.${t}` : i;
+            setLastQuoteOut(display);
+            setLastQuoteMeta({
+              tradeFeeUSD: q.tradeFeeUSD,
+              priceImpactPercent: q.priceImpactPercent,
+            });
+            setSwapState((prev) => ({ ...prev, toAmount: display }));
+          } else {
+            // amountSide === 'to' -> fill fromAmount from rawAmountIn
+            const qFromDecRaw = (q as any)?.data?.fromToken?.decimal;
+            const qFromDecimals =
+              typeof qFromDecRaw === "string" ? Number.parseInt(qFromDecRaw, 10) : undefined;
+            const fromDecimals = Number.isFinite(qFromDecimals as number)
+              ? (qFromDecimals as number)
+              : (swapState.fromToken?.decimals ?? 18);
+            const rawIn = q.rawAmountIn || "0";
+            let display = "0";
+            try {
+              display = formatUnits(BigInt(rawIn), fromDecimals);
+            } catch { }
+            const [i, d = ""] = display.split(".");
+            const t = d.replace(/0+$/, "").slice(0, 6);
+            display = t ? `${i}.${t}` : i;
+            setLastQuoteOut(display);
+            setLastQuoteMeta({
+              tradeFeeUSD: q.tradeFeeUSD,
+              priceImpactPercent: q.priceImpactPercent,
+            });
+            setSwapState((prev) => ({ ...prev, fromAmount: display }));
+          }
         }
       } catch {
-        // Silently ignore; the price-ratio effect already filled an estimate
+        // Silently ignore; the price-ratio fallback effect will fill an estimate
       } finally {
         if (!cancelled) setQuoteLoading(false);
       }
@@ -410,7 +453,9 @@ function CryptoSwapBase({
     toChainId,
     swapState.fromToken?.address,
     swapState.toToken?.address,
-    swapState.fromAmount,
+    amountSide,
+    // Only re-run when the active side amount changes
+    amountSide === "from" ? swapState.fromAmount : swapState.toAmount,
     swapState.slippage,
     address,
   ]);
@@ -446,19 +491,33 @@ function CryptoSwapBase({
 
   // Note: The combined effect above replaces the previous 'from-only' reset effect.
 
-  // Calculate fallback estimate ONLY when no fresh quote is available or in-flight
+  // Calculate fallback estimate ONLY when no fresh quote is available or in-flight.
+  // Mirrors the live quote direction based on amountSide.
   useEffect(() => {
-    const amt = swapState.fromAmount;
     if (quoteLoading || lastQuoteOut != null) return;
-    if (amt && !isNaN(Number(amt))) {
-      const fromValue = Number(amt) * swapState.fromToken.price;
-      const toAmount = (fromValue / swapState.toToken.price).toFixed(6);
-      setSwapState((prev) => ({ ...prev, toAmount }));
+    if (amountSide === "from") {
+      const amt = swapState.fromAmount;
+      if (amt && !isNaN(Number(amt))) {
+        const fromValue = Number(amt) * swapState.fromToken.price;
+        const toAmount = (fromValue / swapState.toToken.price).toFixed(6);
+        setSwapState((prev) => ({ ...prev, toAmount }));
+      } else {
+        setSwapState((prev) => ({ ...prev, toAmount: "" }));
+      }
     } else {
-      setSwapState((prev) => ({ ...prev, toAmount: "" }));
+      const amt = swapState.toAmount;
+      if (amt && !isNaN(Number(amt))) {
+        const toValue = Number(amt) * swapState.toToken.price;
+        const fromAmount = (toValue / swapState.fromToken.price).toFixed(6);
+        setSwapState((prev) => ({ ...prev, fromAmount }));
+      } else {
+        setSwapState((prev) => ({ ...prev, fromAmount: "" }));
+      }
     }
   }, [
+    amountSide,
     swapState.fromAmount,
+    swapState.toAmount,
     swapState.fromToken.price,
     swapState.toToken.price,
     quoteLoading,
@@ -668,12 +727,15 @@ function CryptoSwapBase({
                   type="number"
                   placeholder="0.0"
                   value={swapState.fromAmount}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setAmountSide("from");
                     setSwapState((prev) => ({
                       ...prev,
                       fromAmount: e.target.value,
-                    }))
-                  }
+                    }));
+                  }}
+                  onFocus={() => setAmountSide("from")}
+                  onInput={() => setAmountSide("from")}
                   className="min-w-0 flex-1 bg-transparent text-right text-2xl font-semibold outline-none placeholder:text-muted-foreground"
                 />
               </div>
@@ -772,15 +834,21 @@ function CryptoSwapBase({
                   <ChevronDown className="w-4 h-4 text-muted-foreground self-center" />
                 </motion.button>
 
-                <div className="flex-1 min-w-0 text-right text-2xl font-semibold text-muted-foreground truncate">
-                  {quoteLoading ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />—
-                    </span>
-                  ) : (
-                    swapState.toAmount || "0.0"
-                  )}
-                </div>
+                <input
+                  type="number"
+                  placeholder="0.0"
+                  value={swapState.toAmount}
+                  onChange={(e) => {
+                    setAmountSide("to");
+                    setSwapState((prev) => ({
+                      ...prev,
+                      toAmount: e.target.value,
+                    }));
+                  }}
+                  onFocus={() => setAmountSide("to")}
+                  onInput={() => setAmountSide("to")}
+                  className="min-w-0 flex-1 bg-transparent text-right text-2xl font-semibold outline-none placeholder:text-muted-foreground"
+                />
               </div>
 
               <div className="flex justify-between items-center mt-2">
