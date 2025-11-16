@@ -1,6 +1,6 @@
 {
   "name": "@x402x/hono",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hono middleware for x402x settlement framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

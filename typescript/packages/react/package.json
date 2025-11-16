@@ -1,6 +1,6 @@
 {
   "name": "@x402x/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React hooks for x402x settlement framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
