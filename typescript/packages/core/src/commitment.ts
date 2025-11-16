@@ -23,7 +23,7 @@ import type { CommitmentParams } from "./types.js";
  * const commitment = calculateCommitment({
  *   chainId: 84532,
  *   hub: '0x...',
- *   token: '0x...',
+ *   asset: '0x...',
  *   from: '0x...',
  *   value: '100000',
  *   validAfter: '0',
@@ -59,7 +59,7 @@ export function calculateCommitment(params: CommitmentParams): string {
         "X402/settle/v1",
         BigInt(params.chainId),
         params.hub as Hex,
-        params.token as Hex,
+        params.asset as Hex,
         params.from as Hex,
         BigInt(params.value),
         BigInt(params.validAfter),
@@ -129,8 +129,8 @@ export function validateCommitmentParams(params: CommitmentParams): void {
   if (!isValidAddress(params.hub)) {
     throw new Error("Invalid hub address");
   }
-  if (!isValidAddress(params.token)) {
-    throw new Error("Invalid token address");
+  if (!isValidAddress(params.asset)) {
+    throw new Error("Invalid asset address");
   }
   if (!isValidAddress(params.from)) {
     throw new Error("Invalid from address");

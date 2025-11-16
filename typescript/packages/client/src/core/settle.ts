@@ -71,7 +71,7 @@ export async function settle(
       scheme: "exact",
       network: signed.settlement.network as any, // Network type compatibility
       maxAmountRequired: signed.settlement.amount,
-      asset: signed.settlement.token as Address,
+      asset: signed.settlement.asset as Address,
       payTo: signed.settlement.networkConfig.settlementRouter as Address,
       maxTimeoutSeconds: 300, // 5 minutes
       // Required by x402 protocol (even though not used in serverless mode)
@@ -81,8 +81,8 @@ export async function settle(
       description: "x402x Serverless Settlement",
       mimeType: "application/json",
       extra: {
-        name: signed.settlement.networkConfig.usdc.name,
-        version: signed.settlement.networkConfig.usdc.version,
+        name: signed.settlement.networkConfig.defaultAsset.eip712.name,
+        version: signed.settlement.networkConfig.defaultAsset.eip712.version,
         settlementRouter: signed.settlement.networkConfig.settlementRouter as Address,
         salt: signed.settlement.salt,
         payTo: signed.settlement.payTo,

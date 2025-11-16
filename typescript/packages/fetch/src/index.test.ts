@@ -9,10 +9,13 @@ vi.mock("@x402x/core", () => ({
       return {
         chainId: 84532,
         settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
-        usdc: {
+        defaultAsset: {
           address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-          name: "USDC",
-          version: "2",
+          decimals: 6,
+          eip712: {
+            name: "USDC",
+            version: "2",
+          },
         },
       };
     }
@@ -386,7 +389,7 @@ describe("wrapFetchWithPayment", () => {
         expect.objectContaining({
           chainId: 84532,
           hub: "0x32431D4511e061F1133520461B07eC42afF157D6",
-          token: expect.any(String),
+          asset: expect.any(String),
           from: expect.any(String),
           value: expect.any(String),
           validAfter: expect.any(String),

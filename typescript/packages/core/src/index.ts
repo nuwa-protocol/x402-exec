@@ -54,6 +54,9 @@ export { TransferHook } from "./hooks/index.js";
 // Export helper functions
 export { addSettlementExtra } from "./utils.js";
 
+// Export amount utilities
+export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "./amount.js";
+
 // Export facilitator API client utilities
 export {
   calculateFacilitatorFee,

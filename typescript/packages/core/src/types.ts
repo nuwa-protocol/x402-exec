@@ -16,11 +16,11 @@ export interface CommitmentParams {
   chainId: number;
   /** SettlementRouter contract address */
   hub: string;
-  /** Token contract address (e.g., USDC) */
-  token: string;
+  /** Asset contract address (ERC-3009 token, e.g., USDC) */
+  asset: string;
   /** Payer address */
   from: string;
-  /** Payment amount in token's smallest unit */
+  /** Payment amount in asset's smallest unit */
   value: string;
   /** Authorization valid after timestamp */
   validAfter: string;
@@ -54,14 +54,19 @@ export interface NetworkConfig {
   txExplorerBaseUrl: string;
   /** SettlementRouter contract address */
   settlementRouter: string;
-  /** USDC token configuration */
-  usdc: {
-    /** USDC contract address */
+  /** Default asset configuration (ERC-3009 token, typically USDC) */
+  defaultAsset: {
+    /** Asset contract address */
     address: string;
-    /** USDC contract name (for EIP-712) */
-    name: string;
-    /** USDC contract version (for EIP-712) */
-    version: string;
+    /** Asset decimals */
+    decimals: number;
+    /** EIP-712 domain info for signing */
+    eip712: {
+      /** Asset contract name (for EIP-712) */
+      name: string;
+      /** Asset contract version (for EIP-712) */
+      version: string;
+    };
   };
   /** Builtin hook addresses */
   hooks: {
@@ -90,12 +95,12 @@ export interface SettlementExtraCore {
 
 /**
  * Settlement extra parameters for PaymentRequirements
- * Includes EIP-712 domain info (name, version) for USDC signature validation
+ * Includes EIP-712 domain info (name, version) for asset signature validation
  */
 export interface SettlementExtra extends SettlementExtraCore {
-  /** USDC contract name (for EIP-712) */
+  /** Asset contract name (for EIP-712) */
   name: string;
-  /** USDC contract version (for EIP-712) */
+  /** Asset contract version (for EIP-712) */
   version: string;
 }
 

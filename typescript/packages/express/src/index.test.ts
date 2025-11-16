@@ -63,10 +63,13 @@ vi.mock("@x402x/core", () => ({
   getNetworkConfig: vi.fn(() => ({
     chainId: 84532,
     settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
-    usdc: {
+    defaultAsset: {
       address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      name: "USDC",
-      version: "2",
+      decimals: 6,
+      eip712: {
+        name: "USDC",
+        version: "2",
+      },
     },
     hooks: {
       transfer: "0x6b486aF5A08D27153d0374BE56A1cB1676c460a8",

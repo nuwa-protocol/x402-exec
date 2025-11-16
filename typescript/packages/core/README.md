@@ -108,7 +108,7 @@ Calculate commitment hash that binds all settlement parameters.
 const commitment = calculateCommitment({
   chainId: 84532,
   hub: "0x...",
-  token: "0x...",
+  asset: "0x...",
   from: "0x...",
   value: "100000",
   validAfter: "0",

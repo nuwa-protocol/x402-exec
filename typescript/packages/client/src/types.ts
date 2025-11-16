@@ -44,11 +44,33 @@ export interface ExecuteParams {
   hook?: Address;
   /** Optional: Encoded hook data (defaults to "0x" for no hook data) */
   hookData?: Hex;
-  /** Payment amount in token's smallest unit (e.g., USDC has 6 decimals) */
+  /**
+   * Optional: Asset contract address (ERC-3009 token, defaults to network's default asset).
+   *
+   * If not provided, uses the default asset for the network (typically USDC).
+   * Must be a valid ERC-3009 compatible token address.
+   */
+  asset?: Address;
+  /**
+   * Payment amount in atomic units (smallest unit of the asset).
+   *
+   * Must be a positive integer string. For USDC (6 decimals), use parseDefaultAssetAmount()
+   * from @x402x/core to convert USD amounts to atomic units.
+   *
+   * @example
+   * ```typescript
+   * import { parseDefaultAssetAmount } from '@x402x/core';
+   * const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+   * await client.execute({ amount: atomicAmount, payTo: '0x...' });
+   * ```
+   */
   amount: string;
   /** Primary recipient address */
   payTo: Address;
-  /** Optional: Facilitator fee amount (will query if not provided) */
+  /**
+   * Optional: Facilitator fee amount in atomic units (will query if not provided).
+   * Must be atomic units, same as amount parameter.
+   */
   facilitatorFee?: string;
   /** Optional: Custom salt for idempotency (will generate if not provided) */
   customSalt?: Hex;
@@ -82,11 +104,11 @@ export interface SettlementData {
   network: string;
   /** Network configuration */
   networkConfig: NetworkConfig;
-  /** Token address (USDC) */
-  token: Address;
+  /** Asset contract address (ERC-3009 token) */
+  asset: Address;
   /** Payer address */
   from: Address;
-  /** Payment amount */
+  /** Payment amount in atomic units */
   amount: string;
   /** Valid after timestamp */
   validAfter: string;
@@ -96,7 +118,7 @@ export interface SettlementData {
   salt: Hex;
   /** Primary recipient address */
   payTo: Address;
-  /** Facilitator fee amount */
+  /** Facilitator fee amount in atomic units */
   facilitatorFee: string;
   /** Hook contract address */
   hook: Address;
@@ -118,11 +140,26 @@ export interface PrepareParams {
   hook: Address;
   /** Encoded hook data */
   hookData: Hex;
-  /** Payment amount */
+  /**
+   * Optional: Asset contract address (ERC-3009 token, defaults to network's default asset).
+   *
+   * If not provided, uses the default asset for the network (typically USDC).
+   * Must be a valid ERC-3009 compatible token address.
+   */
+  asset?: Address;
+  /**
+   * Payment amount in atomic units (smallest unit of the asset).
+   *
+   * Must be a positive integer string. For USDC (6 decimals), use parseDefaultAssetAmount()
+   * from @x402x/core to convert USD amounts to atomic units.
+   */
   amount: string;
   /** Primary recipient address */
   payTo: Address;
-  /** Optional: Facilitator fee (will query if not provided) */
+  /**
+   * Optional: Facilitator fee in atomic units (will query if not provided).
+   * Must be atomic units, same as amount parameter.
+   */
   facilitatorFee?: string;
   /** Optional: Custom salt */
   customSalt?: Hex;

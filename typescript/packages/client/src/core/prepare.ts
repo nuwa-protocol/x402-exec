@@ -14,7 +14,7 @@ import {
   generateSalt,
   validateAddress,
   validateHex,
-  parseAmount,
+  validateAmount,
   calculateTimeWindow,
 } from "./utils.js";
 
@@ -73,14 +73,17 @@ async function queryFacilitatorFee(
  * @example
  * ```typescript
  * import { prepareSettlement } from '@x402x/client';
- * import { TransferHook } from '@x402x/core';
+ * import { TransferHook, parseDefaultAssetAmount } from '@x402x/core';
+ *
+ * // Convert USD amount to atomic units first
+ * const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
  *
  * const settlement = await prepareSettlement({
  *   wallet: walletClient,
  *   network: 'base-sepolia',
  *   hook: TransferHook.getAddress('base-sepolia'),
  *   hookData: TransferHook.encode(),
- *   amount: '1000000',
+ *   amount: atomicAmount, // Must be atomic units
  *   payTo: '0x...',
  *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
@@ -92,16 +95,9 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   validateHex(params.hookData, "hookData");
   validateAddress(params.payTo, "payTo");
 
-  // 2. Validate and parse amount
-  let atomicAmount: string;
-  try {
-    atomicAmount = parseAmount(params.amount, params.network as any);
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      throw new ValidationError(`Invalid amount: ${error.message}`);
-    }
-    throw error;
-  }
+  // 2. Validate amount (must be atomic units, no automatic conversion)
+  validateAmount(params.amount, "amount");
+  const atomicAmount = params.amount;
 
   if (params.customSalt) {
     validateHex(params.customSalt, "customSalt", 32);
@@ -121,10 +117,14 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     );
   }
 
-  // 4. Generate salt (if not provided)
+  // 4. Determine asset address (use provided asset or default asset)
+  const asset = params.asset || (networkConfig.defaultAsset.address as Address);
+  validateAddress(asset, "asset");
+
+  // 5. Generate salt (if not provided)
   const salt = params.customSalt || generateSalt();
 
-  // 5. Query facilitator fee (if not provided and facilitatorUrl is available)
+  // 6. Query facilitator fee (if not provided and facilitatorUrl is available)
   let facilitatorFee = params.facilitatorFee || "0";
   if (!params.facilitatorFee && params.facilitatorUrl) {
     try {
@@ -151,13 +151,13 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     }
   }
 
-  // 6. Calculate time window (if not provided)
+  // 7. Calculate time window (if not provided)
   const timeWindow =
     params.validAfter && params.validBefore
       ? { validAfter: params.validAfter, validBefore: params.validBefore }
       : calculateTimeWindow(300); // 5 minutes default
 
-  // 7. Calculate commitment hash
+  // 8. Calculate commitment hash
   // IMPORTANT: value must be total amount (business amount + facilitator fee)
   // because the contract's calculateCommitment expects the same value that
   // will be authorized in the EIP-3009 signature
@@ -165,7 +165,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   const commitment = calculateCommitment({
     chainId: networkConfig.chainId,
     hub: networkConfig.settlementRouter as Address,
-    token: networkConfig.usdc.address as Address,
+    asset: asset,
     from,
     value: totalAmount,
     validAfter: timeWindow.validAfter,
@@ -177,11 +177,11 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     hookData: params.hookData,
   });
 
-  // 8. Return prepared settlement data
+  // 9. Return prepared settlement data
   return {
     network: params.network,
     networkConfig,
-    token: networkConfig.usdc.address as Address,
+    asset: asset,
     from,
     amount: atomicAmount,
     validAfter: timeWindow.validAfter,

@@ -64,7 +64,12 @@ export {
   calculateTimeWindow,
   formatFacilitatorUrl,
   normalizeAddress,
+  parseAmount,
+  formatAmount,
 } from "./core/utils.js";
+
+// Re-export new amount utilities from @x402x/core (recommended)
+export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "@x402x/core";
 
 // Export React hooks (optional, requires React peer dependency)
 export { useX402Client } from "./hooks/useX402Client.js";

@@ -123,16 +123,15 @@ describe("utils", () => {
       expect(parseAmount(0.5)).toBe("500000");
     });
 
-    it("should pass through atomic units", () => {
-      expect(parseAmount("1000000")).toBe("1000000");
-      expect(parseAmount("1200000")).toBe("1200000");
-      expect(parseAmount("500000")).toBe("500000");
-      expect(parseAmount("100")).toBe("100"); // threshold: >= 100 treated as atomic
+    it("should treat all string numbers as USD amounts (no atomic unit pass-through)", () => {
+      // All string numbers are treated as USD amounts
+      expect(parseAmount("100")).toBe("100000000"); // 100 USDC, not 100 atomic units
+      expect(parseAmount("99")).toBe("99000000"); // 99 USDC
+      expect(parseAmount("1000000")).toBe("1000000000000"); // 1,000,000 USDC
     });
 
     it("should handle edge cases", () => {
-      expect(parseAmount("1")).toBe("1000000"); // "1" means 1 dollar, not 1 atomic unit
-      expect(parseAmount("99")).toBe("99000000"); // < 100 treated as decimal
+      expect(parseAmount("1")).toBe("1000000"); // "1" means 1 dollar
       expect(parseAmount("1000000.123456")).toBe("1000000123456"); // large with decimals
     });
 
@@ -183,17 +182,34 @@ describe("utils", () => {
   });
 
   describe("validateAmount", () => {
-    it("should not throw for valid amounts", () => {
-      expect(() => validateAmount("$1.2", "amount")).not.toThrow();
-      expect(() => validateAmount("1.2", "amount")).not.toThrow();
-      expect(() => validateAmount(1.2, "amount")).not.toThrow();
+    it("should not throw for valid atomic unit amounts", () => {
       expect(() => validateAmount("1000000", "amount")).not.toThrow();
+      expect(() => validateAmount("1", "amount")).not.toThrow();
+      expect(() => validateAmount("999999999", "amount")).not.toThrow();
+      expect(() => validateAmount(1000000, "amount")).not.toThrow(); // number converts to string
+    });
+
+    it("should throw for USD format amounts (not atomic units)", () => {
+      expect(() => validateAmount("$1.2", "amount")).toThrow(ValidationError);
+      expect(() => validateAmount("1.2", "amount")).toThrow(ValidationError);
+      expect(() => validateAmount("0.5", "amount")).toThrow(ValidationError);
     });
 
     it("should throw for invalid amounts", () => {
       expect(() => validateAmount("", "amount")).toThrow(ValidationError);
       expect(() => validateAmount("abc", "amount")).toThrow(ValidationError);
       expect(() => validateAmount("0", "amount")).toThrow(ValidationError);
+      expect(() => validateAmount("-1", "amount")).toThrow(ValidationError);
+      expect(() => validateAmount("1.5", "amount")).toThrow(ValidationError);
+    });
+
+    it("should provide helpful error message for non-atomic units", () => {
+      try {
+        validateAmount("1.2", "amount");
+      } catch (error: any) {
+        expect(error.message).toContain("atomic units");
+        expect(error.message).toContain("parseDefaultAssetAmount");
+      }
     });
   });
 

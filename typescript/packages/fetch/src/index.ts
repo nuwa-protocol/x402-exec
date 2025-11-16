@@ -73,7 +73,7 @@ async function createSettlementPaymentHeader(
   const nonce = calculateCommitment({
     chainId: networkConfig.chainId,
     hub: extra.settlementRouter,
-    token: requirements.asset,
+    asset: requirements.asset,
     from,
     value: requirements.maxAmountRequired,
     validAfter,

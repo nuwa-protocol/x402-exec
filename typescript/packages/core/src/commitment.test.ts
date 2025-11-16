@@ -157,13 +157,13 @@ describe("validateCommitmentParams", () => {
       expect(() => validateCommitmentParams(params)).toThrow("Invalid hub address");
     });
 
-    it("should reject invalid token address", () => {
+    it("should reject invalid asset address", () => {
       const params = {
         ...mockCommitmentParams,
-        token: invalidAddresses.tooShort,
+        asset: invalidAddresses.tooShort,
       };
 
-      expect(() => validateCommitmentParams(params)).toThrow("Invalid token address");
+      expect(() => validateCommitmentParams(params)).toThrow("Invalid asset address");
     });
 
     it("should reject invalid from address", () => {

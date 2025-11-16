@@ -44,11 +44,14 @@ Client → Facilitator → Smart Contract (Hook)
 ### After (@x402x/client)
 
 ```typescript
+import { parseDefaultAssetAmount } from "@x402x/core";
+
+const atomicAmount = parseDefaultAssetAmount("1", network); // '1000000'
 const client = new X402Client({ wallet, network, facilitatorUrl });
 const result = await client.execute({
   hook: TransferHook.address,
-  amount: "1000000",
-  recipient: "0x...",
+  amount: atomicAmount, // Must be atomic units
+  payTo: "0x...",
 });
 ```
 
@@ -72,7 +75,7 @@ yarn add @x402x/client @x402x/core
 
 ```typescript
 import { X402Client } from '@x402x/client';
-import { TransferHook } from '@x402x/core';
+import { TransferHook, parseDefaultAssetAmount } from '@x402x/core';
 import { useWalletClient } from 'wagmi';
 import { publicActions } from 'viem';
 
@@ -89,11 +92,14 @@ function PayButton() {
       network: 'base-sepolia'
     });
 
+    // Convert USD amount to atomic units
+    const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+
     const result = await client.execute({
       hook: TransferHook.getAddress('base-sepolia'),
       hookData: TransferHook.encode(),
-      amount: '1000000', // 1 USDC
-      recipient: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1'
+      amount: atomicAmount, // Must be atomic units
+      payTo: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1'
     });
 
     console.log('Transaction:', result.txHash);
@@ -104,6 +110,50 @@ function PayButton() {
 ```
 
 > **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`useX402Client`), this is done automatically.
+
+---
+
+## Amount Handling
+
+The `amount` parameter in `client.execute()` and `prepareSettlement()` **must be in atomic units** (the smallest unit of the token). This follows the same pattern as viem's `parseEther()` and ethers' `parseEther()`.
+
+### Converting USD Amounts to Atomic Units
+
+Use `parseDefaultAssetAmount()` from `@x402x/core` to convert USD amounts:
+
+```typescript
+import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+
+// Convert USD to atomic units
+const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000' (1 USDC)
+const largeAmount = parseDefaultAssetAmount("100", "base-sepolia"); // '100000000' (100 USDC)
+
+// Convert atomic units back to USD (for display)
+const displayAmount = formatDefaultAssetAmount("1000000", "base-sepolia"); // '1'
+```
+
+### Why Atomic Units?
+
+- **Consistency**: Matches viem/ethers standard practice
+- **Precision**: Avoids floating-point precision issues
+- **Clarity**: No ambiguity about what unit is expected
+- **Safety**: Prevents double conversion bugs
+
+### Example
+
+```typescript
+import { X402Client } from "@x402x/client";
+import { parseDefaultAssetAmount } from "@x402x/core";
+
+const client = new X402Client({ wallet, network: "base-sepolia" });
+
+// ✅ Correct: Convert first, then pass atomic units
+const atomicAmount = parseDefaultAssetAmount("5", "base-sepolia");
+await client.execute({ amount: atomicAmount, payTo: "0x..." });
+
+// ❌ Wrong: Don't pass USD amounts directly
+await client.execute({ amount: "5", payTo: "0x..." }); // Will fail validation
+```
 
 ---
 
@@ -144,12 +194,16 @@ const client = new X402Client({
   confirmationTimeout: 60000, // optional
 });
 
+// Convert USD amount to atomic units
+import { parseDefaultAssetAmount } from "@x402x/core";
+const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+
 const result = await client.execute({
   hook: "0x...",
   hookData: "0x...",
-  amount: "1000000",
-  recipient: "0x...",
-  facilitatorFee: "10000", // optional, will query if not provided
+  amount: atomicAmount, // Must be atomic units
+  payTo: "0x...",
+  facilitatorFee: "10000", // optional, will query if not provided (also atomic units)
   customSalt: "0x...", // optional, will generate if not provided
 });
 ```
@@ -186,6 +240,7 @@ Provides automatic state management for settlements.
 
 ```typescript
 import { useExecute } from '@x402x/client';
+import { parseDefaultAssetAmount } from '@x402x/core';
 
 function PayButton() {
   // Uses default facilitator at https://facilitator.x402x.dev/
@@ -197,10 +252,13 @@ function PayButton() {
   });
 
   const handlePay = async () => {
+    // Convert USD amount to atomic units
+    const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+
     await execute({
       hook: '0x...',
-      amount: '1000000',
-      recipient: '0x...'
+      amount: atomicAmount, // Must be atomic units
+      payTo: '0x...'
     });
   };
 
@@ -275,14 +333,18 @@ Prepares settlement data for signing.
 
 ```typescript
 import { prepareSettlement } from "@x402x/client";
+import { parseDefaultAssetAmount } from "@x402x/core";
+
+// Convert USD amount to atomic units
+const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
 
 const settlement = await prepareSettlement({
   wallet: walletClient,
   network: "base-sepolia",
   hook: "0x...",
   hookData: "0x...",
-  amount: "1000000",
-  recipient: "0x...",
+  amount: atomicAmount, // Must be atomic units
+  payTo: "0x...",
   facilitatorUrl: "https://facilitator.x402x.dev", // Optional: uses default if not provided
 });
 ```
@@ -315,7 +377,7 @@ const result = await settle("https://facilitator.x402x.dev", signed);
 
 ```typescript
 import { X402Client } from "@x402x/client";
-import { TransferHook } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
 const client = new X402Client({
@@ -323,11 +385,14 @@ const client = new X402Client({
   network: "base-sepolia",
 });
 
+// Convert USD amount to atomic units
+const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+
 const result = await client.execute({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode(), // Simple transfer mode
-  amount: "1000000", // 1 USDC
-  recipient: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+  amount: atomicAmount, // Must be atomic units
+  payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
 });
 
 console.log("Transaction:", result.txHash);
@@ -339,7 +404,7 @@ TransferHook supports distributing funds to multiple recipients by percentage:
 
 ```typescript
 import { X402Client } from "@x402x/client";
-import { TransferHook, type Split } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount, type Split } from "@x402x/core";
 
 const client = new X402Client({
   wallet: walletClient,
@@ -347,6 +412,7 @@ const client = new X402Client({
 });
 
 // Payroll example: Pay 3 employees with different shares
+const payrollAmount = parseDefaultAssetAmount("10", "base-sepolia"); // '10000000' (10 USDC)
 const result = await client.execute({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode([
@@ -354,18 +420,19 @@ const result = await client.execute({
     { recipient: "0xEmployee2...", bips: 4000 }, // 40%
     { recipient: "0xEmployee3...", bips: 3000 }, // 30%
   ]),
-  amount: "10000000", // 10000 USDC total
-  recipient: "0xCompany...", // Receives remainder (0% in this case)
+  amount: payrollAmount, // Must be atomic units
+  payTo: "0xCompany...", // Receives remainder (0% in this case)
 });
 
 // Revenue split example: Platform takes 30%, creator gets 70%
+const revenueAmount = parseDefaultAssetAmount("100", "base-sepolia"); // '100000000' (100 USDC)
 const result2 = await client.execute({
   hook: TransferHook.getAddress("base-sepolia"),
   hookData: TransferHook.encode([
     { recipient: "0xPlatform...", bips: 3000 }, // 30%
   ]),
-  amount: "100000000", // 100 USDC
-  recipient: "0xCreator...", // Gets remaining 70% automatically
+  amount: revenueAmount, // Must be atomic units
+  payTo: "0xCreator...", // Gets remaining 70% automatically
 });
 
 console.log("Distributed transfer:", result.txHash);
@@ -382,21 +449,24 @@ console.log("Distributed transfer:", result.txHash);
 
 ```typescript
 import { useExecute } from '@x402x/client';
-import { NFTMintHook } from '@x402x/core';
+import { NFTMintHook, parseDefaultAssetAmount } from '@x402x/core';
 
 function MintNFT() {
   // Uses default facilitator
   const { execute, status, error } = useExecute();
 
   const handleMint = async () => {
+    // Convert USD amount to atomic units
+    const atomicAmount = parseDefaultAssetAmount('5', 'base-sepolia'); // '5000000'
+
     const result = await execute({
       hook: NFTMintHook.getAddress('base-sepolia'),
       hookData: NFTMintHook.encode({
         collection: '0x...',
         tokenId: 1
       }),
-      amount: '5000000', // 5 USDC
-      recipient: '0x...'
+      amount: atomicAmount, // Must be atomic units
+      payTo: '0x...'
     });
 
     alert(`NFT Minted! TX: ${result.txHash}`);
@@ -414,12 +484,12 @@ function MintNFT() {
 
 ```typescript
 import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
-import { calculateFacilitatorFee, TransferHook } from "@x402x/core";
+import { calculateFacilitatorFee, TransferHook, parseDefaultAssetAmount } from "@x402x/core";
 
 // 1. Query minimum fee
 const hookData = TransferHook.encode([
   { recipient: "0xAlice...", bips: 6000 }, // 60% to Alice
-  { recipient: "0xBob...", bips: 4000 },   // 40% to Bob
+  { recipient: "0xBob...", bips: 4000 }, // 40% to Bob
 ]);
 
 const feeEstimate = await calculateFacilitatorFee(
@@ -429,13 +499,16 @@ const feeEstimate = await calculateFacilitatorFee(
   hookData,
 );
 
-// 2. Prepare settlement
+// 2. Convert USD amount to atomic units
+const atomicAmount = parseDefaultAssetAmount("10", "base-sepolia"); // '10000000'
+
+// 3. Prepare settlement
 const settlement = await prepareSettlement({
   wallet: walletClient,
   network: "base-sepolia",
   hook: TransferHook.getAddress("base-sepolia"),
   hookData,
-  amount: "10000000", // 10 USDC
+  amount: atomicAmount, // Must be atomic units
   payTo: "0xCharity...", // Receives 0% (full split)
   facilitatorFee: feeEstimate.facilitatorFee,
 });
@@ -454,28 +527,31 @@ console.log("Transaction:", result.transaction);
 ```typescript
 import { ref } from "vue";
 import { X402Client } from "@x402x/client";
-import { TransferHook } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
 
 export function usePayment() {
   const status = ref("idle");
   const error = ref(null);
 
-  const pay = async (walletClient, amount, recipient) => {
+  const pay = async (walletClient, usdAmount, recipient, network = "base-sepolia") => {
     status.value = "processing";
     error.value = null;
 
     try {
       const client = new X402Client({
         wallet: walletClient,
-        network: "base-sepolia",
+        network,
         facilitatorUrl: import.meta.env.VITE_FACILITATOR_URL,
       });
 
+      // Convert USD amount to atomic units
+      const atomicAmount = parseDefaultAssetAmount(usdAmount, network);
+
       const result = await client.execute({
-        hook: TransferHook.getAddress("base-sepolia"),
+        hook: TransferHook.getAddress(network),
         hookData: TransferHook.encode(),
-        amount,
-        recipient,
+        amount: atomicAmount, // Must be atomic units
+        payTo: recipient,
       });
 
       status.value = "success";
@@ -584,17 +660,20 @@ function Component() {
 ```typescript
 // 10 lines with @x402x/client (no facilitatorUrl needed!)
 import { useExecute } from "@x402x/client";
-import { TransferHook } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
 
 function Component() {
   // Uses default facilitator automatically
   const { execute, status, error } = useExecute();
 
   const handlePay = async () => {
+    // Convert USD amount to atomic units
+    const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+
     await execute({
       hook: TransferHook.address,
-      amount: "1000000",
-      recipient: "0x...",
+      amount: atomicAmount, // Must be atomic units
+      payTo: "0x...",
     });
   };
 }

@@ -6,7 +6,7 @@ describe("networks", () => {
     expect(networks["base-sepolia"]).toBeDefined();
     expect(networks["base-sepolia"].chainId).toBe(84532);
     expect(networks["base-sepolia"].settlementRouter).toBeDefined();
-    expect(networks["base-sepolia"].usdc).toBeDefined();
+    expect(networks["base-sepolia"].defaultAsset).toBeDefined();
     expect(networks["base-sepolia"].hooks.transfer).toBeDefined();
   });
 
@@ -14,7 +14,7 @@ describe("networks", () => {
     expect(networks["x-layer-testnet"]).toBeDefined();
     expect(networks["x-layer-testnet"].chainId).toBe(1952);
     expect(networks["x-layer-testnet"].settlementRouter).toBeDefined();
-    expect(networks["x-layer-testnet"].usdc).toBeDefined();
+    expect(networks["x-layer-testnet"].defaultAsset).toBeDefined();
     expect(networks["x-layer-testnet"].hooks.transfer).toBeDefined();
   });
 
@@ -22,7 +22,7 @@ describe("networks", () => {
     expect(networks["base"]).toBeDefined();
     expect(networks["base"].chainId).toBe(8453);
     expect(networks["base"].settlementRouter).toBeDefined();
-    expect(networks["base"].usdc).toBeDefined();
+    expect(networks["base"].defaultAsset).toBeDefined();
     expect(networks["base"].hooks.transfer).toBeDefined();
   });
 
@@ -30,37 +30,41 @@ describe("networks", () => {
     expect(networks["x-layer"]).toBeDefined();
     expect(networks["x-layer"].chainId).toBe(196);
     expect(networks["x-layer"].settlementRouter).toBeDefined();
-    expect(networks["x-layer"].usdc).toBeDefined();
+    expect(networks["x-layer"].defaultAsset).toBeDefined();
     expect(networks["x-layer"].hooks.transfer).toBeDefined();
   });
 
-  it("should have valid USDC configuration for base-sepolia", () => {
-    const usdc = networks["base-sepolia"].usdc;
-    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(usdc.name).toBe("USDC");
-    expect(usdc.version).toBe("2");
+  it("should have valid default asset configuration for base-sepolia", () => {
+    const defaultAsset = networks["base-sepolia"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(defaultAsset.eip712.name).toBe("USDC");
+    expect(defaultAsset.eip712.version).toBe("2");
+    expect(defaultAsset.decimals).toBe(6);
   });
 
-  it("should have valid USDC configuration for x-layer-testnet", () => {
-    const usdc = networks["x-layer-testnet"].usdc;
-    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(usdc.name).toBe("USDC_TEST"); // X-Layer testnet uses USDC_TEST name
-    expect(usdc.version).toBe("2");
+  it("should have valid default asset configuration for x-layer-testnet", () => {
+    const defaultAsset = networks["x-layer-testnet"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(defaultAsset.eip712.name).toBe("USDC_TEST"); // X-Layer testnet uses USDC_TEST name
+    expect(defaultAsset.eip712.version).toBe("2");
+    expect(defaultAsset.decimals).toBe(6);
   });
 
-  it("should have valid USDC configuration for base mainnet", () => {
-    const usdc = networks["base"].usdc;
-    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(usdc.name).toBe("USD Coin"); // Base mainnet uses "USD Coin" as the name
-    expect(usdc.version).toBe("2");
+  it("should have valid default asset configuration for base mainnet", () => {
+    const defaultAsset = networks["base"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(defaultAsset.eip712.name).toBe("USD Coin"); // Base mainnet uses "USD Coin" as the name
+    expect(defaultAsset.eip712.version).toBe("2");
+    expect(defaultAsset.decimals).toBe(6);
   });
 
-  it("should have valid USDC configuration for x-layer mainnet", () => {
-    const usdc = networks["x-layer"].usdc;
-    expect(usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+  it("should have valid default asset configuration for x-layer mainnet", () => {
+    const defaultAsset = networks["x-layer"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
     // Note: x-layer uses "USD Coin" as the name, not "USDC"
-    expect(usdc.name).toBe("USD Coin");
-    expect(usdc.version).toBe("2");
+    expect(defaultAsset.eip712.name).toBe("USD Coin");
+    expect(defaultAsset.eip712.version).toBe("2");
+    expect(defaultAsset.decimals).toBe(6);
   });
 
   it("should have valid settlementRouter addresses", () => {
@@ -126,21 +130,24 @@ describe("getNetworkConfig", () => {
 
     expect(config).toHaveProperty("chainId");
     expect(config).toHaveProperty("settlementRouter");
-    expect(config).toHaveProperty("usdc");
+    expect(config).toHaveProperty("defaultAsset");
     expect(config).toHaveProperty("hooks");
-    expect(config.usdc).toHaveProperty("address");
-    expect(config.usdc).toHaveProperty("name");
-    expect(config.usdc).toHaveProperty("version");
+    expect(config.defaultAsset).toHaveProperty("address");
+    expect(config.defaultAsset).toHaveProperty("decimals");
+    expect(config.defaultAsset).toHaveProperty("eip712");
+    expect(config.defaultAsset.eip712).toHaveProperty("name");
+    expect(config.defaultAsset.eip712).toHaveProperty("version");
     expect(config.hooks).toHaveProperty("transfer");
   });
 
-  it("should return USDC config from x402 library", () => {
+  it("should return default asset config from x402 library", () => {
     const config = getNetworkConfig("base-sepolia");
 
-    // Verify USDC address format
-    expect(config.usdc.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(config.usdc.name).toBe("USDC");
-    expect(config.usdc.version).toBe("2");
+    // Verify default asset address format
+    expect(config.defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(config.defaultAsset.eip712.name).toBe("USDC");
+    expect(config.defaultAsset.eip712.version).toBe("2");
+    expect(config.defaultAsset.decimals).toBe(6);
   });
 });
 

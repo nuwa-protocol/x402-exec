@@ -57,11 +57,13 @@ export async function signAuthorization(
     }
 
     // Build EIP-712 domain
+    // Use the asset's EIP-712 domain info from network config
+    // Note: For custom assets, the domain info should match the asset contract
     const domain = {
-      name: settlement.networkConfig.usdc.name,
-      version: settlement.networkConfig.usdc.version,
+      name: settlement.networkConfig.defaultAsset.eip712.name,
+      version: settlement.networkConfig.defaultAsset.eip712.version,
       chainId: settlement.networkConfig.chainId,
-      verifyingContract: getAddress(settlement.token),
+      verifyingContract: getAddress(settlement.asset),
     };
 
     // Build EIP-712 message

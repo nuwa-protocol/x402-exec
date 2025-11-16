@@ -116,8 +116,13 @@ export class X402Client {
    *
    * @example Simple transfer (uses TransferHook by default)
    * ```typescript
+   * import { parseDefaultAssetAmount } from '@x402x/core';
+   *
+   * // Convert USD amount to atomic units
+   * const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+   *
    * const result = await client.execute({
-   *   amount: '1000000',
+   *   amount: atomicAmount, // Must be atomic units
    *   payTo: '0x...'
    * });
    * console.log('Transaction:', result.txHash);
@@ -125,10 +130,14 @@ export class X402Client {
    *
    * @example Custom hook
    * ```typescript
+   * import { parseDefaultAssetAmount } from '@x402x/core';
+   *
+   * const atomicAmount = parseDefaultAssetAmount('5', 'base-sepolia'); // '5000000'
+   *
    * const result = await client.execute({
    *   hook: '0x...',
    *   hookData: '0x...',
-   *   amount: '1000000',
+   *   amount: atomicAmount, // Must be atomic units
    *   payTo: '0x...'
    * });
    * ```
@@ -155,6 +164,7 @@ export class X402Client {
       network: this.config.network,
       hook,
       hookData,
+      asset: params.asset,
       amount: params.amount,
       payTo,
       facilitatorFee: params.facilitatorFee,
