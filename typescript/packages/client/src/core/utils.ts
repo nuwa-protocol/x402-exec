@@ -4,12 +4,6 @@
 
 import type { Address, Hex } from "viem";
 import { getAddress, isAddress } from "viem";
-import type { Network } from "x402/types";
-import {
-  parseDefaultAssetAmount as parseDefaultAssetAmountCore,
-  formatDefaultAssetAmount as formatDefaultAssetAmountCore,
-  AmountError,
-} from "@x402x/core";
 import { ValidationError } from "../errors.js";
 
 /**
@@ -108,95 +102,6 @@ export function validateHex(hex: string, name: string, expectedLength?: number):
       );
     }
   }
-}
-
-/**
- * Parse amount from various formats to atomic units
- *
- * @deprecated Use parseDefaultAssetAmount from @x402x/core instead
- * This function is kept for backward compatibility and will be removed in a future version.
- *
- * Supports multiple input formats:
- * - Dollar format: '$1.2' or '$1.20' → '1200000' (1.2 USDC)
- * - Decimal string: '1.2' or '1.20' → '1200000'
- * - Number: 1.2 → '1200000'
- *
- * All string/number inputs are treated as USD amounts (no atomic unit pass-through).
- *
- * @param amount - Amount in various formats (USD, not atomic units)
- * @param network - Network name (default: 'base-sepolia') - used to determine token decimals
- * @returns Amount in atomic units as string
- * @throws ValidationError if amount format is invalid
- *
- * @example
- * ```typescript
- * parseAmount('$1.2')      // '1200000'
- * parseAmount('1.2')       // '1200000'
- * parseAmount(1.2)         // '1200000'
- * ```
- */
-export function parseAmount(amount: string | number, network: Network = "base-sepolia"): string {
-  try {
-    return parseDefaultAssetAmountCore(amount, network);
-  } catch (error) {
-    if (error instanceof AmountError) {
-      throw new ValidationError(error.message);
-    }
-    throw error instanceof Error ? error : new ValidationError(String(error));
-  }
-}
-
-/**
- * Format atomic units to human-readable decimal string
- *
- * @deprecated Use formatDefaultAssetAmount from @x402x/core instead
- * This function is kept for backward compatibility and will be removed in a future version.
- *
- * @param amount - Amount in atomic units
- * @param decimals - Token decimals (default: 6 for USDC)
- * @param network - Optional network name (if provided, decimals will be determined from network)
- * @returns Human-readable decimal string
- * @throws ValidationError if amount is invalid
- *
- * @example
- * ```typescript
- * formatAmount('1200000')           // '1.2'
- * formatAmount('1000000')           // '1'
- * formatAmount('1')                 // '0.000001'
- * formatAmount('1000000', 6, 'base-sepolia')  // '1' (network overrides decimals)
- * ```
- */
-export function formatAmount(amount: string, decimals?: number, network?: Network): string {
-  // If network is provided, use formatDefaultAssetAmount from core
-  if (network !== undefined) {
-    try {
-      return formatDefaultAssetAmountCore(amount, network);
-    } catch (error) {
-      if (error instanceof AmountError) {
-        throw new ValidationError(error.message);
-      }
-      throw error instanceof Error ? error : new ValidationError(String(error));
-    }
-  }
-
-  // Fallback to old behavior with explicit decimals (for backward compatibility)
-  const atomicAmount = BigInt(amount);
-  if (atomicAmount < 0n) {
-    throw new ValidationError("Amount cannot be negative");
-  }
-
-  const actualDecimals = decimals ?? 6;
-  const amountStr = atomicAmount.toString().padStart(actualDecimals + 1, "0");
-  const integerPart = amountStr.slice(0, -actualDecimals) || "0";
-  const decimalPart = amountStr.slice(-actualDecimals);
-
-  // Remove trailing zeros from decimal part
-  const trimmedDecimal = decimalPart.replace(/0+$/, "");
-
-  if (trimmedDecimal) {
-    return `${integerPart}.${trimmedDecimal}`;
-  }
-  return integerPart;
 }
 
 /**

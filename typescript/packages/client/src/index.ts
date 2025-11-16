@@ -64,8 +64,6 @@ export {
   calculateTimeWindow,
   formatFacilitatorUrl,
   normalizeAddress,
-  parseAmount,
-  formatAmount,
 } from "./core/utils.js";
 
 // Re-export new amount utilities from @x402x/core (recommended)
