@@ -33,7 +33,7 @@ export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
     // Only include mainnet networks
     if (cfg.type !== 'mainnet') continue;
     const addressBase = cfg.addressExplorerBaseUrl;
-    const usdcAddress = cfg.usdc.address;
+    const usdcAddress = cfg.defaultAsset.address;
 
     result[n] = [
       {

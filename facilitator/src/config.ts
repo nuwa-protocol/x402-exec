@@ -511,12 +511,12 @@ function parseFeeClaimConfig(): FeeClaimConfig {
   for (const network of supportedNetworks) {
     try {
       const networkConfig = getNetworkConfig(network);
-      const usdcAddress = networkConfig.usdc.address.toLowerCase();
+      const usdcAddress = networkConfig.defaultAsset.address.toLowerCase();
 
       // Use the same minimum amount for all USDC tokens (currently only USDC is supported)
       minClaimAmount[usdcAddress] = BigInt(minClaimAmountUsdc);
     } catch {
-      // Skip networks without USDC configuration
+      // Skip networks without default asset configuration
       continue;
     }
   }

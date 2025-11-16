@@ -97,7 +97,7 @@ export function createFeeValidationMiddleware(
       // Get token decimals
       //const networkConfig = getNetworkConfig(network);
       // TODO: In future, fetch token decimals dynamically from network config.
-      const tokenDecimals = 6; // USDC has 6 decimals (networkConfig.usdc would have this info)
+      const tokenDecimals = 6; // USDC has 6 decimals (networkConfig.defaultAsset.decimals would have this info)
 
       // Calculate minimum required fee
       let feeCalculation;

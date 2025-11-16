@@ -122,7 +122,7 @@ export async function getPendingFees(
 
       // Get network configuration to determine supported tokens
       const networkConfig = getNetworkConfig(network);
-      const supportedTokens = [networkConfig.usdc.address]; // Currently only USDC is supported
+      const supportedTokens = [networkConfig.defaultAsset.address]; // Currently only USDC is supported
 
       // Query pending fees for each facilitator address and supported token
       for (const facilitatorAddress of facilitatorAddresses) {

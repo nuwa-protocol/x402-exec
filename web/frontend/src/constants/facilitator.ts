@@ -216,7 +216,7 @@ export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
   for (const n of getSupportedNetworks()) {
     const cfg = getNetworkConfig(n);
     const addressBase = cfg.addressExplorerBaseUrl;
-    const usdcAddress = cfg.usdc.address;
+    const usdcAddress = cfg.defaultAsset.address;
 
 		result[n] = [
 			{

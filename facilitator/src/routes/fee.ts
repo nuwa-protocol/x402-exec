@@ -155,7 +155,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         calculatedAt,
         validitySeconds,
         token: {
-          address: networkConfig.usdc.address,
+          address: networkConfig.defaultAsset.address,
           symbol: "USDC",
           decimals: tokenDecimals,
         },

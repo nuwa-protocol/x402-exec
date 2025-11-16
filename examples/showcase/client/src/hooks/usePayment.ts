@@ -292,7 +292,7 @@ export function usePayment() {
         const commitmentParams = {
           chainId,
           hub: settlementRouter!,
-          token: paymentReq.asset,
+          asset: paymentReq.asset,
           from,
           value,
           validAfter,
