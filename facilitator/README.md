@@ -1139,12 +1139,33 @@ OTEL_SERVICE_VERSION=1.0.0
 OTEL_SERVICE_DEPLOYMENT=production
 ```
 
+**Grafana Cloud Example:**
+
+```env
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp-gateway-prod-us-central-0.grafana.net/otlp
+OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64(instance_id:api_key)>
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_SERVICE_NAME=x402-facilitator
+OTEL_SERVICE_VERSION=1.0.0
+OTEL_SERVICE_DEPLOYMENT=production
+```
+
 **Jaeger Example:**
 
 ```env
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
+
+**Diagnostic Logging:**
+
+To enable detailed OpenTelemetry diagnostic logs for troubleshooting:
+
+```env
+OTEL_LOG_LEVEL=debug  # Optional: debug, info, warn, error (default: info)
+```
+
+This will output detailed logs about metrics export attempts, failures, and success.
 
 **Available Metrics:**
 
@@ -1159,6 +1180,33 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 - HTTP request spans with method, URL, status
 - Settlement operation spans with network, mode, transaction hash
 - Verification spans with validation details
+
+**Troubleshooting Metrics Export:**
+
+If metrics are not appearing in your observability backend:
+
+1. **Check startup logs** - Look for:
+
+   - `"OpenTelemetry tracing and metrics exporter is enabled"` message
+   - Configuration summary showing `endpoint`, `headerKeys`, and `hasAuthHeader`
+   - Any warnings about missing Authorization header or non-HTTPS endpoint
+
+2. **Verify metrics collection** - Trigger some API requests and check for:
+
+   - `"First metric recorded - metrics collection is active"` log message
+   - This confirms metrics are being recorded successfully
+
+3. **Enable diagnostic logging** - Set `OTEL_LOG_LEVEL=debug` to see detailed export logs
+
+4. **Check network connectivity** - Ensure your deployment can reach the OTLP endpoint
+
+5. **Verify credentials** - Double-check that:
+
+   - Authorization header format is correct: `Authorization=Basic <base64_token>`
+   - Base64 token includes both instance ID and API key
+   - Header parsing supports values containing `=` (base64 padding)
+
+6. **Wait for export interval** - Metrics are exported every 30 seconds, allow time for data to appear
 
 ### Kubernetes Deployment
 

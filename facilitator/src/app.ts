@@ -30,6 +30,10 @@ export interface AppDependencies {
 export function createApp(deps: AppDependencies): Express {
   const app = express();
 
+  // Trust proxy for accurate IP detection behind reverse proxies (e.g., Railway)
+  // This allows express-rate-limit to correctly identify client IPs from X-Forwarded-For header
+  app.set("trust proxy", 1);
+
   // Enable CORS for client-side SDK support (Serverless Mode)
   app.use(
     cors({
