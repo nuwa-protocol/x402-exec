@@ -63,9 +63,9 @@ export default function FacilitatorPage() {
       <div className="mb-6">
         <h1 className="text-5xl font-bold tracking-tight">Facilitator</h1>
         <p className="text-muted-foreground mt-1">
-          Use this hosted instance or run the example server locally from{" "}
+          Use this hosted instance or run the open source server locally from{" "}
           <a
-            href={`${GH_ROOT}examples/facilitator`}
+            href={`${GH_ROOT}facilitator`}
             target="_blank"
             rel="noreferrer"
             className="underline"
