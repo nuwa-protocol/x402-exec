@@ -65,7 +65,8 @@ function detectTelemetryFromEnv(): TelemetryConfig | null {
       if (equalIndex > 0) {
         const key = pair.substring(0, equalIndex).trim();
         const value = pair.substring(equalIndex + 1).trim();
-        if (key && value) {
+        // Ensure both key and value are non-empty after trimming
+        if (key.length > 0 && value.length > 0) {
           headers[key] = value;
         }
       }
