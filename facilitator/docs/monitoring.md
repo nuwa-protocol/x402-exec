@@ -71,6 +71,12 @@ The dashboard contains the following 6 main sections:
 
 - **Request Rate**: Rate of verification and settlement requests
 - **Success Rate**: Settlement success rate (target >99%)
+  > **Note:** The 99% target threshold for success rate is set as a default in the Grafana dashboard panel. If your service has different SLA requirements, you can adjust this threshold by editing the relevant panel in the Grafana dashboard:
+  > - Open the dashboard in Grafana and locate the "Success Rate" panel.
+  > - Click the panel title, then select "Edit".
+  > - In the panel settings, update the threshold value or add a new threshold to match your desired SLA (e.g., 95%, 99.5%, etc.).
+  > - Save the dashboard to apply the changes.
+  > For more details, refer to the [Grafana documentation on thresholds](https://grafana.com/docs/grafana/latest/panels/thresholds/).
 - **Current Queue Depth**: Account queue depth (warning threshold: 7-9, critical threshold: ≥10)
 - **Profitability Rate**: Percentage of profitable settlements
 

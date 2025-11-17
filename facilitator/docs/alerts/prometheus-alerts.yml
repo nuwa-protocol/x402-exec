@@ -6,8 +6,9 @@ groups:
       # Triggers when settlement error rate exceeds 1%
       - alert: HighSettlementErrorRate
         expr: |
-          sum(rate(facilitator_settle_errors[5m])) / 
-          sum(rate(facilitator_settle_total[5m])) > 0.01
+          sum(rate(facilitator_settle_total[5m])) > 0
+          and
+          (sum(rate(facilitator_settle_errors[5m])) / sum(rate(facilitator_settle_total[5m])) > 0.01)
         for: 5m
         labels:
           severity: warning
@@ -50,7 +51,7 @@ groups:
       - alert: LowProfitability
         expr: |
           sum(increase(facilitator_settlement_profitable{profitable="0"}[1h])) / 
-          sum(increase(facilitator_settle_total{mode="settlementRouter",success="true"}[1h])) > 0.05
+          (sum(increase(facilitator_settle_total{mode="settlementRouter",success="true"}[1h])) or vector(0)) > 0.05
         for: 1h
         labels:
           severity: warning
@@ -93,8 +94,13 @@ groups:
       # Triggers when verification error rate exceeds 5%
       - alert: HighVerificationErrorRate
         expr: |
-          sum(rate(facilitator_verify_errors[5m])) / 
-          sum(rate(facilitator_verify_total[5m])) > 0.05
+          (
+            sum(rate(facilitator_verify_errors[5m])) / sum(rate(facilitator_verify_total[5m])) > 0.05
+          )
+          and
+          (
+            sum(rate(facilitator_verify_total[5m])) > 0
+          )
         for: 5m
         labels:
           severity: warning
