@@ -1159,13 +1159,13 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 
 **Diagnostic Logging:**
 
-To enable detailed OpenTelemetry diagnostic logs for troubleshooting:
+To enable detailed OpenTelemetry SDK diagnostic logs for troubleshooting:
 
 ```env
-OTEL_LOG_LEVEL=debug  # Optional: debug, info, warn, error (default: info)
+OTEL_LOG_LEVEL=debug  # Optional: none, error, warn, info, debug (default: info)
 ```
 
-This will output detailed logs about metrics export attempts, failures, and success.
+**Note**: `OTEL_LOG_LEVEL` is a standard OpenTelemetry SDK environment variable that controls the SDK's internal logging.
 
 **Available Metrics:**
 
@@ -1196,7 +1196,7 @@ If metrics are not appearing in your observability backend:
    - `"First metric recorded - metrics collection is active"` log message
    - This confirms metrics are being recorded successfully
 
-3. **Enable diagnostic logging** - Set `OTEL_LOG_LEVEL=debug` to see detailed export logs
+3. **Enable diagnostic logging** - Set `OTEL_LOG_LEVEL=debug` to see detailed SDK export logs (this is a standard OpenTelemetry SDK environment variable, automatically read by the SDK)
 
 4. **Check network connectivity** - Ensure your deployment can reach the OTLP endpoint
 
