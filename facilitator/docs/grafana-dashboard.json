@@ -178,7 +178,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(facilitator_settle_total{success=\"true\"}[5m])) / clamp_min(sum(rate(facilitator_settle_total[5m])), 1) * 100",
+          "expr": "sum(rate(facilitator_settle_total{success=\"true\"}[5m])) / sum(rate(facilitator_settle_total[5m])) * 100",
           "refId": "A"
         }
       ],
@@ -306,7 +306,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(facilitator_settlement_profitable[5m])) / clamp_min(sum(rate(facilitator_settle_total{mode=\"settlementRouter\",success=\"true\"}[5m])), 1) * 100",
+          "expr": "sum(rate(facilitator_settlement_profitable[5m])) / sum(rate(facilitator_settle_total{mode=\"settlementRouter\",success=\"true\"}[5m])) * 100",
           "refId": "A"
         }
       ],
@@ -1505,7 +1505,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (account) (rate(facilitator_account_tx_count{success=\"true\"}[5m])) / clamp_min(sum by (account) (rate(facilitator_account_tx_count[5m])), 1) * 100",
+          "expr": "sum by (account) (rate(facilitator_account_tx_count{success=\"true\"}[5m])) / sum by (account) (rate(facilitator_account_tx_count[5m])) * 100",
           "format": "table",
           "instant": true,
           "refId": "A"
