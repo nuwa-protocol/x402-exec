@@ -54,7 +54,7 @@ export const ApplicationHooksSnippets = () => {
           >
             <span className="inline-flex items-center gap-2">
               <Rocket className="h-4 w-4" />
-              Try Testnet Demo
+              Try Demo
             </span>
           </Button>
         </div>
