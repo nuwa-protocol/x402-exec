@@ -1,0 +1,153 @@
+groups:
+  - name: x402_facilitator_alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert
+      # Triggers when settlement error rate exceeds 1%
+      - alert: HighSettlementErrorRate
+        expr: |
+          sum(rate(facilitator_settle_total[5m])) > 0
+          and
+          (sum(rate(facilitator_settle_errors[5m])) / sum(rate(facilitator_settle_total[5m])) > 0.01)
+        for: 5m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: error_rate
+        annotations:
+          summary: "Settlement error rate is above 1%"
+          description: "Error rate is {{ $value | humanizePercentage }}. Current error count: {{ $value | humanize }} errors/sec"
+
+      # Low Success Rate Alert
+      # Triggers when settlement success rate falls below 99%
+      - alert: LowSettlementSuccessRate
+        expr: |
+          sum(rate(facilitator_settle_total{success="true"}[5m])) / 
+          sum(rate(facilitator_settle_total[5m])) < 0.99
+        for: 5m
+        labels:
+          severity: critical
+          component: facilitator
+          alert_type: success_rate
+        annotations:
+          summary: "Settlement success rate is below 99%"
+          description: "Success rate is {{ $value | humanizePercentage }}. This is below the 99% target."
+
+      # Queue Overload Alert
+      # Triggers when account queue depth reaches maximum (10)
+      - alert: QueueOverload
+        expr: max(facilitator_account_queue_depth) >= 10
+        for: 2m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: queue_depth
+        annotations:
+          summary: "Account queue depth is at maximum"
+          description: "Queue depth is {{ $value }}. Maximum allowed depth is 10. Requests may be rejected."
+
+      # Low Profitability Alert
+      # Triggers when unprofitable settlements exceed 5%
+      - alert: LowProfitability
+        expr: |
+          sum(increase(facilitator_settlement_profitable{profitable="0"}[1h])) / 
+          (sum(increase(facilitator_settle_total{mode="settlementRouter",success="true"}[1h])) or vector(0)) > 0.05
+        for: 1h
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: profitability
+        annotations:
+          summary: "More than 5% of settlements are unprofitable"
+          description: "Unprofitable rate is {{ $value | humanizePercentage }}. This may indicate gas price issues or insufficient facilitator fees."
+
+      # High Latency Alert
+      # Triggers when P99 settlement latency exceeds 30 seconds
+      - alert: HighSettlementLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(facilitator_settle_duration_ms_bucket[5m])) by (le)
+          ) > 30000
+        for: 10m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: latency
+        annotations:
+          summary: "P99 settlement latency is above 30s"
+          description: "P99 latency is {{ $value }}ms ({{ $value | humanizeDuration }}). This exceeds the 30s target."
+
+      # Queue Rejection Rate Alert
+      # Triggers when queue rejection rate exceeds 1 per minute
+      - alert: HighQueueRejectionRate
+        expr: sum(rate(facilitator_account_queue_rejected[5m])) * 60 > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: queue_rejection
+        annotations:
+          summary: "Queue rejection rate is above 1/min"
+          description: "Rejection rate is {{ $value }} rejections/min. Consider increasing account pool size or queue limits."
+
+      # Verification Error Rate Alert
+      # Triggers when verification error rate exceeds 5%
+      - alert: HighVerificationErrorRate
+        expr: |
+          (
+            sum(rate(facilitator_verify_errors[5m])) / sum(rate(facilitator_verify_total[5m])) > 0.05
+          )
+          and
+          (
+            sum(rate(facilitator_verify_total[5m])) > 0
+          )
+        for: 5m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: verification_error
+        annotations:
+          summary: "Verification error rate is above 5%"
+          description: "Verification error rate is {{ $value | humanizePercentage }}. This may indicate invalid payment requests or network issues."
+
+      # No Settlements Alert
+      # Triggers when no settlement requests in the last 10 minutes (may indicate service issues)
+      - alert: NoSettlements
+        expr: sum(increase(facilitator_settle_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: availability
+        annotations:
+          summary: "No settlements in the last 10 minutes"
+          description: "No settlement requests have been processed in the last 10 minutes. This may indicate service issues or no traffic."
+
+      # High Gas Cost Alert
+      # Triggers when average gas cost exceeds $10 USD (adjustable based on actual conditions)
+      - alert: HighGasCost
+        expr: |
+          avg(facilitator_settlement_gas_cost_usd) > 10
+        for: 15m
+        labels:
+          severity: warning
+          component: facilitator
+          alert_type: gas_cost
+        annotations:
+          summary: "Average gas cost is above $10"
+          description: "Average gas cost is ${{ $value | humanize }}. This may indicate high network congestion or inefficient hooks."
+
+      # Negative Profit Alert
+      # Triggers when total profit is negative (critical alert)
+      - alert: NegativeProfit
+        expr: |
+          sum(increase(facilitator_settlement_profit_usd[1h])) < 0
+        for: 1h
+        labels:
+          severity: critical
+          component: facilitator
+          alert_type: profitability
+        annotations:
+          summary: "Total profit is negative in the last hour"
+          description: "Total profit is ${{ $value | humanize }}. The facilitator is losing money. Review gas costs and facilitator fees immediately."
+

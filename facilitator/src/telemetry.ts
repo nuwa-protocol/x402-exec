@@ -55,19 +55,22 @@ function detectTelemetryFromEnv(): TelemetryConfig | null {
     return null;
   }
 
-  // Parse headers
+  // Parse headers - support values containing '=' (e.g., base64 tokens)
   let headers: Record<string, string> = {};
   if (otlpHeaders) {
-    headers = otlpHeaders.split(",").reduce(
-      (acc, pair) => {
-        const [key, value] = pair.split("=");
-        if (key && value) {
-          acc[key.trim()] = value.trim();
+    // Support both comma and semicolon separators
+    const pairs = otlpHeaders.split(/[,;]/);
+    for (const pair of pairs) {
+      const equalIndex = pair.indexOf("=");
+      if (equalIndex > 0) {
+        const key = pair.substring(0, equalIndex).trim();
+        const value = pair.substring(equalIndex + 1).trim();
+        // Ensure both key and value are non-empty after trimming
+        if (key.length > 0 && value.length > 0) {
+          headers[key] = value;
         }
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
+      }
+    }
   }
 
   return {
@@ -99,6 +102,11 @@ let tracer: Tracer;
  * Global meter instance
  */
 let meter: Meter;
+
+/**
+ * Flag to track if first metric has been recorded
+ */
+let firstMetricRecorded = false;
 
 /**
  * Initialize telemetry system
@@ -157,6 +165,7 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
       const metricReader = new PeriodicExportingMetricReader({
         exporter: metricExporter,
         exportIntervalMillis: 30000, // 30 seconds
+        exportTimeoutMillis: 10000, // 10 seconds timeout
       });
 
       // Initialize SDK with both trace and metrics
@@ -182,9 +191,23 @@ export function initTelemetry(config?: Partial<TelemetryConfig>): void {
         {
           protocol: finalConfig.otlpProtocol,
           endpoint: finalConfig.otlpEndpoint,
+          headerKeys: Object.keys(finalConfig.otlpHeaders || {}),
+          hasAuthHeader: !!finalConfig.otlpHeaders?.Authorization,
+          authType: finalConfig.otlpHeaders?.Authorization?.split(" ")[0] || "none",
+          serviceName: finalConfig.serviceName,
+          deployment: finalConfig.deployment,
         },
         "OpenTelemetry tracing and metrics exporter is enabled",
       );
+
+      // Add configuration warnings
+      if (!finalConfig.otlpHeaders?.Authorization) {
+        logger.warn("No Authorization header configured - metrics export may fail");
+      }
+
+      if (!finalConfig.otlpEndpoint?.startsWith("https://")) {
+        logger.warn({ endpoint: finalConfig.otlpEndpoint }, "Using non-HTTPS endpoint");
+      }
     } catch (error) {
       logger.error({ error }, "Failed to initialize OpenTelemetry");
     }
@@ -316,8 +339,24 @@ export function recordMetric(
   value: number,
   attributes?: Record<string, string | number | boolean>,
 ): void {
-  const counter = getMeter().createCounter(name);
-  counter.add(value, attributes);
+  try {
+    const counter = getMeter().createCounter(name);
+    counter.add(value, attributes);
+
+    // Log first metric record to confirm metrics collection is active
+    if (!firstMetricRecorded) {
+      firstMetricRecorded = true;
+      if (logger) {
+        logger.info({ name, value }, "First metric recorded - metrics collection is active");
+      }
+    }
+  } catch (error) {
+    // Silently fail to avoid affecting business logic
+    // Only log at debug level to avoid log pollution
+    if (logger) {
+      logger.debug({ error, name, value }, "Failed to record metric");
+    }
+  }
 }
 
 /**
@@ -332,6 +371,22 @@ export function recordHistogram(
   value: number,
   attributes?: Record<string, string | number | boolean>,
 ): void {
-  const histogram = getMeter().createHistogram(name);
-  histogram.record(value, attributes);
+  try {
+    const histogram = getMeter().createHistogram(name);
+    histogram.record(value, attributes);
+
+    // Log first metric record to confirm metrics collection is active
+    if (!firstMetricRecorded) {
+      firstMetricRecorded = true;
+      if (logger) {
+        logger.info({ name, value }, "First metric recorded - metrics collection is active");
+      }
+    }
+  } catch (error) {
+    // Silently fail to avoid affecting business logic
+    // Only log at debug level to avoid log pollution
+    if (logger) {
+      logger.debug({ error, name, value }, "Failed to record histogram");
+    }
+  }
 }
