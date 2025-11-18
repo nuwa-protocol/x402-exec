@@ -12,13 +12,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        // Directly alias the local workspace build of core to avoid relying on pnpm linking
-        "@x402x/core": path.resolve(__dirname, "../../typescript/packages/core/dist"),
-        // Alias the local workspace build of client as well
-        "@x402x/client": path.resolve(
-          __dirname,
-          "../../typescript/packages/client/dist",
-        ),
       },
     },
   }
