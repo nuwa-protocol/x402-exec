@@ -20,7 +20,9 @@ export const seoConfig: SeoConfig = {
   siteName: 'xdefi.app',
   titleTemplate: '%s | xdefi.app',
   defaultTitle: 'xdefi.app',
-  description: 'Swap and bridge crypto assets with a clean, fast UI.',
+  // Emphasize capabilities over UX in the default site description
+  description:
+    'Swap tokens and bridge assets across EVM networks. Aggregated DEX routes, real-time quotes, slippage control, and transparent fees.',
   twitter: {
     site: '@NuwaDev',
     creator: '@NuwaDev',

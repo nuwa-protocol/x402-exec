@@ -15,10 +15,10 @@ export default function FAQPage() {
           Common questions about swapping and bridging.
         </PageHeaderDescription>
       </PageHeader>
+      {/* Canonical should reflect /faq when routed there; Seo will infer from location */}
       <Seo
         title="FAQ"
         description="Answers to common questions about swapping and bridging crypto on xdefi.app."
-        path="/faq"
       />
       <BasicFAQ />
     </>

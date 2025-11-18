@@ -1,3 +1,26 @@
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <rect x="2" y="2" width="20" height="20" rx="7" fill="#0F172A"/>
+<!-- xdefi.app favicon: rounded tile + stylized X with gradient stroke -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Background color matches site theme-color (#0b0b0f) but slightly lifted for contrast -->
+    <linearGradient id="gX" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <!-- Soft shadow for better legibility at small sizes -->
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded tile background -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#0b0b0f"/>
+
+  <!-- Stylized X -->
+  <g stroke="url(#gX)" stroke-width="8" stroke-linecap="round" filter="url(#soft)">
+    <path d="M18 18 L46 46"/>
+    <path d="M46 18 L18 46"/>
+  </g>
+
+  <!-- Optional center diamond for visual anchor -->
+  <rect x="29" y="29" width="6" height="6" rx="1.5" fill="#e5e7eb" opacity="0.85"/>
 </svg>

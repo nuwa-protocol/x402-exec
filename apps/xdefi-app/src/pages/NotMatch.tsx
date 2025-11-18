@@ -5,7 +5,8 @@ import Seo from "@/components/Seo";
 export default function NotMatch() {
     return (
         <div className="flex-grow flex items-center justify-center">
-            <Seo title="404 Not Found" description="The page you’re looking for does not exist." noIndex path={window.location.pathname} />
+            {/* noIndex is kept; Seo can infer path from current location */}
+            <Seo title="404 Not Found" description="The page you’re looking for does not exist." noIndex />
             <div className="space-y-4">
                 <h2 className="text-8xl mb-4">404</h2>
                 <h1 className="text-3xl font-semibold">Oops! Page not found</h1>

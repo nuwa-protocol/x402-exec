@@ -8,11 +8,11 @@ export default function BridgePage() {
       <PageHeader>
         <PageHeaderHeading className="sr-only">Bridge</PageHeaderHeading>
       </PageHeader>
+      {/* Let Seo auto-detect the current pathname for canonical URL */}
       <Seo
         title="Bridge"
-        description="Move assets seamlessly across networks."
-        path="/bridge"
-        keywords={["bridge", "cross-chain", "l2", "crypto", "xdefi"]}
+        description="Bridge assets across supported EVM networks with transparent fees and slippage-aware routing. Coming soon."
+        keywords={["bridge", "cross-chain", "evm", "l2", "crypto", "xdefi"]}
       />
       {/* Wrap the current UI with an overlay to mark the page as coming soon. */}
       <div className="relative">
