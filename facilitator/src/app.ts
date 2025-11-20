@@ -10,6 +10,7 @@ import { registerRoutes, RoutesDependencies } from "./routes/index.js";
 import { shutdownMiddleware, GracefulShutdown } from "./shutdown.js";
 import type { RateLimitConfig } from "./config.js";
 import { createVerifyRateLimiter, createSettleRateLimiter } from "./middleware/rate-limit.js";
+import { createTransactionRecordMiddleware } from "./middleware/transaction-record.js";
 
 /**
  * Application dependencies
@@ -50,6 +51,9 @@ export function createApp(deps: AppDependencies): Express {
 
   // Add shutdown middleware to reject new requests during shutdown
   app.use(shutdownMiddleware);
+
+  // Add the transaction logger middleware to capture settlement responses
+  app.use(createTransactionRecordMiddleware());
 
   // Create rate limiters
   const verifyRateLimiter = createVerifyRateLimiter(deps.rateLimitConfig);
