@@ -8,16 +8,16 @@
 import type { Address, Hex, TransactionReceipt } from "viem";
 import { calculateFacilitatorFee, type FeeCalculationResult, TransferHook } from "@x402x/core";
 import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
-import { prepareSettlement } from "./core/prepare.js";
+import { prepareSettlement, DEFAULT_FACILITATOR_URL } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
 import { settle } from "./core/settle.js";
 import { ValidationError, FacilitatorError } from "./errors.js";
 import { normalizeAddress, validateHex, validateAmount } from "./core/utils.js";
 
 /**
- * Default facilitator URL
+ * Re-export default facilitator URL for convenience
  */
-export const DEFAULT_FACILITATOR_URL = "https://facilitator.x402x.dev";
+export { DEFAULT_FACILITATOR_URL };
 
 /**
  * Internal configuration with required fields

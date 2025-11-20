@@ -19,6 +19,11 @@ import {
 } from "./utils.js";
 
 /**
+ * Default facilitator URL
+ */
+export const DEFAULT_FACILITATOR_URL = "https://facilitator.x402x.dev";
+
+/**
  * Query facilitator fee from facilitator service (internal helper)
  *
  * Uses the /calculate-fee endpoint which provides accurate gas cost estimates
@@ -124,12 +129,14 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   // 5. Generate salt (if not provided)
   const salt = params.customSalt || generateSalt();
 
-  // 6. Query facilitator fee (if not provided and facilitatorUrl is available)
+  // 6. Query facilitator fee (if not provided)
+  // Use the provided facilitatorUrl or fall back to default
   let facilitatorFee = params.facilitatorFee || "0";
-  if (!params.facilitatorFee && params.facilitatorUrl) {
+  if (!params.facilitatorFee) {
+    const facilitatorUrl = params.facilitatorUrl || DEFAULT_FACILITATOR_URL;
     try {
       const feeEstimate = await queryFacilitatorFee(
-        params.facilitatorUrl,
+        facilitatorUrl,
         params.network,
         params.hook,
         params.hookData, // Pass hookData for accurate fee calculation
