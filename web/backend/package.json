@@ -1,0 +1,65 @@
+{
+  "name": "@x402x/scanner-backend",
+  "version": "1.0.0",
+  "description": "x402 Scanner Backend - Blockchain indexer and query service",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:debug": "tsx watch --inspect src/index.ts",
+    "debug": "node --inspect --loader tsx/esm src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:init": "tsx scripts/init-db.ts",
+    "db:seed": "tsx scripts/seed-networks.ts",
+    "test:oklink": "tsx scripts/test-oklink-simple.ts",
+    "test:etherscan": "tsx scripts/test-etherscan.ts",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run --exclude 'test/integration/**'",
+    "test:unit": "vitest run --exclude 'test/integration/**'",
+    "test:integration": "vitest run test/integration",
+    "test:all": "vitest run",
+    "test:watch": "vitest --watch --exclude 'test/integration/**'",
+    "test:coverage": "vitest --coverage",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "x402",
+    "blockchain",
+    "indexer",
+    "scanner",
+    "ethereum"
+  ],
+  "author": "x402 Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "joi": "^17.11.0",
+    "pino": "^8.16.2",
+    "pino-pretty": "^10.2.3",
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/supertest": "^6.0.2",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "eslint": "^8.54.0",
+    "supertest": "^6.3.3",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

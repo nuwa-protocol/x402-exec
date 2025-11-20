@@ -9,18 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SUPPORTED_NETWORKS } from "@/constants/facilitator";
-import { useFacilitatorStats, formatUsdcAtomicToDisplay } from "@/hooks/use-facilitator-stats";
+import { formatUsdcAtomicToDisplay } from "@/hooks/use-facilitator-stats";
 import { formatNetwork, useTransactions } from "@/hooks/use-transactions";
 import type { HookInfo, Transaction } from "@/types/scan";
-
-function formatUsd(v: number | undefined): string {
-  const n = Number.isFinite(v as number) ? (v as number) : 0;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(n);
-}
+import { useScanHooks, useScanStats } from "@/hooks/use-scan-stats";
 
 function formatTime(ts: number): string {
   const d = new Date(ts * 1000);
@@ -65,6 +57,7 @@ function HookBadge({ hook }: { hook?: HookInfo }) {
 }
 
 function OverallTable({ items }: { items: Transaction[] }) {
+  console.log(items);
   return (
     <Table>
       <TableHeader>
@@ -114,7 +107,7 @@ function OverallTable({ items }: { items: Transaction[] }) {
               <HookBadge hook={t.hook} />
             </TableCell>
             <TableCell className="text-right">
-              {formatUsd(t.amountUsd ?? 0)}
+              {formatUsdcAtomicToDisplay(Number(t.valueWei), 2)}
             </TableCell>
           </TableRow>
         ))}
@@ -123,76 +116,7 @@ function OverallTable({ items }: { items: Transaction[] }) {
   );
 }
 
-type HookAgg = {
-  hook: HookInfo;
-  txCount: number;
-  volumeUsd: number;
-};
-
-function aggregateByHook(items: Transaction[]): HookAgg[] {
-  const map = new Map<string, HookAgg>();
-  for (const t of items) {
-    const addr = t.hook?.address?.toLowerCase();
-    if (!addr) continue;
-    if (!map.has(addr)) {
-      map.set(addr, {
-        hook: t.hook!,
-        txCount: 0,
-        volumeUsd: 0,
-      });
-    }
-    const agg = map.get(addr)!;
-    agg.txCount += 1;
-    agg.volumeUsd += t.amountUsd ?? 0;
-  }
-  return Array.from(map.values()).sort((a, b) => b.volumeUsd - a.volumeUsd);
-}
-
-function ByHooksTable({ items }: { items: Transaction[] }) {
-  const rows = aggregateByHook(items);
-  if (rows.length === 0) {
-    return (
-      <div className="text-muted-foreground">
-        No hook activity in the sample data.
-      </div>
-    );
-  }
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Hook</TableHead>
-          <TableHead className="text-right">Unique Payers</TableHead>
-          <TableHead className="text-right">Transactions</TableHead>
-          <TableHead className="text-right">Volume (USD)</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((r) => {
-          const uniquePayers = new Set(
-            items
-              .filter((t) => t.hook?.address?.toLowerCase() === r.hook.address.toLowerCase())
-              .map((t) => t.from.toLowerCase()),
-          ).size;
-          return (
-            <TableRow key={r.hook.address}>
-              <TableCell>
-                <HookBadge hook={r.hook} />
-              </TableCell>
-              <TableCell className="text-right">{uniquePayers}</TableCell>
-              <TableCell className="text-right">{r.txCount}</TableCell>
-              <TableCell className="text-right">{formatUsd(r.volumeUsd)}</TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
-}
-
-type ApiTopHook = { address: string; txCount: number; uniquePayers: number; total: string };
-
-function TopHooksTableApi({ rows }: { rows: ApiTopHook[] }) {
+function TopHooksTableApi({ rows }: { rows: any[] }) {
   if (!rows || rows.length === 0) {
     return <div className="text-muted-foreground">No hook activity found.</div>;
   }
@@ -210,9 +134,9 @@ function TopHooksTableApi({ rows }: { rows: ApiTopHook[] }) {
         {rows.map((r) => (
           <TableRow key={r.address}>
             <TableCell className="font-mono text-xs">{shortHex(r.address)}</TableCell>
-            <TableCell className="text-right">{r.uniquePayers}</TableCell>
-            <TableCell className="text-right">{r.txCount}</TableCell>
-            <TableCell className="text-right">{formatUsdcAtomicToDisplay(r.total, 2)}</TableCell>
+            <TableCell className="text-right">{r.uniqueUsers}</TableCell>
+            <TableCell className="text-right">{r.totalTransactions}</TableCell>
+            <TableCell className="text-right">{formatUsdcAtomicToDisplay(r.totalVolume, 2)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -221,11 +145,10 @@ function TopHooksTableApi({ rows }: { rows: ApiTopHook[] }) {
 }
 
 export default function ScanPage() {
-  // Latest tx (sample data for now)
   const pageSize = 20;
   const tx = useTransactions({ page: 1, pageSize });
-  const all = useTransactions({ page: 1, pageSize: 1000 });
-  const stats = useFacilitatorStats({});
+  const stats = useScanStats({});
+  const hooks = useScanHooks({});
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-8">
@@ -260,7 +183,7 @@ export default function ScanPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
-                {stats.data ? formatUsdcAtomicToDisplay(stats.data.totalValueAtomic, 2) : "…"}
+                {stats.transactionVolumeUsd}
               </div>
             </CardContent>
           </Card>
@@ -270,7 +193,7 @@ export default function ScanPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
-                {stats.data ? stats.data.accountsCount.toLocaleString() : "…"}
+                {stats.accountsCount}
               </div>
             </CardContent>
           </Card>
@@ -280,7 +203,7 @@ export default function ScanPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
-                {stats.data ? stats.data.transactionsCount.toLocaleString() : "…"}
+                {stats.transactionsCount}
               </div>
             </CardContent>
           </Card>
@@ -300,11 +223,7 @@ export default function ScanPage() {
         <h2 className="text-xl font-semibold tracking-tight">Top Hook Contracts</h2>
         <Card>
           <CardContent className="py-4">
-            {stats.data?.topHooks?.length ? (
-              <TopHooksTableApi rows={stats.data.topHooks as any} />
-            ) : (
-              <ByHooksTable items={all.items} />
-            )}
+              <TopHooksTableApi rows={hooks as any} />
           </CardContent>
         </Card>
       </section>
