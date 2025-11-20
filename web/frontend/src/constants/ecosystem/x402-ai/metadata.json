@@ -5,5 +5,5 @@
 	"paymentTokensByNetwork": {
 		"x-layer-testnet": ["USDC"]
 	},
-	"tag": "ai"
+	"tag": "app"
 }

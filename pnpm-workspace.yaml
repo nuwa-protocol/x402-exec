@@ -11,7 +11,3 @@ packages:
 
   # Website Project
   - 'web/frontend'
-  - 'web/backend'
-
-  # Applications Project
-  - 'apps/xdefi-app'

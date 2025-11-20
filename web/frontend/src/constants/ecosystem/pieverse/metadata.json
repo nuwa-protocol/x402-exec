@@ -1,0 +1,7 @@
+{
+	"name": "pieverse",
+	"description": "Powering auditable, gasless payments with x402b. Timestamping value through on-chain invoices, receipts, and checks. ",
+	"url": "https://www.pieverse.io/",
+	"paymentTokensByNetwork": {},
+	"tag": "app"
+}

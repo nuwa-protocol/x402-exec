@@ -11,3 +11,6 @@
 	path = deps/x402
 	url = https://github.com/nuwa-protocol/x402.git
 	branch = x402x
+[submodule "contracts/lib/forge-std"]
+	path = contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std.git

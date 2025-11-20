@@ -1,11 +1,12 @@
-import { ArrowUpRight } from "lucide-react";
-import { AnimatePresence, domAnimation, LazyMotion, m } from "motion/react";
-// import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ECOSYSTEM_TAG_LABEL } from "@/constants/ecosystem/tags";
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ECOSYSTEM_TAG_LABEL,
+  ECOSYSTEM_TAGS,
+  type EcosystemTagId,
+} from "@/constants/ecosystem/tags";
 import {
   SUPPORTED_NETWORKS,
   SUPPORTED_PAYMENT_TOKENS,
@@ -14,24 +15,23 @@ import type {
   EcosystemProject,
   EcosystemProjectMetadata,
 } from "@/types/ecosystem";
+import { ArrowUpRight } from "lucide-react";
+import { AnimatePresence, domAnimation, LazyMotion, m } from "motion/react";
+import * as React from "react";
 
 const NETWORK_MAP = Object.fromEntries(
   SUPPORTED_NETWORKS.map((network) => [network.network, network]),
 );
 
 export default function EcosystemPage() {
-  /* Filter temporarily disabled; keeping code for later reuse
-  const [selectedTag, setSelectedTag] = React.useState<"all" | EcosystemTagId>("all");
-  const filtered = selectedTag === "all"
-    ? ECOSYSTEM_PROJECTS
-    : ECOSYSTEM_PROJECTS.filter((p) => p.tag === selectedTag);
-  const countsByTag = React.useMemo(() => {
-    const map = Object.fromEntries(ECOSYSTEM_TAGS.map((t) => [t.id, 0])) as Record<EcosystemTagId, number>;
-    for (const p of ECOSYSTEM_PROJECTS) map[p.tag] = (map[p.tag] ?? 0) + 1;
-    return map;
-  }, []);
-  const totalCount = ECOSYSTEM_PROJECTS.length;
-  */
+  const [selectedTag, setSelectedTag] = React.useState<"all" | EcosystemTagId>(
+    "all",
+  );
+
+  const filteredProjects =
+    selectedTag === "all"
+      ? ECOSYSTEM_PROJECTS
+      : ECOSYSTEM_PROJECTS.filter((p) => p.tag === selectedTag);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -40,24 +40,41 @@ export default function EcosystemPage() {
           Ecosystem
         </p>
         <h1 className="text-4xl font-bold tracking-tight">
-          Projects built with x402x
+          x402x Ecosystem Projects
         </h1>
         <p className="text-muted-foreground max-w-3xl">
-          Discover teams and products that use x402x to ship AI, DeFi and much more
+          Discover teams and products that use x402x to ship AI, DeFi and much
+          more
         </p>
       </div>
 
-      {/* Filter UI temporarily disabled */}
-      {/**
-      <Tabs value={selectedTag} onValueChange={(v) => setSelectedTag(v as any)} className="mb-6">
-        ...
+      <Tabs
+        className="mb-6 w-full"
+        value={selectedTag}
+        onValueChange={(value) =>
+          setSelectedTag(value as "all" | EcosystemTagId)
+        }
+      >
+        <TabsList className="flex w-full flex-wrap gap-1 bg-muted/60 p-1">
+          <TabsTrigger value="all" className="px-3 py-1.5 text-xs sm:text-sm">
+            All
+          </TabsTrigger>
+          {ECOSYSTEM_TAGS.map((tag) => (
+            <TabsTrigger
+              key={tag.id}
+              value={tag.id}
+              className="px-3 py-1.5 text-xs sm:text-sm"
+            >
+              {tag.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
       </Tabs>
-      */}
 
       <LazyMotion features={domAnimation} strict>
         <m.div layout className="grid gap-6 lg:grid-cols-2">
           <AnimatePresence>
-            {ECOSYSTEM_PROJECTS.map((project) => (
+            {filteredProjects.map((project) => (
               <m.div
                 key={project.slug}
                 layout

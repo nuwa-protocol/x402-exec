@@ -1,0 +1,10 @@
+{
+	"name": "x402 Gives",
+	"description": "An open source donation platform based on the x402 protocol, providing transparent and verifiable donation solutions for creators.",
+	"url": "https://x402.gives/",
+	"paymentTokensByNetwork": {
+		"base": ["USDC"],
+		"x-layer": ["USDC"]
+	},
+	"tag": "app"
+}

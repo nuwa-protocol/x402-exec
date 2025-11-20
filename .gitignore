@@ -16,3 +16,4 @@ facilitator/pnpm-lock.yaml
 examples/**/pnpm-lock.yaml
 apps/*/pnpm-lock.yaml
 .vercel
+.pnpm-store

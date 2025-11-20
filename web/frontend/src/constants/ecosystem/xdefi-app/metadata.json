@@ -1,0 +1,10 @@
+{
+	"name": "xDeFi.app",
+	"description": "A Gas-Free and Approval-Free DeFi applications that leverages the x402x to provide the best UX.",
+	"url": "https://xdefi.app/",
+	"paymentTokensByNetwork": {
+		"base": ["USDC"],
+		"x-layer": ["USDC"]
+	},
+	"tag": "app"
+}

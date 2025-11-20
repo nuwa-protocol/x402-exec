@@ -1,0 +1,12 @@
+{
+	"name": "x402x Protocol Demo",
+	"description": "A simple demo for expercing the possibilities with the x402x protocol. This contains demos of using x402x for spliting payments as well asmint token and NFT with payment.",
+	"url": "https://demo.x402x.dev",
+	"paymentTokensByNetwork": {
+		"base-sepolia": ["USDC"],
+		"x-layer-testnet": ["USDC_TEST"],
+		"base": ["USDC"],
+		"x-layer": ["USDC"]
+	},
+	"tag": "app"
+}

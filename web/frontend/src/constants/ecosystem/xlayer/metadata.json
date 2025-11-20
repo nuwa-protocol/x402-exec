@@ -1,0 +1,10 @@
+{
+	"name": "X Layer",
+	"description": "The New Money Chain. Make everything onchain.",
+	"url": "https://web3.okx.com/xlayer",
+	"paymentTokensByNetwork": {
+		"x-layer-testnet": ["USDC"],
+		"x-layer": ["USDC"]
+	},
+	"tag": "l1/l2"
+}

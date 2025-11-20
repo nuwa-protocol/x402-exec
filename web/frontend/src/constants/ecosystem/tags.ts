@@ -1,9 +1,8 @@
 // Central list of allowed ecosystem tags.
 export const ECOSYSTEM_TAGS = [
 	{ id: "ai", label: "AI" },
-	{ id: "wallet", label: "Wallet" },
-	{ id: "demo", label: "Demo" },
-	{ id: "defi", label: "DeFi" },
+	{ id: "l1/l2", label: "Layer 1 / Layer 2" },
+	{ id: "app", label: "Applications" },
 	// Add more as needed; keep ids kebab/lowercase
 ] as const;
 
