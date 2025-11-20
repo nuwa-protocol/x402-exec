@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import transactionsRouter from './transaction';
-import statsRouter from './stats';
+import transactionsRouter from './transaction.js';
+import statsRouter from './stats.js';
 
-const router: Router = Router();
-router.use('/transactions', transactionsRouter);
-router.use('/stats', statsRouter);
+const apiRouter: Router = Router();
+apiRouter.use('/transactions', transactionsRouter);
+apiRouter.use('/stats', statsRouter);
 
-export default router;
+export { apiRouter };

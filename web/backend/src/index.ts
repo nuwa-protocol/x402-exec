@@ -8,6 +8,7 @@ import express from 'express';
 import cors from 'cors';
 import { logger } from './utils/logger.js';
 import { initDatabase, testConnection } from './database/db.js';
+import { apiRouter } from './routes/index.js';
 
 const app = express();
 
@@ -52,8 +53,7 @@ async function initialize() {
       next();
     });
 
-    const { default: apiRoutes } = await import('./routes/index.js');
-    app.use('/api', apiRoutes);
+    app.use('/api', apiRouter);
 
     // Root endpoint
     app.get('/', (_req, res) => {

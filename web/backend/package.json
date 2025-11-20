@@ -10,18 +10,9 @@
     "debug": "node --inspect --loader tsx/esm src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:init": "tsx scripts/init-db.ts",
-    "db:seed": "tsx scripts/seed-networks.ts",
-    "test:oklink": "tsx scripts/test-oklink-simple.ts",
-    "test:etherscan": "tsx scripts/test-etherscan.ts",
     "lint": "eslint . --ext .ts",
     "test": "vitest run --exclude 'test/integration/**'",
-    "test:unit": "vitest run --exclude 'test/integration/**'",
-    "test:integration": "vitest run test/integration",
-    "test:all": "vitest run",
-    "test:watch": "vitest --watch --exclude 'test/integration/**'",
-    "test:coverage": "vitest --coverage",
-    "test:ui": "vitest --ui"
+    "test:unit": "vitest run --exclude 'test/integration/**'"
   },
   "keywords": [
     "x402",
