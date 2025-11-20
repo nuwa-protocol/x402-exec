@@ -71,6 +71,12 @@ Or clone and run from source (see [Development](#development) section below).
   - Validates fees cover transaction costs before execution
   - 10% tolerance for price fluctuations between calculation and validation
   - Prevents facilitator from accepting unprofitable settlements
+- **Settlement Pre-validation** 🆕: Prevents gas waste on invalid transactions
+  - Pre-executes settlement via `estimateGas` to detect parameter errors
+  - Code validation for built-in Hooks (TransferHook) - no RPC calls required
+  - Gas estimation for custom Hooks with safety multiplier
+  - Immediate rejection of transactions that would revert
+  - Prevents facilitator gas loss from user parameter errors
 - **SettlementRouter Whitelist**: Only pre-configured, trusted SettlementRouter contracts are accepted
 - **Network-Specific Validation**: Each network has its own whitelist of allowed router addresses
 - **Case-Insensitive Matching**: Address validation works regardless of case
@@ -290,6 +296,14 @@ Malicious Resource Servers could specify Hooks that consume excessive gas, causi
 - Considers: gas limit, gas price (dynamic or static), native token price, safety multiplier
 - Supports three gas price strategies: static, dynamic, and hybrid
 
+**Layer 4: Transaction Pre-validation** 🆕 (Ultimate Defense)
+
+- **Pre-executes** settlement transaction via `estimateGas` to detect invalid parameters
+- **Immediate rejection** of transactions that would revert, preventing gas waste
+- **Built-in Hook validation**: Code-level validation for known Hooks (TransferHook) without RPC calls
+- **Custom Hook validation**: `estimateGas` simulation for unknown/complex Hooks
+- **Error parsing**: Extracts meaningful error messages from revert reasons
+
 #### Gas Price Strategies
 
 The facilitator supports three strategies for obtaining gas prices:
@@ -370,6 +384,19 @@ GAS_COST_DYNAMIC_GAS_LIMIT_MARGIN=0.2
 # HOOK_WHITELIST_ENABLED=true
 BASE_SEPOLIA_ALLOWED_HOOKS=0x6b486aF5A08D27153d0374BE56A1cB1676c460a8
 X_LAYER_TESTNET_ALLOWED_HOOKS=0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB
+
+# === Settlement Pre-validation ===
+# Enable code validation for built-in Hooks (default: true, recommended)
+HOOK_CODE_VALIDATION_ENABLED=true
+
+# Gas estimation safety multiplier (default: 1.2)
+# Applied to estimated gas to provide buffer for execution variance
+# 1.2 = 120% of estimated gas, provides reasonable safety margin
+GAS_ESTIMATION_SAFETY_MULTIPLIER=1.2
+
+# Gas estimation timeout (default: 5000ms = 5 seconds)
+# Maximum time to wait for gas estimation before falling back to static limits
+GAS_ESTIMATION_TIMEOUT_MS=5000
 
 # === Fallback Prices ===
 # Native token prices (update periodically)
@@ -688,6 +715,10 @@ Settles an x402 payment. Automatically detects and routes between standard and S
 - Hook whitelist check (if SettlementRouter mode)
 - Gas limit validation (max: 5M, with dynamic calculation based on fee)
 - Facilitator fee minimum requirement check
+- **Settlement pre-validation** (prevents gas waste on invalid transactions)
+  - Code validation for built-in Hooks (no RPC calls)
+  - Gas estimation for custom Hooks (detects parameter errors)
+  - Immediate rejection if transaction would revert
 
 ### GET /min-facilitator-fee 🆕
 
@@ -899,6 +930,7 @@ The facilitator handles various error scenarios:
 | `invalid_network`              | Unsupported network                                                        | 400 with error details         |
 | `invalid_transaction_state`    | Transaction reverted                                                       | Settlement response with error |
 | `unexpected_settle_error`      | Unexpected error during settlement                                         | Settlement response with error |
+| `SETTLEMENT_PREVALIDATION_FAILED` | **Pre-validation detected invalid transaction** (Hook params, balance, etc.) | Settlement response with error |
 
 ### Security Error Examples
 
@@ -1174,6 +1206,12 @@ OTEL_LOG_LEVEL=debug  # Optional: none, error, warn, info, debug (default: info)
 - Latency histograms (P50, P95, P99)
 - Error rates by type
 - Active request counts
+- **Settlement pre-validation metrics** 🆕
+  - `facilitator.settlement.validation.code.success` - Code validation success count
+  - `facilitator.settlement.validation.code.failed` - Code validation failure count
+  - `facilitator.settlement.gas_estimation.success` - Gas estimation success count
+  - `facilitator.settlement.gas_estimation.failed` - Gas estimation failure count
+  - `facilitator.settlement.gas_estimation.duration_ms` - Gas estimation latency histogram
 
 **Available Traces:**
 

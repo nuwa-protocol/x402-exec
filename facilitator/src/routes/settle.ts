@@ -26,6 +26,7 @@ import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
+import type { GasEstimationConfig } from "../gas-estimation.js";
 import { QueueOverloadError } from "../errors.js";
 
 const logger = getLogger();
@@ -48,6 +49,7 @@ export interface SettleRouteDependencies {
   gasCost?: GasCostConfig; // Gas cost config for fee validation and dynamic gas limit
   dynamicGasPrice?: DynamicGasPriceConfig; // Dynamic gas price config for gas limit calculation
   balanceChecker?: BalanceChecker;
+  gasEstimation?: GasEstimationConfig; // Gas estimation config for pre-validation
 }
 
 /**
@@ -145,6 +147,7 @@ export function createSettleRoutes(
                   deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
                   deps.balanceChecker, // Pass balance checker for defensive checks
                   deps.x402Config, // Pass x402 config for verification
+                  deps.gasEstimation, // Pass gas estimation config for pre-validation
                 ),
               {
                 network: paymentRequirements.network,
