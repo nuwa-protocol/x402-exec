@@ -37,10 +37,7 @@ export class TransferHookValidator implements HookValidator {
 
     try {
       const decoded = decodeAbiParameters(
-        [
-          { type: "address[]" },
-          { type: "uint256[]" },
-        ],
+        [{ type: "address[]" }, { type: "uint256[]" }],
         hookData as `0x${string}`,
       );
 
@@ -49,7 +46,9 @@ export class TransferHookValidator implements HookValidator {
         amounts: decoded[1] as bigint[],
       };
     } catch (error) {
-      throw new Error(`Failed to decode TransferHook data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to decode TransferHook data: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -78,7 +77,7 @@ export class TransferHookValidator implements HookValidator {
         // No additional validation needed for empty hookData
         return {
           isValid: true,
-          validationMethod: 'code_validation',
+          validationMethod: "code_validation",
         };
       }
 
@@ -87,7 +86,7 @@ export class TransferHookValidator implements HookValidator {
         return {
           isValid: false,
           errorReason: `Recipients and amounts length mismatch: ${params.recipients.length} vs ${params.amounts.length}`,
-          validationMethod: 'code_validation',
+          validationMethod: "code_validation",
         };
       }
 
@@ -95,8 +94,8 @@ export class TransferHookValidator implements HookValidator {
       if (params.recipients.length === 0) {
         return {
           isValid: false,
-          errorReason: 'Recipients array cannot be empty',
-          validationMethod: 'code_validation',
+          errorReason: "Recipients array cannot be empty",
+          validationMethod: "code_validation",
         };
       }
 
@@ -107,16 +106,16 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Invalid recipient address at index ${i}: ${recipient}`,
-            validationMethod: 'code_validation',
+            validationMethod: "code_validation",
           };
         }
 
         // Check for zero address (though technically valid, usually indicates error)
-        if (recipient === '0x0000000000000000000000000000000000000000') {
+        if (recipient === "0x0000000000000000000000000000000000000000") {
           return {
             isValid: false,
             errorReason: `Zero address not allowed as recipient at index ${i}`,
-            validationMethod: 'code_validation',
+            validationMethod: "code_validation",
           };
         }
       }
@@ -131,7 +130,7 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Negative amount not allowed at index ${i}: ${amount}`,
-            validationMethod: 'code_validation',
+            validationMethod: "code_validation",
           };
         }
 
@@ -140,7 +139,7 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Zero amount not allowed at index ${i}`,
-            validationMethod: 'code_validation',
+            validationMethod: "code_validation",
           };
         }
 
@@ -152,21 +151,20 @@ export class TransferHookValidator implements HookValidator {
         return {
           isValid: false,
           errorReason: `Total transfer amount mismatch: expected ${hookAmount}, got ${totalAmount}`,
-          validationMethod: 'code_validation',
+          validationMethod: "code_validation",
         };
       }
 
       // All validations passed
       return {
         isValid: true,
-        validationMethod: 'code_validation',
+        validationMethod: "code_validation",
       };
-
     } catch (error) {
       return {
         isValid: false,
-        errorReason: `TransferHook validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        validationMethod: 'code_validation',
+        errorReason: `TransferHook validation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        validationMethod: "code_validation",
       };
     }
   }
@@ -202,7 +200,7 @@ export class TransferHookValidator implements HookValidator {
       const perTransferOverhead = 30000;
 
       const recipientCount = params.recipients.length;
-      const totalOverhead = baseOverhead + (perTransferOverhead * recipientCount);
+      const totalOverhead = baseOverhead + perTransferOverhead * recipientCount;
 
       return totalOverhead;
     } catch {
@@ -210,7 +208,7 @@ export class TransferHookValidator implements HookValidator {
       const baseOverhead = 25000;
       const perTransferOverhead = 30000;
       const averageRecipients = 3;
-      return baseOverhead + (perTransferOverhead * averageRecipients);
+      return baseOverhead + perTransferOverhead * averageRecipients;
     }
   }
 }

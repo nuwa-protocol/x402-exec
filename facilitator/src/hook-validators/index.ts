@@ -51,7 +51,6 @@ export function getHookTypeInfo(network: string, hookAddress: string): HookTypeI
     return {
       isBuiltIn: false,
     };
-
   } catch (error) {
     // If network config fails, assume it's not built-in
     return {
@@ -100,7 +99,7 @@ export function validateHookData(
   // This allows custom hooks to work while still being validated via estimateGas
   return {
     isValid: true,
-    validationMethod: 'gas_estimation', // Will be validated by estimateGas
+    validationMethod: "gas_estimation", // Will be validated by estimateGas
   };
 }
 
@@ -112,7 +111,11 @@ export function validateHookData(
  * @param hookData - Optional hook data for dynamic overhead calculation
  * @returns Gas overhead in addition to base transaction cost
  */
-export function getHookGasOverhead(network: string, hookAddress: string, hookData?: string): number {
+export function getHookGasOverhead(
+  network: string,
+  hookAddress: string,
+  hookData?: string,
+): number {
   const hookInfo = getHookTypeInfo(network, hookAddress);
 
   // For built-in hooks, use validator's gas calculation

@@ -924,12 +924,12 @@ curl -X POST http://localhost:3000/settle \
 
 The facilitator handles various error scenarios:
 
-| Error                          | Cause                                                                      | Response                       |
-| ------------------------------ | -------------------------------------------------------------------------- | ------------------------------ |
-| `invalid_payment_requirements` | Missing/invalid extra parameters or **untrusted SettlementRouter address** | 400 with error details         |
-| `invalid_network`              | Unsupported network                                                        | 400 with error details         |
-| `invalid_transaction_state`    | Transaction reverted                                                       | Settlement response with error |
-| `unexpected_settle_error`      | Unexpected error during settlement                                         | Settlement response with error |
+| Error                             | Cause                                                                        | Response                       |
+| --------------------------------- | ---------------------------------------------------------------------------- | ------------------------------ |
+| `invalid_payment_requirements`    | Missing/invalid extra parameters or **untrusted SettlementRouter address**   | 400 with error details         |
+| `invalid_network`                 | Unsupported network                                                          | 400 with error details         |
+| `invalid_transaction_state`       | Transaction reverted                                                         | Settlement response with error |
+| `unexpected_settle_error`         | Unexpected error during settlement                                           | Settlement response with error |
 | `SETTLEMENT_PREVALIDATION_FAILED` | **Pre-validation detected invalid transaction** (Hook params, balance, etc.) | Settlement response with error |
 
 ### Security Error Examples

@@ -79,32 +79,34 @@ export function parseEstimateGasError(error: any): string {
       const revertData = error.data as string;
 
       // Try to decode common error signatures
-      if (revertData.startsWith('0x08c379a0')) { // Error(string)
+      if (revertData.startsWith("0x08c379a0")) {
+        // Error(string)
         // This is a standard Error(string) revert
         // The data after the selector contains the error message
         // For simplicity, return a generic message since full decoding would require more complex logic
-        return 'Hook execution failed - invalid parameters or logic error';
+        return "Hook execution failed - invalid parameters or logic error";
       }
 
-      if (revertData.startsWith('0x4e487b71')) { // Panic(uint256)
-        return 'Hook execution panicked - potential gas limit or arithmetic error';
+      if (revertData.startsWith("0x4e487b71")) {
+        // Panic(uint256)
+        return "Hook execution panicked - potential gas limit or arithmetic error";
       }
 
       // Check for specific SettlementRouter errors
-      if (revertData.includes('HookExecutionFailed')) {
-        return 'Hook execution failed - check hook parameters and contract logic';
+      if (revertData.includes("HookExecutionFailed")) {
+        return "Hook execution failed - check hook parameters and contract logic";
       }
 
-      if (revertData.includes('TransferFailed')) {
-        return 'Token transfer failed - insufficient balance or allowance';
+      if (revertData.includes("TransferFailed")) {
+        return "Token transfer failed - insufficient balance or allowance";
       }
 
-      if (revertData.includes('InvalidCommitment')) {
-        return 'Invalid commitment - nonce or authorization mismatch';
+      if (revertData.includes("InvalidCommitment")) {
+        return "Invalid commitment - nonce or authorization mismatch";
       }
 
-      if (revertData.includes('AlreadySettled')) {
-        return 'Transaction already settled - duplicate attempt';
+      if (revertData.includes("AlreadySettled")) {
+        return "Transaction already settled - duplicate attempt";
       }
 
       // Generic revert with data
@@ -112,29 +114,28 @@ export function parseEstimateGasError(error: any): string {
     }
 
     // Check error message
-    const message = error?.message || '';
-    if (message.includes('execution reverted')) {
-      return 'Transaction execution reverted - check all parameters';
+    const message = error?.message || "";
+    if (message.includes("execution reverted")) {
+      return "Transaction execution reverted - check all parameters";
     }
 
-    if (message.includes('gas required exceeds allowance')) {
-      return 'Gas limit exceeded - transaction too complex';
+    if (message.includes("gas required exceeds allowance")) {
+      return "Gas limit exceeded - transaction too complex";
     }
 
-    if (message.includes('insufficient funds')) {
-      return 'Insufficient funds for gas - check wallet balance';
+    if (message.includes("insufficient funds")) {
+      return "Insufficient funds for gas - check wallet balance";
     }
 
-    if (message.includes('nonce too low')) {
-      return 'Nonce error - transaction ordering issue';
+    if (message.includes("nonce too low")) {
+      return "Nonce error - transaction ordering issue";
     }
 
     // Generic error
-    return `Gas estimation failed: ${message || 'Unknown error'}`;
-
+    return `Gas estimation failed: ${message || "Unknown error"}`;
   } catch (parseError) {
     // If parsing fails, return a safe fallback
-    return 'Gas estimation failed - unable to determine cause';
+    return "Gas estimation failed - unable to determine cause";
   }
 }
 
@@ -177,16 +178,19 @@ export async function estimateGasForSettlement(
   const startTime = Date.now();
 
   try {
-    logger.debug({
-      network: params.network,
-      hook: params.hook,
-      from: params.from,
-    }, 'Starting gas estimation for settlement');
+    logger.debug(
+      {
+        network: params.network,
+        hook: params.hook,
+        from: params.from,
+      },
+      "Starting gas estimation for settlement",
+    );
 
     // Prepare transaction data for estimateGas
     const txData = encodeFunctionData({
       abi: SETTLEMENT_ROUTER_ABI,
-      functionName: 'settleAndExecute',
+      functionName: "settleAndExecute",
       args: [
         params.token as Hex,
         params.from as Hex,
@@ -213,7 +217,7 @@ export async function estimateGasForSettlement(
 
     // Apply timeout
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Gas estimation timeout')), config.timeoutMs);
+      setTimeout(() => reject(new Error("Gas estimation timeout")), config.timeoutMs);
     });
 
     const estimatedGas = await Promise.race([estimatePromise, timeoutPromise]);
@@ -222,52 +226,57 @@ export async function estimateGasForSettlement(
     const safeGasLimit = calculateSafeGasLimit(estimatedGas, config, params.gasCostConfig);
 
     const duration = Date.now() - startTime;
-    logger.debug({
-      network: params.network,
-      hook: params.hook,
-      estimatedGas: Number(estimatedGas),
-      safeGasLimit,
-      duration,
-    }, 'Gas estimation completed successfully');
+    logger.debug(
+      {
+        network: params.network,
+        hook: params.hook,
+        estimatedGas: Number(estimatedGas),
+        safeGasLimit,
+        duration,
+      },
+      "Gas estimation completed successfully",
+    );
 
     // Record metrics
     recordMetric("facilitator.settlement.gas_estimation.success", 1, {
       network: params.network,
-      hook_type: getHookTypeInfo(params.network, params.hook).hookType || "custom" as string,
+      hook_type: getHookTypeInfo(params.network, params.hook).hookType || ("custom" as string),
     });
     recordHistogram("facilitator.settlement.gas_estimation.duration_ms", duration, {
       network: params.network,
-      hook_type: getHookTypeInfo(params.network, params.hook).hookType || "custom" as string,
+      hook_type: getHookTypeInfo(params.network, params.hook).hookType || ("custom" as string),
       method: "gas_estimation",
     });
 
     return {
       isValid: true,
       gasLimit: safeGasLimit,
-      validationMethod: 'gas_estimation',
+      validationMethod: "gas_estimation",
     };
-
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorReason = parseEstimateGasError(error);
 
-    logger.warn({
-      error,
-      network: params.network,
-      hook: params.hook,
-      duration,
-      errorReason,
-    }, 'Gas estimation failed');
+    logger.warn(
+      {
+        error,
+        network: params.network,
+        hook: params.hook,
+        duration,
+        errorReason,
+      },
+      "Gas estimation failed",
+    );
 
     // Record failure metrics
     recordMetric("facilitator.settlement.gas_estimation.failed", 1, {
       network: params.network,
-      hook_type: getHookTypeInfo(params.network, params.hook).hookType || "custom" as string,
-      error_type: errorReason.split(' ')[0], // First word of error for categorization
+      hook_type: getHookTypeInfo(params.network, params.hook).hookType || ("custom" as string),
+      error_type: errorReason.split(" ")[0], // First word of error for categorization
     });
     recordHistogram("facilitator.settlement.gas_estimation.duration_ms", duration, {
       network: params.network,
-      hook_type: getHookTypeInfo(params.network, params.hook).hookType || "custom" as string,
+      hook_type: getHookTypeInfo(params.network, params.hook).hookType || ("custom" as string),
       method: "gas_estimation",
       success: false,
     });
@@ -275,7 +284,7 @@ export async function estimateGasForSettlement(
     return {
       isValid: false,
       errorReason,
-      validationMethod: 'gas_estimation',
+      validationMethod: "gas_estimation",
     };
   }
 }
@@ -306,23 +315,26 @@ export async function estimateAndValidateSettlement(
     );
 
     if (!codeValidation.isValid) {
-      logger.warn({
-        network: params.network,
-        hook: params.hook,
-        errorReason: codeValidation.errorReason,
-      }, 'Built-in hook code validation failed');
+      logger.warn(
+        {
+          network: params.network,
+          hook: params.hook,
+          errorReason: codeValidation.errorReason,
+        },
+        "Built-in hook code validation failed",
+      );
 
       // Record code validation failure metrics
       recordMetric("facilitator.settlement.validation.code.failed", 1, {
         network: params.network,
         hook_type: hookInfo.hookType || "custom",
-        error_type: (codeValidation.errorReason || "unknown").split(' ')[0], // First word for categorization
+        error_type: (codeValidation.errorReason || "unknown").split(" ")[0], // First word for categorization
       });
 
       return {
         isValid: false,
         errorReason: codeValidation.errorReason,
-        validationMethod: 'code_validation',
+        validationMethod: "code_validation",
       };
     }
 
@@ -333,13 +345,16 @@ export async function estimateAndValidateSettlement(
     // Apply max limit constraint
     const constrainedGasLimit = Math.min(gasLimit, params.gasCostConfig.maxGasLimit);
 
-    logger.debug({
-      network: params.network,
-      hook: params.hook,
-      hookType: hookInfo.hookType,
-      gasLimit: constrainedGasLimit,
-      method: 'code_validation',
-    }, 'Built-in hook validated with static gas limit');
+    logger.debug(
+      {
+        network: params.network,
+        hook: params.hook,
+        hookType: hookInfo.hookType,
+        gasLimit: constrainedGasLimit,
+        method: "code_validation",
+      },
+      "Built-in hook validated with static gas limit",
+    );
 
     // Record code validation success metrics
     recordMetric("facilitator.settlement.validation.code.success", 1, {
@@ -350,17 +365,20 @@ export async function estimateAndValidateSettlement(
     return {
       isValid: true,
       gasLimit: constrainedGasLimit,
-      validationMethod: 'code_validation',
+      validationMethod: "code_validation",
     };
   }
 
   // For custom hooks or when code validation is disabled, use gas estimation
-  logger.debug({
-    network: params.network,
-    hook: params.hook,
-    isBuiltIn: hookInfo.isBuiltIn,
-    codeValidationEnabled: config.codeValidationEnabled,
-  }, 'Using gas estimation for validation');
+  logger.debug(
+    {
+      network: params.network,
+      hook: params.hook,
+      isBuiltIn: hookInfo.isBuiltIn,
+      codeValidationEnabled: config.codeValidationEnabled,
+    },
+    "Using gas estimation for validation",
+  );
 
   return await estimateGasForSettlement(params, config);
 }
