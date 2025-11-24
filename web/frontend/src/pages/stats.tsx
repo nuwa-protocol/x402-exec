@@ -15,6 +15,7 @@ import type { HookInfo, Transaction } from "@/types/scan";
 import { useScanHooks, useScanStats } from "@/hooks/use-scan-stats";
 
 function formatTime(ts: number): string {
+  console.log(ts);
   const d = new Date(ts * 1000);
   return d.toLocaleString();
 }
@@ -57,7 +58,6 @@ function HookBadge({ hook }: { hook?: HookInfo }) {
 }
 
 function OverallTable({ items }: { items: Transaction[] }) {
-  console.log(items);
   return (
     <Table>
       <TableHeader>

@@ -21,6 +21,7 @@ type ApiTransactionResponse = {
       hook: string;
       hook_name: string;
       amount: number | string; // wei amount
+      block_timestamp: number;
       created_at: string;
     }>;
     page: number;
@@ -38,8 +39,7 @@ function transformApiTransaction(apiTx: ApiTransactionResponse["data"]["items"][
       }
     : undefined;
 
-  // Convert time from milliseconds to seconds (API returns milliseconds)
-  const timestamp = Math.floor(apiTx.time / 1000);
+  // const timestamp = Math.floor(apiTx.block_timestamp);
 
   // Ensure network matches NetworkId type
   const network = (apiTx.network || "base") as NetworkId;
@@ -49,7 +49,7 @@ function transformApiTransaction(apiTx: ApiTransactionResponse["data"]["items"][
     from: apiTx.from_addr || "",
     to: apiTx.to_addr || "",
     valueWei: String(apiTx.amount || "0"), // Convert to string for wei value
-    timestamp,
+    timestamp: apiTx.block_timestamp,
     network,
     hook,
   };
