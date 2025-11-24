@@ -23,14 +23,17 @@ export function createTransactionRecordMiddleware() {
         const settleResponse: SettleResponse = body;
 
         if (paymentRequirements && settleResponse?.transaction) {
-          recodeTransaction(paymentRequirements, settleResponse)
+          const { transaction } = settleResponse;
           logger.info(
             {
-              paymentRequirements,
-              settleResponse,
+              transaction,
             },
             "Transaction information captured",
           );
+
+          recodeTransaction(paymentRequirements, settleResponse).catch((error) => {
+            logger.error({ error, transaction }, "Failed to record transaction (unhandled)");
+          });
         }
       } catch (error) {
         logger.error({ error }, "Failed to log transaction from response");
