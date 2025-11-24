@@ -26,7 +26,7 @@ import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
-import type { GasEstimationConfig } from "../gas-estimation.js";
+import type { GasEstimationConfig } from "../gas-estimation/index.js";
 import { QueueOverloadError } from "../errors.js";
 
 const logger = getLogger();

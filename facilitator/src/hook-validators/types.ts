@@ -1,47 +1,43 @@
 /**
  * Hook Validator Types
  *
- * Defines interfaces for hook validation and gas estimation
+ * Defines interfaces for hook validation.
+ *
+ * NOTE: HookValidator does NOT calculate gas overhead.
+ * Gas calculation is the responsibility of GasEstimationStrategy implementations.
+ * This keeps the validator focused on a single responsibility: validation.
  */
 
 /**
- * Hook validation result
+ * Hook validation result (simplified - no gas info)
  */
 export interface HookValidationResult {
   /** Whether the hook data is valid */
   isValid: boolean;
   /** Error message if invalid */
   errorReason?: string;
-  /** Validation method used (code_validation or gas_estimation) */
-  validationMethod: "code_validation" | "gas_estimation";
-}
-
-/**
- * Gas estimation and validation result
- */
-export interface GasEstimationResult {
-  /** Whether the estimation/validation succeeded */
-  isValid: boolean;
-  /** Error message if invalid */
-  errorReason?: string;
-  /** Estimated gas limit if successful */
-  gasLimit?: number;
-  /** Validation method used */
-  validationMethod: "code_validation" | "gas_estimation";
 }
 
 /**
  * Hook validator interface
+ *
+ * Responsibility: Validate hook parameters correctness
+ *
+ * NOTE: This interface does NOT include gas calculation methods.
+ * Gas estimation is handled by GasEstimationStrategy implementations.
  */
 export interface HookValidator {
   /**
-   * Validate hook data for a specific hook
+   * Validate hook parameters
+   *
+   * Pure validation logic - checks if parameters are correct
+   * without any RPC calls or gas calculations.
    *
    * @param network - Network name
    * @param hookAddress - Hook contract address
    * @param hookData - Encoded hook parameters
    * @param hookAmount - Amount available for hook execution
-   * @returns Validation result
+   * @returns Validation result (only validity, no gas information)
    */
   validate(
     network: string,
@@ -49,16 +45,6 @@ export interface HookValidator {
     hookData: string,
     hookAmount: bigint,
   ): HookValidationResult;
-
-  /**
-   * Get gas overhead for this hook type
-   *
-   * @param network - Network name
-   * @param hookAddress - Hook contract address
-   * @param hookData - Optional hook data for dynamic overhead calculation
-   * @returns Gas overhead in addition to base transaction cost
-   */
-  getGasOverhead(network: string, hookAddress: string, hookData?: string): number;
 }
 
 /**

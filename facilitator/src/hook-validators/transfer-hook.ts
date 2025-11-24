@@ -77,17 +77,15 @@ export class TransferHookValidator implements HookValidator {
         // No additional validation needed for empty hookData
         return {
           isValid: true,
-          validationMethod: "code_validation",
         };
       }
 
       // Validate array lengths match
       if (params.recipients.length !== params.amounts.length) {
-        return {
-          isValid: false,
-          errorReason: `Recipients and amounts length mismatch: ${params.recipients.length} vs ${params.amounts.length}`,
-          validationMethod: "code_validation",
-        };
+      return {
+        isValid: false,
+        errorReason: `Recipients and amounts length mismatch: ${params.recipients.length} vs ${params.amounts.length}`,
+      };
       }
 
       // Validate array is not empty
@@ -95,7 +93,6 @@ export class TransferHookValidator implements HookValidator {
         return {
           isValid: false,
           errorReason: "Recipients array cannot be empty",
-          validationMethod: "code_validation",
         };
       }
 
@@ -103,11 +100,10 @@ export class TransferHookValidator implements HookValidator {
       for (let i = 0; i < params.recipients.length; i++) {
         const recipient = params.recipients[i];
         if (!isAddress(recipient)) {
-          return {
-            isValid: false,
-            errorReason: `Invalid recipient address at index ${i}: ${recipient}`,
-            validationMethod: "code_validation",
-          };
+        return {
+          isValid: false,
+          errorReason: `Invalid recipient address at index ${i}: ${recipient}`,
+        };
         }
 
         // Check for zero address (though technically valid, usually indicates error)
@@ -115,7 +111,6 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Zero address not allowed as recipient at index ${i}`,
-            validationMethod: "code_validation",
           };
         }
       }
@@ -130,7 +125,6 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Negative amount not allowed at index ${i}: ${amount}`,
-            validationMethod: "code_validation",
           };
         }
 
@@ -139,7 +133,6 @@ export class TransferHookValidator implements HookValidator {
           return {
             isValid: false,
             errorReason: `Zero amount not allowed at index ${i}`,
-            validationMethod: "code_validation",
           };
         }
 
@@ -151,64 +144,19 @@ export class TransferHookValidator implements HookValidator {
         return {
           isValid: false,
           errorReason: `Total transfer amount mismatch: expected ${hookAmount}, got ${totalAmount}`,
-          validationMethod: "code_validation",
         };
       }
 
       // All validations passed
       return {
         isValid: true,
-        validationMethod: "code_validation",
       };
     } catch (error) {
       return {
         isValid: false,
         errorReason: `TransferHook validation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-        validationMethod: "code_validation",
       };
     }
   }
 
-  /**
-   * Get gas overhead for TransferHook
-   *
-   * TransferHook gas cost scales with the number of transfers.
-   * Base overhead covers the contract logic, plus per-transfer cost.
-   *
-   * @param network - Network name
-   * @param hookAddress - Hook contract address
-   * @param hookData - Hook data to determine transfer complexity
-   * @returns Gas overhead
-   */
-  getGasOverhead(network: string, hookAddress: string, hookData?: string): number {
-    // If hookData is empty, it's a payTo-only transfer (minimal overhead)
-    if (!hookData || hookData === "0x" || hookData === "") {
-      return 15000; // Minimal overhead for payTo-only transfer
-    }
-
-    try {
-      // Try to decode hookData to determine actual transfer count
-      const params = this.decodeHookData(hookData);
-      if (params === null) {
-        return 15000; // payTo-only transfer
-      }
-
-      // Base gas cost for TransferHook execution (contract overhead)
-      const baseOverhead = 25000;
-
-      // Additional cost per transfer (ERC20 transfer + array iteration)
-      const perTransferOverhead = 30000;
-
-      const recipientCount = params.recipients.length;
-      const totalOverhead = baseOverhead + perTransferOverhead * recipientCount;
-
-      return totalOverhead;
-    } catch {
-      // If decoding fails, use conservative estimate
-      const baseOverhead = 25000;
-      const perTransferOverhead = 30000;
-      const averageRecipients = 3;
-      return baseOverhead + perTransferOverhead * averageRecipients;
-    }
-  }
 }

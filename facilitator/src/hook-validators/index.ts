@@ -97,36 +97,11 @@ export function validateHookData(
 
   // For custom hooks, defer validation to gas estimation
   // This allows custom hooks to work while still being validated via estimateGas
-  return {
-    isValid: true,
-    validationMethod: "gas_estimation", // Will be validated by estimateGas
-  };
+    return {
+      isValid: true,
+    };
 }
 
-/**
- * Get gas overhead for a hook
- *
- * @param network - Network name
- * @param hookAddress - Hook contract address
- * @param hookData - Optional hook data for dynamic overhead calculation
- * @returns Gas overhead in addition to base transaction cost
- */
-export function getHookGasOverhead(
-  network: string,
-  hookAddress: string,
-  hookData?: string,
-): number {
-  const hookInfo = getHookTypeInfo(network, hookAddress);
-
-  // For built-in hooks, use validator's gas calculation
-  if (hookInfo.isBuiltIn && hookInfo.validator) {
-    return hookInfo.validator.getGasOverhead(network, hookAddress, hookData);
-  }
-
-  // For custom hooks, return a conservative default
-  // This will be overridden by dynamic gas estimation in most cases
-  return 100000; // Conservative estimate for unknown hooks
-}
 
 /**
  * Get validator for a built-in hook (for advanced usage)
