@@ -16,7 +16,6 @@ export function createTransactionRecordMiddleware() {
     }
 
     const originalJson = res.json;
-    console.log(req.body);
 
     res.json = function (body) {
       try {

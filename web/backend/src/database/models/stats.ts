@@ -12,7 +12,7 @@ interface HookStats {
 export async function getTempOverallStats() {
   try {
     const db = getDatabase();
-    const { data, error } = await db.from('x402_temp_hooks').select('*');
+    const { data, error } = await db.from('x402_hooks').select('*');
     if (error) {
       throw error;
     }
@@ -30,7 +30,7 @@ export async function getAggregatedStats() {
   try {
     const db = getDatabase();
     const { data, error } = await db
-      .from('x402_temp_hooks')
+      .from('x402_hooks')
       .select('total_volume, unique_users, total_transactions');
     
     if (error) {
@@ -77,7 +77,7 @@ export async function getAggregatedStats() {
 export async function getTempTransactions(page: number, limit: number) {
   try {
     const db = getDatabase();
-    const { data, error } = await db.from('x402_temp_transactions').select('*').order('created_at', { ascending: false }).range((page - 1) * limit, page * limit - 1);
+    const { data, error } = await db.from('x402_transactions').select('*').order('block_timestamp', { ascending: false }).range((page - 1) * limit, page * limit - 1);
 
     if (error) {
       throw error;
@@ -91,7 +91,7 @@ export async function getTempTransactions(page: number, limit: number) {
 export async function getTempTransactionsCount() {
   try {
     const db = getDatabase();
-    const { count, error } = await db.from('x402_temp_transactions').select('*', { count: 'exact', head: true });
+    const { count, error } = await db.from('x402_transactions').select('*', { count: 'exact', head: true });
 
     if (error) {
       throw error;

@@ -64,18 +64,21 @@ export async function recordTransaction(paymentRequirements: PaymentRequirements
   } = paymentRequirements;
   const { payer } = settleResponse;
   const hookAddress = extra?.hook;
+  const version = '2';
   const hookName = extra?.name || "Untitled Hook";
   const { transaction } = settleResponse;
 
-  const { error } = await supabase.from("x402_temp_transactions").insert({
+  const { error } = await supabase.from("x402_transactions").insert({
     tx_hash: transaction,
     network: network,
-    time: Date.now(),
+    block_timestamp: Math.floor(Date.now()/1000),
     from_addr: payer,
     to_addr: payTo,
     hook: hookAddress,
     hook_name: hookName,
+    facilitator: Number(extra?.facilitatorFee),
     amount: maxAmountRequired,
+    version,
   });
   return error;
 }
