@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import type { PaymentRequirements, SettleResponse } from "x402/types";
 import { getLogger } from "../telemetry.js";
-import { recordHook, recordTransaction, supabase } from "src/lib/supabase.js";
+import { recordHook, recordTransaction } from "../lib/supabase.js";
 
 const logger = getLogger();
 
