@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "tsc && vite preview",
     "format": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --check \"**/*.{ts,tsx,js,jsx,json,md}\""
