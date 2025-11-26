@@ -182,6 +182,7 @@ async function main() {
         dynamicGasPrice: config.dynamicGasPrice,
         tokenPrice: config.tokenPrice,
         feeClaim: config.feeClaim,
+        gasEstimation: config.gasEstimation,
       },
       requestBodyLimit: config.server.requestBodyLimit,
       rateLimitConfig: config.rateLimit,

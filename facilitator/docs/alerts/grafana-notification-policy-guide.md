@@ -17,6 +17,7 @@ When configuring notification policies in Grafana, you need to set **Label match
 ### Configuration Steps
 
 1. **Access Notification Policy Configuration**:
+
    - Log in to Grafana
    - Go to **Alerting** → **Notification policies** (Grafana 9.x+)
    - Or **Alerting** → **Notification channels** → **Edit** (Grafana 8.x)
@@ -30,6 +31,7 @@ When configuring notification policies in Grafana, you need to set **Label match
 #### Policy 1: Critical Alerts (Highest Priority)
 
 **Label matchers**:
+
 ```
 severity = critical
 ```
@@ -37,10 +39,12 @@ severity = critical
 **Contact point**: Select Alertmanager or directly configured critical notification channel
 
 **Description**: Matches all Critical level alerts, including:
+
 - Low Settlement Success Rate
 - Negative Profit
 
 **Configuration Example**:
+
 - **Policy name**: `Critical Alerts`
 - **Label matchers**: `severity = critical`
 - **Contact point**: `Alertmanager` or `Critical Slack Channel`
@@ -52,6 +56,7 @@ severity = critical
 #### Policy 2: Warning Alerts
 
 **Label matchers**:
+
 ```
 severity = warning
 ```
@@ -61,6 +66,7 @@ severity = warning
 **Description**: Matches all Warning level alerts
 
 **Configuration Example**:
+
 - **Policy name**: `Warning Alerts`
 - **Label matchers**: `severity = warning`
 - **Contact point**: `Alertmanager` or `Warning Slack Channel`
@@ -72,6 +78,7 @@ severity = warning
 #### Policy 3: Profitability Alerts
 
 **Label matchers**:
+
 ```
 alert_type = profitability
 ```
@@ -79,10 +86,12 @@ alert_type = profitability
 **Contact point**: Select finance team notification channel
 
 **Description**: Matches profitability-related alerts:
+
 - Low Profitability
 - Negative Profit
 
 **Configuration Example**:
+
 - **Policy name**: `Profitability Alerts`
 - **Label matchers**: `alert_type = profitability`
 - **Contact point**: `Finance Slack Channel` or `finance@yourdomain.com`
@@ -94,6 +103,7 @@ alert_type = profitability
 #### Policy 4: Queue Alerts
 
 **Label matchers**:
+
 ```
 alert_type = queue_depth
 ```
@@ -101,10 +111,12 @@ alert_type = queue_depth
 **Contact point**: Select operations team notification channel
 
 **Description**: Matches queue-related alerts:
+
 - Queue Overload
 - High Queue Rejection Rate
 
 **Configuration Example**:
+
 - **Policy name**: `Queue Alerts`
 - **Label matchers**: `alert_type = queue_depth`
 - **Contact point**: `Operations Slack Channel`
@@ -116,6 +128,7 @@ alert_type = queue_depth
 #### Policy 5: Error Rate Alerts
 
 **Label matchers**:
+
 ```
 alert_type = error_rate
 ```
@@ -123,10 +136,12 @@ alert_type = error_rate
 **Contact point**: Select error monitoring channel
 
 **Description**: Matches error rate-related alerts:
+
 - High Settlement Error Rate
 - High Verification Error Rate
 
 **Configuration Example**:
+
 - **Policy name**: `Error Rate Alerts`
 - **Label matchers**: `alert_type = error_rate`
 - **Contact point**: `Error Monitoring Slack Channel`
@@ -138,6 +153,7 @@ alert_type = error_rate
 #### Policy 6: Latency Alerts
 
 **Label matchers**:
+
 ```
 alert_type = latency
 ```
@@ -145,9 +161,11 @@ alert_type = latency
 **Contact point**: Select performance monitoring channel
 
 **Description**: Matches latency-related alerts:
+
 - High Settlement Latency
 
 **Configuration Example**:
+
 - **Policy name**: `Latency Alerts`
 - **Label matchers**: `alert_type = latency`
 - **Contact point**: `Performance Slack Channel`
@@ -159,6 +177,7 @@ alert_type = latency
 #### Policy 7: Availability Alerts
 
 **Label matchers**:
+
 ```
 alert_type = availability
 ```
@@ -166,9 +185,11 @@ alert_type = availability
 **Contact point**: Select operations team notification channel
 
 **Description**: Matches availability-related alerts:
+
 - No Settlements
 
 **Configuration Example**:
+
 - **Policy name**: `Availability Alerts`
 - **Label matchers**: `alert_type = availability`
 - **Contact point**: `Operations Slack Channel`
@@ -180,6 +201,7 @@ alert_type = availability
 #### Policy 8: Gas Cost Alerts
 
 **Label matchers**:
+
 ```
 alert_type = gas_cost
 ```
@@ -187,9 +209,11 @@ alert_type = gas_cost
 **Contact point**: Select finance or operations team notification channel
 
 **Description**: Matches gas cost-related alerts:
+
 - High Gas Cost
 
 **Configuration Example**:
+
 - **Policy name**: `Gas Cost Alerts`
 - **Label matchers**: `alert_type = gas_cost`
 - **Contact point**: `Finance Slack Channel`
@@ -254,6 +278,7 @@ If you use Alertmanager, you can simplify the configuration:
 1. **Create Alertmanager notification channel** (refer to Grafana documentation)
 
 2. **Create notification policies**:
+
    - **Policy 1**: `severity = critical` → Alertmanager
    - **Policy 2**: `severity = warning` → Alertmanager
    - **Policy 3**: `alert_type = profitability` → Alertmanager
@@ -268,6 +293,7 @@ If you use Alertmanager, you can simplify the configuration:
 If you configure Slack, Email, etc. directly in Grafana:
 
 1. **Create notification channels**:
+
    - Critical Slack Channel
    - Warning Slack Channel
    - Finance Email
@@ -284,10 +310,12 @@ If you configure Slack, Email, etc. directly in Grafana:
 ## Testing Configuration
 
 1. **Create test alert rule**:
+
    - Set up a simple test alert
    - Ensure labels match your policies
 
 2. **Trigger test alert**:
+
    - Wait for alert to trigger
    - Check if it routes to the correct notification channel
 
@@ -308,10 +336,12 @@ If you configure Slack, Email, etc. directly in Grafana:
 ### Alerts Not Routed to Expected Channel
 
 1. **Check label matchers**:
+
    - Verify alert rule labels match matchers
    - Check if case matches
 
 2. **Check policy order**:
+
    - Confirm policy order is correct
    - More specific policies should be before general policies
 
