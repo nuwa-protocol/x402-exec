@@ -42,6 +42,16 @@ export const networks: Record<string, NetworkConfig> = {
     hooks: {
       transfer: "0x4DE234059C6CcC94B8fE1eb1BD24804794083569",
     },
+    demoHooks: {
+      nftMint: "0x261206558E6eEd104Cba4AD913b2Eec85D21108e",
+      randomNFT: "0x5756A67a33118F5Ad9840411f252E14d84Dd7c02",
+      reward: "0xf05cE06e7ee4ffCb67a509003DbD73A6d95Cc960",
+      rewardToken: "0xb6854e33BfD428d15B4f5398cFf8e84d4196FDA6",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "ETH",
+    },
   },
   "x-layer-testnet": {
     chainId: getNetworkId("x-layer-testnet"),
@@ -53,6 +63,38 @@ export const networks: Record<string, NetworkConfig> = {
     defaultAsset: getDefaultAssetConfig("x-layer-testnet"),
     hooks: {
       transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
+    },
+    demoHooks: {
+      nftMint: "0x468F666314b070338841422012AB2f6539bfcE48",
+      randomNFT: "0xBA931bB5B2F2DC5354aFAED1d3996B0c6e417518",
+      reward: "0xda8B270Ec442Ff797807b95604E3319e36Aad05d",
+      rewardToken: "0x348AFDE3B4B70dCb02053aF95588a4ab41e95FbC",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "OKB",
+    },
+  },
+  "skale-base-sepolia": {
+    chainId: getNetworkId("skale-base-sepolia"),
+    name: "SKALE Base Sepolia",
+    type: "testnet",
+    addressExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/address/",
+    txExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig("skale-base-sepolia"),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659cd5494e69852be8d9d23fe05aab14b29b",
+      randomNFT: "0x081258287f692d61575387ee2a4075f34dd7aef7",
+      reward: "0xc20634ea518985901e32fbc1ba27fa673d37601a",
+      rewardToken: "0x9fc2c199170b039f093abcd54008038f0c0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "Credits",
     },
   },
   // Mainnet configurations
@@ -67,6 +109,16 @@ export const networks: Record<string, NetworkConfig> = {
     hooks: {
       transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
     },
+    demoHooks: {
+      nftMint: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      randomNFT: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+      reward: "0x4B566FD5eFf76e3BdF20Ca5c3F2FA7cdbb3bD99A",
+      rewardToken: "0x12d41108f9F12064f792418C9BA0ACF6EdcE7790",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "ETH",
+    },
   },
   "x-layer": {
     chainId: getNetworkId("x-layer"),
@@ -78,6 +130,16 @@ export const networks: Record<string, NetworkConfig> = {
     defaultAsset: getDefaultAssetConfig("x-layer"),
     hooks: {
       transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+    },
+    demoHooks: {
+      nftMint: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      randomNFT: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+      reward: "0x4B566FD5eFf76e3BdF20Ca5c3F2FA7cdbb3bD99A",
+      rewardToken: "0x12d41108f9F12064f792418C9BA0ACF6EdcE7790",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "OKB",
     },
   },
 };

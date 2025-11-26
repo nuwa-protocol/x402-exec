@@ -45,6 +45,13 @@ export function useNetworkBalances(address: string | undefined) {
       loading: true,
       error: null,
     },
+    "skale-base-sepolia": {
+      network: "skale-base-sepolia",
+      balance: "0",
+      raw: 0n,
+      loading: true,
+      error: null,
+    },
     base: {
       network: "base",
       balance: "0",
@@ -74,6 +81,13 @@ export function useNetworkBalances(address: string | undefined) {
         },
         "x-layer-testnet": {
           network: "x-layer-testnet",
+          balance: "0",
+          raw: 0n,
+          loading: false,
+          error: null,
+        },
+        "skale-base-sepolia": {
+          network: "skale-base-sepolia",
           balance: "0",
           raw: 0n,
           loading: false,

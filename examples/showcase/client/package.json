@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "build": "vite build",
+    "preview": "tsc && vite preview",
     "format": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --config ../.prettierrc --ignore-path ../.prettierignore --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
@@ -23,9 +23,9 @@
     "react-dom": "^18.3.0",
     "react-syntax-highlighter": "^16.1.0",
     "tailwind-merge": "^3.3.1",
-    "viem": "^2.21.26",
-    "wagmi": "^2.15.6",
-    "x402": "npm:@x402x/x402@0.6.6-patch.2"
+    "viem": "2.40.3",
+    "wagmi": "2.19.5",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",

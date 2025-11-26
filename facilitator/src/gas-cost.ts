@@ -30,6 +30,7 @@ export interface GasCostConfig {
 
   // Fee Validation
   validationTolerance: number; // Tolerance for fee validation to handle price fluctuations (0-1, default: 0.1 = 10%)
+  minFacilitatorFeeUsd: number; // Minimum facilitator fee in USD (default: 0.01 = 1 cent)
 
   // Hook Security
   hookWhitelistEnabled: boolean; // Enable hook whitelist validation (default: false)
@@ -90,6 +91,15 @@ function getHookType(network: string, hook: string): string {
   try {
     const networkConfig = getNetworkConfig(network);
     const hookLower = hook.toLowerCase();
+
+    // Log network metadata for debugging
+    if (networkConfig.metadata) {
+      logger.debug({
+        network,
+        gasModel: networkConfig.metadata.gasModel,
+        nativeToken: networkConfig.metadata.nativeToken,
+      }, "Network metadata loaded");
+    }
 
     // Check if it's a known hook
     if (networkConfig.hooks.transfer.toLowerCase() === hookLower) {
@@ -325,7 +335,23 @@ export async function calculateMinFacilitatorFee(
   const gasCostUSD = await convertNativeToUsd(gasCostNative, network, config, tokenPriceConfig);
 
   // Apply safety multiplier
-  const finalCostUSD = (parseFloat(gasCostUSD) * config.safetyMultiplier).toFixed(6);
+  let finalCostUSD = (parseFloat(gasCostUSD) * config.safetyMultiplier).toFixed(6);
+
+  // Apply minimum facilitator fee USD
+  const minFacilitatorFeeUsd = config.minFacilitatorFeeUsd || 0.01; // Default 1 cent
+  if (parseFloat(finalCostUSD) < minFacilitatorFeeUsd) {
+    finalCostUSD = minFacilitatorFeeUsd.toFixed(6);
+    logger.debug(
+      {
+        network,
+        hook,
+        originalCostUSD: (parseFloat(gasCostUSD) * config.safetyMultiplier).toFixed(6),
+        minFacilitatorFeeUsd,
+        finalCostUSD,
+      },
+      "Applied minimum facilitator fee USD",
+    );
+  }
 
   // Convert to token smallest unit
   const minFacilitatorFee = convertUsdToToken(finalCostUSD, tokenDecimals);
