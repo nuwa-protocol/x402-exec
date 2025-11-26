@@ -7,8 +7,6 @@ import { config, parse } from "dotenv";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { evm } from "x402/types";
-import { networks as sdkNetworks, TransferHook } from "@x402x/core";
 
 // Load env from local .env first; then fill missing keys from repo root .env
 config();
@@ -53,26 +51,11 @@ config();
   }
 })();
 
-export interface NetworkConfig {
-  rpcUrl: string;
-  settlementRouterAddress: string;
-  transferHookAddress: string; // Built-in TransferHook (used in server mode)
-  // Note: The following configs are for serverless scenarios
-  // Server only uses TransferHook for Premium Download
-  nftMintHookAddress: string;
-  randomNFTAddress: string;
-  rewardTokenAddress: string;
-  rewardHookAddress: string;
-  usdcAddress: string;
-}
 
 export interface Config {
   port: number;
   defaultNetwork: string;
   facilitatorUrl: string;
-
-  // Network-specific configurations
-  networks: Record<string, NetworkConfig>;
 
   // Resource server configuration
   resourceServerAddress: string;
@@ -90,205 +73,16 @@ function getOptionalEnv(key: string, defaultValue?: string): string | undefined 
   return process.env[key] || defaultValue;
 }
 
-/**
- * Get default RPC URL for a network from viem Chain definition
- * @param network Network name
- * @returns Default RPC URL
- */
-function getDefaultRpcUrl(network: string): string {
-  try {
-    const chain = evm.getChainFromNetwork(network);
-    return chain.rpcUrls.default.http[0];
-  } catch (error) {
-    console.warn(`Failed to get default RPC URL for network ${network}:`, error);
-    // Fallback URLs for known networks
-    switch (network) {
-      case "base-sepolia":
-        return "https://sepolia.base.org";
-      case "x-layer-testnet":
-        return "https://testrpc.xlayer.tech/terigon";
-      case "skale-base-sepolia":
-        return "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha";
-      default:
-        throw new Error(`No default RPC URL available for network: ${network}`);
-    }
-  }
-}
 
-/**
- * Get default USDC address for a network from x402 EVM config
- * @param network Network name
- * @returns Default USDC address
- */
-function getDefaultUsdcAddress(network: string): string {
-  try {
-    const chain = evm.getChainFromNetwork(network);
-    const chainConfig = evm.config[chain.id.toString()];
-    if (chainConfig?.usdcAddress) {
-      return chainConfig.usdcAddress as string;
-    }
-    throw new Error(`No USDC address configured for chain ID: ${chain.id}`);
-  } catch (error) {
-    console.warn(`Failed to get default USDC address for network ${network}:`, error);
-    // Fallback addresses for known networks
-    switch (network) {
-      case "base-sepolia":
-        return "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
-      case "x-layer-testnet":
-        return "0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d";
-      case "skale-base-sepolia":
-        return "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD"; // USDC.e on SKALE Base Sepolia
-      default:
-        throw new Error(`No default USDC address available for network: ${network}`);
-    }
-  }
-}
 
-/**
- * Get USDC EIP-712 domain info for a network
- * @param network Network name
- * @returns USDC domain info (name and version)
- */
-export function getUsdcDomainForNetwork(network: string): { name: string; version: string } {
-  try {
-    const chain = evm.getChainFromNetwork(network);
-    const chainConfig = evm.config[chain.id.toString()];
-    if (chainConfig?.usdcName) {
-      return {
-        name: chainConfig.usdcName,
-        version: "2", // All USDC contracts use version "2"
-      };
-    }
-    throw new Error(`No USDC name configured for chain ID: ${chain.id}`);
-  } catch (error) {
-    console.warn(`Failed to get USDC domain for network ${network}:`, error);
-    // Fallback domain info for known networks
-    switch (network) {
-      case "base-sepolia":
-        return { name: "USDC", version: "2" };
-      case "x-layer-testnet":
-        return { name: "USDC_TEST", version: "2" };
-      case "skale-base-sepolia":
-        return { name: "USDC", version: "2" }; // USDC.e on SKALE Base Sepolia
-      case "base":
-        return { name: "USD Coin", version: "2" };
-      case "polygon":
-        return { name: "USD Coin", version: "2" };
-      default:
-        // Default fallback
-        return { name: "USDC", version: "2" };
-    }
-  }
-}
 
 export const appConfig: Config = {
   port: parseInt(process.env.PORT || "3001"),
   defaultNetwork: getRequiredEnv("DEFAULT_NETWORK"),
   facilitatorUrl: getRequiredEnv("FACILITATOR_URL"),
 
-  // Network-specific configurations
-  networks: {
-    // Base Sepolia configuration
-    // Settlement router and transfer hook addresses are loaded from SDK
-    "base-sepolia": {
-      rpcUrl:
-        getOptionalEnv("BASE_SEPOLIA_RPC_URL") ||
-        getOptionalEnv("RPC_URL") ||
-        getDefaultRpcUrl("base-sepolia"),
-      // Load from SDK instead of env vars
-      settlementRouterAddress: sdkNetworks["base-sepolia"].settlementRouter,
-      transferHookAddress: TransferHook.getAddress("base-sepolia"),
-      // Serverless scenario configs (optional for server-only deployment)
-      nftMintHookAddress:
-        getOptionalEnv("BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS") ||
-        getOptionalEnv("NFT_MINT_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      randomNFTAddress:
-        getOptionalEnv("BASE_SEPOLIA_RANDOM_NFT_ADDRESS") ||
-        getOptionalEnv("RANDOM_NFT_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      rewardTokenAddress:
-        getOptionalEnv("BASE_SEPOLIA_REWARD_TOKEN_ADDRESS") ||
-        getOptionalEnv("REWARD_TOKEN_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      rewardHookAddress:
-        getOptionalEnv("BASE_SEPOLIA_REWARD_HOOK_ADDRESS") ||
-        getOptionalEnv("REWARD_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      usdcAddress:
-        getOptionalEnv("BASE_SEPOLIA_USDC_ADDRESS") ||
-        getOptionalEnv("USDC_ADDRESS") ||
-        getDefaultUsdcAddress("base-sepolia"),
-    },
-    // X-Layer Testnet configuration
-    // Settlement router and transfer hook addresses are loaded from SDK
-    "x-layer-testnet": {
-      rpcUrl: getOptionalEnv("X_LAYER_TESTNET_RPC_URL") || getDefaultRpcUrl("x-layer-testnet"),
-      // Load from SDK instead of env vars
-      settlementRouterAddress: sdkNetworks["x-layer-testnet"].settlementRouter,
-      transferHookAddress: TransferHook.getAddress("x-layer-testnet"),
-      // Serverless scenario configs (optional for server-only deployment)
-      nftMintHookAddress:
-        getOptionalEnv("X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      randomNFTAddress:
-        getOptionalEnv("X_LAYER_TESTNET_RANDOM_NFT_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      rewardTokenAddress:
-        getOptionalEnv("X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      rewardHookAddress:
-        getOptionalEnv("X_LAYER_TESTNET_REWARD_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000",
-      usdcAddress:
-        getOptionalEnv("X_LAYER_TESTNET_USDC_ADDRESS") || getDefaultUsdcAddress("x-layer-testnet"),
-    },
-    // SKALE Base Sepolia configuration
-    // Settlement router and transfer hook addresses are loaded from SDK
-    "skale-base-sepolia": {
-      rpcUrl:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_RPC_URL") ||
-        getOptionalEnv("RPC_URL") ||
-        getDefaultRpcUrl("skale-base-sepolia"),
-      // Load from SDK instead of env vars
-      settlementRouterAddress: sdkNetworks["skale-base-sepolia"].settlementRouter,
-      transferHookAddress: TransferHook.getAddress("skale-base-sepolia"),
-      // Serverless scenario configs (optional for server-only deployment)
-      // TODO: Update with actual deployed contract addresses for SKALE Base Sepolia
-      nftMintHookAddress:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_NFT_MINT_HOOK_ADDRESS") ||
-        getOptionalEnv("NFT_MINT_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000", // TODO: Update with actual NFT mint hook address
-      randomNFTAddress:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS") ||
-        getOptionalEnv("RANDOM_NFT_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000", // TODO: Update with actual random NFT address
-      rewardTokenAddress:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_REWARD_TOKEN_ADDRESS") ||
-        getOptionalEnv("REWARD_TOKEN_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000", // TODO: Update with actual reward token address
-      rewardHookAddress:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_REWARD_HOOK_ADDRESS") ||
-        getOptionalEnv("REWARD_HOOK_ADDRESS") ||
-        "0x0000000000000000000000000000000000000000", // TODO: Update with actual reward hook address
-      usdcAddress:
-        getOptionalEnv("SKALE_BASE_SEPOLIA_USDC_ADDRESS") ||
-        getOptionalEnv("USDC_ADDRESS") ||
-        getDefaultUsdcAddress("skale-base-sepolia"),
-    },
-  },
 
   // Resource server configuration
   resourceServerAddress: getRequiredEnv("RESOURCE_SERVER_ADDRESS"),
 };
 
-// Helper function to get network configuration
-export function getNetworkConfig(network: string): NetworkConfig {
-  const config = appConfig.networks[network];
-  if (!config) {
-    throw new Error(
-      `Unsupported network: ${network}. Supported networks: ${Object.keys(appConfig.networks).join(", ")}`,
-    );
-  }
-  return config;
-}
