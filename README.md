@@ -206,6 +206,7 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Base Sepolia (Testnet) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb)       | ✅ Active  |
 | X-Layer Testnet        | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ Active  |
+| SKALE Base Sepolia     | [`0x1Ae0E196dC18355aF3a19985faf67354213F833D`](https://base-sepolia-testnet-explorer.skalenodes.com/address/0x1Ae0E196dC18355aF3a19985faf67354213F833D) | ✅ Active  |
 | Base Mainnet           | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)               | 🎉 Live    |
 | X-Layer Mainnet        | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)      | 🎉 Live    |
 | Ethereum Mainnet       | -                                                                                                                                     | 🚧 Planned |
@@ -216,6 +217,7 @@ Educational templates and reference implementations in [`contracts/examples/`](.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Base Sepolia (Testnet) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569)       | ✅ Active  |
 | X-Layer Testnet        | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ Active  |
+| SKALE Base Sepolia     | [`0x2f05fe5674aE756E25C26855258B4877E9e021Fd`](https://base-sepolia-testnet-explorer.skalenodes.com/address/0x2f05fe5674aE756E25C26855258B4877E9e021Fd) | ✅ Active  |
 | Base Mainnet           | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)               | 🎉 Live    |
 | X-Layer Mainnet        | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)      | 🎉 Live    |
 | Ethereum Mainnet       | -                                                                                                                                     | 🚧 Planned |

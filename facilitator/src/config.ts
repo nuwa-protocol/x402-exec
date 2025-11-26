@@ -20,6 +20,7 @@ import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
 import { DEFAULTS } from "./defaults.js";
 
+
 // Load environment variables
 loadEnv();
 
@@ -393,10 +394,11 @@ function parseGasCostConfig(): GasCostConfig {
       nativeTokenPrice[network] = parseFloat(price);
     } else {
       // Default prices (conservative estimates)
-      if (network.includes("base")) {
-        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.ETH;
-      } else if (network.includes("x-layer")) {
+      // Check for most specific matches first
+      if (network.includes("x-layer")) {
         nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.OKB;
+      } else if (network.includes("base")) {
+        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.ETH;
       } else {
         nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.GENERIC;
       }
@@ -425,6 +427,9 @@ function parseGasCostConfig(): GasCostConfig {
     // Fee Validation
     validationTolerance: parseFloat(
       process.env.GAS_COST_VALIDATION_TOLERANCE || String(DEFAULTS.gasCost.VALIDATION_TOLERANCE),
+    ),
+    minFacilitatorFeeUsd: parseFloat(
+      process.env.GAS_COST_MIN_FACILITATOR_FEE_USD || String(DEFAULTS.gasCost.MIN_FACILITATOR_FEE_USD),
     ),
 
     // Hook Security
@@ -478,10 +483,20 @@ function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
     if (rpcUrl) {
       rpcUrls[network] = rpcUrl;
     } else {
-      // Try to get from viem chain definition
+      // Try to get from viem chain definition or x402 chain definition
       const chain = viemChains[network];
       if (chain?.rpcUrls?.default?.http?.[0]) {
         rpcUrls[network] = chain.rpcUrls.default.http[0];
+      } else {
+        // Try to get from x402 chain definition
+        try {
+          const x402Chain = evm.getChainFromNetwork(network);
+          if (x402Chain?.rpcUrls?.default?.http?.[0]) {
+            rpcUrls[network] = x402Chain.rpcUrls.default.http[0];
+          }
+        } catch {
+          // Chain not found in x402 either, skip
+        }
       }
     }
   }

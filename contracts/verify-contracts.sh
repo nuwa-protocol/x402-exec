@@ -103,6 +103,11 @@ verify_contract() {
     # Add verifier-specific parameters
     if [ "$verifier" = "etherscan" ]; then
         forge_cmd="$forge_cmd --etherscan-api-key $api_key_value"
+    elif [ "$verifier" = "blockscout" ]; then
+        forge_cmd="$forge_cmd --verifier blockscout"
+        if [ -n "$verifier_url" ]; then
+            forge_cmd="$forge_cmd --verifier-url $verifier_url"
+        fi
     elif [ -n "$verifier_url" ]; then
         forge_cmd="$forge_cmd --verifier-url $verifier_url"
     fi
@@ -213,15 +218,160 @@ show_api_instructions() {
     echo "  Base Network:"
     echo "    - BaseScan:  Requires real API key (./verify-contracts.sh base)"
     echo "    - OKLink:    No real API key needed (./verify-contracts.sh base-oklink)"
-    echo "  X-Layer Network:"
-    echo "    - OKLink:    No real API key needed (./verify-contracts.sh xlayer)"
+    echo "📊 Verification Options by Network:"
     echo ""
+
+    # Group networks by explorer type
+    local basescan_networks=""
+    local oklink_networks=""
+    local manual_networks=""
+
+    for config in "${NETWORK_CONFIGS[@]}"; do
+        IFS='|' read -r network_id display_name chain_id rpc_url explorer_url verifier verifier_url api_key_var requires_real_key <<< "$config"
+
+        if [ "$verifier" = "etherscan" ]; then
+            basescan_networks="$basescan_networks  $network_id ($display_name)\n"
+        elif [ "$verifier" = "oklink" ]; then
+            oklink_networks="$oklink_networks  $network_id ($display_name)\n"
+        elif [ -z "$verifier" ]; then
+            manual_networks="$manual_networks  $network_id ($display_name)\n"
+        fi
+    done
+
+    if [ -n "$basescan_networks" ]; then
+        echo "  BaseScan (requires real API key):"
+        echo -e "$basescan_networks"
+    fi
+
+    if [ -n "$oklink_networks" ]; then
+        echo "  OKLink (no real API key needed):"
+        echo -e "$oklink_networks"
+    fi
+
+    if [ -n "$manual_networks" ]; then
+        echo "  Manual verification only:"
+        echo -e "$manual_networks"
+    fi
+
+    echo ""
+}
+
+# Manual verification for networks without automated verifier
+show_manual_only_verification() {
+    local network_id=$1
+    local display_name=""
+    local explorer_url=""
+    local chain_id=""
+
+    # Get network info from shared config
+    for config in "${NETWORK_CONFIGS[@]}"; do
+        IFS='|' read -r key name cid rpc_url exp_url verifier verifier_url api_key_var requires_real_key <<< "$config"
+        if [ "$key" = "$network_id" ]; then
+            display_name="$name"
+            explorer_url="$exp_url"
+            chain_id="$cid"
+            break
+        fi
+    done
+
+    if [ -z "$display_name" ]; then
+        print_error "Unknown network: $network_id"
+        return 1
+    fi
+
+    print_info "Manual verification required for $display_name (Chain ID: $chain_id)"
+    echo ""
+    print_warning "⚠️  $display_name doesn't support automated verification via script"
+    echo ""
+    echo "📝 Manual Verification Steps:"
+    echo "1. Visit: ${explorer_url%/}/address/$SETTLEMENT_ROUTER_ADDRESS#code"
+    echo "2. Click 'Contract' tab"
+    echo "3. Click 'Verify and Publish' button"
+    echo "4. Choose verification method (recommended: 'Via Standard JSON Input')"
+    echo "5. Use the following compiler settings:"
+    echo "   - Compiler Version: v0.8.20+commit.a1b79de6"
+    echo "   - Optimization: Yes, 200 runs"
+    echo "   - Via IR: Yes"
+    echo "   - Source Code: Upload src/SettlementRouter.sol with dependencies"
+    echo ""
+    echo "💡 Tip: Blockscout explorers support manual verification without API keys"
+    echo ""
+    print_info "View contract at: ${explorer_url%/}/address/$SETTLEMENT_ROUTER_ADDRESS"
 }
 
 # Usage
 case "$1" in
-    xlayer|base|base-oklink)
-        verify_by_network_id "$1"
+    all)
+        verify_all
+        ;;
+    keys|api)
+        show_api_instructions
+        ;;
+    list)
+        echo "Available networks for verification:"
+        echo ""
+
+        # Show all networks from shared config
+        for config in "${NETWORK_CONFIGS[@]}"; do
+            IFS='|' read -r network_id display_name chain_id rpc_url explorer_url verifier verifier_url api_key_var requires_real_key <<< "$config"
+
+            if [ -n "$verifier" ]; then
+                # Network supports automated verification
+                verification_type="automated verification"
+                api_key_info="Requires real API key: $requires_real_key"
+            else
+                # Network requires manual verification
+                verification_type="manual verification only"
+                api_key_info="Requires real API key: false (manual verification)"
+            fi
+
+            echo "  $network_id ($verification_type)"
+            echo "    Network: $display_name"
+            echo "    Chain ID: $chain_id"
+            echo "    Verifier: ${verifier:-Manual}"
+            echo "    $api_key_info"
+            echo "    Explorer: $explorer_url"
+            echo ""
+        done
+        ;;
+    *)
+        # Check if network exists in config
+        if network_exists "$1"; then
+            # Check if network has automated verification
+            verifier=$(get_network_field "$1" verifier)
+            if [ -n "$verifier" ]; then
+                verify_by_network_id "$1"
+            else
+                show_manual_only_verification "$1"
+            fi
+        else
+            echo "Usage: $0 {network|all|list|keys}"
+            echo ""
+            echo "Available networks:"
+            for config in "${NETWORK_CONFIGS[@]}"; do
+                IFS='|' read -r network_id display_name chain_id rpc_url explorer_url verifier verifier_url api_key_var requires_real_key <<< "$config"
+                verification_type=$([ -n "$verifier" ] && echo "automated" || echo "manual")
+                printf "  %-20s - %s verification\n" "$network_id" "$verification_type"
+            done
+            echo ""
+            echo "Commands:"
+            echo "  network          - Verify contracts on specified network"
+            echo "  all              - Verify on all networks with automated verification"
+            echo "  list             - List all configured networks"
+            echo "  keys             - Show API Key setup guide"
+            echo ""
+            echo "Environment Variables:"
+            echo "  BASESCAN_API_KEY   - Required for BaseScan verification"
+            echo "  OKLINK_API_KEY     - Optional for OKLink (any value works)"
+            echo ""
+            echo "Examples:"
+            echo "  $0 base              # Verify Base on BaseScan"
+            echo "  $0 xlayer            # Verify X-Layer on OKLink"
+            echo "  $0 skale-base-sepolia # Show manual verification for SKALE"
+            echo "  $0 all               # Verify everything possible"
+            echo "  $0 list              # Show all networks"
+            exit 1
+        fi
         ;;
     all)
         verify_all
@@ -230,21 +380,34 @@ case "$1" in
         show_api_instructions
         ;;
     list)
-        echo "Available networks:"
+        echo "Available networks for verification:"
         echo ""
-        for config in "${VERIFIER_CONFIGS[@]}"; do
-            IFS='|' read -r network_id chain_id verifier verifier_url api_key_var requires_real_key explorer_url display_name <<< "$config"
-            echo "  $network_id"
+
+        # Show all networks from shared config
+        for config in "${NETWORK_CONFIGS[@]}"; do
+            IFS='|' read -r network_id display_name chain_id rpc_url explorer_url verifier verifier_url api_key_var requires_real_key <<< "$config"
+
+            if [ -n "$verifier" ]; then
+                # Network supports automated verification
+                verification_type="automated verification"
+                api_key_info="Requires real API key: $requires_real_key"
+            else
+                # Network requires manual verification
+                verification_type="manual verification only"
+                api_key_info="Requires real API key: false (manual verification)"
+            fi
+
+            echo "  $network_id ($verification_type)"
             echo "    Network: $display_name"
             echo "    Chain ID: $chain_id"
-            echo "    Verifier: $verifier"
-            echo "    Requires real API key: $requires_real_key"
+            echo "    Verifier: ${verifier:-Manual}"
+            echo "    $api_key_info"
             echo "    Explorer: $explorer_url"
             echo ""
         done
         ;;
     *)
-        echo "Usage: $0 {xlayer|base|base-oklink|all|list|keys}"
+        echo "Usage: $0 {xlayer|base|base-oklink|skale-base-sepolia|all|list|keys}"
         echo ""
         echo "Commands:"
         for config in "${VERIFIER_CONFIGS[@]}"; do

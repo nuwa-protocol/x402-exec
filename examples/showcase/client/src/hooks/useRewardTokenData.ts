@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPublicClient, http, formatUnits, type Address } from "viem";
 import { NETWORKS, type Network } from "../config";
+import { getNetworkConfig } from "@x402x/core";
 
 const ERC20_ABI = [
   {
@@ -33,20 +34,14 @@ const ERC20_ABI = [
   },
 ] as const;
 
-// Get RewardToken addresses from environment (matching RewardHook.ts pattern)
-const REWARD_TOKEN_ADDRESSES: Record<string, string> = {
-  "base-sepolia":
-    import.meta.env.VITE_BASE_SEPOLIA_REWARD_TOKEN_ADDRESS ||
-    "0x0000000000000000000000000000000000000000",
-  "x-layer-testnet":
-    import.meta.env.VITE_X_LAYER_TESTNET_REWARD_TOKEN_ADDRESS ||
-    "0x0000000000000000000000000000000000000000",
-  base:
-    import.meta.env.VITE_BASE_REWARD_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000",
-  "x-layer":
-    import.meta.env.VITE_X_LAYER_REWARD_TOKEN_ADDRESS ||
-    "0x0000000000000000000000000000000000000000",
-};
+// Helper function to get reward token address from core config
+function getRewardTokenAddress(network: string): string {
+  try {
+    return getNetworkConfig(network).demoHooks?.rewardToken || "0x0000000000000000000000000000000000000000";
+  } catch {
+    return "0x0000000000000000000000000000000000000000";
+  }
+}
 
 export interface RewardTokenNetworkData {
   network: Network;
@@ -75,6 +70,14 @@ export function useAllNetworksRewardTokenData(userAddress?: Address) {
       loading: true,
       error: null,
     },
+    "skale-base-sepolia": {
+      network: "skale-base-sepolia",
+      userBalance: "0",
+      contractBalance: "0",
+      totalSupply: "0",
+      loading: true,
+      error: null,
+    },
     base: {
       network: "base",
       userBalance: "0",
@@ -95,7 +98,7 @@ export function useAllNetworksRewardTokenData(userAddress?: Address) {
 
   const fetchDataForNetwork = useCallback(
     async (network: Network): Promise<RewardTokenNetworkData> => {
-      const tokenAddress = REWARD_TOKEN_ADDRESSES[network];
+      const tokenAddress = getRewardTokenAddress(network);
       const config = NETWORKS[network];
 
       // Check if address is configured
