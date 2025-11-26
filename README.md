@@ -111,17 +111,17 @@ If you want to use x402-exec in your own project, we provide an enhanced version
 
 ```bash
 # Using npm alias (recommended)
-npm install x402@npm:@x402x/x402@0.6.6-patch.2
+npm install x402@npm:@x402x/x402@0.6.6-patch.3
 
 # Or using pnpm
-pnpm add x402@npm:@x402x/x402@0.6.6-patch.2
+pnpm add x402@npm:@x402x/x402@0.6.6-patch.3
 ```
 
 In `package.json`:
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@0.6.6-patch.2"
+    "x402": "npm:@x402x/x402@0.6.6-patch.3"
   }
 }
 ```
@@ -250,10 +250,10 @@ Example deployments for testing and reference:
 - [x] Hook interface and examples
 - [x] TransferHook built-in implementation
 - [x] Documentation and guides
-- [ ] Complete test coverage
-- [ ] Gas optimization
-- [ ] Security audit
-- [ ] Mainnet deployment
+- [x] Complete test coverage
+- [x] Gas optimization
+- [x] Security audit
+- [x] Mainnet deployment
 
 ## 🤝 Contributing
 
