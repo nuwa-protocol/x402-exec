@@ -1,13 +1,14 @@
 import Footer from "@/components/site/footer";
 import Hero from "@/components/site/hero";
 import Navbar from "@/components/site/navbar";
+import ActivitiesPage from "@/pages/activities";
 import DebugPage from "@/pages/debug";
 import DocsPage from "@/pages/docs";
 import EcosystemPage from "@/pages/ecosystem";
 import FacilitatorPage from "@/pages/facilitator";
-import ActivitiesPage from "@/pages/activities";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { TokenPage } from "./components/token";
 
 function App() {
   const location = useLocation();
@@ -57,6 +58,7 @@ function App() {
           <Route path="/activities" element={<ActivitiesPage />} />
           <Route path="/stats" element={<Navigate to="/activities" replace />} />
           <Route path="/debug" element={<DebugPage />} />
+          <Route path="/token" element={<TokenPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

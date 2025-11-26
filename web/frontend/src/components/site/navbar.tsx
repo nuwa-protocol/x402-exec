@@ -76,11 +76,10 @@ export function Navbar() {
             </NavigationMenuItem>
             {/* <NavigationMenuItem>
               <NavigationMenuLink
-                href="https://github.com/nuwa-protocol/x402-exec#readme"
-                target="_blank"
-                rel="noreferrer"
+                asChild
+                data-active={pathname.startsWith("/token") ? true : undefined}
               >
-                Docs
+                <Link to="/token">$X402X</Link>
               </NavigationMenuLink>
             </NavigationMenuItem> */}
             <NavigationMenuItem>
