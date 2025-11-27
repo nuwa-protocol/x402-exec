@@ -1,6 +1,6 @@
 {
   "name": "@x402x/express",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Express middleware for x402x settlement framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
