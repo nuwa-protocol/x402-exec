@@ -27,7 +27,7 @@ get_env_prefix() {
         base-sepolia)
             echo "BASE_SEPOLIA"
             ;;
-        base)
+        base|base-oklink)
             echo "BASE"
             ;;
         xlayer-testnet)
@@ -102,6 +102,11 @@ verify_contract() {
 
     # Get contract address from environment variable
     local env_prefix=$(get_env_prefix "$network_id")
+    if [ -z "$env_prefix" ]; then
+        print_error "Network '$network_id' is not configured for contract address lookup"
+        return 1
+    fi
+
     local contract_var="${env_prefix}_SETTLEMENT_ROUTER_ADDRESS"
     local contract_address="${!contract_var}"
 
@@ -323,6 +328,11 @@ show_manual_only_verification() {
 
     # Get contract address from environment variable
     local env_prefix=$(get_env_prefix "$network_id")
+    if [ -z "$env_prefix" ]; then
+        print_error "Network '$network_id' is not configured for contract address lookup"
+        return 1
+    fi
+
     local contract_var="${env_prefix}_SETTLEMENT_ROUTER_ADDRESS"
     local contract_address="${!contract_var}"
 
