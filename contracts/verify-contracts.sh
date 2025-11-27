@@ -21,8 +21,36 @@ print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
 
-# Contract address (same across all networks)
-SETTLEMENT_ROUTER_ADDRESS="0x73fc659cd5494e69852be8d9d23fe05aab14b29b"
+# Get environment prefix for network
+get_env_prefix() {
+    case $1 in
+        base-sepolia)
+            echo "BASE_SEPOLIA"
+            ;;
+        base|base-oklink)
+            echo "BASE"
+            ;;
+        xlayer-testnet)
+            echo "X_LAYER_TESTNET"
+            ;;
+        xlayer)
+            echo "X_LAYER"
+            ;;
+        skale-base-sepolia)
+            echo "SKALE_BASE_SEPOLIA"
+            ;;
+    esac
+}
+
+# Try to load .env from project root
+if [ -f "../.env" ]; then
+    set -a
+    source ../.env
+    set +a
+    print_success ".env file loaded"
+else
+    print_warning ".env file not found in project root, using shell environment variables"
+fi
 
 # Build verifier configs from shared network configs for verification-capable networks
 declare -a VERIFIER_CONFIGS
@@ -39,14 +67,14 @@ done
 # Show manual verification instructions
 show_manual_verification() {
     local display_name=$1
-    local address=$2
+    local contract_address=$2
     local explorer_url=$3
 
     echo ""
     print_warning "⚠️  Automated verification failed, but you can verify manually via browser (no API Key needed):"
     echo ""
     echo "📝 Manual Verification Steps for $display_name:"
-    echo "1. Visit: ${explorer_url%/}/address/$address#code"
+    echo "1. Visit: ${explorer_url%/}/address/$contract_address#code"
     echo "2. Click 'Contract' tab"
     echo "3. Click 'Verify and Publish' button"
     echo "4. Choose verification method (recommended: 'Via Standard JSON Input')"
@@ -71,6 +99,24 @@ verify_contract() {
     local requires_real_key=$6
     local explorer_url=$7
     local display_name=$8
+
+    # Get contract address from environment variable
+    local env_prefix=$(get_env_prefix "$network_id")
+    if [ -z "$env_prefix" ]; then
+        print_error "Network '$network_id' is not configured for contract address lookup"
+        return 1
+    fi
+
+    local contract_var="${env_prefix}_SETTLEMENT_ROUTER_ADDRESS"
+    local contract_address="${!contract_var}"
+
+    if [ -z "$contract_address" ]; then
+        print_error "Contract address not found. Please set $contract_var environment variable."
+        print_error "Example: export $contract_var=0x1ae0e196dc18355af3a19985faf67354213f833d"
+        return 1
+    fi
+
+    print_info "Using contract address: $contract_address"
     
     # Check API key requirement
     local api_key_value="${!api_key_var}"
@@ -79,7 +125,7 @@ verify_contract() {
         # Requires real API key
         if [ -z "$api_key_value" ]; then
             print_error "$api_key_var environment variable not set (required for $display_name)"
-            show_manual_verification "$display_name" "$SETTLEMENT_ROUTER_ADDRESS" "$explorer_url"
+            show_manual_verification "$display_name" "$contract_address" "$explorer_url"
             return 1
         fi
     else
@@ -104,7 +150,8 @@ verify_contract() {
     if [ "$verifier" = "etherscan" ]; then
         forge_cmd="$forge_cmd --etherscan-api-key $api_key_value"
     elif [ "$verifier" = "blockscout" ]; then
-        forge_cmd="$forge_cmd --verifier blockscout"
+        # Blockscout doesn't require API key, but forge may expect VERIFIER_API_KEY
+        export VERIFIER_API_KEY="${api_key_value:-}"
         if [ -n "$verifier_url" ]; then
             forge_cmd="$forge_cmd --verifier-url $verifier_url"
         fi
@@ -115,17 +162,17 @@ verify_contract() {
     forge_cmd="$forge_cmd --chain $chain_id"
     forge_cmd="$forge_cmd --via-ir"
     forge_cmd="$forge_cmd --num-of-optimizations 200"
-    forge_cmd="$forge_cmd $SETTLEMENT_ROUTER_ADDRESS"
+    forge_cmd="$forge_cmd $contract_address"
     forge_cmd="$forge_cmd src/SettlementRouter.sol:SettlementRouter"
     
     # Execute verification
     if eval "$forge_cmd"; then
         print_success "SettlementRouter verified on $display_name"
-        print_info "View at: ${explorer_url%/}/address/$SETTLEMENT_ROUTER_ADDRESS"
+        print_info "View at: ${explorer_url%/}/address/$contract_address"
         return 0
     else
         print_error "$display_name verification failed"
-        show_manual_verification "$display_name" "$SETTLEMENT_ROUTER_ADDRESS" "$explorer_url"
+        show_manual_verification "$display_name" "$contract_address" "$explorer_url"
         return 1
     fi
 }
@@ -279,12 +326,28 @@ show_manual_only_verification() {
         return 1
     fi
 
+    # Get contract address from environment variable
+    local env_prefix=$(get_env_prefix "$network_id")
+    if [ -z "$env_prefix" ]; then
+        print_error "Network '$network_id' is not configured for contract address lookup"
+        return 1
+    fi
+
+    local contract_var="${env_prefix}_SETTLEMENT_ROUTER_ADDRESS"
+    local contract_address="${!contract_var}"
+
+    if [ -z "$contract_address" ]; then
+        print_error "Contract address not found. Please set $contract_var environment variable."
+        print_error "Example: export $contract_var=0x1ae0e196dc18355af3a19985faf67354213f833d"
+        return 1
+    fi
+
     print_info "Manual verification required for $display_name (Chain ID: $chain_id)"
     echo ""
     print_warning "⚠️  $display_name doesn't support automated verification via script"
     echo ""
     echo "📝 Manual Verification Steps:"
-    echo "1. Visit: ${explorer_url%/}/address/$SETTLEMENT_ROUTER_ADDRESS#code"
+    echo "1. Visit: ${explorer_url%/}/address/$contract_address#code"
     echo "2. Click 'Contract' tab"
     echo "3. Click 'Verify and Publish' button"
     echo "4. Choose verification method (recommended: 'Via Standard JSON Input')"
@@ -296,7 +359,7 @@ show_manual_only_verification() {
     echo ""
     echo "💡 Tip: Blockscout explorers support manual verification without API keys"
     echo ""
-    print_info "View contract at: ${explorer_url%/}/address/$SETTLEMENT_ROUTER_ADDRESS"
+    print_info "View contract at: ${explorer_url%/}/address/$contract_address"
 }
 
 # Usage
