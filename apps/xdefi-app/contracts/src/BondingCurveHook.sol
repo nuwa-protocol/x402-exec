@@ -138,15 +138,15 @@ contract BondingCurveHook is ISettlementHook {
         tokensSold += tokensToReceive;
         totalUsdcCollected += amount;
 
-        // transfer USDC from settlementRouter to payTo
-        IERC20(token).safeTransferFrom(settlementRouter, payTo, amount);
+        // transfer USDC from settlementRouter to this
+        IERC20(token).transferFrom(settlementRouter, address(this), amount);
 
         // transfer tokens to buyer
-        IERC20(x402xToken).safeTransfer(payer, tokensToReceive);
+        IERC20(x402xToken).safeTransfer(payTo, tokensToReceive);
 
         uint256 newPrice = getCurrentPrice();
 
-        emit TokensPurchased(contextKey, payer, amount, tokensToReceive, newPrice);
+        emit TokensPurchased(contextKey, payTo, amount, tokensToReceive, newPrice);
 
         return abi.encode(tokensToReceive);
     }
