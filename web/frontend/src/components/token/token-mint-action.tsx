@@ -52,7 +52,7 @@ export const TokenMintAction = ({
 	const txExplorerUrl =
 		explorerBaseUrl && txHash ? `${explorerBaseUrl}/tx/${txHash}` : undefined;
 
-	const hasInputError = Boolean(error) || hasInsufficientBalance;
+	const hasInputError = hasInsufficientBalance;
 
 	return (
         <div className="p-8 lg:p-12 bg-slate-50/50">
@@ -110,13 +110,10 @@ export const TokenMintAction = ({
                                     USDC
                                 </div>
                             </div>
-                            {(error || hasInsufficientBalance) && (
+                            {hasInsufficientBalance && (
                                 <div className="flex items-center gap-1 mt-2 text-red-500 text-xs">
                                     <AlertCircle size={14} />
-                                    <span>
-                                        {error ??
-                                            "Insufficient USDC balance for this mint amount."}
-                                    </span>
+                                    <span>Insufficient USDC balance for this mint amount.</span>
                                 </div>
                             )}
                         </div>
@@ -204,6 +201,13 @@ export const TokenMintAction = ({
                                 </>
                             )}
                         </button>
+
+                        {error && (
+                            <div className="flex items-center gap-1 mt-2 text-red-500 text-xs">
+                                <AlertCircle size={14} />
+                                <span>{error}</span>
+                            </div>
+                        )}
 
                         {isSuccess && txHash && (
                             <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-start gap-2 mt-3">

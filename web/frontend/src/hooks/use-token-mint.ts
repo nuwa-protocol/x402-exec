@@ -1,4 +1,4 @@
-import { useModalAppKit } from "@/components/modal-appkit-provider";
+import { useTokenAppKit } from "@/components/token/token-appkit-provider";
 import {
 	calculateBondingCurvePrice,
 	estimateMintTokensForUsdc,
@@ -40,7 +40,7 @@ export function useTokenMint(
 	const totalAllocationTokens =
 		X402X_TOKEN_CONFIG.mintAllocationTokens ?? DEFAULT_TOTAL_ALLOCATION;
 
-	const { isConnected, address, openModal } = useModalAppKit();
+	const { isConnected, address, openModal } = useTokenAppKit();
 
 	const [status, setStatus] = useState<MintStatus>("idle");
 	const [error, setError] = useState<string | null>(null);
@@ -165,7 +165,11 @@ export function useTokenMint(
 				setStatus("success");
 			} catch (err) {
 				setStatus("idle");
-				setError("Token mint via x402x failed, please try again later");
+				if (err instanceof Error && err.message) {
+					setError(err.message);
+				} else {
+					setError("Token mint via x402x failed, please try again later");
+				}
 			}
 		},
 		[isConnected, address, connectWallet],

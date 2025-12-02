@@ -20,6 +20,8 @@ import {
 
 export const USDC_DECIMALS = 6;
 
+// USDC token used for minting on the selected network is the default asset.
+// This must stay in sync with the facilitator/network config.
 const USDC_ADDRESS = getNetworkConfig(TOKEN_MINT_NETWORK).defaultAsset
 	.address as `0x${string}`;
 
@@ -134,6 +136,61 @@ export async function estimateMintTokensForUsdc({
 	}
 }
 
+export async function fetchUsdcBalance(
+	address: string | undefined,
+): Promise<bigint | null> {
+	if (!address) return null;
+
+	try {
+		const client = createPublicClient({
+			chain: X402X_MINT_CONFIG.chain,
+			transport: http(),
+		}).extend(publicActions);
+
+		const balance = (await client.readContract({
+			address: USDC_ADDRESS,
+			abi: erc20Abi,
+			functionName: "balanceOf",
+			args: [address as `0x${string}`],
+		})) as bigint;
+
+		return balance;
+	} catch {
+		return null;
+	}
+}
+
+export function formatUsdcBalance(
+	balanceAtomic: bigint | null,
+): string | null {
+	if (balanceAtomic == null) return null;
+
+	const asNumber = Number(formatUnits(balanceAtomic, USDC_DECIMALS));
+	if (!Number.isFinite(asNumber)) return null;
+
+	return asNumber.toLocaleString(undefined, {
+		maximumFractionDigits: USDC_DECIMALS,
+	});
+}
+
+export function isUsdcAmountGreaterThanBalance({
+	amountUsdc,
+	balanceAtomic,
+}: {
+	amountUsdc: string;
+	balanceAtomic: bigint | null;
+}): boolean {
+	const raw = amountUsdc.trim();
+	if (!raw || balanceAtomic == null) return false;
+
+	try {
+		const amountAtomic = parseUnits(raw, USDC_DECIMALS);
+		return amountAtomic > balanceAtomic;
+	} catch {
+		return false;
+	}
+}
+
 export async function executeTokenMint({
 	amountUsdc,
 }: {
@@ -199,59 +256,4 @@ export async function executeTokenMint({
 	});
 
 	return { txHash: result.txHash };
-}
-
-export async function fetchUsdcBalance(
-	address: string | undefined,
-): Promise<bigint | null> {
-	if (!address) return null;
-
-	try {
-		const client = createPublicClient({
-			chain: X402X_MINT_CONFIG.chain,
-			transport: http(),
-		}).extend(publicActions);
-
-		const balance = (await client.readContract({
-			address: USDC_ADDRESS,
-			abi: erc20Abi,
-			functionName: "balanceOf",
-			args: [address as `0x${string}`],
-		})) as bigint;
-
-		return balance;
-	} catch {
-		return null;
-	}
-}
-
-export function formatUsdcBalance(
-	balanceAtomic: bigint | null,
-): string | null {
-	if (balanceAtomic == null) return null;
-
-	const asNumber = Number(formatUnits(balanceAtomic, USDC_DECIMALS));
-	if (!Number.isFinite(asNumber)) return null;
-
-	return asNumber.toLocaleString(undefined, {
-		maximumFractionDigits: USDC_DECIMALS,
-	});
-}
-
-export function isUsdcAmountGreaterThanBalance({
-	amountUsdc,
-	balanceAtomic,
-}: {
-	amountUsdc: string;
-	balanceAtomic: bigint | null;
-}): boolean {
-	const raw = amountUsdc.trim();
-	if (!raw || balanceAtomic == null) return false;
-
-	try {
-		const amountAtomic = parseUnits(raw, USDC_DECIMALS);
-		return amountAtomic > balanceAtomic;
-	} catch {
-		return false;
-	}
 }

@@ -2,28 +2,28 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { base, baseSepolia, defineChain, xLayer } from "@reown/appkit/networks";
 import { createAppKit, useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import {
-  type ReactNode,
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
 
-interface ModalAppKitContextType {
+interface DebugAppKitContextType {
   isConnected: boolean;
   address: string | undefined;
   openModal: () => void;
 }
 
-const ModalAppKitContext = createContext<ModalAppKitContextType | undefined>(
+const DebugAppKitContext = createContext<DebugAppKitContextType | undefined>(
   undefined,
 );
 
-interface ModalAppKitProviderProps {
+interface DebugAppKitProviderProps {
   children: ReactNode;
 }
 
-export function ModalAppKitProvider({ children }: ModalAppKitProviderProps) {
+export function DebugAppKitProvider({ children }: DebugAppKitProviderProps) {
   const [isAppKitCreated, setIsAppKitCreated] = useState(false);
 
   useEffect(() => {
@@ -82,30 +82,30 @@ export function ModalAppKitProvider({ children }: ModalAppKitProviderProps) {
     );
   }
 
-  return <ModalAppKitProviderInner>{children}</ModalAppKitProviderInner>;
+  return <DebugAppKitProviderInner>{children}</DebugAppKitProviderInner>;
 }
 
-function ModalAppKitProviderInner({ children }: { children: ReactNode }) {
+function DebugAppKitProviderInner({ children }: { children: ReactNode }) {
   const { open: openModal } = useAppKit();
   const { isConnected, address } = useAppKitAccount();
 
-  const contextValue: ModalAppKitContextType = {
+  const contextValue: DebugAppKitContextType = {
     isConnected,
     address,
     openModal,
   };
 
   return (
-    <ModalAppKitContext.Provider value={contextValue}>
+    <DebugAppKitContext.Provider value={contextValue}>
       {children}
-    </ModalAppKitContext.Provider>
+    </DebugAppKitContext.Provider>
   );
 }
 
-export function useModalAppKit() {
-  const context = useContext(ModalAppKitContext);
+export function useDebugAppKit() {
+  const context = useContext(DebugAppKitContext);
   if (context === undefined) {
-    throw new Error("useModalAppKit must be used within a ModalAppKitProvider");
+    throw new Error("useDebugAppKit must be used within a DebugAppKitProvider");
   }
   return context;
 }

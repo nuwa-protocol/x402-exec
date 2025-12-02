@@ -1,7 +1,7 @@
-import { ModalAppKitProvider } from "@/components/modal-appkit-provider";
 import { Distribution } from "@/components/token/distribution";
 import { FAQ } from "@/components/token/faq";
 import { Hero } from "@/components/token/hero";
+import { TokenAppKitProvider } from "@/components/token/token-appkit-provider";
 import { TokenMint } from "@/components/token/token-mint";
 import { ValueCapture } from "@/components/token/value-capture";
 import { X402ToEarn } from "@/components/token/x402-to-earn";
@@ -59,7 +59,7 @@ export const TokenPage = () => {
 
     return (
         // Wrapper div designed to be embedded. Light theme base.
-        <ModalAppKitProvider>
+        <TokenAppKitProvider>
             <div className="w-full text-slate-900 font-sans selection:bg-yellow-200 selection:text-black">
                 {/* Sticky Internal Navigation pinned below the main navbar (single wrapper div) */}
                 <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-md border-y border-slate-200 shadow-sm flex items-center justify-center overflow-x-auto no-scrollbar py-1 px-4 sm:px-6 lg:px-8 space-x-1 md:space-x-6">
@@ -116,6 +116,6 @@ export const TokenPage = () => {
                     </section>
                 </div>
             </div>
-        </ModalAppKitProvider>
+        </TokenAppKitProvider>
     );
 };

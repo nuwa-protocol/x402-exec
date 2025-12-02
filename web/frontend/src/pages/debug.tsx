@@ -1,15 +1,15 @@
+import {
+  DebugAppKitProvider,
+  useDebugAppKit,
+} from "@/components/debug/debug-appkit-provider";
+import { HookDataComposer } from "@/components/debug/hook-data-composer";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X402Client } from "@x402x/client";
 import { AlertCircle, CheckCircle, Loader2, Wallet } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { createWalletClient, custom, publicActions } from "viem";
-// Execute with @x402x/client
-import { HookDataComposer } from "@/components/hook-data-composer";
-import {
-  ModalAppKitProvider,
-  useModalAppKit,
-} from "@/components/modal-appkit-provider";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -236,14 +236,14 @@ type PaymentFormData = z.infer<typeof paymentFormSchema>;
 
 export default function DebugPage() {
   return (
-    <ModalAppKitProvider>
+    <DebugAppKitProvider>
       <DebugPageContent />
-    </ModalAppKitProvider>
+    </DebugAppKitProvider>
   );
 }
 
 function DebugPageContent() {
-  const { openModal, address, isConnected } = useModalAppKit();
+  const { openModal, address, isConnected } = useDebugAppKit();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [executionResult, setExecutionResult] = useState<{
