@@ -43,8 +43,8 @@ export const TokenMintAction = ({
                             Mint $X402X
                         </h3>
                         {isConnected && (
-                            <p className="text-[11px] text-slate-400 mt-2">
-                                Connected:{" "}
+                            <p className="text-sm text-slate-400 mt-2">
+                                Connected Wallet:{" "}
                                 <span className="font-mono">{shortAddress(address)}</span>
                             </p>
                         )}

@@ -6,17 +6,54 @@ type TokenMintFooterProps = {
 };
 
 export const TokenMintFooter = ({ onLearnMore }: TokenMintFooterProps) => {
+    const explorerBaseUrl =
+        X402X_MINT_CONFIG.chain?.blockExplorers?.default?.url?.replace(/\/$/, "");
+
+    const mintExplorerUrl = explorerBaseUrl
+        ? `${explorerBaseUrl}/address/${X402X_MINT_CONFIG.address}`
+        : undefined;
+
+    const tokenExplorerUrl = explorerBaseUrl
+        ? `${explorerBaseUrl}/address/${X402X_TOKEN_CONFIG.address}`
+        : undefined;
+
     return (
         <div className="border-t border-slate-100 bg-slate-50 px-8 lg:px-12 py-6">
             <div className=" flex flex-row justify-between items-start">
                 <div className="flex flex-row gap-4 text-sm font-mono">
                     <div className="break-all">
-                        <span className="text-slate-500">Mint contract: </span>
-                        <span className="text-slate-900">{X402X_MINT_CONFIG.address}</span>
+                        <span className="text-slate-500">Mint Hook: </span>
+                        {mintExplorerUrl ? (
+                            <a
+                                href={mintExplorerUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                            >
+                                {X402X_MINT_CONFIG.address}
+                            </a>
+                        ) : (
+                            <span className="text-slate-900">
+                                {X402X_MINT_CONFIG.address}
+                            </span>
+                        )}
                     </div>
                     <div className="break-all">
-                        <span className="text-slate-500">Token contract: </span>
-                        <span className="text-slate-900">{X402X_TOKEN_CONFIG.address}</span>
+                        <span className="text-slate-500">Token Contract: </span>
+                        {tokenExplorerUrl ? (
+                            <a
+                                href={tokenExplorerUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                            >
+                                {X402X_TOKEN_CONFIG.address}
+                            </a>
+                        ) : (
+                            <span className="text-slate-900">
+                                {X402X_TOKEN_CONFIG.address}
+                            </span>
+                        )}
                     </div>
                 </div>
                 {onLearnMore && (

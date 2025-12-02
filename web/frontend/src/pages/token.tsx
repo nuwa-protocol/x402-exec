@@ -8,9 +8,10 @@ import { X402ToEarn } from "@/components/token/x402-to-earn";
 import { useEffect, useState } from "react";
 
 export const TokenPage = () => {
-    const [activeSection, setActiveSection] = useState("overview");
+    const [activeSection, setActiveSection] = useState("mint");
 
     const navItems = [
+        { label: "Mint", id: "mint" },
         { label: "Overview", id: "overview" },
         { label: "Value Capture", id: "value-capture" },
         { label: "Distribution", id: "distribution" },
@@ -60,39 +61,34 @@ export const TokenPage = () => {
         // Wrapper div designed to be embedded. Light theme base.
         <ModalAppKitProvider>
             <div className="w-full text-slate-900 font-sans selection:bg-yellow-200 selection:text-black">
-                {/* Hero / mint section should occupy the first viewport */}
-                <div className="relative flex items-center justify-center pt-20 pb-10">
-                    <TokenMint />
-                </div>
-
-                {/* Sticky Internal Navigation */}
-                <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-md border-y border-slate-200 shadow-sm">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-center md:justify-start overflow-x-auto no-scrollbar py-1">
-                            <div className="flex space-x-1 md:space-x-6">
-                                {navItems.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => scrollToSection(item.id)}
-                                        className={`
+                {/* Sticky Internal Navigation pinned below the main navbar (single wrapper div) */}
+                <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-md border-y border-slate-200 shadow-sm flex items-center justify-center overflow-x-auto no-scrollbar py-1 px-4 sm:px-6 lg:px-8 space-x-1 md:space-x-6">
+                    {navItems.map((item) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => scrollToSection(item.id)}
+                            className={`
                     px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2
                     ${activeSection === item.id
-                                                ? "border-yellow-500 text-slate-900"
-                                                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
-                                            }
+                                    ? "border-yellow-500 text-slate-900"
+                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                                }
                   `}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                        >
+                            {item.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Content Sections */}
                 <div className="space-y-0">
+                    <section
+                        id="mint"
+                        className="py-10 bg-yellow-50 border-b border-slate-200"
+                    >
+                        <TokenMint />
+                    </section>
                     <section
                         id="overview"
                         className="py-10 bg-white border-b border-slate-200"
