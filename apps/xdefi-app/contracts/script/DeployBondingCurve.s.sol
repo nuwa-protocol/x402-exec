@@ -114,14 +114,9 @@ contract DeployBondingCurve is Script {
         
         // Step 2: Deploy BondingCurveHook
         console.log("Step 2: Deploying BondingCurveHook...");
-        
-        // Calculate bonding curve parameters for ~75k USDC total revenue
-        // Formula: Total = (P0/k) * (exp(k) - 1)
-        // With k = 0.2: P0 = 75,000 * 0.2 / (exp(0.2) - 1) ≈ 67,749.83 USDC
-        // P0 in UD60x18: 67,749.83 * 10^6 * 10^12 = 67_749_830_000_000_000_000_000
-        // k in UD60x18: 0.2 * 10^18 = 200_000_000_000_000_000
-        uint256 P0_ud60x18 = 67_749_830_000_000_000_000_000; // ~67,749.83 USDC in UD60x18
-        uint256 k_ud60x18 = 200_000_000_000_000_000; // 0.2 in UD60x18
+
+        uint256 P0_ud60x18 = 0;
+        uint256 k_ud60x18 = 0;
         
         BondingCurveHook hook = new BondingCurveHook(
             settlementRouter,
