@@ -67,14 +67,19 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
       // Optional: restrict to specific networks via ?networks=base,x-layer
       const networksParam = String(req.query.networks || "").trim();
       const requestedNetworks = networksParam
-        ? networksParam.split(",").map((n) => n.trim()).filter(Boolean)
+        ? networksParam
+            .split(",")
+            .map((n) => n.trim())
+            .filter(Boolean)
         : undefined;
 
       const supported = getSupportedNetworks();
       const networks = (requestedNetworks || supported).filter((n) => supported.includes(n));
 
       // Optional lookback config
-      const maxBlocks = parseInt(String(req.query.maxBlocks || process.env.STATS_LOOKBACK_BLOCKS || "200000"));
+      const maxBlocks = parseInt(
+        String(req.query.maxBlocks || process.env.STATS_LOOKBACK_BLOCKS || "200000"),
+      );
 
       // Optional per-network fromBlock override via env, e.g. BASE_FROM_BLOCK, X_LAYER_FROM_BLOCK
       const envFromBlock = (network: string) => {
@@ -84,12 +89,19 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
       };
 
       const perPayer: Map<string, { txCount: number; total: bigint }> = new Map();
-      const perHook: Map<string, { txCount: number; total: bigint; uniquePayers: Set<string> }> = new Map();
+      const perHook: Map<string, { txCount: number; total: bigint; uniquePayers: Set<string> }> =
+        new Map();
       let totalTx = 0;
       let totalValue = 0n;
       const uniquePayers = new Set<string>();
 
-      const scanned: Array<{ network: string; router: string; fromBlock: bigint; toBlock: bigint; count: number }> = [];
+      const scanned: Array<{
+        network: string;
+        router: string;
+        fromBlock: bigint;
+        toBlock: bigint;
+        count: number;
+      }> = [];
 
       for (const network of networks) {
         // Determine RPC URL
@@ -158,8 +170,14 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
               entry.total += args.amount;
               perPayer.set(payer, entry);
 
-              const hookAddr = (args.hook || "0x0000000000000000000000000000000000000000").toLowerCase();
-              const hookAgg = perHook.get(hookAddr) || { txCount: 0, total: 0n, uniquePayers: new Set<string>() };
+              const hookAddr = (
+                args.hook || "0x0000000000000000000000000000000000000000"
+              ).toLowerCase();
+              const hookAgg = perHook.get(hookAddr) || {
+                txCount: 0,
+                total: 0n,
+                uniquePayers: new Set<string>(),
+              };
               hookAgg.txCount += 1;
               hookAgg.total += args.amount;
               hookAgg.uniquePayers.add(payer);
@@ -172,7 +190,13 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
           start = end + 1n;
         }
 
-        scanned.push({ network, router: routerAddress, fromBlock: from, toBlock: to, count: matched });
+        scanned.push({
+          network,
+          router: routerAddress,
+          fromBlock: from,
+          toBlock: to,
+          count: matched,
+        });
       }
 
       // Prepare response
@@ -182,7 +206,12 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
         .slice(0, 200); // cap to 200 to keep payload small
 
       const topHooks = Array.from(perHook.entries())
-        .map(([address, v]) => ({ address, txCount: v.txCount, uniquePayers: v.uniquePayers.size, total: v.total.toString() }))
+        .map(([address, v]) => ({
+          address,
+          txCount: v.txCount,
+          uniquePayers: v.uniquePayers.size,
+          total: v.total.toString(),
+        }))
         .sort((a, b) => Number(BigInt(b.total) - BigInt(a.total)))
         .slice(0, 200);
 

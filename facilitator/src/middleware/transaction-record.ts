@@ -46,11 +46,13 @@ export function createTransactionRecordMiddleware() {
   };
 }
 
-export async function recodeTransaction(paymentRequirements: PaymentRequirements, settleResponse: SettleResponse) {
+export async function recodeTransaction(
+  paymentRequirements: PaymentRequirements,
+  settleResponse: SettleResponse,
+) {
   const { transaction } = settleResponse;
 
   try {
-
     const error = await recordHook(paymentRequirements, settleResponse);
     if (error) {
       throw error;
@@ -59,7 +61,6 @@ export async function recodeTransaction(paymentRequirements: PaymentRequirements
     if (error1) {
       throw error1;
     }
-    
   } catch (error) {
     logger.error({ error, transaction }, "Failed to upsert hook stats");
   }
