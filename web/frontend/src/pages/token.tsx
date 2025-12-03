@@ -104,7 +104,6 @@ export const TokenPage = () => {
                     >
                         <Distribution />
                     </section>
-
                     <section
                         id="x402-to-earn"
                         className="py-24 bg-slate-50 border-b border-slate-200"

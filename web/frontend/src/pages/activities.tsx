@@ -287,7 +287,7 @@ function TopHooksTable({
         <TableBody>
           {sortedRows.map((row) => (
             <TableRow
-              key={row.address}
+              key={row.address + row.network}
               className="cursor-pointer"
               onClick={() =>
                 window.open(
