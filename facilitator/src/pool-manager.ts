@@ -23,11 +23,13 @@ export class PoolManager {
    * @param evmPrivateKeys - Array of EVM private keys
    * @param networkConfig - Network configuration
    * @param accountPoolConfig - Account pool configuration
+   * @param rpcUrls - Optional RPC URLs per network (network name -> RPC URL)
    */
   constructor(
     private evmPrivateKeys: string[],
     private networkConfig: NetworkConfig,
     private accountPoolConfig: AccountPoolConfig,
+    private rpcUrls: Record<string, string> = {},
   ) {}
 
   /**
@@ -38,11 +40,22 @@ export class PoolManager {
     if (this.evmPrivateKeys.length > 0) {
       for (const network of this.networkConfig.evmNetworks) {
         try {
+          // Get RPC URL for this network (from dynamicGasPrice config)
+          const rpcUrl = this.rpcUrls[network];
+
           const pool = await AccountPool.create(this.evmPrivateKeys, network, {
             strategy: this.accountPoolConfig.strategy,
+            rpcUrl, // Pass custom RPC URL if available
           });
           this.evmAccountPools.set(network, pool);
-          logger.info({ network, accounts: pool.getAccountCount() }, "EVM account pool created");
+          logger.info(
+            {
+              network,
+              accounts: pool.getAccountCount(),
+              rpcUrl: rpcUrl || "(chain default)",
+            },
+            "EVM account pool created",
+          );
         } catch (error) {
           logger.warn({ network, error }, "Failed to create EVM account pool for network");
         }
@@ -98,14 +111,16 @@ export class PoolManager {
  * @param evmPrivateKeys - Array of EVM private keys
  * @param networkConfig - Network configuration
  * @param accountPoolConfig - Account pool configuration
+ * @param rpcUrls - Optional RPC URLs per network (network name -> RPC URL)
  * @returns Initialized PoolManager
  */
 export async function createPoolManager(
   evmPrivateKeys: string[],
   networkConfig: NetworkConfig,
   accountPoolConfig: AccountPoolConfig,
+  rpcUrls: Record<string, string> = {},
 ): Promise<PoolManager> {
-  const manager = new PoolManager(evmPrivateKeys, networkConfig, accountPoolConfig);
+  const manager = new PoolManager(evmPrivateKeys, networkConfig, accountPoolConfig, rpcUrls);
   await manager.initialize();
   return manager;
 }

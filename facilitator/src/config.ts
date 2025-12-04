@@ -20,7 +20,6 @@ import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
 import { DEFAULTS } from "./defaults.js";
 
-
 // Load environment variables
 loadEnv();
 
@@ -429,7 +428,8 @@ function parseGasCostConfig(): GasCostConfig {
       process.env.GAS_COST_VALIDATION_TOLERANCE || String(DEFAULTS.gasCost.VALIDATION_TOLERANCE),
     ),
     minFacilitatorFeeUsd: parseFloat(
-      process.env.GAS_COST_MIN_FACILITATOR_FEE_USD || String(DEFAULTS.gasCost.MIN_FACILITATOR_FEE_USD),
+      process.env.GAS_COST_MIN_FACILITATOR_FEE_USD ||
+        String(DEFAULTS.gasCost.MIN_FACILITATOR_FEE_USD),
     ),
 
     // Hook Security
