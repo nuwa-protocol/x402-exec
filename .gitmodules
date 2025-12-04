@@ -14,3 +14,6 @@
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std.git
+[submodule "apps/xdefi-app/contracts/lib/prb-math"]
+	path = apps/xdefi-app/contracts/lib/prb-math
+	url = https://github.com/PaulRBerg/prb-math.git
