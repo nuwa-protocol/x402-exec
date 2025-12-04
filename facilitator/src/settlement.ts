@@ -18,6 +18,7 @@ import {
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
   getNetworkConfig,
+  calculateCommitment,
 } from "@x402x/core";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
@@ -257,13 +258,17 @@ export async function settleWithRouter(
     // 5.5. Validate payment using x402 SDK (SECURITY: prevent any invalid payments from wasting gas)
     // Create client with custom RPC URL support
     const chain = evm.getChainFromNetwork(network);
-    const rpcUrl =
-      dynamicGasPriceConfig?.rpcUrls[network] || chain.rpcUrls?.default?.http?.[0];
+    const rpcUrl = dynamicGasPriceConfig?.rpcUrls[network] || chain.rpcUrls?.default?.http?.[0];
     const client = createPublicClient({
       chain,
       transport: http(rpcUrl),
     }).extend(publicActions);
-    const verifyResult = await verify(client as any, paymentPayload, paymentRequirements, x402Config);
+    const verifyResult = await verify(
+      client as any,
+      paymentPayload,
+      paymentRequirements,
+      x402Config,
+    );
 
     if (!verifyResult.isValid) {
       // x402 SDK verification failed - return error to prevent gas waste on guaranteed-to-fail transactions
@@ -306,6 +311,57 @@ export async function settleWithRouter(
         payer,
       };
     }
+
+    // 5.6. Validate commitment hash (SECURITY: ensure nonce matches calculated commitment)
+    // This prevents parameter tampering attacks where settlement parameters are modified after signing
+    const expectedCommitment = calculateCommitment({
+      chainId: chain.id,
+      hub: extra.settlementRouter,
+      asset: asset,
+      from: authorization.from,
+      value: authorization.value,
+      validAfter: authorization.validAfter,
+      validBefore: authorization.validBefore,
+      salt: extra.salt,
+      payTo: extra.payTo,
+      facilitatorFee: extra.facilitatorFee,
+      hook: extra.hook,
+      hookData: extra.hookData,
+    });
+
+    if (authorization.nonce.toLowerCase() !== expectedCommitment.toLowerCase()) {
+      logger.error(
+        {
+          network,
+          from: authorization.from,
+          expectedCommitment,
+          actualNonce: authorization.nonce,
+          chainId: chain.id,
+          settlementRouter: extra.settlementRouter,
+          salt: extra.salt,
+          payTo: extra.payTo,
+          facilitatorFee: extra.facilitatorFee,
+          hook: extra.hook,
+        },
+        "Commitment mismatch detected - preventing wasted gas transaction",
+      );
+
+      return {
+        success: false,
+        errorReason: "INVALID_COMMITMENT",
+        transaction: "",
+        network: paymentPayload.network,
+        payer: authorization.from,
+      };
+    }
+
+    logger.debug(
+      {
+        network,
+        commitment: expectedCommitment,
+      },
+      "Commitment validation passed",
+    );
 
     // 6. Calculate effective gas limit if config is provided
     let effectiveGasLimit: bigint | undefined;

@@ -20,7 +20,7 @@ import { createWalletClient, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
 import { getLogger, recordMetric } from "./telemetry.js";
-import { QueueOverloadError } from "./errors.js";
+import { QueueOverloadError, DuplicatePayerError } from "./errors.js";
 import { DEFAULTS } from "./defaults.js";
 
 const logger = getLogger();
@@ -71,6 +71,7 @@ export class AccountPool {
   private strategy: "round_robin" | "random";
   private network: string;
   private config: AccountPoolConfig;
+  private pendingPayers: Set<string> = new Set();
 
   /**
    * Create an account pool
@@ -204,9 +205,34 @@ export class AccountPool {
    * without nonce conflicts.
    *
    * @param fn - Function to execute with the signer
+   * @param payerAddress - Optional payer address for duplicate detection (normalized to lowercase)
    * @returns Result from the function
    */
-  async execute<T>(fn: (signer: Signer) => Promise<T>): Promise<T> {
+  async execute<T>(fn: (signer: Signer) => Promise<T>, payerAddress?: string): Promise<T> {
+    // Normalize payer address to lowercase for consistent comparison
+    const normalizedPayer = payerAddress?.toLowerCase();
+
+    // Check for duplicate payer before selecting account
+    if (normalizedPayer && this.pendingPayers.has(normalizedPayer)) {
+      logger.warn(
+        {
+          payerAddress: normalizedPayer,
+          pendingPayersCount: this.pendingPayers.size,
+        },
+        "Duplicate payer detected, rejecting request",
+      );
+
+      // Record duplicate payer metric
+      recordMetric("facilitator.account.duplicate_payer", 1, {
+        network: this.network,
+        payerAddress: normalizedPayer,
+      });
+
+      throw new DuplicatePayerError(normalizedPayer, {
+        pendingPayersCount: this.pendingPayers.size,
+      });
+    }
+
     const account = this.selectAccount();
     const queueDepth = account.queue.activeCount + account.queue.pendingCount;
 
@@ -261,57 +287,87 @@ export class AccountPool {
       network: this.network,
     });
 
-    // Execute in account's serial queue
-    const result = await account.queue(async () => {
-      const startTime = Date.now();
+    // Add payer to pending set and execute in account's serial queue
+    // Use try-finally to ensure cleanup happens even if errors occur
+    if (normalizedPayer) {
+      this.pendingPayers.add(normalizedPayer);
+      logger.debug(
+        {
+          payerAddress: normalizedPayer,
+          pendingPayersCount: this.pendingPayers.size,
+        },
+        "Added payer to pending set",
+      );
+    }
 
-      try {
-        const result = await fn(account.signer);
-        account.processed++;
+    try {
+      // Execute in account's serial queue
+      const result = await account.queue(async () => {
+        const startTime = Date.now();
 
-        const duration = Date.now() - startTime;
+        try {
+          const result = await fn(account.signer);
+          account.processed++;
 
+          const duration = Date.now() - startTime;
+
+          logger.debug(
+            {
+              address: account.address,
+              duration_ms: duration,
+              totalProcessed: account.processed,
+              payerAddress: normalizedPayer,
+            },
+            "Account execution completed",
+          );
+
+          // Record metrics
+          recordMetric("facilitator.account.tx_count", 1, {
+            account: account.address,
+            network: this.network,
+            success: "true",
+          });
+
+          return result;
+        } catch (error) {
+          const duration = Date.now() - startTime;
+
+          logger.error(
+            {
+              address: account.address,
+              duration_ms: duration,
+              payerAddress: normalizedPayer,
+              error,
+            },
+            "Account execution failed",
+          );
+
+          // Record error metric
+          recordMetric("facilitator.account.tx_count", 1, {
+            account: account.address,
+            network: this.network,
+            success: "false",
+          });
+
+          throw error;
+        }
+      });
+
+      return result;
+    } finally {
+      // Remove payer from pending set after execution completes (success or failure)
+      // This cleanup is critical - must always execute to prevent payer address leaks
+      if (normalizedPayer) {
+        this.pendingPayers.delete(normalizedPayer);
         logger.debug(
           {
-            address: account.address,
-            duration_ms: duration,
-            totalProcessed: account.processed,
+            payerAddress: normalizedPayer,
+            pendingPayersCount: this.pendingPayers.size,
           },
-          "Account execution completed",
+          "Removed payer from pending set",
         );
-
-        // Record metrics
-        recordMetric("facilitator.account.tx_count", 1, {
-          account: account.address,
-          network: this.network,
-          success: "true",
-        });
-
-        return result;
-      } catch (error) {
-        const duration = Date.now() - startTime;
-
-        logger.error(
-          {
-            address: account.address,
-            duration_ms: duration,
-            error,
-          },
-          "Account execution failed",
-        );
-
-        // Record error metric
-        recordMetric("facilitator.account.tx_count", 1, {
-          account: account.address,
-          network: this.network,
-          success: "false",
-        });
-
-        throw error;
       }
-    });
-
-    return result;
+    }
   }
 
   /**
@@ -323,6 +379,23 @@ export class AccountPool {
       queueDepth: acc.queue.activeCount + acc.queue.pendingCount,
       totalProcessed: acc.processed,
     }));
+  }
+
+  /**
+   * Get the number of pending payers (addresses with transactions in queue)
+   */
+  getPendingPayersCount(): number {
+    return this.pendingPayers.size;
+  }
+
+  /**
+   * Get total queue depth across all accounts
+   */
+  getTotalQueueDepth(): number {
+    return this.accounts.reduce(
+      (sum, acc) => sum + acc.queue.activeCount + acc.queue.pendingCount,
+      0,
+    );
   }
 
   /**

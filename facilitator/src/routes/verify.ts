@@ -97,7 +97,8 @@ export function createVerifyRoutes(
 
       // Create connected client for EVM network with custom RPC URL support
       const chain = evm.getChainFromNetwork(paymentRequirements.network);
-      const rpcUrl = deps.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
+      const rpcUrl =
+        deps.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
       const client: ConnectedClient = createPublicClient({
         chain,
         transport: http(rpcUrl),
