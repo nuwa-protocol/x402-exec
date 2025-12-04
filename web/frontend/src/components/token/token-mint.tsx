@@ -4,7 +4,7 @@ import { TokenMintHeader } from "@/components/token/token-mint-header";
 import { TokenMintProgress } from "@/components/token/token-mint-progress";
 import { useTokenMint } from "@/hooks/use-token-mint";
 import { calculateBondingCurvePrice } from "@/lib/token-mint";
-import { X402X_TOKEN_CONFIG } from "@/lib/token-mint-config";
+import { X402X_MINT_CONFIG, X402X_TOKEN_CONFIG } from "@/lib/token-mint-config";
 import { useEffect, useMemo, useState } from "react";
 
 export const TokenMint = () => {
@@ -24,6 +24,7 @@ export const TokenMint = () => {
     } = useTokenMint();
 
     const [usdcAmount, setUsdcAmount] = useState("10");
+    const [isMintEnded, setIsMintEnded] = useState(false);
 
     const totalAllocation =
         X402X_TOKEN_CONFIG.mintAllocationTokens || 1_000_000_000 / 10;
@@ -36,6 +37,20 @@ export const TokenMint = () => {
         null;
 
     const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
+
+    // Track whether the mint window has ended based on the configured timestamp.
+    useEffect(() => {
+        const endTs = X402X_MINT_CONFIG.mintEndTimestamp;
+        if (!endTs) return;
+
+        const check = () => {
+            setIsMintEnded(Date.now() >= endTs * 1000);
+        };
+
+        check();
+        const id = window.setInterval(check, 1000);
+        return () => window.clearInterval(id);
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -94,7 +109,10 @@ export const TokenMint = () => {
     const insufficientBalance = hasInsufficientBalance(usdcAmount);
 
     const buttonDisabled =
-        isConnecting || isExecuting || (isConnected && !usdcAmount.trim());
+        isConnecting ||
+        isExecuting ||
+        isMintEnded ||
+        (isConnected && !usdcAmount.trim());
 
     const shortAddress = (addr?: string) => {
         if (!addr) return "";
@@ -103,6 +121,9 @@ export const TokenMint = () => {
     };
 
     const handlePrimaryAction = () => {
+        if (isMintEnded) {
+            return;
+        }
         if (!isConnected) {
             connectWallet();
             return;

@@ -190,7 +190,10 @@ export const TokenMintAction = ({
                             className={`
                     w-full py-4 rounded-lg font-bold text-sm sm:text-base transition-all transform active:scale-[0.98]
                     flex items-center justify-center gap-2
-                    ${isExecuting || isConnecting
+                    ${isExecuting ||
+                                    isConnecting ||
+                                    buttonDisabled ||
+                                    hasInsufficientBalance
                                     ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                                     : isSuccess
                                         ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"

@@ -27,6 +27,10 @@ export const X402X_MINT_CONFIG = {
 	// Mint / hook contract that receives USDC and mints $X402X (used as x402x hook).
 	address: "0x261b0716cE47C0eB3DB15F2e134F9cdADE00ca80" as `0x${string}`,
 
+		// Unix timestamp (in seconds) when the initial mint is scheduled to end.
+		// Fixed at Dec-05-2025 05:08:55 AM +UTC (Dec-04-2025 05:08:55 AM +UTC + 24 hours).
+		mintEndTimestamp: 1_764_911_335,
+
 	// Bonding curve parameters (front-end only; keep in sync with contract).
 	// P0: starting price (in USDC per token, human-readable).
 	//     Contract default ≈ 0.00007775486736425522 USDC.

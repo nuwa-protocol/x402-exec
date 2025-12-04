@@ -43,42 +43,48 @@ export const TokenMintFooter = () => {
 
     return (
         <div className="border-t border-slate-100 bg-slate-50 px-8 lg:px-12 py-6">
-            <div className=" flex flex-row justify-between items-start">
-                <div className="flex flex-row gap-4 text-sm font-mono">
-                    <div className="break-all">
-                        <span className="text-slate-500">Mint Hook: </span>
-                        {mintExplorerUrl ? (
-                            <a
-                                href={mintExplorerUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
-                            >
-                                {X402X_MINT_CONFIG.address}
-                            </a>
-                        ) : (
-                            <span className="text-slate-900">
-                                {X402X_MINT_CONFIG.address}
-                            </span>
-                        )}
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-start">
+                <div className="flex flex-col gap-2">
+                    <div className="flex flex-row gap-4 text-sm font-mono">
+                        <div className="break-all">
+                            <span className="text-slate-500">Mint Hook: </span>
+                            {mintExplorerUrl ? (
+                                <a
+                                    href={mintExplorerUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                                >
+                                    {X402X_MINT_CONFIG.address}
+                                </a>
+                            ) : (
+                                <span className="text-slate-900">
+                                    {X402X_MINT_CONFIG.address}
+                                </span>
+                            )}
+                        </div>
+                        <div className="break-all">
+                            <span className="text-slate-500">$X402X Contract: </span>
+                            {tokenExplorerUrl ? (
+                                <a
+                                    href={tokenExplorerUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                                >
+                                    {X402X_TOKEN_CONFIG.address}
+                                </a>
+                            ) : (
+                                <span className="text-slate-900">
+                                    {X402X_TOKEN_CONFIG.address}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <div className="break-all">
-                        <span className="text-slate-500">$X402X Contract: </span>
-                        {tokenExplorerUrl ? (
-                            <a
-                                href={tokenExplorerUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-slate-900 underline decoration-dotted underline-offset-2 hover:text-slate-700"
-                            >
-                                {X402X_TOKEN_CONFIG.address}
-                            </a>
-                        ) : (
-                            <span className="text-slate-900">
-                                {X402X_TOKEN_CONFIG.address}
-                            </span>
-                        )}
-                    </div>
+                    <p className="text-sm whitespace-nowrap">
+                        The $X402X token&apos;s liquidity pool has not been created yet. It will be
+                        deployed and seeded after the initial token mint concludes.
+                    </p>
                 </div>
                 <button
                     type="button"
