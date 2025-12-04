@@ -22,26 +22,13 @@ contract MockSettlementRouter {
         bytes calldata hookData
     ) external {
         // Transfer tokens from caller to this contract (router)
-        // The hook expects to transfer tokens FROM the router address
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        
-        // The hook will call safeTransferFrom(settlementRouter, payTo, amount)
-        // So we need to approve the hook to transfer from this contract (router)
-        // But actually, the hook uses safeTransferFrom which requires approval
-        // However, since we're the router and we're calling the hook,
-        // we need to ensure the hook can transfer from us
-        
-        // Actually, looking at the hook code, it does:
-        // IERC20(token).safeTransferFrom(settlementRouter, payTo, amount)
-        // This means the hook needs approval from router (this contract) to payTo
-        // But wait, safeTransferFrom(from, to, amount) transfers FROM 'from' TO 'to'
-        // So we need to approve hook to transfer from this contract
-        
-        // Approve hook to transfer tokens from this contract (router) to payTo
+
+        // Approve the hook to transfer tokens from this contract, as the hook will call
+        // safeTransferFrom(address(this), payTo, amount) to move tokens to the recipient.
         IERC20(token).approve(hook, amount);
-        
+
         // Execute hook
-        // Hook will: safeTransferFrom(address(this), payTo, amount)
         bytes32 contextKey = keccak256("test-context");
         ISettlementHook(hook).execute(
             contextKey,

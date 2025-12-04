@@ -80,7 +80,7 @@ contract BondingCurvePriceTest is Test {
         // 2. Simulate buying all tokens to get final price and total revenue
         console.log("2. Simulating purchases...");
         
-        // 购买代币直到全部售出
+        // Purchase tokens until all are sold
         uint256 totalSpent = 0;
         uint256 purchaseAmount = 1_000 * 10**USDC_DECIMALS; // 1k USDC per purchase
         uint256 maxPurchases = 200; // Up to 200k USDC total

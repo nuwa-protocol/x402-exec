@@ -61,11 +61,11 @@ contract BondingCurveHookForkTest is Test {
         usdcToken = new MockUSDC();
         
         // Deploy hook with exponential bonding curve parameters
-        // P0: Initial price ~67,749.83 USDC in UD60x18 (for ~75k total revenue)
-        // k: Growth factor 0.2 in UD60x18
-        // These result in ~75,000 USDC total revenue when all tokens are sold
-        uint256 P0_ud60x18 = 67_749_830_000_000_000_000_000; // ~67,749.83 USDC in UD60x18
-        uint256 k_ud60x18 = 200_000_000_000_000_000; // 0.2 in UD60x18
+        // P0: Initial price ~0.00007775 USDC in UD60x18 (matches BondingCurveHook.sol default)
+        // k: Growth factor 0.2 in UD60x18 (matches BondingCurveHook.sol default)
+        // These result in a much lower total revenue when all tokens are sold, matching contract defaults
+        uint256 P0_ud60x18 = 77_750_000_000_000; // ~0.00007775 USDC in UD60x18
+        uint256 k_ud60x18 = 3_652_806_415_794_679_808;
         
         hook = new BondingCurveHook(
             address(router),
@@ -431,20 +431,7 @@ contract BondingCurveHookForkTest is Test {
         //
         // C = (3e15 * 1e26) / 2 = 1.5e41
         // Convert to 6 decimals: 1.5e41 / 10^18 = 1.5e23
-        // In human readable: 1.5e23 / 10^6 = 1.5e17 = 150,000,000,000,000,000 USDC
-        //
-        // This is still wrong. Let me think differently.
-        // The issue is that FINAL_PRICE_USDC is already in 6 decimals.
-        // When we multiply by TOTAL_SALE_SUPPLY (18 decimals), we get 24 decimals.
-        // Then we divide by 2, still 24 decimals.
-        // To convert to 6 decimals: divide by 10^18.
-        //
-        // Actually, the correct calculation should be:
-        // totalUsdc = (FINAL_PRICE_USDC * TOTAL_SALE_SUPPLY) / 2 / 10^12
-        // = (3000 * 100_000_000 * 10^18) / 2 / 10^12
-        // = (3000 * 100_000_000 * 10^6) / 2
-        // = 150_000_000_000 * 10^6 = 150,000,000,000 USDC (in 6 decimals)
-        // = 150,000 USDC in human readable
+        // Convert total USDC collected to human-readable format (6 decimals)
         
         uint256 totalUsdcHumanReadable = totalUsdcIn6Decimals / 10**USDC_DECIMALS;
         

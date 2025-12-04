@@ -131,15 +131,14 @@ contract BondingCurveHook is ISettlementHook {
         if (tokensToReceive > contractBalance) revert InsufficientTokens();
 
         if (tokensSold + tokensToReceive > TOTAL_SALE_SUPPLY) {
-            tokensToReceive = TOTAL_SALE_SUPPLY - tokensSold;
-            if (tokensToReceive == 0) revert SaleCompleted();
+            revert SaleCompleted();
         }
 
         tokensSold += tokensToReceive;
         totalUsdcCollected += amount;
 
         // transfer USDC from settlementRouter to this
-        IERC20(token).transferFrom(settlementRouter, address(this), amount);
+        IERC20(token).safeTransferFrom(settlementRouter, address(this), amount);
 
         // transfer tokens to buyer
         IERC20(x402xToken).safeTransfer(payTo, tokensToReceive);

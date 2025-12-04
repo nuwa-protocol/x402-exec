@@ -131,9 +131,9 @@ contract DeployBondingCurve is Script {
         console.log("Admin:", deployer);
         console.log("Total Sale Supply: 100,000,000 X402X");
         console.log("Bonding Curve: Exponential P(x) = P0 * exp(k*x)");
-        console.log("Initial Price (P0): ~67,749.83 USDC");
-        console.log("Growth Factor (k): 0.2");
-        console.log("Target Total Revenue: ~75,000 USDC");
+        console.log("Initial Price (P0):", P0_ud60x18);
+        console.log("Growth Factor (k):", k_ud60x18);
+        console.log("Target Total Revenue: (P0/k) * (exp(k) - 1) = 0 (with current parameters)");
         console.log("Formula: Total = (P0/k) * (exp(k) - 1)");
         console.log("");
         
