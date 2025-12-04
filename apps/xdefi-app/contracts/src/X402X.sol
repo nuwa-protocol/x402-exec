@@ -136,11 +136,73 @@ contract X402X is ERC20, EIP712, IERC3009 {
     /**
      * @inheritdoc IERC3009
      */
+    function receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
+        // Verify recipient matches caller (prevents front-running attacks)
+        if (to != msg.sender) revert InvalidRecipient();
+        
+        // Verify recipient is not zero address (prevent accidental burns)
+        if (to == address(0)) revert InvalidRecipient();
+        
+        // Verify timing (EIP-3009 standard: [validAfter, validBefore) - left-closed, right-open)
+        if (block.timestamp < validAfter) revert AuthorizationNotYetValid();
+        if (block.timestamp >= validBefore) revert AuthorizationExpired();
+        
+        // Verify nonce not used
+        if (_authorizationStates[from][nonce]) revert AuthorizationAlreadyUsed();
+        
+        // Build and verify signature
+        bytes32 structHash = keccak256(abi.encode(
+            TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
+            from,
+            to,
+            value,
+            validAfter,
+            validBefore,
+            nonce
+        ));
+        
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, v, r, s);
+        
+        if (signer != from) revert InvalidSignature();
+        
+        // Mark nonce as used
+        _authorizationStates[from][nonce] = true;
+        emit AuthorizationUsed(from, nonce);
+        
+        // Execute transfer
+        _transfer(from, to, value);
+    }
+    
+    /**
+     * @inheritdoc IERC3009
+     */
     function authorizationState(
         address authorizer,
         bytes32 nonce
     ) external view override returns (bool) {
         return _authorizationStates[authorizer][nonce];
+    }
+    
+    // ===== Helper Functions =====
+    
+    /**
+     * @notice Get the EIP-712 domain separator
+     * @dev Useful for off-chain signature generation
+     * @return The domain separator
+     */
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }
 

@@ -104,6 +104,49 @@ contract MockUSDCWithSignatureValidation is ERC20, EIP712, IERC3009 {
     }
     
     /// @inheritdoc IERC3009
+    function receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
+        // Verify recipient matches caller (prevents front-running attacks)
+        require(to == msg.sender, "Invalid recipient");
+        require(block.timestamp >= validAfter, "Authorization not yet valid");
+        require(block.timestamp < validBefore, "Authorization expired");
+        require(!_authorizationStates[from][nonce], "Authorization already used");
+        
+        // Construct the digest
+        bytes32 structHash = keccak256(abi.encode(
+            TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
+            from,
+            to,
+            value,
+            validAfter,
+            validBefore,
+            nonce
+        ));
+        
+        bytes32 digest = _hashTypedDataV4(structHash);
+        
+        // Verify signature
+        address signer = digest.recover(v, r, s);
+        require(signer == from, "Invalid signature");
+        
+        // Mark authorization as used
+        _authorizationStates[from][nonce] = true;
+        emit AuthorizationUsed(from, nonce);
+        
+        // Execute transfer
+        _transfer(from, to, value);
+    }
+    
+    /// @inheritdoc IERC3009
     function authorizationState(
         address authorizer,
         bytes32 nonce

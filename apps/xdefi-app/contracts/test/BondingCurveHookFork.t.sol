@@ -100,7 +100,7 @@ contract BondingCurveHookForkTest is Test {
         assertEq(hook.totalUsdcCollected(), 0);
         // For exponential bonding curve, initial price is P0 (not 0)
         uint256 initialPrice = hook.getCurrentPrice();
-        assertGt(initialPrice, 0); // Should be approximately 67,749.83 USDC (6 decimals)
+        assertGt(initialPrice, 0); // Should be approximately 0.000078 USDC or ~78 in 6-decimal format
         assertEq(hook.getRemainingSupply(), TOTAL_SALE_SUPPLY);
         assertEq(x402xToken.balanceOf(address(hook)), TOTAL_SALE_SUPPLY);
     }
@@ -409,19 +409,19 @@ contract BondingCurveHookForkTest is Test {
         }
         
         // Manual calculation for verification:
-        // Formula: C = (FINAL_PRICE * TOTAL_SALE_SUPPLY) / 2
-        // FINAL_PRICE_USDC = 3000 (in 6 decimals, represents 0.003 USDC)
-        // TOTAL_SALE_SUPPLY = 100_000_000 * 10^18 (in 18 decimals)
+        // Formula for exponential bonding curve: C = (P0 * TOTAL_SALE_SUPPLY / k) * (exp(k) - 1)
+        // Where:
+        //   P0 = initial price (in USDC, 6 decimals, e.g. 1000 = 0.001 USDC)
+        //   k = curve parameter (dimensionless, e.g. 1e-8)
+        //   TOTAL_SALE_SUPPLY = 100_000_000 * 10^18 (in 18 decimals)
         //
-        // Step 1: Multiply (both in their native decimals)
-        // 3000 * 100_000_000 * 10^18 = 300_000_000_000 * 10^18 = 3e11 * 10^18 = 3e29
-        //
-        // Step 2: Divide by 2
-        // 3e29 / 2 = 1.5e29
-        //
-        // Step 3: Convert to 6 decimals (USDC)
-        // 1.5e29 / 10^12 = 1.5e17 = 150,000,000,000,000,000
-        // In human readable: 150,000,000,000,000,000 / 10^6 = 150,000,000,000,000 USDC
+        // Step 1: Compute exp(k), where k is the curve parameter (ensure correct scaling if using integers)
+        // Step 2: Compute (exp(k) - 1)
+        // Step 3: Multiply by P0 and TOTAL_SALE_SUPPLY, then divide by k
+        // Step 4: Adjust for decimals as needed (e.g., convert from 18 to 6 decimals for USDC)
+        // Example (using placeholder values):
+        //   If P0 = 1000 (0.001 USDC), k = 1e-8, TOTAL_SALE_SUPPLY = 100_000_000 * 10^18:
+        //   C = (1000 * 100_000_000 * 10^18 / 1e-8) * (exp(1e-8) - 1)
         //
         // Wait, that's 150 trillion USDC, which seems wrong.
         // Let me recalculate more carefully:

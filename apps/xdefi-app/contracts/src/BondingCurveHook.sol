@@ -103,7 +103,7 @@ contract BondingCurveHook is ISettlementHook {
         admin = _admin;
 
         // Defaults chosen to meet: final price = 0.003 USDC & total revenue ≈ 80k USDC
-        uint256 defaultP0 = 77_754_867_364_255; // 7.7754867364255e13
+        uint256 defaultP0 = 77_754_867_364_255; // 0.000077754867364255 (UD60x18: 7.7754867364255e-5)
         uint256 defaultK  = 3_652_806_415_794_679_808; // ~3.6528e18
 
         P0 = UD60x18.wrap(_P0_ud60x18 > 0 ? _P0_ud60x18 : defaultP0);

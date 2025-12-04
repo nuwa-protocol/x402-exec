@@ -127,14 +127,23 @@ contract DeployBondingCurve is Script {
             k_ud60x18
         );
         bondingCurveHook = address(hook);
+        // Read actual P0 and k from the deployed contract (in case defaults are used)
+        uint256 actualP0 = hook.P0();
+        uint256 actualK = hook.k();
         console.log("BondingCurveHook:", bondingCurveHook);
         console.log("Admin:", deployer);
         console.log("Total Sale Supply: 100,000,000 X402X");
         console.log("Bonding Curve: Exponential P(x) = P0 * exp(k*x)");
-        console.log("Initial Price (P0):", P0_ud60x18);
-        console.log("Growth Factor (k):", k_ud60x18);
-        console.log("Target Total Revenue: (P0/k) * (exp(k) - 1) = 0 (with current parameters)");
+        if (P0_ud60x18 == 0 || k_ud60x18 == 0) {
+            console.log("WARNING: Zero P0 or k passed; contract will use default values.");
+        }
+        console.log("Initial Price (P0):", actualP0);
+        console.log("Growth Factor (k):", actualK);
+        // Calculate and log the target total revenue using the actual values
+        // Note: For simplicity, just log the formula with actual values; onchain math is not trivial here
+        console.log("Target Total Revenue: (P0/k) * (exp(k) - 1) with actual parameters:");
         console.log("Formula: Total = (P0/k) * (exp(k) - 1)");
+        console.log("P0 =", actualP0, ", k =", actualK);
         console.log("");
         
         // Step 3: Transfer 100M X402X tokens to BondingCurveHook
