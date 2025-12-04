@@ -6,12 +6,7 @@
  */
 
 import { useMemo } from "react";
-import {
-  useWalletClient,
-  useAccount,
-  useChainId,
-  WagmiProviderNotFoundError,
-} from "wagmi";
+import { useWalletClient, useAccount, useChainId, WagmiProviderNotFoundError } from "wagmi";
 import { publicActions } from "viem";
 import { X402Client } from "../client.js";
 import type { X402ClientConfig } from "../types.js";
@@ -95,7 +90,9 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
     if (
       error instanceof WagmiProviderNotFoundError ||
       (error as any)?.name === "WagmiProviderNotFoundError" ||
-      error instanceof Error && error.message.includes("useConfig") && error.message.includes("WagmiProvider")
+      (error instanceof Error &&
+        error.message.includes("useConfig") &&
+        error.message.includes("WagmiProvider"))
     ) {
       return null;
     }

@@ -8,9 +8,10 @@
  */
 
 import { verify } from "x402/facilitator";
-import { createConnectedClient } from "x402/types";
+import { evm } from "x402/types";
 import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "x402/types";
 import { isEvmSignerWallet } from "x402/types";
+import { createPublicClient, http, publicActions } from "viem";
 import {
   SettlementExtraError,
   SETTLEMENT_ROUTER_ABI,
@@ -254,8 +255,15 @@ export async function settleWithRouter(
     );
 
     // 5.5. Validate payment using x402 SDK (SECURITY: prevent any invalid payments from wasting gas)
-    const client = createConnectedClient(network);
-    const verifyResult = await verify(client, paymentPayload, paymentRequirements, x402Config);
+    // Create client with custom RPC URL support
+    const chain = evm.getChainFromNetwork(network);
+    const rpcUrl =
+      dynamicGasPriceConfig?.rpcUrls[network] || chain.rpcUrls?.default?.http?.[0];
+    const client = createPublicClient({
+      chain,
+      transport: http(rpcUrl),
+    }).extend(publicActions);
+    const verifyResult = await verify(client as any, paymentPayload, paymentRequirements, x402Config);
 
     if (!verifyResult.isValid) {
       // x402 SDK verification failed - return error to prevent gas waste on guaranteed-to-fail transactions
