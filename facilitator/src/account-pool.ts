@@ -153,7 +153,7 @@ export class AccountPool {
         if ("account" in signer && signer.account) {
           address = (signer.account as { address: string }).address;
         } else if ("address" in signer) {
-          address = (signer as unknown as { address: string }).address;
+          address = (signer as { address: string }).address;
         }
 
         const account: Account = {
