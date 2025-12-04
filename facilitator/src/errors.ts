@@ -549,6 +549,28 @@ export class QueueOverloadError extends FacilitatorError {
 }
 
 /**
+ * Duplicate payer error - thrown when the same payer already has a transaction in queue
+ */
+export class DuplicatePayerError extends FacilitatorError {
+  public readonly payerAddress: string;
+
+  /**
+   * @param payerAddress - The address that is already in the queue
+   * @param details
+   */
+  constructor(payerAddress: string, details?: Record<string, unknown>) {
+    super(
+      `Duplicate payer: address ${payerAddress} already has a transaction in queue`,
+      "DUPLICATE_PAYER",
+      true, // Recoverable - can retry later when queue is clear
+      ErrorSeverity.WARNING,
+      { ...details, payerAddress },
+    );
+    this.payerAddress = payerAddress;
+  }
+}
+
+/**
  * Helper function to classify unknown errors
  *
  * @param error
