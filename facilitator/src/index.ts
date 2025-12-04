@@ -159,11 +159,12 @@ async function main() {
       logger.info("Using static token prices (no background updater)");
     }
 
-    // Initialize account pools
+    // Initialize account pools with custom RPC URLs
     const poolManager = await createPoolManager(
       config.evmPrivateKeys,
       config.network,
       config.accountPool,
+      config.dynamicGasPrice.rpcUrls, // Pass RPC URLs from dynamicGasPrice config
     );
 
     // Create Express app with all routes

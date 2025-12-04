@@ -10,11 +10,15 @@
  * - Round-robin account selection for load distribution
  * - Cached signer instances for performance
  * - Zero nonce conflicts within each account
+ * - Custom RPC URL support for each network
  */
 
 import pLimit from "p-limit";
 import type { Signer } from "x402/types";
-import { createSigner } from "x402/types";
+import { evm } from "x402/types";
+import { createWalletClient, http, publicActions } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import type { Hex } from "viem";
 import { getLogger, recordMetric } from "./telemetry.js";
 import { QueueOverloadError } from "./errors.js";
 import { DEFAULTS } from "./defaults.js";
@@ -34,6 +38,9 @@ export interface AccountPoolConfig {
   maxQueueDepth?: number;
   /** Queue depth warning threshold */
   queueDepthWarning?: number;
+
+  /** Custom RPC URL for this network (overrides viem chain default) */
+  rpcUrl?: string;
 }
 
 /**
@@ -116,18 +123,37 @@ export class AccountPool {
       "Initializing account pool",
     );
 
+    // Get chain definition from x402 evm module
+    const chain = evm.getChainFromNetwork(network);
+
+    // Determine RPC URL: config > chain default
+    const rpcUrl = finalConfig.rpcUrl || chain.rpcUrls?.default?.http?.[0];
+
+    logger.info(
+      {
+        network,
+        rpcUrl: rpcUrl || "(chain default)",
+        isCustomRpc: !!finalConfig.rpcUrl,
+      },
+      "Using RPC URL for network",
+    );
+
     // Create accounts with serial queues
     for (let i = 0; i < privateKeys.length; i++) {
       try {
-        // Await the signer creation (it returns a Promise for SVM)
-        const signer = await Promise.resolve(createSigner(network, privateKeys[i]));
+        // Create signer using viem directly with custom RPC URL support
+        const signer = createWalletClient({
+          chain,
+          transport: http(rpcUrl), // Use custom RPC URL if provided
+          account: privateKeyToAccount(privateKeys[i] as Hex),
+        }).extend(publicActions) as unknown as Signer;
 
         // Get address from signer
         let address = "";
         if ("account" in signer && signer.account) {
-          address = signer.account.address;
+          address = (signer.account as { address: string }).address;
         } else if ("address" in signer) {
-          address = (signer as any).address;
+          address = (signer as unknown as { address: string }).address;
         }
 
         const account: Account = {

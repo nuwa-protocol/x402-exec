@@ -94,11 +94,14 @@ function getHookType(network: string, hook: string): string {
 
     // Log network metadata for debugging
     if (networkConfig.metadata) {
-      logger.debug({
-        network,
-        gasModel: networkConfig.metadata.gasModel,
-        nativeToken: networkConfig.metadata.nativeToken,
-      }, "Network metadata loaded");
+      logger.debug(
+        {
+          network,
+          gasModel: networkConfig.metadata.gasModel,
+          nativeToken: networkConfig.metadata.nativeToken,
+        },
+        "Network metadata loaded",
+      );
     }
 
     // Check if it's a known hook

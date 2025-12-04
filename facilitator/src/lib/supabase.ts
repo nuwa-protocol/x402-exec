@@ -11,21 +11,17 @@ if (!supabaseUrl || !supabaseKey) {
   logger.warn("Supabase URL or key not provided. Transaction logging will be disabled.");
 }
 
-export const supabase =
-  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+export const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
-
-export async function recordHook(paymentRequirements: PaymentRequirements, settleResponse: SettleResponse) {
+export async function recordHook(
+  paymentRequirements: PaymentRequirements,
+  settleResponse: SettleResponse,
+) {
   if (!supabase) {
     return;
   }
 
-  const {
-    network,
-    asset,
-    maxAmountRequired,
-    extra,
-  } = paymentRequirements;
+  const { network, asset, maxAmountRequired, extra } = paymentRequirements;
   const { payer } = settleResponse;
   const hookAddress = extra?.hook;
 
@@ -51,27 +47,25 @@ export async function recordHook(paymentRequirements: PaymentRequirements, settl
   return error;
 }
 
-export async function recordTransaction(paymentRequirements: PaymentRequirements, settleResponse: SettleResponse) {
+export async function recordTransaction(
+  paymentRequirements: PaymentRequirements,
+  settleResponse: SettleResponse,
+) {
   if (!supabase) {
     return;
   }
 
-  const {
-    network,
-    payTo,
-    maxAmountRequired,
-    extra,
-  } = paymentRequirements;
+  const { network, payTo, maxAmountRequired, extra } = paymentRequirements;
   const { payer } = settleResponse;
   const hookAddress = extra?.hook;
-  const version = '2';
+  const version = "2";
   const hookName = extra?.name || "Untitled Hook";
   const { transaction } = settleResponse;
 
   const { error } = await supabase.from("x402_transactions").insert({
     tx_hash: transaction,
     network: network,
-    block_timestamp: Math.floor(Date.now()/1000),
+    block_timestamp: Math.floor(Date.now() / 1000),
     from_addr: payer,
     to_addr: payTo,
     hook: hookAddress,
