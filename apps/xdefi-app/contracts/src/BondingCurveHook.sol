@@ -114,7 +114,7 @@ contract BondingCurveHook is ISettlementHook {
 
     function execute(
         bytes32 contextKey,
-        address payer,
+        address /* payer */,
         address token,
         uint256 amount,
         bytes32 /* salt */,
