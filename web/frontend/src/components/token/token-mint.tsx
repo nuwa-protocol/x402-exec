@@ -1,80 +1,45 @@
-import { TokenMintAction } from "@/components/token/token-mint-action";
 import { TokenMintFooter } from "@/components/token/token-mint-footer";
 import { TokenMintHeader } from "@/components/token/token-mint-header";
 import { TokenMintProgress } from "@/components/token/token-mint-progress";
-import { useTokenMint } from "@/hooks/use-token-mint";
 import { calculateBondingCurvePrice } from "@/lib/token-mint";
-import { X402X_MINT_CONFIG, X402X_TOKEN_CONFIG } from "@/lib/token-mint-config";
-import { useEffect, useMemo, useState } from "react";
+import {
+    X402X_MINT_CONFIG,
+    X402X_MINT_FINALIZATION_CONFIG,
+    X402X_TOKEN_CONFIG,
+} from "@/lib/token-mint-config";
+import { CheckCircle2 } from "lucide-react";
+import { useMemo } from "react";
 
 export const TokenMint = () => {
-    const {
-        status,
-        isConnected,
-        address,
-        error,
-        txHash,
-        mintedTokens,
-        currentPrice,
-        formattedUsdcBalance,
-        hasInsufficientBalance,
-        estimateTokensForUsdc,
-        connectWallet,
-        executeMint,
-    } = useTokenMint();
+    const { unsoldTokens, unaddedLPTokens, mintTokenBurnTx, lpTokenBurnTx, lpCreateTx } =
+        X402X_MINT_FINALIZATION_CONFIG;
 
-    const [usdcAmount, setUsdcAmount] = useState("10");
-    const [isMintEnded, setIsMintEnded] = useState(false);
+    const explorerBaseUrl =
+        X402X_MINT_CONFIG.chain?.blockExplorers?.default?.url?.replace(/\/$/, "");
+
+    const txExplorerBaseUrl = explorerBaseUrl
+        ? `${explorerBaseUrl}/tx/`
+        : undefined;
+
+    const shortTx = (hash?: string) => {
+        if (!hash) return "";
+        if (hash.length <= 10) return hash;
+        return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+    };
 
     const totalAllocation =
         X402X_TOKEN_CONFIG.mintAllocationTokens || 1_000_000_000 / 10;
-    const mintedAmount = mintedTokens || 0;
+    const mintedAmount = Math.max(totalAllocation - unsoldTokens, 0);
     const percentage = Math.min((mintedAmount / totalAllocation) * 100, 100);
 
     const effectiveCurrentPrice =
-        (currentPrice ??
-            calculateBondingCurvePrice(mintedAmount, totalAllocation)) ||
-        null;
+        calculateBondingCurvePrice(mintedAmount, totalAllocation) || null;
 
-    const [estimatedTokens, setEstimatedTokens] = useState<number | null>(null);
-
-    // Track whether the mint window has ended based on the configured timestamp.
-    useEffect(() => {
-        const endTs = X402X_MINT_CONFIG.mintEndTimestamp;
-        if (!endTs) return;
-
-        const check = () => {
-            setIsMintEnded(Date.now() >= endTs * 1000);
-        };
-
-        check();
-        const id = window.setInterval(check, 1000);
-        return () => window.clearInterval(id);
-    }, []);
-
-    useEffect(() => {
-        let cancelled = false;
-        const run = async () => {
-            const v = usdcAmount.trim();
-            if (!v) {
-                setEstimatedTokens(null);
-                return;
-            }
-            const est = await estimateTokensForUsdc(v);
-            if (!cancelled) {
-                setEstimatedTokens(est);
-            }
-        };
-        void run();
-        return () => {
-            cancelled = true;
-        };
-    }, [usdcAmount, estimateTokensForUsdc]);
-
-    // Generate bonding-curve data for the chart (0 → total allocation)
+    // Generate bonding-curve data for the chart (0 → total sold supply).
+    // The curve now ends at the final minted amount instead of the full allocation.
     const priceCurveData = useMemo(() => {
         const steps = 50;
-        const maxSupply = totalAllocation;
+        const maxSupply = mintedAmount;
         if (!maxSupply || !Number.isFinite(maxSupply)) return [];
 
         const data: { supply: number; price: number }[] = [];
@@ -87,7 +52,7 @@ export const TokenMint = () => {
             });
         }
         return data;
-    }, [totalAllocation]);
+    }, [mintedAmount, totalAllocation]);
 
     const maxCurvePrice = useMemo(
         () =>
@@ -98,38 +63,12 @@ export const TokenMint = () => {
         [priceCurveData],
     );
 
-    const chartFillPercent = Number.isFinite(percentage)
-        ? Math.max(0, Math.min(percentage, 100))
-        : 0;
+    // Since the chart now only covers the sold range [0, mintedAmount],
+    // the fill represents 100% of the visible curve once mint is concluded.
+    const chartFillPercent = mintedAmount > 0 ? 100 : 0;
 
-    const isConnecting = status === "connecting";
-    const isExecuting = status === "executing";
-    const isSuccess = status === "success";
-
-    const insufficientBalance = hasInsufficientBalance(usdcAmount);
-
-    const buttonDisabled =
-        isConnecting ||
-        isExecuting ||
-        isMintEnded ||
-        (isConnected && !usdcAmount.trim());
-
-    const shortAddress = (addr?: string) => {
-        if (!addr) return "";
-        if (addr.length <= 10) return addr;
-        return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-    };
-
-    const handlePrimaryAction = () => {
-        if (isMintEnded) {
-            return;
-        }
-        if (!isConnected) {
-            connectWallet();
-            return;
-        }
-        void executeMint(usdcAmount);
-    };
+    const unsoldTokensLabel = `${(unsoldTokens / 1_000_000).toFixed(1)}M`;
+    const unaddedLPTokensLabel = `${(unaddedLPTokens / 1_000_000).toFixed(1)}M`;
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -143,28 +82,79 @@ export const TokenMint = () => {
                         chartFillPercent={chartFillPercent}
                         mintedAmount={mintedAmount}
                         effectiveCurrentPrice={effectiveCurrentPrice}
-                        totalAllocation={totalAllocation}
-                        percentage={percentage}
                     />
-
-                    {/* Right Panel: Action Interface (top right) */}
-                    <TokenMintAction
-                        isConnected={isConnected}
-                        address={address}
-                        error={error}
-                        txHash={txHash}
-                        isConnecting={isConnecting}
-                        isExecuting={isExecuting}
-                        isSuccess={isSuccess}
-                        usdcAmount={usdcAmount}
-                        setUsdcAmount={setUsdcAmount}
-                        estimatedTokens={estimatedTokens}
-                        shortAddress={shortAddress}
-                        formattedUsdcBalance={formattedUsdcBalance}
-                        hasInsufficientBalance={insufficientBalance}
-                        buttonDisabled={buttonDisabled}
-                        handlePrimaryAction={handlePrimaryAction}
-                    />
+                    {/* Right Panel: Final mint information */}
+                    <div className="p-8 lg:p-12 bg-slate-50/50">
+                        <div className="h-full flex flex-col">
+                            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex-1 flex flex-col">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <CheckCircle2 className="text-emerald-500" size={20} />
+                                    <h3 className="text-lg font-bold text-slate-900">
+                                        $X402X Initial Token Mint Finalization
+                                    </h3>
+                                </div>
+                                <ul className="space-y-3 text-sm text-slate-700">
+                                    <li className="flex flex-col gap-0.5">
+                                        <div>
+                                            1️⃣ Mint Hook Contract is permanantely closed (no further supply
+                                            from this contract)
+                                        </div>
+                                    </li>
+                                    <li className="flex flex-col gap-0.5">
+                                        <div>
+                                            2️⃣ All unsold tokens from the initial allocation are burned (
+                                            {unsoldTokensLabel})
+                                        </div>
+                                        {mintTokenBurnTx && txExplorerBaseUrl && (
+                                            <div className="text-xs text-slate-500 font-mono">
+                                                <a
+                                                    href={`${txExplorerBaseUrl}${mintTokenBurnTx}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                                                >
+                                                    See on-chain transaction ({shortTx(mintTokenBurnTx)})
+                                                </a>
+                                            </div>
+                                        )}
+                                    </li>
+                                    <li className="flex flex-col gap-0.5">
+                                        <div>
+                                            3️⃣ All additional tokens that are not added to the liquidity pool
+                                            are burned ({unaddedLPTokensLabel})
+                                        </div>
+                                        {lpTokenBurnTx && txExplorerBaseUrl && (
+                                            <div className="text-xs text-slate-500 font-mono">
+                                                <a
+                                                    href={`${txExplorerBaseUrl}${lpTokenBurnTx}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                                                >
+                                                    See on-chain transaction ({shortTx(lpTokenBurnTx)})
+                                                </a>
+                                            </div>
+                                        )}
+                                    </li>
+                                    <li className="flex flex-col gap-0.5">
+                                        <div>4️⃣ Liquidity Pool is created with 100% funds.</div>
+                                        {lpCreateTx && txExplorerBaseUrl && (
+                                            <div className="text-xs text-slate-500 font-mono">
+                                                <a
+                                                    href={`${txExplorerBaseUrl}${lpCreateTx}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="underline decoration-dotted underline-offset-2 hover:text-slate-700"
+                                                >
+                                                    See on-chain transaction ({shortTx(lpCreateTx)})
+                                                </a>
+                                            </div>
+                                        )}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <TokenMintFooter />
             </div>

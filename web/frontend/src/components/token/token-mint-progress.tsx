@@ -1,4 +1,4 @@
-import { Cpu, PieChart, TrendingUp } from "lucide-react";
+import { Cpu } from "lucide-react";
 import {
     Area,
     AreaChart,
@@ -22,8 +22,6 @@ type TokenMintProgressProps = {
     chartFillPercent: number;
     mintedAmount: number;
     effectiveCurrentPrice: number | null;
-    totalAllocation: number;
-    percentage: number;
 };
 
 export const TokenMintProgress = ({
@@ -32,14 +30,12 @@ export const TokenMintProgress = ({
     chartFillPercent,
     mintedAmount,
     effectiveCurrentPrice,
-    totalAllocation,
-    percentage,
 }: TokenMintProgressProps) => {
     return (
         <div className="p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-100">
             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Cpu size={20} className="text-slate-400" />
-                Minting Progress
+                Mint Summary
             </h3>
 
             <div className="space-y-8">
@@ -180,56 +176,7 @@ export const TokenMintProgress = ({
                     </div>
                 </div>
 
-                {/* Bottom: Stats cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Total Minted */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col justify-between">
-                        <div className="flex items-center space-x-2 text-slate-500 mb-2">
-                            <PieChart size={18} className="text-yellow-500" />
-                            <span className="text-sm font-medium">Total Minted</span>
-                        </div>
-                        <div>
-                            <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                                {(mintedAmount / 1_000_000).toFixed(2)}M
-                            </span>
-                            <span className="ml-2 text-xs text-slate-400">
-                                / {(totalAllocation / 1_000_000).toFixed(0)}M
-                            </span>
-                        </div>
-                        <div className="w-full bg-slate-200 h-1.5 mt-3 rounded-full overflow-hidden">
-                            <div
-                                className="bg-yellow-500 h-full rounded-full transition-all duration-1000 ease-out"
-                                style={{ width: `${percentage}%` }}
-                            />
-                        </div>
-                        <p className="text-xs text-yellow-600 mt-1 text-right">
-                            {percentage.toFixed(2)}%
-                        </p>
-                    </div>
-
-                    {/* Current Price */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col justify-between">
-                        <div className="flex items-center space-x-2 text-slate-500 mb-2">
-                            <TrendingUp size={18} className="text-emerald-500" />
-                            <span className="text-sm font-medium">Current Price</span>
-                        </div>
-                        <div className="flex items-baseline">
-                            <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                                {effectiveCurrentPrice
-                                    ? `$${effectiveCurrentPrice.toFixed(5)}`
-                                    : "—"}
-                            </span>
-                            <span className="ml-2 text-xs text-emerald-600 font-medium">
-                                USDC
-                            </span>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-2">
-                            Price follows the bonding curve as supply increases.
-                        </p>
-                    </div>
-                </div>
             </div>
         </div>
     );
 };
-
