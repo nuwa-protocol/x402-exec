@@ -1,0 +1,114 @@
+x402x LLM Guide (English)
+
+Purpose
+- x402x turns any x402 payment into atomic pay-and-execute via SettlementRouter plus Hooks, with native facilitator fees and backward compatibility with x402.
+
+Core Ideas
+- SettlementRouter: verifies commitment, consumes EIP-3009 transferWithAuthorization, deducts facilitator fee, calls Hook with net amount, and enforces no-hub-balance (only pending fees remain).
+- Hook (ISettlementHook): receives contextKey, payer, token, amount, salt, payTo, facilitator, hookData; executes business logic (splits, mint, rewards, etc).
+- Commitment-as-nonce: nonce = keccak256("X402/settle/v1", chainId, hub, token, from, value, validAfter, validBefore, salt, payTo, facilitatorFee, hook, keccak256(hookData)). Router recomputes; any mismatch reverts.
+- Context key: keccak256(from, token, nonce) gives idempotency (AlreadySettled).
+- PaymentRequirements.extra (stateless mode): { settlementRouter, salt, payTo, facilitatorFee?, hook, hookData }. If settlementRouter is absent, fall back to standard x402 (random nonce, to = payTo).
+- Built-in Hook: TransferHook supports simple transfers and revenue splits with facilitator fee support.
+
+Happy-path Flow
+1) Resource server (or middleware) returns HTTP 402 with PaymentRequirements. Include extra when using settlement.
+2) Client computes commitment nonce, sets to = settlementRouter, signs EIP-3009.
+3) Facilitator submits settleAndExecute(token, from, value, validAfter, validBefore, nonce, sig, salt, payTo, fee, hook, hookData).
+4) Router checks commitment and idempotency, pulls funds, records fee, calls Hook with value - fee, ensures balance only increased by fee, emits Settled/HookExecuted/FeeAccumulated. Fees are later claimed via claimFees/claimFeesFor with feeOperators access control.
+
+Integration Paths (with snippets)
+- Client-only (serverless): use @x402x/client to talk directly to facilitator; it computes commitment, signs, and submits. @x402x/react provides useX402Payment hook. @x402x/fetch wraps fetch to auto-handle 402 and settlement.
+  ```bash
+  npm install @x402x/client @x402x/core @x402x/react @x402x/fetch viem
+  ```
+  ```typescript
+  import { X402Client } from "@x402x/client";
+  import { TransferHook } from "@x402x/core";
+
+  const client = new X402Client({
+    wallet, // viem wallet client
+    network: "base-sepolia",
+    facilitatorUrl: "https://facilitator.x402x.dev",
+  });
+
+  const res = await client.execute({
+    amount: "1000000",          // business amount (atomic units)
+    payTo: "0xMerchant...",     // final recipient
+    hook: TransferHook.getAddress("base-sepolia"),
+    hookData: TransferHook.encode([{ recipient: "0xPartner...", bips: 3000 }]),
+  });
+  console.log(res.txHash);
+  ```
+- Server middlewares: @x402x/hono and @x402x/express generate PaymentRequirements, verify posted X-PAYMENT, auto-add facilitator fee (auto mode), and settle via facilitator URL.
+  ```typescript
+  import { paymentMiddleware } from "@x402x/express";
+  app.use(
+    paymentMiddleware(
+      "0xMerchant...",
+      {
+        "/api/premium": { price: "$0.10", network: "base-sepolia", facilitatorFee: "auto" },
+      },
+      { url: process.env.FACILITATOR_URL! },
+    ),
+  );
+  ```
+- SDK utilities: @x402x/core for commitment calculation, network configs, TransferHook encoding, settlement-mode detection; @x402x/fetch for browser fetch wrapper; @x402x/client for low-level prepareSettlement/signAuthorization/settle.
+  ```typescript
+  import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/core";
+
+  const base = {
+    scheme: "exact",
+    network: "base-sepolia",
+    resource: "/api/premium",
+    maxAmountRequired: "1000000",
+    payTo: getNetworkConfig("base-sepolia").settlementRouter,
+    asset: getNetworkConfig("base-sepolia").defaultAsset.address,
+  };
+
+  const req = addSettlementExtra(base, {
+    hook: TransferHook.getAddress("base-sepolia"),
+    hookData: TransferHook.encode(),
+    facilitatorFee: "auto",
+    payTo: "0xMerchant...", // final recipient
+  });
+  ```
+- Hook development: implement ISettlementHook.execute; use allowance only; revert on failure; keep Router balance invariant intact.
+
+Facilitator Notes
+- Dual mode: handles standard x402 (no router) and settlement mode automatically based on extra.settlementRouter.
+- Safety: hook allowlist, settlement router allowlist, dynamic gas and fee validation, per-account queues, rate limiting, structured errors, optional OTel tracing.
+- Fees: facilitatorFee must cover gas; clients/servers can query min fee from facilitator (auto mode) or set explicitly. Total signed = business amount + fee; Hook receives net amount.
+- CORS: configure origins if calling facilitator from browser.
+
+Networks and Addresses
+- Do NOT hardcode addresses here; end users must configure network, SettlementRouter, TransferHook, and facilitator URLs per environment.
+- Reference: https://www.x402x.dev/facilitator for current facilitator endpoints and network/router/hook details.
+
+Quick Integration Checklist
+- Install aliased x402 to enable paymentRequirements: npm install x402@npm:@x402x/x402@0.6.6-patch.3 (or pnpm/yarn).
+- Generate PaymentRequirements with extra using @x402x/core (addSettlementExtra). Keep salt unique per quote. payTo in extra is the final recipient; base payTo (without extra) points to settlementRouter.
+- On client, compute commitment or use @x402x/client/@x402x/fetch to do it automatically.
+- Include paymentRequirements in X-PAYMENT header so facilitator can validate the same parameters.
+- Choose TransferHook by default; customize hookData for splits. For custom hooks, publish address and ABI to clients/facilitator.
+- Query facilitator for min fee (auto) near payment time; add to total.
+
+Best Practices and Safety
+- Preserve Router invariant: it should end with prior balance plus facilitator fees only; Hook must spend only the approved amount (value - fee).
+- Do not reuse salt across different quotes; it is part of the commitment.
+- Keep hook allowlists updated on the facilitator; reject unknown hooks in production.
+- Keep EIP-3009 validity windows reasonable; check nonce reuse (contextKey prevents double settle).
+- When extra is missing, the system behaves like standard x402; client must set to = payTo and use random nonce.
+- Configure CORS for browser facilitator calls; secure env secrets; avoid logging sensitive hookData if private.
+
+Events and Monitoring
+- Events: Settled(contextKey, payer, token, amount, hook, salt, payTo, facilitatorFee); HookExecuted(contextKey, hook, returnData); FeeAccumulated(facilitator, token, amount); FeesClaimed emitted on withdrawals.
+- Observability: facilitator supports structured logs, metrics, and OTel tracing; query calculate-fee endpoints to cache fees for a short duration.
+
+Doc Pointers (public web docs mirror these topics)
+- Concepts: programmable settlement, commitment-as-nonce, fallback behavior — https://www.x402x.dev/docs/getting-started
+- Integration overview: npm alias install, addSettlementExtra, client commit, facilitator paths — https://www.x402x.dev/docs/integration-overview
+- Client-side facilitator: @x402x/client high-level execute, low-level prepare/sign/settle, React hook — https://www.x402x.dev/docs/client-guide
+- Server middlewares: @x402x/hono and @x402x/express paymentMiddleware with auto fee — https://www.x402x.dev/docs/server-guide
+- Facilitator fee: calculation, auto mode vs explicit, fee query API — https://www.x402x.dev/docs/facilitator-fee
+- Hooks and contracts: SettlementRouter API, TransferHook usage, custom hook guidance, security considerations — https://github.com/nuwa-protocol/x402-exec/tree/main/contracts/docs
