@@ -34,6 +34,9 @@ export const GAS_COST_DEFAULTS = {
 
   /** Tolerance for fee validation (0-1) */
   VALIDATION_TOLERANCE: 0.1,
+
+  /** Minimum facilitator fee in USD */
+  MIN_FACILITATOR_FEE_USD: 0.01,
 } as const;
 
 /**

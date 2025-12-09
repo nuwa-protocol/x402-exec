@@ -14,6 +14,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { paymentMiddleware, type X402Context } from "@x402x/hono";
+import { getSupportedNetworks } from "@x402x/core";
 import { appConfig } from "./config.js";
 import * as premiumDownload from "./scenarios/premium-download.js";
 
@@ -60,8 +61,7 @@ app.get("/api/health", (c) => {
     status: "ok",
     message: "x402-exec Showcase Server",
     defaultNetwork: appConfig.defaultNetwork,
-    supportedNetworks: Object.keys(appConfig.networks),
-    networks: appConfig.networks,
+    supportedNetworks: getSupportedNetworks(),
   });
 });
 
@@ -85,7 +85,7 @@ app.post(
     appConfig.resourceServerAddress,
     {
       price: "$1.00", // 1.00 USD for digital content
-      network: Object.keys(appConfig.networks) as any,
+      network: getSupportedNetworks() as any,
       config: {
         description: "Premium Content Download: Purchase and download digital content",
       },
@@ -194,7 +194,7 @@ app.get("/api/download/:contentId", async (c) => {
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 x402-exec Showcase Server (Server Mode Only) starting on port ${port}`);
 console.log(`📍 Default network: ${appConfig.defaultNetwork}`);
-console.log(`🌐 Supported networks: ${Object.keys(appConfig.networks).join(", ")}`);
+console.log(`🌐 Supported networks: ${getSupportedNetworks().join(", ")}`);
 console.log(`💰 Resource server address: ${appConfig.resourceServerAddress}`);
 console.log(`🔧 Facilitator URL: ${appConfig.facilitatorUrl}`);
 console.log(`📥 Server Mode: Premium Download`);

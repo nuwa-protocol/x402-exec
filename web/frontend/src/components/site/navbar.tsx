@@ -41,20 +41,34 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuLink
                 asChild
+                data-active={pathname.startsWith("/token") ? true : undefined}
+              >
+                <Link
+                  to="/token"
+                  className="relative inline-flex items-center rounded-sm px-3 py-1.5 text-sm"
+                >
+                  <span className="font-medium">$X402X</span>
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
                 data-active={pathname.startsWith("/docs") ? true : undefined}
               >
                 <Link to="/docs">Docs</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
-            {/* Hidden for now: Stats page link intentionally removed from nav */}
-            {/* <NavigationMenuItem>
+            <NavigationMenuItem>
               <NavigationMenuLink
                 asChild
-                data-active={pathname.startsWith("/scan") ? true : undefined}
+                data-active={
+                  pathname.startsWith("/activities") ? true : undefined
+                }
               >
-                <Link to="/scan">Scan</Link>
+                <Link to="/activities">Activities</Link>
               </NavigationMenuLink>
-            </NavigationMenuItem> */}
+            </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink
                 asChild
@@ -75,15 +89,6 @@ export function Navbar() {
                 <Link to="/ecosystem">Ecosystem</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
-            {/* <NavigationMenuItem>
-              <NavigationMenuLink
-                href="https://github.com/nuwa-protocol/x402-exec#readme"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Docs
-              </NavigationMenuLink>
-            </NavigationMenuItem> */}
             <NavigationMenuItem>
               <NavigationMenuLink
                 href="https://github.com/nuwa-protocol/x402-exec"

@@ -53,6 +53,8 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
       | {
           evm: Array<{
             network: string;
+            totalQueueDepth: number;
+            pendingPayersCount: number;
             accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
           }>;
           status: string;
@@ -81,12 +83,16 @@ export function createHealthRoutes(deps: HealthRouteDependencies): Router {
     // Check account pools
     const evmAccountsInfo: Array<{
       network: string;
+      totalQueueDepth: number;
+      pendingPayersCount: number;
       accounts: Array<{ address: string; queueDepth: number; totalProcessed: number }>;
     }> = [];
     for (const [network, pool] of deps.evmAccountPools.entries()) {
       const accounts = pool.getAccountsInfo();
       evmAccountsInfo.push({
         network,
+        totalQueueDepth: pool.getTotalQueueDepth(),
+        pendingPayersCount: pool.getPendingPayersCount(),
         accounts: accounts.map((acc) => ({
           address: acc.address,
           queueDepth: acc.queueDepth,

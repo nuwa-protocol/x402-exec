@@ -103,6 +103,20 @@ export function createSettleRoutes(
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
       const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
 
+      // Extract payer address from payment payload for duplicate detection
+      // For EVM exact scheme: paymentPayload.payload.authorization.from
+      let payerAddress: string | undefined;
+      if (
+        paymentPayload.payload &&
+        typeof paymentPayload.payload === "object" &&
+        "authorization" in paymentPayload.payload &&
+        paymentPayload.payload.authorization &&
+        typeof paymentPayload.payload.authorization === "object" &&
+        "from" in paymentPayload.payload.authorization
+      ) {
+        payerAddress = (paymentPayload.payload.authorization as { from: string }).from;
+      }
+
       // Get the appropriate account pool
       let accountPool = deps.poolManager.getPool(paymentRequirements.network);
 
@@ -114,6 +128,7 @@ export function createSettleRoutes(
 
       // Execute settlement in the account pool's queue
       // This ensures serial execution per account (no nonce conflicts)
+      // Pass payer address for duplicate detection
       const result = await accountPool.execute(async (signer: Signer) => {
         // Check if this is a Settlement Router payment
         if (isSettlementMode(paymentRequirements)) {
@@ -299,13 +314,23 @@ export function createSettleRoutes(
             throw error;
           }
         }
-      });
+      }, payerAddress);
 
       res.json(result);
     } catch (error) {
       logger.error({ error }, "Settle error");
 
-      // Check for queue overload errors first
+      // Check for duplicate payer errors first
+      if (error instanceof DuplicatePayerError) {
+        res.status(429).json({
+          error: "Duplicate payer in queue",
+          message: error.message,
+          retryAfter: 10, // Suggest retry after 10 seconds
+        });
+        return;
+      }
+
+      // Check for queue overload errors
       if (error instanceof QueueOverloadError) {
         res.status(503).json({
           error: "Service temporarily overloaded",

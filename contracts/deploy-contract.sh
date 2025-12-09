@@ -1,6 +1,6 @@
 #!/bin/bash
 # Multi-network deployment script for SettlementRouter and Showcase contracts
-# Supports: Base Sepolia, Base Mainnet, X-Layer Testnet, X-Layer Mainnet
+# Supports: Base Sepolia, Base Mainnet, X-Layer Testnet, X-Layer Mainnet, SKALE Base Sepolia
 
 set -e
 
@@ -26,6 +26,7 @@ usage() {
     echo "  base              Base Mainnet (Chain ID: 8453)"
     echo "  xlayer-testnet    X-Layer Testnet (Chain ID: 1952)"
     echo "  xlayer            X-Layer Mainnet (Chain ID: 196)"
+    echo "  skale-base-sepolia SKALE Base Sepolia (Chain ID: 324705682)"
     echo ""
     echo "Options:"
     echo "  --settlement      Deploy only SettlementRouter"
@@ -73,7 +74,7 @@ WITH_HOOKS=false  # Flag for --with-hooks option
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        base-sepolia|base|xlayer-testnet|xlayer)
+        base-sepolia|base|xlayer-testnet|xlayer|skale-base-sepolia)
             NETWORK=$1
             shift
             ;;
@@ -159,6 +160,9 @@ get_env_prefix() {
         xlayer)
             echo "X_LAYER"
             ;;
+        skale-base-sepolia)
+            echo "SKALE_BASE_SEPOLIA"
+            ;;
     esac
 }
 
@@ -177,6 +181,9 @@ get_network_info() {
         xlayer)
             echo "X-Layer Mainnet|196"
             ;;
+        skale-base-sepolia)
+            echo "SKALE Base Sepolia|324705682"
+            ;;
     esac
 }
 
@@ -194,6 +201,9 @@ get_default_rpc_url() {
             ;;
         xlayer)
             echo "https://rpc.xlayer.tech"
+            ;;
+        skale-base-sepolia)
+            echo "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha"
             ;;
     esac
 }
@@ -318,6 +328,13 @@ fi
 # Export environment variables for Forge scripts
 export SETTLEMENT_ROUTER_ADDRESS="$SETTLEMENT_ROUTER"
 
+# Determine additional flags based on network
+LEGACY_FLAG=""
+if [ "$NETWORK" = "skale-base-sepolia" ]; then
+    LEGACY_FLAG="--legacy"
+    print_info "Using legacy gas pricing for SKALE network"
+fi
+
 # Deploy SettlementRouter
 if [ "$DEPLOY_MODE" = "settlement" ] || [ "$DEPLOY_MODE" = "all" ]; then
     echo "========================================="
@@ -328,6 +345,7 @@ if [ "$DEPLOY_MODE" = "settlement" ] || [ "$DEPLOY_MODE" = "all" ]; then
     forge script script/DeploySettlement.s.sol:DeploySettlement \
         --rpc-url $RPC_URL \
         --broadcast \
+        $LEGACY_FLAG \
         $VERIFY_FLAG \
         -vvv
     
@@ -388,6 +406,7 @@ if [ "$DEPLOY_MODE" = "showcase" ] || [ "$DEPLOY_MODE" = "referral" ] || [ "$DEP
         --sig "${DEPLOY_FUNCTION}(string)" "$ENV_PREFIX" \
         --rpc-url $RPC_URL \
         --broadcast \
+        $LEGACY_FLAG \
         $VERIFY_FLAG \
         -vv
     
@@ -421,6 +440,7 @@ if [ "$DEPLOY_MODE" = "hooks" ] || [ "$DEPLOY_MODE" = "transfer" ] || [ "$WITH_H
             --sig "run(address)" "$SETTLEMENT_ROUTER_ADDRESS" \
             --rpc-url $RPC_URL \
             --broadcast \
+            $LEGACY_FLAG \
             $VERIFY_FLAG \
             -vvv
         
@@ -483,6 +503,9 @@ case $NETWORK in
         ;;
     xlayer)
         echo "View contracts: https://www.oklink.com/xlayer"
+        ;;
+    skale-base-sepolia)
+        echo "View contracts: https://base-sepolia-testnet-explorer.skalenodes.com/"
         ;;
 esac
 echo ""

@@ -39,6 +39,35 @@ export interface CommitmentParams {
 }
 
 /**
+ * Gas model for different networks
+ */
+export type GasModel = "eip1559" | "legacy";
+
+/**
+ * Network metadata containing protocol-level information
+ */
+export interface NetworkMetadata {
+  /** Gas pricing model used by the network */
+  gasModel: GasModel;
+  /** Native token symbol */
+  nativeToken: string;
+}
+
+/**
+ * Demo hooks configuration for showcase examples
+ */
+export interface DemoHooks {
+  /** NFTMintHook contract address */
+  nftMint?: string;
+  /** RandomNFT contract address */
+  randomNFT?: string;
+  /** RewardHook contract address */
+  reward?: string;
+  /** RewardToken contract address */
+  rewardToken?: string;
+}
+
+/**
  * Network configuration for x402x
  */
 export interface NetworkConfig {
@@ -73,6 +102,10 @@ export interface NetworkConfig {
     /** TransferHook address */
     transfer: string;
   };
+  /** Demo hooks configuration (optional, for showcase examples) */
+  demoHooks?: DemoHooks;
+  /** Network metadata */
+  metadata?: NetworkMetadata;
 }
 
 /**

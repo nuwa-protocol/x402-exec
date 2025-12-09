@@ -1,6 +1,6 @@
 {
   "name": "@x402x/express",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Express middleware for x402x settlement framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -38,8 +38,8 @@
   "dependencies": {
     "@solana/kit": "^2.3.0",
     "@x402x/core": "workspace:*",
-    "viem": "^2.21.26",
-    "x402": "npm:@x402x/x402@0.6.6-patch.2"
+    "viem": "2.40.3",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

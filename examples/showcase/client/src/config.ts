@@ -14,12 +14,12 @@ import { Chain } from "viem";
 import { evm } from "x402/types";
 
 // Re-export chains from evm namespace
-const { xLayerTestnet, xLayer } = evm;
+const { xLayerTestnet, xLayer, skaleBaseSepolia } = evm;
 
 /**
  * Supported network identifiers
  */
-export type Network = "base-sepolia" | "x-layer-testnet" | "base" | "x-layer";
+export type Network = "base-sepolia" | "x-layer-testnet" | "skale-base-sepolia" | "base" | "x-layer";
 
 /**
  * UI-specific network configuration
@@ -50,7 +50,7 @@ export interface NetworkConfig {
  * UI configuration for supported networks
  * Only contains presentation-layer fields
  */
-export const NETWORK_UI_CONFIG: Record<Network, NetworkUIConfig> = {
+export const NETWORK_UI_CONFIG: Record<string, NetworkUIConfig> = {
   "base-sepolia": {
     icon: "🔵",
     displayName: "Base Sepolia",
@@ -60,6 +60,11 @@ export const NETWORK_UI_CONFIG: Record<Network, NetworkUIConfig> = {
     icon: "⭕",
     displayName: "X Layer Testnet",
     faucetUrl: "https://www.okx.com/xlayer/faucet",
+  },
+  "skale-base-sepolia": {
+    icon: "💎",
+    displayName: "SKALE Base Sepolia",
+    faucetUrl: "https://base-sepolia-faucet.skale.space",
   },
   base: {
     icon: "🔵",
@@ -79,7 +84,7 @@ export const NETWORK_UI_CONFIG: Record<Network, NetworkUIConfig> = {
  * @returns Complete network configuration
  */
 export function getNetworkConfig(network: Network): NetworkConfig {
-  const chain = evm.getChainFromNetwork(network);
+  const chain = evm.getChainFromNetwork(network) as Chain;
   const chainConfig = evm.config[chain.id.toString()];
   const uiConfig = NETWORK_UI_CONFIG[network];
 
@@ -104,6 +109,7 @@ export function getNetworkConfig(network: Network): NetworkConfig {
 export const NETWORKS: Record<Network, NetworkConfig> = {
   "base-sepolia": getNetworkConfig("base-sepolia"),
   "x-layer-testnet": getNetworkConfig("x-layer-testnet"),
+  "skale-base-sepolia": getNetworkConfig("skale-base-sepolia"),
   base: getNetworkConfig("base"),
   "x-layer": getNetworkConfig("x-layer"),
 };
@@ -196,5 +202,6 @@ export const config = {
   networks: NETWORKS,
 };
 
+
 // Re-export chains for wagmi config
-export { xLayerTestnet, xLayer };
+export { xLayerTestnet, xLayer, skaleBaseSepolia };

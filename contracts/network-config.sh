@@ -19,6 +19,9 @@ declare -a NETWORK_CONFIGS=(
     
     # X-Layer Mainnet
     "xlayer|X-Layer Mainnet|196|https://rpc.xlayer.tech|https://www.oklink.com/xlayer|oklink|https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER|OKLINK_API_KEY|false"
+
+    # SKALE Base Sepolia
+    "skale-base-sepolia|SKALE Base Sepolia|324705682|https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha|https://base-sepolia-testnet-explorer.skalenodes.com|blockscout|https://base-sepolia-testnet-explorer.skalenodes.com:443/api/|SKALE_API_KEY|false"
 )
 
 # Helper function to get network config by key

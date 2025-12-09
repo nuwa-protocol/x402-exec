@@ -14,3 +14,6 @@
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std.git
+[submodule "contracts/x402x-mint/lib/prb-math"]
+	path = contracts/x402x-mint/lib/prb-math
+	url = https://github.com/PaulRBerg/prb-math.git

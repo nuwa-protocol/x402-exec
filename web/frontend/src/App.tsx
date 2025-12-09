@@ -1,11 +1,12 @@
 import Footer from "@/components/site/footer";
 import Hero from "@/components/site/hero";
 import Navbar from "@/components/site/navbar";
+import ActivitiesPage from "@/pages/activities";
 import DebugPage from "@/pages/debug";
 import DocsPage from "@/pages/docs";
 import EcosystemPage from "@/pages/ecosystem";
 import FacilitatorPage from "@/pages/facilitator";
-import StatsPage from "@/pages/stats";
+import { TokenPage } from "@/pages/token";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -20,10 +21,12 @@ function App() {
       ? "docs"
       : pathname.startsWith("facilitator")
         ? "facilitator"
-          : pathname.startsWith("ecosystem")
-            ? "ecosystem"
-            : pathname.startsWith("stats")
-              ? "stats"
+        : pathname.startsWith("ecosystem")
+          ? "ecosystem"
+          : pathname.startsWith("activities")
+            ? "activities"
+            : pathname.startsWith("token")
+              ? "token"
               : pathname.startsWith("debug")
                 ? "debug"
                 : "home";
@@ -34,11 +37,13 @@ function App() {
           ? `${base} • Facilitator`
           : route === "ecosystem"
             ? `${base} • Ecosystem`
-            : route === "stats"
-              ? `${base} • Stats`
-              : route === "debug"
-                ? `${base} • Debug`
-                : `${base} - Turn any x402 payment into an on-chain action`;
+            : route === "activities"
+              ? `${base} • Activities`
+              : route === "token"
+                ? `${base} • Token Mint`
+                : route === "debug"
+                  ? `${base} • Debug`
+                  : `${base} - Turn any x402 payment into an on-chain action`;
     if (typeof document !== "undefined") {
       document.title = title;
     }
@@ -48,17 +53,19 @@ function App() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
-        {/* Site-wide notice: production launch */}
-        <div className="mx-auto max-w-6xl px-4 pt-4"></div>
         <Routes>
           <Route path="/" element={<Hero />} />
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/docs/:slug" element={<DocsPage />} />
           <Route path="/facilitator" element={<FacilitatorPage />} />
           <Route path="/ecosystem" element={<EcosystemPage />} />
-          <Route path="/stats" element={<StatsPage />} />
-          <Route path="/scan" element={<Navigate to="/stats" replace />} />
+          <Route path="/activities" element={<ActivitiesPage />} />
+          <Route
+            path="/stats"
+            element={<Navigate to="/activities" replace />}
+          />
           <Route path="/debug" element={<DebugPage />} />
+          <Route path="/token" element={<TokenPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

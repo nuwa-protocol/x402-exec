@@ -1,4 +1,4 @@
-import { formatUsdcAtomicToDisplay, useFacilitatorStats } from "@/hooks/use-facilitator-stats";
+import { useScanStats } from "@/hooks/use-scan-stats";
 import { animate } from "motion";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,16 +12,16 @@ function formatWithSuffix(n: number): { value: number; suffix: string; decimals:
 }
 
 export function CountUpStats() {
-  const { data, loading } = useFacilitatorStats({});
+  const { stats, loading } = useScanStats({});
 
-  // Convert atomic USDC to a plain number for animation
-  const totalUsdc = data ? Number(formatUsdcAtomicToDisplay(data.totalValueAtomic, 6)) : 0;
-  const { value: usdcVal, suffix: usdcSuf, decimals: usdcDec } = formatWithSuffix(totalUsdc);
+  // Use the same aggregated stats source as the /activities page
+  const totalUsd = stats.transactionVolumeUsd ?? 0;
+  const { value: usdcVal, suffix: usdcSuf, decimals: usdcDec } = formatWithSuffix(totalUsd);
 
-  const uniquePayers = data?.accountsCount ?? 0;
+  const uniquePayers = stats.accountsCount ?? 0;
   const { value: payersVal, suffix: payersSuf, decimals: payersDec } = formatWithSuffix(uniquePayers);
 
-  const txs = data?.transactionsCount ?? 0;
+  const txs = stats.transactionsCount ?? 0;
   const { value: txVal, suffix: txSuf, decimals: txDec } = formatWithSuffix(txs);
 
   return (
@@ -83,7 +83,7 @@ function Stat({ num, suffix, decimals = 0, subheading }: Props) {
   return (
     <div ref={containerRef} className="flex w-72 flex-col items-center py-8 sm:py-0">
       <p className="mb-2 text-center text-6xl font-semibold sm:text-5xl">
-        <span ref={ref}></span>
+        <span ref={ref} />
         {suffix}
       </p>
       <p className="max-w-48 text-center text-neutral-600">{subheading}</p>

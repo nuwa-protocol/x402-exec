@@ -1,6 +1,6 @@
 {
   "name": "@x402x/fetch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fetch wrapper for x402x settlement framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -36,8 +36,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@x402x/core": "workspace:*",
-    "viem": "^2.21.26",
-    "x402": "npm:@x402x/x402@0.6.6-patch.2"
+    "viem": "2.40.3",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

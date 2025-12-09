@@ -3,13 +3,14 @@
  * Complete payment flow: network selection → fee display → payment confirmation
  */
 
-import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { TransferHook } from "@x402x/core";
-import { useX402Client } from "@x402x/client";
+import { useState, useEffect, useCallback } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+import { TransferHook, calculateFacilitatorFee } from "@x402x/core";
+import { useX402Client, X402Client } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
 import { WalletSelector } from "./WalletSelector";
+import { publicActions } from "viem";
 import {
   type Network,
   NETWORKS,
@@ -47,10 +48,12 @@ export function ServerlessPaymentDialog({
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
   const [feeInfo, setFeeInfo] = useState<FeeCalculationResult | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+  const [isLoadingFee, setIsLoadingFee] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
 
   const { address, isConnected, chain } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const facilitatorUrl = getFacilitatorUrl(); // Get facilitator URL from config
   
   // Fix: Pass selectedNetwork explicitly to useX402Client
@@ -71,6 +74,13 @@ export function ServerlessPaymentDialog({
     setStep("select-network");
   };
 
+  // Hide wallet selector once a wallet connects
+  useEffect(() => {
+    if (isConnected && showWalletSelector) {
+      setShowWalletSelector(false);
+    }
+  }, [isConnected, showWalletSelector]);
+
   // Load preferred network on open
   useEffect(() => {
     if (isOpen) {
@@ -88,21 +98,69 @@ export function ServerlessPaymentDialog({
     }
   }, [isOpen]);
 
+  // Helper function to load fee
+  const loadFee = useCallback(
+    async (network: Network) => {
+      setIsLoadingFee(true);
+      try {
+        console.log("[ServerlessPaymentDialog] Loading fee for network:", network);
+
+        // Determine hook and hookData based on priority:
+        // 1. Use prepareHookData function if provided (network-specific)
+        // 2. Use custom hook/hookData if provided (static)
+        // 3. Default to TransferHook
+        let hook: `0x${string}`;
+        let hookData: `0x${string}`;
+
+        if (prepareHookData) {
+          // Use dynamic preparation function
+          const prepared = prepareHookData(network);
+          hook = prepared.hook;
+          hookData = prepared.hookData;
+          console.log(
+            "[ServerlessPaymentDialog] Using prepareHookData for network:",
+            network,
+            "hook:",
+            hook,
+          );
+        } else if (customHook) {
+          // Use static custom hook
+          hook = customHook;
+          hookData = (customHookData || TransferHook.encode()) as `0x${string}`;
+        } else {
+          // Default to TransferHook
+          hook = TransferHook.getAddress(network) as `0x${string}`;
+          hookData = TransferHook.encode() as `0x${string}`;
+        }
+
+        // If wallet isn't connected yet, fall back to direct facilitator query.
+        const fee = client
+          ? await client.calculateFee(hook, hookData)
+          : await calculateFacilitatorFee(facilitatorUrl, network, hook, hookData);
+
+        console.log("[ServerlessPaymentDialog] Fee loaded:", fee);
+        setFeeInfo(fee);
+        setStep("confirm-payment");
+      } catch (err: any) {
+        console.error("[ServerlessPaymentDialog] Failed to load fee:", err);
+        setError(err.message || "Failed to load facilitator fee");
+        setStep("select-network");
+      } finally {
+        setIsLoadingFee(false);
+      }
+    },
+    [address, client, customHook, customHookData, facilitatorUrl, prepareHookData],
+  );
+
   // Load fee when network is selected
   const handleNetworkSelect = async (network: Network) => {
     setSelectedNetwork(network);
     setPreferredNetwork(network); // Remember user's choice
     setError(null);
 
-    // If wallet not connected, trigger wallet selector
-    if (!isConnected) {
-      setShowWalletSelector(true);
-      return;
-    }
-
     // Check if we need to switch network
     const targetChainId = NETWORKS[network].chainId;
-    if (chain?.id !== targetChainId) {
+    if (isConnected && chain?.id !== targetChainId) {
       setStep("switch-network");
     } else {
       // Already on correct network, load fee directly
@@ -151,64 +209,51 @@ export function ServerlessPaymentDialog({
         loadFee(selectedNetwork);
       }
     }
-  }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client]);
+  }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client, loadFee]);
 
-  // Helper function to load fee
-  const loadFee = async (network: Network) => {
-    try {
-      if (!client || !address) {
-        console.log("[ServerlessPaymentDialog] Client or address not ready, waiting...");
-        return; // Don't throw error, just wait for client to be ready
-      }
-
-      console.log("[ServerlessPaymentDialog] Loading fee for network:", network);
-
-      // Determine hook and hookData based on priority:
-      // 1. Use prepareHookData function if provided (network-specific)
-      // 2. Use custom hook/hookData if provided (static)
-      // 3. Default to TransferHook
-      let hook: `0x${string}`;
-      let hookData: `0x${string}`;
-
-      if (prepareHookData) {
-        // Use dynamic preparation function
-        const prepared = prepareHookData(network);
-        hook = prepared.hook;
-        hookData = prepared.hookData;
-        console.log(
-          "[ServerlessPaymentDialog] Using prepareHookData for network:",
-          network,
-          "hook:",
-          hook,
-        );
-      } else if (customHook) {
-        // Use static custom hook
-        hook = customHook;
-        hookData = (customHookData || TransferHook.encode()) as `0x${string}`;
-      } else {
-        // Default to TransferHook
-        hook = TransferHook.getAddress(network) as `0x${string}`;
-        hookData = TransferHook.encode() as `0x${string}`;
-      }
-
-      // Since we pass selectedNetwork explicitly to useX402Client,
-      // the client is always using the correct network configuration.
-      const fee = await client.calculateFee(hook, hookData);
-
-      console.log("[ServerlessPaymentDialog] Fee loaded:", fee);
-      setFeeInfo(fee);
-      setStep("confirm-payment");
-    } catch (err: any) {
-      console.error("[ServerlessPaymentDialog] Failed to load fee:", err);
-      setError(err.message || "Failed to load facilitator fee");
-      setStep("select-network");
+  // If we entered loading-fee while client/address were not ready, retry once they appear
+  useEffect(() => {
+    if (
+      step === "loading-fee" &&
+      selectedNetwork &&
+      !feeInfo &&
+      !isLoadingFee
+    ) {
+      void loadFee(selectedNetwork);
     }
-  };
+  }, [step, selectedNetwork, feeInfo, isLoadingFee, loadFee]);
 
   // Handle payment
   const handlePay = async () => {
-    if (!client || !selectedNetwork || !feeInfo) {
+    if (!selectedNetwork || !feeInfo) {
       return;
+    }
+
+    // Require wallet connection at pay time
+    if (!isConnected) {
+      setShowWalletSelector(true);
+      return;
+    }
+
+    // Build a client on the fly if the hook hasn't produced one yet
+    let activeClient = client;
+    if (!activeClient) {
+      if (!walletClient) {
+        setShowWalletSelector(true);
+        return;
+      }
+      try {
+        const extendedWallet = walletClient.extend(publicActions);
+        activeClient = new X402Client({
+          wallet: extendedWallet,
+          network: selectedNetwork,
+          facilitatorUrl,
+        });
+      } catch (err) {
+        console.error("[ServerlessPaymentDialog] Failed to build client from wallet:", err);
+        setError("Wallet client is not ready. Please try again in a moment.");
+        return;
+      }
     }
 
     setIsPaying(true);
@@ -231,7 +276,7 @@ export function ServerlessPaymentDialog({
         hookData = TransferHook.encode() as `0x${string}`;
       }
 
-      const result = await client.execute(
+      const result = await activeClient.execute(
         {
           hook,
           hookData,

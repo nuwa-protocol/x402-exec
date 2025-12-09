@@ -14,11 +14,12 @@ import {
   type PaymentRequirements,
   type PaymentPayload,
   PaymentPayloadSchema,
-  createConnectedClient,
   SupportedEVMNetworks,
   type ConnectedClient,
   type X402Config,
+  evm,
 } from "x402/types";
+import { createPublicClient, http, publicActions } from "viem";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
@@ -41,6 +42,8 @@ export interface VerifyRouteDependencies {
   poolManager: PoolManager;
   x402Config?: X402Config;
   balanceChecker?: BalanceChecker;
+  /** RPC URLs per network (network name -> RPC URL) */
+  rpcUrls?: Record<string, string>;
 }
 
 /**
@@ -92,8 +95,14 @@ export function createVerifyRoutes(
         throw new Error("Invalid network. Only EVM networks are supported.");
       }
 
-      // Create connected client for EVM network
-      const client: ConnectedClient = createConnectedClient(paymentRequirements.network);
+      // Create connected client for EVM network with custom RPC URL support
+      const chain = evm.getChainFromNetwork(paymentRequirements.network);
+      const rpcUrl =
+        deps.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
+      const client: ConnectedClient = createPublicClient({
+        chain,
+        transport: http(rpcUrl),
+      }).extend(publicActions) as unknown as ConnectedClient;
 
       // verify
       const startTime = Date.now();

@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from "react";
-import { useWalletClient, useAccount, useChainId } from "wagmi";
+import { useWalletClient, useAccount, useChainId, WagmiProviderNotFoundError } from "wagmi";
 import { publicActions } from "viem";
 import { X402Client } from "../client.js";
 import type { X402ClientConfig } from "../types.js";
@@ -72,9 +72,34 @@ const CHAIN_ID_TO_NETWORK: Record<number, string> = {
  * ```
  */
 export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
-  const { data: walletClient } = useWalletClient();
-  const { isConnected } = useAccount();
-  const chainId = useChainId();
+  // First, try to get wagmi hooks outside of useMemo to catch provider errors early
+  let walletClient: any;
+  let isConnected: boolean;
+  let chainId: number;
+
+  try {
+    const walletClientResult = useWalletClient();
+    const accountResult = useAccount();
+    const chainIdResult = useChainId();
+
+    walletClient = walletClientResult.data;
+    isConnected = accountResult.isConnected;
+    chainId = chainIdResult;
+  } catch (error) {
+    // If wagmi provider context is missing (e.g., during early render), return null quietly
+    if (
+      error instanceof WagmiProviderNotFoundError ||
+      (error as any)?.name === "WagmiProviderNotFoundError" ||
+      (error instanceof Error &&
+        error.message.includes("useConfig") &&
+        error.message.includes("WagmiProvider"))
+    ) {
+      return null;
+    }
+
+    console.warn("[x402x] Unable to access wagmi provider:", error);
+    return null;
+  }
 
   return useMemo(() => {
     if (!isConnected || !walletClient) {

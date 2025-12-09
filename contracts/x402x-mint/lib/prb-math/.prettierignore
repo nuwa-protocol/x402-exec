@@ -1,0 +1,9 @@
+# directories
+cache
+node_modules
+out
+
+# files
+.pnp.*
+package-lock.json
+pnpm-lock.yaml

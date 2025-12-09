@@ -1,6 +1,6 @@
 {
   "name": "@x402x/client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Client SDK for x402x Serverless Mode - execute on-chain contracts directly via facilitator",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -43,8 +43,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@x402x/core": "workspace:*",
-    "viem": "^2.21.26",
-    "x402": "npm:@x402x/x402@0.6.6-patch.2"
+    "viem": "2.40.3",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
   },
   "peerDependencies": {
     "react": "^18.0.0",

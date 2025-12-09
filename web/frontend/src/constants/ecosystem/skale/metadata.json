@@ -1,0 +1,9 @@
+{
+	"name": "SKALE",
+	"description": "The gas-free, invisible blockchain built to scale high-performance apps with industry leading privacy & encryption.",
+	"url": "https://www.skale.space/",
+	"paymentTokensByNetwork": {
+		"skale-base-sepolia": ["USDC"]
+	},
+	"tag": "l1/l2"
+}

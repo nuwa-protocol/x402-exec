@@ -246,14 +246,12 @@ The showcase client uses environment variables for configuration. All client-sid
 
 ### Available Variables
 
-| Variable                            | Description                             | Default                         |
-| ----------------------------------- | --------------------------------------- | ------------------------------- |
-| `VITE_FACILITATOR_URL`              | Facilitator service URL                 | `https://facilitator.x402x.dev` |
-| `VITE_SERVER_URL`                   | Server URL for Server Mode examples     | Empty (uses proxy)              |
-| `VITE_REWARD_HOOK_BASE_SEPOLIA`     | RewardHook contract on Base Sepolia     | `0x0000...` (throws error)      |
-| `VITE_REWARD_HOOK_XLAYER_TESTNET`   | RewardHook contract on X Layer Testnet  | `0x0000...` (throws error)      |
-| `VITE_NFT_MINT_HOOK_BASE_SEPOLIA`   | NFTMintHook contract on Base Sepolia    | `0x0000...` (throws error)      |
-| `VITE_NFT_MINT_HOOK_XLAYER_TESTNET` | NFTMintHook contract on X Layer Testnet | `0x0000...` (throws error)      |
+| Variable                | Description                         | Default                         |
+| ----------------------- | ----------------------------------- | ------------------------------- |
+| `VITE_FACILITATOR_URL`  | Facilitator service URL             | `https://facilitator.x402x.dev` |
+| `VITE_SERVER_URL`       | Server URL for Server Mode examples | Empty (uses proxy)              |
+
+**Note**: Demo hook contract addresses are now configured centrally in `@x402x/core` and do not require environment variables. Adding new networks with demo hooks only requires updating the core package.
 
 ### File Priority
 
@@ -266,7 +264,7 @@ Vite loads environment files in this order (later files override earlier ones):
 
 ### Important Notes
 
-- **Hook Addresses**: If a hook address is not configured (or is `0x0000...`), calling `RewardHook.getAddress()` or `NFTMintHook.getAddress()` will throw an error with a helpful message.
+- **Demo Hooks**: Demo hook addresses are now centrally managed in `@x402x/core`. If a demo hook is not deployed on a network, calling `RewardHook.getAddress()` or `NFTMintHook.getAddress()` will throw an error with a helpful message.
 - **Local Development**: Use `.env.local` to override values without affecting the committed `.env` file.
 - **Security**: Never commit sensitive data (API keys, private keys) to `.env` files. Use `.env.local` for secrets.
 
@@ -275,8 +273,4 @@ Vite loads environment files in this order (later files override earlier ones):
 ```bash
 # Local Facilitator
 VITE_FACILITATOR_URL=http://localhost:3001
-
-# Local Hook Deployments
-VITE_REWARD_HOOK_BASE_SEPOLIA=0x1234567890123456789012345678901234567890
-VITE_NFT_MINT_HOOK_BASE_SEPOLIA=0x0987654321098765432109876543210987654321
 ```

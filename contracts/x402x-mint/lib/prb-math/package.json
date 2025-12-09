@@ -1,0 +1,55 @@
+{
+  "name": "@prb/math",
+  "description": "Solidity library for advanced fixed-point math",
+  "version": "4.1.0",
+  "author": {
+    "name": "Paul Razvan Berg",
+    "url": "https://github.com/PaulRBerg"
+  },
+  "bugs": {
+    "url": "https://github.com/PaulRBerg/prb-math/issues"
+  },
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std#v1.9.7",
+    "prettier": "^3.6.2",
+    "solhint": "^6.0.0"
+  },
+  "files": [
+    "src",
+    "test/utils",
+    "CHANGELOG.md"
+  ],
+  "homepage": "https://github.com/PaulRBerg/prb-math#readme",
+  "keywords": [
+    "arithmetic",
+    "blockchain",
+    "ethereum",
+    "fixed-point",
+    "fixed-point-math",
+    "library",
+    "math",
+    "smart-contracts",
+    "solidity"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PaulRBerg/prb-math.git"
+  },
+  "scripts": {
+    "build": "forge build",
+    "clean": "bunx del-cli cache out",
+    "forge-check": "forge fmt --check",
+    "forge-write": "forge fmt",
+    "full-check": "bun run prettier-check && bun run solhint-check && bun run forge-check",
+    "full-write": "bun run prettier-write && bun run solhint-write && bun run forge-write",
+    "prettier-check": "prettier --check \"**/*.{json,md,yml}\"",
+    "prettier-write": "prettier --write \"**/*.{json,md,yml}\"",
+    "solhint-check": "solhint \"{src,test}/**/*.sol\"",
+    "solhint-write": "solhint --fix \"{src,test}/**/*.sol\"",
+    "test": "forge test"
+  }
+}

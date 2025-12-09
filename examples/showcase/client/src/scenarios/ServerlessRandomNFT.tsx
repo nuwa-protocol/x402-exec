@@ -16,7 +16,7 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksNFTData } from "../hooks/useNFTData";
-import { NFTMintHook } from "../hooks/NFTMintHook";
+import { NFTMintHook } from "@x402x/core";
 import { type Network, NETWORK_UI_CONFIG } from "../config";
 import nftMintCode from "../code-examples/nft-mint.ts?raw";
 
@@ -33,10 +33,6 @@ export function ServerlessRandomNFT() {
   // NFT mint preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
   const prepareNFTMintForNetwork = (network: Network) => {
-    if (!connectedAddress) {
-      throw new Error("Wallet not connected. Please connect your wallet first.");
-    }
-
     // Get NFT mint hook address for the selected network
     // This will throw an error if not configured, which is intentional
     const hook = NFTMintHook.getAddress(network);

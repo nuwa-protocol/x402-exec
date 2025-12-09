@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPublicClient, http, type Address } from "viem";
 import { NETWORKS, type Network } from "../config";
+import { getNetworkConfig } from "@x402x/core";
 
 const NFT_ABI = [
   {
@@ -33,19 +34,14 @@ const NFT_ABI = [
   },
 ] as const;
 
-// Get NFT addresses from environment (matching NFTMintHook.ts pattern)
-const NFT_ADDRESSES: Record<string, string> = {
-  "base-sepolia":
-    import.meta.env.VITE_BASE_SEPOLIA_RANDOM_NFT_ADDRESS ||
-    "0x0000000000000000000000000000000000000000",
-  "x-layer-testnet":
-    import.meta.env.VITE_X_LAYER_TESTNET_RANDOM_NFT_ADDRESS ||
-    "0x0000000000000000000000000000000000000000",
-  base:
-    import.meta.env.VITE_BASE_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000",
-  "x-layer":
-    import.meta.env.VITE_X_LAYER_RANDOM_NFT_ADDRESS || "0x0000000000000000000000000000000000000000",
-};
+// Helper function to get NFT address from core config
+function getNFTAddress(network: string): string {
+  try {
+    return getNetworkConfig(network).demoHooks?.randomNFT || "0x0000000000000000000000000000000000000000";
+  } catch {
+    return "0x0000000000000000000000000000000000000000";
+  }
+}
 
 export interface NFTNetworkData {
   network: Network;
@@ -74,6 +70,14 @@ export function useAllNetworksNFTData() {
       loading: true,
       error: null,
     },
+    "skale-base-sepolia": {
+      network: "skale-base-sepolia",
+      totalSupply: 0,
+      maxSupply: 0,
+      remainingSupply: 0,
+      loading: true,
+      error: null,
+    },
     base: {
       network: "base",
       totalSupply: 0,
@@ -93,7 +97,7 @@ export function useAllNetworksNFTData() {
   });
 
   const fetchDataForNetwork = useCallback(async (network: Network): Promise<NFTNetworkData> => {
-    const nftAddress = NFT_ADDRESSES[network];
+    const nftAddress = getNFTAddress(network);
     const config = NETWORKS[network];
 
     // Check if address is configured

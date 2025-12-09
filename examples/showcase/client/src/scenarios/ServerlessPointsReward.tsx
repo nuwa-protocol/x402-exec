@@ -16,7 +16,7 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksRewardTokenData } from "../hooks/useRewardTokenData";
-import { RewardHook } from "../hooks/RewardHook";
+import { RewardHook } from "@x402x/core";
 import { type Network, NETWORK_UI_CONFIG } from "../config";
 import pointsRewardCode from "../code-examples/points-reward.ts?raw";
 
@@ -34,10 +34,6 @@ export function ServerlessPointsReward() {
   // Reward preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
   const prepareRewardForNetwork = (network: Network) => {
-    if (!connectedAddress) {
-      throw new Error("Wallet not connected. Please connect your wallet first.");
-    }
-
     // Get reward hook address for the selected network
     // This will throw an error if not configured, which is intentional
     const hook = RewardHook.getAddress(network);

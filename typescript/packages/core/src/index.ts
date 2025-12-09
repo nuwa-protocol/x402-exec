@@ -33,6 +33,7 @@ export type {
   PaymentRequirements,
   PaymentPayload,
   Signer,
+  DemoHooks,
 } from "./types.js";
 
 export { SettlementExtraError } from "./types.js";
@@ -49,7 +50,10 @@ export {
 } from "./networks.js";
 
 // Export builtin hooks
-export { TransferHook } from "./hooks/index.js";
+export { TransferHook, NFTMintHook, RewardHook } from "./hooks/index.js";
+
+// Export demo hooks configuration types
+export type { MintConfig, RewardConfig } from "./hooks/demo.js";
 
 // Export helper functions
 export { addSettlementExtra } from "./utils.js";

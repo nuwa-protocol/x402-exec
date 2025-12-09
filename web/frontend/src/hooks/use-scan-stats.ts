@@ -1,5 +1,5 @@
-import * as React from "react";
 import type { HookInfo, NetworkId, Stats, TransactionsQuery } from "@/types/scan";
+import { useQuery } from "@tanstack/react-query";
 
 // API response types
 type ApiOverviewResponse = {
@@ -38,6 +38,43 @@ type ApiHooksResponse = {
   };
 };
 
+const DEFAULT_STATS: Stats = {
+  transactionVolumeUsd: 0,
+  accountsCount: 0,
+  transactionsCount: 0,
+};
+
+function buildScanStatsQueryKey(query: TransactionsQuery): (string | number | null)[] {
+  return [
+    "scanStats",
+    (query.networks || []).join(","),
+    query.hookAddress || "",
+    query.fromTime ?? null,
+    query.toTime ?? null,
+  ];
+}
+
+async function fetchScanStats(): Promise<Stats> {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3003";
+  const url = `${apiUrl}/api/stats/overview`;
+
+  const resp = await fetch(url, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status}`);
+  }
+
+  const json = (await resp.json()) as ApiOverviewResponse;
+
+  if (!json.success || !json.data?.overview) {
+    throw new Error("Invalid API response");
+  }
+
+  return transformOverview(json.data.overview);
+}
+
 // Transform API overview to Stats type
 function transformOverview(apiOverview: ApiOverviewResponse["data"]["overview"]): Stats {
   // total_volume is in USDC atomic units (USDC has 6 decimals), convert to USD
@@ -73,128 +110,80 @@ function transformHookItem(hook: ApiHookItem): HookInfo & {
   };
 }
 
-export function useScanStats(query: TransactionsQuery = {}): Stats {
-  const [stats, setStats] = React.useState<Stats>({
-    transactionVolumeUsd: 0,
-    accountsCount: 0,
-    transactionsCount: 0,
+export function useScanStats(query: TransactionsQuery = {}): {
+  stats: Stats;
+  loading: boolean;
+  error: string | null;
+} {
+  const queryResult = useQuery<Stats, Error>({
+    queryKey: buildScanStatsQueryKey(query),
+    queryFn: fetchScanStats,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function fetchStats() {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3003";
-        const url = `${apiUrl}/api/stats/overview`;
-
-        const resp = await fetch(url, {
-          headers: { Accept: "application/json" },
-        });
-
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
-
-        const json = (await resp.json()) as ApiOverviewResponse;
-
-        if (!json.success || !json.data?.overview) {
-          throw new Error("Invalid API response");
-        }
-
-        if (!cancelled) {
-          const transformed = transformOverview(json.data.overview);
-          setStats(transformed);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Failed to fetch stats:", err);
-          // Keep default empty stats on error
-        }
-      }
-    }
-
-    fetchStats();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    // Re-fetch when query params change (though API might not support filtering yet)
-    (query.networks || []).join(","),
-    query.hookAddress || "",
-    query.fromTime,
-    query.toTime,
-  ]);
-
-  return stats;
+  return {
+    stats: queryResult.data ?? DEFAULT_STATS,
+    loading: queryResult.isLoading,
+    error: queryResult.error ? queryResult.error.message : null,
+  };
 }
 
-export function useScanHooks(query: TransactionsQuery = {}): Array<
-  HookInfo & {
-    network: NetworkId;
-    totalTransactions: number;
-    totalVolume: string;
-    uniqueUsers: number;
-  }
-> {
-  const [hooks, setHooks] = React.useState<
-    Array<
-      HookInfo & {
-        network: NetworkId;
-        totalTransactions: number;
-        totalVolume: string;
-        uniqueUsers: number;
-      }
-    >
-  >([]);
+type ScanHookWithStats = HookInfo & {
+  network: NetworkId;
+  totalTransactions: number;
+  totalVolume: string;
+  uniqueUsers: number;
+};
 
-  React.useEffect(() => {
-    let cancelled = false;
+export type HookStatsRow = ScanHookWithStats;
 
-    async function fetchHooks() {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3003";
-        const url = `${apiUrl}/api/stats/hooks`;
-
-        const resp = await fetch(url, {
-          headers: { Accept: "application/json" },
-        });
-
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
-
-        const json = (await resp.json()) as ApiHooksResponse;
-
-        if (!json.success || !json.data?.overview) {
-          throw new Error("Invalid API response");
-        }
-
-        if (!cancelled) {
-          const transformed = json.data.overview.map(transformHookItem);
-          setHooks(transformed);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Failed to fetch hooks:", err);
-          setHooks([]);
-        }
-      }
-    }
-
-    fetchHooks();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    // Re-fetch when query params change (though API might not support filtering yet)
+function buildScanHooksQueryKey(query: TransactionsQuery): (string | number | null)[] {
+  return [
+    "scanHooks",
     (query.networks || []).join(","),
     query.hookAddress || "",
-    query.fromTime,
-    query.toTime,
-  ]);
+    query.fromTime ?? null,
+    query.toTime ?? null,
+  ];
+}
 
-  return hooks;
+async function fetchScanHooks(): Promise<ScanHookWithStats[]> {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3003";
+  const url = `${apiUrl}/api/stats/hooks`;
+
+  const resp = await fetch(url, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status}`);
+  }
+
+  const json = (await resp.json()) as ApiHooksResponse;
+
+  if (!json.success || !json.data?.overview) {
+    throw new Error("Invalid API response");
+  }
+
+  return json.data.overview.map(transformHookItem);
+}
+
+export function useScanHooks(query: TransactionsQuery = {}): {
+  hooks: ScanHookWithStats[];
+  loading: boolean;
+  error: string | null;
+} {
+  const queryResult = useQuery<ScanHookWithStats[], Error>({
+    queryKey: buildScanHooksQueryKey(query),
+    queryFn: fetchScanHooks,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  return {
+    hooks: queryResult.data ?? [],
+    loading: queryResult.isLoading,
+    error: queryResult.error ? queryResult.error.message : null,
+  };
 }

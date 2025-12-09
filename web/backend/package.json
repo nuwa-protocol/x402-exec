@@ -33,7 +33,7 @@
     "joi": "^17.11.0",
     "pino": "^8.16.2",
     "pino-pretty": "^10.2.3",
-    "viem": "^2.0.0"
+    "viem": "2.40.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
