@@ -16,6 +16,7 @@ import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x40
 import type { GasCostConfig } from "./gas-cost.js";
 import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { TokenPriceConfig } from "./token-price.js";
+import type { GasEstimationConfig } from "./gas-estimation/index.js";
 import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
 import { DEFAULTS } from "./defaults.js";
@@ -92,6 +93,7 @@ export interface AppConfig {
   dynamicGasPrice: DynamicGasPriceConfig;
   tokenPrice: TokenPriceConfig;
   feeClaim: FeeClaimConfig;
+  gasEstimation: GasEstimationConfig;
 }
 
 /**
@@ -572,6 +574,21 @@ function parseTokenPriceConfig(): TokenPriceConfig {
 }
 
 /**
+ * Parse gas estimation configuration from environment variables
+ *
+ * @returns Gas estimation configuration object
+ */
+function parseGasEstimationConfig(): GasEstimationConfig {
+  return {
+    enabled: process.env.PREVALIDATION_ENABLED !== "false", // Default: true
+    strategy: (process.env.GAS_ESTIMATION_STRATEGY as 'code' | 'simulation' | 'smart') || "smart", // Default: smart
+    codeValidationEnabled: process.env.CODE_VALIDATION_ENABLED !== "false", // Default: true
+    safetyMultiplier: parseFloat(process.env.GAS_ESTIMATION_SAFETY_MULTIPLIER || "1.2"), // Default: 1.2x
+    timeoutMs: parseInt(process.env.GAS_ESTIMATION_TIMEOUT_MS || "5000"), // Default: 5 seconds
+  };
+}
+
+/**
  * Load and parse all application configuration
  *
  * @returns Complete application configuration object
@@ -590,5 +607,6 @@ export function loadConfig(): AppConfig {
     dynamicGasPrice: parseDynamicGasPriceConfig(),
     tokenPrice: parseTokenPriceConfig(),
     feeClaim: parseFeeClaimConfig(),
+    gasEstimation: parseGasEstimationConfig(),
   };
 }

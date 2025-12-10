@@ -32,9 +32,9 @@ If using OpenTelemetry Collector, you need to configure the Prometheus receiver 
 
 ```yaml
 scrape_configs:
-  - job_name: 'x402-facilitator'
+  - job_name: "x402-facilitator"
     static_configs:
-      - targets: ['otel-collector:8888']  # OpenTelemetry Collector metrics endpoint
+      - targets: ["otel-collector:8888"] # OpenTelemetry Collector metrics endpoint
     scrape_interval: 15s
     scrape_timeout: 10s
 ```
@@ -72,11 +72,12 @@ The dashboard contains the following 6 main sections:
 - **Request Rate**: Rate of verification and settlement requests
 - **Success Rate**: Settlement success rate (target >99%)
   > **Note:** The 99% target threshold for success rate is set as a default in the Grafana dashboard panel. If your service has different SLA requirements, you can adjust this threshold by editing the relevant panel in the Grafana dashboard:
+  >
   > - Open the dashboard in Grafana and locate the "Success Rate" panel.
   > - Click the panel title, then select "Edit".
   > - In the panel settings, update the threshold value or add a new threshold to match your desired SLA (e.g., 95%, 99.5%, etc.).
   > - Save the dashboard to apply the changes.
-  > For more details, refer to the [Grafana documentation on thresholds](https://grafana.com/docs/grafana/latest/panels/thresholds/).
+  >   For more details, refer to the [Grafana documentation on thresholds](https://grafana.com/docs/grafana/latest/panels/thresholds/).
 - **Current Queue Depth**: Account queue depth (warning threshold: 7-9, critical threshold: ≥10)
 - **Profitability Rate**: Percentage of profitable settlements
 
@@ -176,7 +177,7 @@ Add the alert rule file path in `prometheus.yml`:
 
 ```yaml
 rule_files:
-  - "docs/alerts/prometheus-alerts.yml"  # Adjust path as needed
+  - "docs/alerts/prometheus-alerts.yml" # Adjust path as needed
 ```
 
 Or if using Docker, mount the alert file into the container:
@@ -196,6 +197,7 @@ rule_files:
 #### Grafana Alerting
 
 If using Grafana Alerting, please refer to:
+
 - [Grafana Alerting Configuration Guide](./alerts/grafana-alerts-guide.md) - Alert rule configuration
 - [Grafana Notification Policy Configuration Guide](./alerts/grafana-notification-policy-guide.md) - Notification policy and label matcher configuration
 
@@ -218,12 +220,14 @@ Alert notification policy configuration file location: [`docs/alerts/alertmanage
 For detailed configuration instructions, refer to: [Alertmanager Configuration Guide](./alerts/alertmanager-config.md)
 
 This configuration file includes:
+
 - **Notification routing policies**: Route to different recipients based on alert severity and type
 - **Notification channel configuration**: Slack, Email, Webhook, PagerDuty, etc.
 - **Alert inhibition rules**: Prevent alert storms
 - **Grouping and frequency control**: Control alert sending frequency
 
 Main routing policies:
+
 - **Critical alerts** → Immediate notification (Slack + Email + Webhook)
 - **Warning alerts** → Delayed notification (Slack + Email)
 - **Profitability-related alerts** → Finance team (Slack #x402-finance + Email)
@@ -241,21 +245,23 @@ If you use Prometheus Alertmanager as a notification channel in Grafana, you nee
 
 These two files are **completely different** and serve different purposes:
 
-| File | Format | Purpose | Reader |
-|------|--------|---------|--------|
-| `alertmanager.yml` | YAML | Alertmanager service configuration file, defines alert routing, recipients, notification channels (Slack, Email, etc.) | Prometheus Alertmanager service |
-| `grafana-alertmanager-config.json` | JSON | Configure Alertmanager as notification channel in Grafana, only for connection configuration (URL, authentication) | Grafana service |
+| File                               | Format | Purpose                                                                                                                | Reader                          |
+| ---------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `alertmanager.yml`                 | YAML   | Alertmanager service configuration file, defines alert routing, recipients, notification channels (Slack, Email, etc.) | Prometheus Alertmanager service |
+| `grafana-alertmanager-config.json` | JSON   | Configure Alertmanager as notification channel in Grafana, only for connection configuration (URL, authentication)     | Grafana service                 |
 
 **Workflow**:
+
 ```
-Grafana Alert Rule → Grafana Alerting Engine 
-  → (connect via grafana-alertmanager-config.json) 
-  → Prometheus Alertmanager 
-  → (route according to alertmanager.yml) 
+Grafana Alert Rule → Grafana Alerting Engine
+  → (connect via grafana-alertmanager-config.json)
+  → Prometheus Alertmanager
+  → (route according to alertmanager.yml)
   → Notification channels (Slack, Email, etc.)
 ```
 
 **Both configurations are needed**:
+
 1. `grafana-alertmanager-config.json` (JSON) - Tells Grafana how to **connect** to Alertmanager
 2. `alertmanager.yml` (YAML) - Tells Alertmanager how to **handle** alerts (routing, grouping, sending)
 
@@ -264,11 +270,13 @@ Grafana Alert Rule → Grafana Alerting Engine
 ### Metrics Not Displaying
 
 1. **Check OpenTelemetry Configuration**
+
    - Verify `OTEL_EXPORTER_OTLP_ENDPOINT` is set
    - Check service startup logs for "OpenTelemetry tracing and metrics exporter is enabled" message
    - Look for "First metric recorded - metrics collection is active" log
 
 2. **Check Prometheus Configuration**
+
    - Verify Prometheus is scraping metrics
    - Check Prometheus targets page to confirm target status is "UP"
    - Test if metrics exist in Prometheus query interface: `facilitator_settle_total`
@@ -280,10 +288,12 @@ Grafana Alert Rule → Grafana Alerting Engine
 ### Dashboard Query Errors
 
 1. **Check Data Source Configuration**
+
    - Verify Prometheus data source is correctly configured
    - Test data source connection
 
 2. **Check Metric Names**
+
    - OpenTelemetry metric names have dots converted to underscores
    - Example: `facilitator.verify.total` → `facilitator_verify_total`
 
@@ -294,6 +304,7 @@ Grafana Alert Rule → Grafana Alerting Engine
 ### Performance Issues
 
 1. **Reduce Query Frequency**
+
    - Increase `$interval` variable value
    - Reduce dashboard refresh frequency
 
@@ -304,19 +315,23 @@ Grafana Alert Rule → Grafana Alerting Engine
 ## Best Practices
 
 1. **Regular Metric Review**
+
    - Check success rate, error rate, and profitability rate daily
    - Review gas usage efficiency and cost trends weekly
 
 2. **Set Alert Thresholds**
+
    - Adjust alert thresholds based on actual business needs
    - Avoid alert fatigue (don't set overly sensitive thresholds)
 
 3. **Monitor Key Metrics**
+
    - Focus on success rate (target >99%)
    - Monitor queue depth to prevent overload
    - Track profitability to ensure business sustainability
 
 4. **Capacity Planning**
+
    - Use queue depth and throughput metrics for capacity planning
    - Scale up proactively based on transaction volume growth trends
 

@@ -28,6 +28,7 @@ import type { SettleResponseWithMetrics } from "./settlement-types.js";
 import { calculateEffectiveGasLimit, type GasCostConfig } from "./gas-cost.js";
 import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { BalanceChecker } from "./balance-check.js";
+import { createGasEstimator, type GasEstimationConfig } from "./gas-estimation/index.js";
 
 const logger = getLogger();
 
@@ -193,6 +194,7 @@ export async function settleWithRouter(
   nativeTokenPrices?: Record<string, number>,
   balanceChecker?: BalanceChecker,
   x402Config?: X402Config,
+  gasEstimationConfig?: GasEstimationConfig,
 ): Promise<SettleResponseWithMetrics> {
   try {
     // 1. Ensure signer is EVM signer
@@ -412,7 +414,122 @@ export async function settleWithRouter(
       }
     }
 
-    // 7. Defensive balance check (verify stage should have already caught this)
+    // Prepare wallet client for pre-validation and execution
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = signer as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const publicClient = signer as any;
+
+    // 7. Pre-validate settlement transaction (NEW: prevent gas waste on invalid transactions)
+    if (gasEstimationConfig?.enabled) {
+      try {
+        // Create gas estimator (can be cached at app level for better performance)
+        const gasEstimator = createGasEstimator(
+          gasEstimationConfig,
+          logger.child({ module: 'gas-estimation' }),
+        );
+
+        const hookAmount = BigInt(authorization.value) - BigInt(extra.facilitatorFee);
+
+        const estimation = await gasEstimator.estimateGas({
+          network,
+          hook: extra.hook,
+          hookData: extra.hookData,
+          settlementRouter: extra.settlementRouter,
+          token: asset,
+          from: authorization.from,
+          value: BigInt(authorization.value),
+          authorization: {
+            validAfter: authorization.validAfter,
+            validBefore: authorization.validBefore,
+            nonce: authorization.nonce,
+          },
+          signature,
+          salt: extra.salt,
+          payTo: extra.payTo,
+          facilitatorFee: BigInt(extra.facilitatorFee),
+          hookAmount,
+          walletClient,
+          gasCostConfig: gasCostConfig || {
+            minGasLimit: 150000,
+            maxGasLimit: 5000000,
+            dynamicGasLimitMargin: 0.2,
+            hookGasOverhead: {},
+            safetyMultiplier: 1.5,
+            validationTolerance: 0.1,
+            hookWhitelistEnabled: false,
+            allowedHooks: {},
+            networkGasPrice: {},
+            nativeTokenPrice: {},
+          },
+          gasEstimationConfig,
+        });
+
+        if (!estimation.isValid) {
+          logger.warn(
+            {
+              network,
+              hook: extra.hook,
+              strategy: estimation.strategyUsed,
+              errorReason: estimation.errorReason,
+              payer: authorization.from,
+            },
+            "Settlement pre-validation failed - preventing gas waste",
+          );
+
+          return {
+            success: false,
+            errorReason: estimation.errorReason || "SETTLEMENT_PREVALIDATION_FAILED",
+            transaction: "",
+            network: paymentPayload.network,
+            payer: authorization.from,
+          };
+        }
+
+        // Use estimated gas limit
+        effectiveGasLimit = BigInt(estimation.gasLimit);
+        gasLimitMode = estimation.strategyUsed;
+
+        logger.debug(
+          {
+            network,
+            hook: extra.hook,
+            strategy: estimation.strategyUsed,
+            gasLimit: estimation.gasLimit,
+            mode: gasLimitMode,
+            metadata: estimation.metadata,
+          },
+          "Settlement pre-validation passed with gas limit",
+        );
+      } catch (error) {
+        logger.warn(
+          { error, network, hook: extra.hook },
+          "Error during settlement pre-validation, falling back to static gas limit",
+        );
+        // Fallback to static gas limit if pre-validation itself fails
+        const fallbackGasCostConfig = gasCostConfig || {
+          minGasLimit: 150000,
+          maxGasLimit: 5000000,
+          dynamicGasLimitMargin: 0.2,
+          hookGasOverhead: {},
+          safetyMultiplier: 1.5,
+          validationTolerance: 0.1,
+          hookWhitelistEnabled: false,
+          allowedHooks: {},
+          networkGasPrice: {},
+          nativeTokenPrice: {},
+        };
+        effectiveGasLimit = BigInt(calculateEffectiveGasLimit(
+          extra.facilitatorFee,
+          await getGasPrice(network, fallbackGasCostConfig, dynamicGasPriceConfig),
+          nativeTokenPrices?.[network] || 0,
+          fallbackGasCostConfig,
+        ));
+        gasLimitMode = "static_fallback";
+      }
+    }
+
+    // 8. Defensive balance check (verify stage should have already caught this)
     if (balanceChecker) {
       try {
         const balanceCheck = await balanceChecker.checkBalance(
@@ -469,11 +586,6 @@ export async function settleWithRouter(
     }
 
     // 8. Call SettlementRouter.settleAndExecute
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const walletClient = signer as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const publicClient = signer as any;
-
     if (!walletClient.writeContract || !publicClient.waitForTransactionReceipt) {
       throw new Error(
         "Signer must be an EVM wallet client with writeContract and waitForTransactionReceipt methods",
