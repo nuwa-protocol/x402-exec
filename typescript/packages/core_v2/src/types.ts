@@ -1,11 +1,23 @@
 /**
- * Type definitions for @x402x/core
+ * Type definitions for @x402x/core_v2
+ * 
+ * Re-exports official x402 v2 types from @x402/core
  */
 
-import type { PaymentRequirements, PaymentPayload, Signer } from "x402/types";
+import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
 
-// Re-export x402 types for convenience
-export type { PaymentRequirements, PaymentPayload, Signer };
+// Re-export x402 v2 types for convenience
+export type { PaymentRequirements, PaymentPayload };
+
+/**
+ * Signer interface for x402x
+ * Compatible with x402 v2 client signer patterns
+ */
+export interface Signer {
+  address: string;
+  signTypedData?: (params: unknown) => Promise<string>;
+  [key: string]: unknown;
+}
 
 /**
  * Commitment calculation parameters
@@ -146,3 +158,33 @@ export class SettlementExtraError extends Error {
     this.name = "SettlementExtraError";
   }
 }
+
+/**
+ * Additional types for middleware compatibility
+ */
+
+// Re-export Network type from @x402/core
+export type { Network } from "@x402/core/types";
+
+/**
+ * Money type - string or number representing USD amount
+ */
+export type Money = string | number;
+
+/**
+ * Resource information for payment required responses
+ */
+export interface Resource {
+  url: string;
+  description?: string;
+  mimeType?: string;
+}
+
+/**
+ * Facilitator configuration for middleware
+ */
+export interface FacilitatorConfig {
+  url: string;
+  apiKey?: string;
+}
+

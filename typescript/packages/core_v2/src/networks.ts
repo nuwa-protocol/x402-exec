@@ -2,15 +2,15 @@
  * Network configuration for x402x
  *
  * Contains deployed contract addresses and configuration for each supported network.
- * Reuses x402's network and default asset configuration for consistency.
+ * Uses official x402 v2 CAIP-2 network identifiers.
  */
 
-import { getDefaultAsset, getNetworkId } from "x402/shared";
-import type { Network } from "x402/types";
+import type { Network } from "@x402/core/types";
+import { getDefaultAsset, getNetworkId } from "./network-utils.js";
 import type { NetworkConfig } from "./types.js";
 
 /**
- * Helper to get default asset config from x402
+ * Helper to get default asset config
  */
 function getDefaultAssetConfig(network: Network) {
   const defaultAsset = getDefaultAsset(network);
@@ -27,8 +27,8 @@ function getDefaultAssetConfig(network: Network) {
 /**
  * Network configurations for all supported networks
  *
- * Uses x402's getNetworkId() and getDefaultAsset() to ensure consistency
- * with x402 protocol configuration.
+ * Uses getNetworkId() and getDefaultAsset() to ensure consistency
+ * with CAIP-2 network identifiers.
  */
 export const networks: Record<string, NetworkConfig> = {
   "base-sepolia": {

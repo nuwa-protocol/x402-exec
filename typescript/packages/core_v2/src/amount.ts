@@ -2,8 +2,8 @@
  * Amount parsing and formatting utilities for x402x default asset (USDC)
  */
 
-import type { Network } from "x402/types";
-import { processPriceToAtomicAmount, getDefaultAsset } from "x402/shared";
+import type { Network } from "@x402/core/types";
+import { processPriceToAtomicAmount, getDefaultAsset } from "./network-utils.js";
 
 /**
  * Error class for amount-related validation errors
