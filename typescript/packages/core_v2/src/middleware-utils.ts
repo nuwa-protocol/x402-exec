@@ -67,7 +67,9 @@ export function computeRoutePatterns(routes: RoutesConfig): RoutePattern[] {
       pattern: new RegExp(
         `^${
           path
-            // First escape all special regex characters except * and []
+            // First escape backslashes to prevent regex injection
+            .replace(/\\/g, "\\\\")
+            // Then escape all special regex characters except * and []
             .replace(/[$()+.?^{|}]/g, "\\$&")
             // Then handle our special pattern characters
             .replace(/\*/g, ".*?") // Make wildcard non-greedy
