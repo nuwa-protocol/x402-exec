@@ -17,3 +17,6 @@
 [submodule "contracts/x402x-mint/lib/prb-math"]
 	path = contracts/x402x-mint/lib/prb-math
 	url = https://github.com/PaulRBerg/prb-math.git
+[submodule "deps/x402_upstream_main"]
+	path = deps/x402_upstream_main
+	url = https://github.com/coinbase/x402.git
