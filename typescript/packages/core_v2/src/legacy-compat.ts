@@ -123,7 +123,7 @@ export function selectPaymentRequirements(
   _requirements: unknown[],
   _selector?: PaymentRequirementsSelector,
 ): unknown {
-  // This should not be called in v2 - kept for compatibility during migration  
+  // This should not be called in v2 - kept for compatibility during migration
   throw new Error("selectPaymentRequirements is not implemented in v2 - use x402Client instead");
 }
 

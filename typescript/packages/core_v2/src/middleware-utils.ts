@@ -70,7 +70,7 @@ export function computeRoutePatterns(routes: RoutesConfig): RoutePattern[] {
             // First escape all special regex characters except * and []
             .replace(/[$()+.?^{|}]/g, "\\$&")
             // Then handle our special pattern characters
-            .replace(/\*/g, ".*?") // Make wildcard non-greedy and optional
+            .replace(/\*/g, ".*?") // Make wildcard non-greedy
             .replace(/\[([^\]]+)\]/g, "[^/]+") // Convert [param] to regex capture
             .replace(/\//g, "\\/") // Escape slashes
         }$`,
