@@ -6,31 +6,29 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import { exact } from "x402/schemes";
 import {
+  exact,
   computeRoutePatterns,
   findMatchingPaymentRequirements,
   findMatchingRoute,
-  processPriceToAtomicAmount,
   toJsonSafe,
-} from "x402/shared";
-import {
-  FacilitatorConfig,
-  PaymentPayload,
-  PaymentRequirements,
-  Resource,
-  settleResponseHeader,
-  SupportedEVMNetworks,
+  useFacilitator,
+  type FacilitatorConfig,
   type Money,
   type Network,
-} from "x402/types";
-import { useFacilitator } from "x402/verify";
+  type PaymentPayload,
+  type PaymentRequirements,
+  type Resource,
+  settleResponseHeader,
+  SupportedEVMNetworks,
+} from "@x402x/core_v2";
 import {
   addSettlementExtra,
   getNetworkConfig,
   TransferHook,
   calculateFacilitatorFee,
   type FeeCalculationResult,
+  processPriceToAtomicAmount,
 } from "@x402x/core_v2";
 import type { Address } from "viem";
 import type { Address as SolanaAddress } from "@solana/kit";
@@ -556,8 +554,8 @@ export function paymentMiddleware(
   };
 }
 
-// Re-export types from x402 for compatibility
-export type { Money, Network, FacilitatorConfig, PaymentRequirements, Resource } from "x402/types";
+// Re-export types from @x402x/core_v2 for compatibility
+export type { Money, Network, FacilitatorConfig, PaymentRequirements, Resource } from "@x402x/core_v2";
 
 export type { Address } from "viem";
 export type { Address as SolanaAddress } from "@solana/kit";

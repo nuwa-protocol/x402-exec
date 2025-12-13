@@ -11,10 +11,20 @@ import type { Hex } from "viem";
 import { getAddress } from "viem";
 import type { PaymentRequirements, Signer } from "@x402x/core_v2";
 import { calculateCommitment, getNetworkConfig } from "@x402x/core_v2";
-import type { MultiNetworkSigner, X402Config, Network } from "x402/types";
-import { ChainIdToNetwork, isMultiNetworkSigner, isSvmSignerWallet, evm } from "x402/types";
-import { createPaymentHeader, selectPaymentRequirements } from "x402/client";
-import type { PaymentRequirementsSelector } from "x402/client";
+import type {
+  MultiNetworkSigner,
+  X402Config,
+  Network,
+  PaymentRequirementsSelector,
+} from "@x402x/core_v2";
+import {
+  ChainIdToNetwork,
+  isMultiNetworkSigner,
+  isSvmSignerWallet,
+  evm,
+  createPaymentHeader,
+  selectPaymentRequirements,
+} from "@x402x/core_v2";
 
 /**
  * 402 Response type
@@ -284,9 +294,7 @@ export function x402xFetch(
   return wrapFetchWithPayment(fetch, walletClient, maxValue);
 }
 
-// Re-export utilities from x402 for compatibility
-export { decodeXPaymentResponse } from "x402/shared";
-export { createSigner } from "x402/types";
-export type { Signer, MultiNetworkSigner, X402Config } from "x402/types";
-export type { PaymentRequirementsSelector } from "x402/client";
+// Re-export utilities from @x402x/core_v2 for compatibility
+export { decodeXPaymentResponse, createSigner } from "@x402x/core_v2";
+export type { Signer, MultiNetworkSigner, X402Config, PaymentRequirementsSelector } from "@x402x/core_v2";
 export type { Hex } from "viem";

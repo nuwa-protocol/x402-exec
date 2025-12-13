@@ -35,9 +35,11 @@
   "author": "Nuwa Protocol",
   "license": "Apache-2.0",
   "dependencies": {
+    "@x402/core": "2.0.0",
+    "@x402/evm": "2.0.0",
+    "@x402/fetch": "2.0.0",
     "@x402x/core_v2": "workspace:*",
-    "viem": "2.40.3",
-    "x402": "1.0.1"
+    "viem": "2.40.3"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

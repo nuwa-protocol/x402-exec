@@ -34,9 +34,23 @@ export type {
   PaymentPayload,
   Signer,
   DemoHooks,
+  Network,
+  Money,
+  Resource,
+  FacilitatorConfig,
 } from "./types.js";
 
 export { SettlementExtraError } from "./types.js";
+
+// Export middleware utilities
+export {
+  computeRoutePatterns,
+  findMatchingRoute,
+  findMatchingPaymentRequirements,
+  toJsonSafe,
+} from "./middleware-utils.js";
+
+export type { RouteConfig, RoutesConfig, RoutePattern } from "./middleware-utils.js";
 
 // Export commitment utilities
 export { calculateCommitment, generateSalt, validateCommitmentParams } from "./commitment.js";
@@ -75,3 +89,30 @@ export type { FeeCalculationResult, VerifyResponse, SettleResponse } from "./fac
 
 // Export ABI
 export { SETTLEMENT_ROUTER_ABI } from "./abi.js";
+
+// Export legacy compatibility shims for v1-style middleware
+export {
+  SupportedEVMNetworks,
+  moneySchema,
+  settleResponseHeader,
+  evm,
+  exact,
+  ChainIdToNetwork,
+  isMultiNetworkSigner,
+  isSvmSignerWallet,
+  createPaymentHeader,
+  selectPaymentRequirements,
+  decodeXPaymentResponse,
+  useFacilitator,
+  createSigner,
+} from "./legacy-compat.js";
+
+export type {
+  MultiNetworkSigner,
+  X402Config,
+  PaymentRequirementsSelector,
+} from "./legacy-compat.js";
+
+// Export network utilities (needed by middleware)
+export { processPriceToAtomicAmount, getDefaultAsset, getNetworkId } from "./network-utils.js";
+
