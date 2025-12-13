@@ -32,7 +32,7 @@ export namespace NFTMintHook {
   /**
    * Get NFTMintHook contract address for a specific network
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
    * @returns The contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
@@ -51,7 +51,7 @@ export namespace NFTMintHook {
    *
    * This is the address of the ERC721 contract that will be minted from.
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
    * @returns The NFT contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
@@ -102,7 +102,7 @@ export namespace RewardHook {
   /**
    * Get RewardHook contract address for a specific network
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
    * @returns The contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
@@ -121,7 +121,7 @@ export namespace RewardHook {
    *
    * This is the address of the ERC20 contract that will be distributed as rewards.
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'x-layer-testnet')
+   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
    * @returns The reward token contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */

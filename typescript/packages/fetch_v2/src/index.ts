@@ -9,8 +9,8 @@
 
 import type { Hex } from "viem";
 import { getAddress } from "viem";
-import type { PaymentRequirements, Signer } from "@x402x/core";
-import { calculateCommitment, getNetworkConfig } from "@x402x/core";
+import type { PaymentRequirements, Signer } from "@x402x/core_v2";
+import { calculateCommitment, getNetworkConfig } from "@x402x/core_v2";
 import type { MultiNetworkSigner, X402Config, Network } from "x402/types";
 import { ChainIdToNetwork, isMultiNetworkSigner, isSvmSignerWallet, evm } from "x402/types";
 import { createPaymentHeader, selectPaymentRequirements } from "x402/client";

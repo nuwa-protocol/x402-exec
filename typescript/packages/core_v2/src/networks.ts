@@ -53,28 +53,6 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "ETH",
     },
   },
-  "x-layer-testnet": {
-    chainId: getNetworkId("x-layer-testnet"),
-    name: "X Layer Testnet",
-    type: "testnet",
-    addressExplorerBaseUrl: "https://www.oklink.com/xlayer-test/address/",
-    txExplorerBaseUrl: "https://www.oklink.com/xlayer-test/tx/",
-    settlementRouter: "0xba9980fb08771e2fd10c17450f52d39bcb9ed576",
-    defaultAsset: getDefaultAssetConfig("x-layer-testnet"),
-    hooks: {
-      transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
-    },
-    demoHooks: {
-      nftMint: "0x468F666314b070338841422012AB2f6539bfcE48",
-      randomNFT: "0xBA931bB5B2F2DC5354aFAED1d3996B0c6e417518",
-      reward: "0xda8B270Ec442Ff797807b95604E3319e36Aad05d",
-      rewardToken: "0x348AFDE3B4B70dCb02053aF95588a4ab41e95FbC",
-    },
-    metadata: {
-      gasModel: "eip1559",
-      nativeToken: "OKB",
-    },
-  },
   "skale-base-sepolia": {
     chainId: getNetworkId("skale-base-sepolia"),
     name: "SKALE Base Sepolia",
@@ -120,34 +98,12 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "ETH",
     },
   },
-  "x-layer": {
-    chainId: getNetworkId("x-layer"),
-    name: "X Layer Mainnet",
-    type: "mainnet",
-    addressExplorerBaseUrl: "https://www.oklink.com/xlayer/address/",
-    txExplorerBaseUrl: "https://www.oklink.com/xlayer/tx/",
-    settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
-    defaultAsset: getDefaultAssetConfig("x-layer"),
-    hooks: {
-      transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
-    },
-    demoHooks: {
-      nftMint: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
-      randomNFT: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
-      reward: "0x4B566FD5eFf76e3BdF20Ca5c3F2FA7cdbb3bD99A",
-      rewardToken: "0x12d41108f9F12064f792418C9BA0ACF6EdcE7790",
-    },
-    metadata: {
-      gasModel: "eip1559",
-      nativeToken: "OKB",
-    },
-  },
 };
 
 /**
  * Get network configuration by network name
  *
- * @param network - Network name (e.g., 'base-sepolia', 'x-layer-testnet')
+ * @param network - Network name (e.g., 'base-sepolia', 'skale-base-sepolia')
  * @returns Network configuration
  * @throws Error if network is not supported
  *
@@ -193,7 +149,7 @@ export function isNetworkSupported(network: string): boolean {
  * @example
  * ```typescript
  * const networks = getSupportedNetworks();
- * // => ['base-sepolia', 'x-layer-testnet']
+ * // => ['base-sepolia', 'skale-base-sepolia']
  * ```
  */
 export function getSupportedNetworks(): string[] {

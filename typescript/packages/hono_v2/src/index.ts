@@ -32,7 +32,7 @@ import {
   TransferHook,
   calculateFacilitatorFee,
   type FeeCalculationResult,
-} from "@x402x/core";
+} from "@x402x/core_v2";
 import type { Address } from "viem";
 import type { Address as SolanaAddress } from "@solana/kit";
 
