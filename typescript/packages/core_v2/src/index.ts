@@ -72,6 +72,29 @@ export type { MintConfig, RewardConfig } from "./hooks/demo.js";
 // Export helper functions
 export { addSettlementExtra } from "./utils.js";
 
+// Export extension helpers
+export {
+  createRouterSettlementExtension,
+  getRouterSettlementExtensionKey,
+} from "./extensions.js";
+
+export type {
+  RouterSettlementExtension,
+  RouterSettlementExtensionInfo,
+} from "./extensions.js";
+
+// Export validation helpers
+export {
+  validateSettlementExtra,
+  assertValidSettlementExtra,
+  isValidAddress,
+  isValidHex,
+  isValid32ByteHex,
+  isValidNumericString,
+} from "./validation.js";
+
+export type { ValidationResult } from "./validation.js";
+
 // Export amount utilities
 export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "./amount.js";
 
@@ -114,5 +137,5 @@ export type {
 } from "./legacy-compat.js";
 
 // Export network utilities (needed by middleware)
-export { processPriceToAtomicAmount, getDefaultAsset, getNetworkId } from "./network-utils.js";
+export { processPriceToAtomicAmount, getDefaultAsset, getNetworkId, getNetworkName } from "./network-utils.js";
 

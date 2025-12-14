@@ -38,7 +38,7 @@ export const networks: Record<string, NetworkConfig> = {
     addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
     txExplorerBaseUrl: "https://sepolia.basescan.org/tx/",
     settlementRouter: "0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb",
-    defaultAsset: getDefaultAssetConfig("base-sepolia"),
+    defaultAsset: getDefaultAssetConfig(getNetworkId("base-sepolia")),
     hooks: {
       transfer: "0x4DE234059C6CcC94B8fE1eb1BD24804794083569",
     },
@@ -60,7 +60,7 @@ export const networks: Record<string, NetworkConfig> = {
     addressExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/address/",
     txExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/tx/",
     settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
-    defaultAsset: getDefaultAssetConfig("skale-base-sepolia"),
+    defaultAsset: getDefaultAssetConfig(getNetworkId("skale-base-sepolia")),
     hooks: {
       transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
     },
@@ -83,7 +83,7 @@ export const networks: Record<string, NetworkConfig> = {
     addressExplorerBaseUrl: "https://basescan.org/address/",
     txExplorerBaseUrl: "https://basescan.org/tx/",
     settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
-    defaultAsset: getDefaultAssetConfig("base"),
+    defaultAsset: getDefaultAssetConfig(getNetworkId("base")),
     hooks: {
       transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
     },
