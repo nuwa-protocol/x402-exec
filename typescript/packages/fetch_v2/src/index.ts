@@ -1,38 +1,25 @@
 /**
- * Fetch wrapper for x402x settlement
+ * @x402x/fetch_v2 - Wraps official @x402/fetch with router-settlement exact-EVM client scheme
  *
- * Provides a fetch wrapper that automatically handles 402 responses with
- * settlement mode support (commitment-based nonce).
- *
- * This package is compatible with x402-fetch API while adding x402x settlement support.
+ * This package wraps the official @x402/fetch v2 and registers a custom exact-EVM
+ * SchemeNetworkClient that supports router settlement (commitment + EIP-712) while
+ * delegating to official behavior for standard requests.
  */
 
 import type { Hex } from "viem";
-import { getAddress } from "viem";
-import type { PaymentRequirements, Signer } from "@x402x/core_v2";
-import { calculateCommitment, getNetworkConfig } from "@x402x/core_v2";
-import type {
-  MultiNetworkSigner,
-  X402Config,
-  Network,
-  PaymentRequirementsSelector,
-} from "@x402x/core_v2";
-import {
-  ChainIdToNetwork,
-  isMultiNetworkSigner,
-  isSvmSignerWallet,
-  evm,
-  createPaymentHeader,
-  selectPaymentRequirements,
-} from "@x402x/core_v2";
-
-/**
- * 402 Response type
- */
-interface Payment402Response {
-  x402Version?: number;
-  accepts?: unknown[];
-}
+import { getAddress, toHex } from "viem";
+import type { 
+  PaymentRequirements, 
+  PaymentPayload,
+  SchemeNetworkClient 
+} from "@x402/core/types";
+import { 
+  wrapFetchWithPayment as officialWrapFetchWithPayment,
+  x402Client,
+  type PaymentPolicy
+} from "@x402/fetch";
+import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
+import { calculateCommitment, getNetworkConfig, getNetworkName } from "@x402x/core_v2";
 
 /**
  * EIP-3009 authorization types for EIP-712 signature
@@ -49,258 +36,239 @@ const authorizationTypes = {
 };
 
 /**
- * Check if payment requirements need settlement mode (x402x extension)
+ * Check if payment requirements use settlement router mode (x402x extension)
  */
 function isSettlementMode(requirements: PaymentRequirements): boolean {
   return !!(requirements.extra as any)?.settlementRouter;
 }
 
 /**
- * Create payment header for settlement mode (x402x extension)
+ * Create random nonce (standard x402 behavior)
  */
-async function createSettlementPaymentHeader(
-  walletClient: any,
-  x402Version: number,
-  requirements: PaymentRequirements,
-  config?: X402Config,
-): Promise<string> {
-  const extra = requirements.extra as any;
-  const networkConfig = getNetworkConfig(requirements.network);
-  const from = walletClient.account?.address || walletClient.address;
+function createNonce(): Hex {
+  const cryptoObj = typeof globalThis.crypto !== "undefined" ? globalThis.crypto : (globalThis as any).crypto;
+  if (!cryptoObj) {
+    throw new Error("Crypto API not available");
+  }
+  return toHex(cryptoObj.getRandomValues(new Uint8Array(32)));
+}
 
-  if (!from) {
-    throw new Error("No account address available");
+/**
+ * Custom Exact EVM Scheme with Router Settlement support
+ * 
+ * This scheme extends the official ExactEvmScheme to support x402x router settlement.
+ * When requirements.extra.settlementRouter is present, it uses commitment-based nonce
+ * and includes settlement parameters. Otherwise, it delegates to the official scheme.
+ */
+export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
+  private readonly signer: ClientEvmSigner;
+  private readonly officialScheme: ExactEvmScheme;
+  readonly scheme = "exact";
+
+  /**
+   * Creates a new ExactEvmSchemeWithRouterSettlement instance.
+   *
+   * @param signer - The EVM signer for client operations
+   */
+  constructor(signer: ClientEvmSigner) {
+    this.signer = signer;
+    this.officialScheme = new ExactEvmScheme(signer);
   }
 
-  const validAfter = BigInt(
-    Math.floor(Date.now() / 1000) - 600, // 10 minutes before
-  ).toString();
-  const validBefore = BigInt(
-    Math.floor(Date.now() / 1000) + requirements.maxTimeoutSeconds,
-  ).toString();
+  /**
+   * Creates a payment payload for the Exact scheme.
+   * 
+   * If requirements.extra.settlementRouter is present, uses commitment-based nonce
+   * for router settlement. Otherwise delegates to official ExactEvmScheme.
+   *
+   * @param x402Version - The x402 protocol version
+   * @param paymentRequirements - The payment requirements (may include extensions)
+   * @returns Promise resolving to a payment payload
+   */
+  async createPaymentPayload(
+    x402Version: number,
+    paymentRequirements: PaymentRequirements
+  ): Promise<Pick<PaymentPayload, "x402Version" | "payload">> {
+    // Check if settlement router mode
+    if (!isSettlementMode(paymentRequirements)) {
+      // Delegate to official scheme for standard behavior
+      return this.officialScheme.createPaymentPayload(x402Version, paymentRequirements);
+    }
 
-  // Calculate commitment as nonce (x402x specific)
-  const nonce = calculateCommitment({
-    chainId: networkConfig.chainId,
-    hub: extra.settlementRouter,
-    asset: requirements.asset,
-    from,
-    value: requirements.maxAmountRequired,
-    validAfter,
-    validBefore,
-    salt: extra.salt,
-    payTo: extra.payTo,
-    facilitatorFee: extra.facilitatorFee || "0",
-    hook: extra.hook,
-    hookData: extra.hookData,
-  });
+    // Settlement router mode: use commitment-based nonce
+    const extra = paymentRequirements.extra as any;
+    // Convert CAIP-2 network format to network name for getNetworkConfig
+    const networkName = getNetworkName(paymentRequirements.network as any);
+    const networkConfig = getNetworkConfig(networkName);
+    // Extract numeric chainId from CAIP-2 format (e.g., "eip155:84532" -> 84532)
+    const chainId = parseInt(paymentRequirements.network.split(":")[1]);
+    const from = this.signer.address;
 
-  // Sign EIP-712 authorization
-  const signature = await walletClient.signTypedData({
-    types: authorizationTypes,
-    domain: {
-      name: extra.name || "USD Coin",
-      version: extra.version || "2",
-      chainId: networkConfig.chainId,
-      verifyingContract: getAddress(requirements.asset),
-    },
-    primaryType: "TransferWithAuthorization" as const,
-    message: {
-      from: getAddress(from),
-      to: getAddress(requirements.payTo),
-      value: requirements.maxAmountRequired,
+    const now = Math.floor(Date.now() / 1000);
+    const validAfter = (now - 600).toString(); // 10 minutes before
+    const validBefore = (now + paymentRequirements.maxTimeoutSeconds).toString();
+
+    // Calculate commitment as nonce (binds all settlement parameters)
+    const nonce = calculateCommitment({
+      chainId: chainId,
+      hub: extra.settlementRouter,
+      asset: paymentRequirements.asset,
+      from,
+      value: paymentRequirements.amount,
       validAfter,
       validBefore,
-      nonce: nonce as Hex,
-    },
-  });
+      salt: extra.salt,
+      payTo: extra.payTo,
+      facilitatorFee: extra.facilitatorFee || "0",
+      hook: extra.hook,
+      hookData: extra.hookData,
+    }) as Hex;
 
-  // Encode payment payload
-  const paymentPayload = {
-    x402Version,
-    scheme: requirements.scheme,
-    network: requirements.network,
-    payload: {
-      signature,
-      authorization: {
+    // Sign EIP-712 authorization with commitment as nonce
+    const signature = await this.signAuthorization(
+      {
         from,
-        to: requirements.payTo,
-        value: requirements.maxAmountRequired,
+        to: getAddress(paymentRequirements.payTo),
+        value: paymentRequirements.amount,
         validAfter,
         validBefore,
         nonce,
       },
+      paymentRequirements
+    );
+
+    // Create payload with authorization and signature
+    const payload = {
+      authorization: {
+        from,
+        to: paymentRequirements.payTo,
+        value: paymentRequirements.amount,
+        validAfter,
+        validBefore,
+        nonce,
+      },
+      signature,
+    };
+
+    return {
+      x402Version,
+      payload,
+    };
+  }
+
+  /**
+   * Sign the EIP-3009 authorization using EIP-712
+   *
+   * @param authorization - The authorization to sign
+   * @param requirements - The payment requirements (includes EIP-712 domain info)
+   * @returns Promise resolving to the signature
+   */
+  private async signAuthorization(
+    authorization: {
+      from: string;
+      to: string;
+      value: string;
+      validAfter: string;
+      validBefore: string;
+      nonce: Hex;
     },
-    // Include paymentRequirements for server-side verification
-    paymentRequirements: requirements,
-  };
+    requirements: PaymentRequirements
+  ): Promise<Hex> {
+    const chainId = parseInt(requirements.network.split(":")[1]);
 
-  // Base64url encode
-  const paymentJson = JSON.stringify(paymentPayload);
-  const paymentBase64 = btoa(paymentJson).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    if (!requirements.extra?.name || !requirements.extra?.version) {
+      throw new Error(
+        `EIP-712 domain parameters (name, version) are required in payment requirements for asset ${requirements.asset}`
+      );
+    }
 
-  return paymentBase64;
-}
+    const { name, version } = requirements.extra;
+    const domain = {
+      name,
+      version,
+      chainId: parseInt(requirements.network.split(":")[1]),
+      verifyingContract: getAddress(requirements.asset),
+    };
 
-/**
- * Create payment header for standard mode (fallback to x402)
- */
-async function createStandardPaymentHeader(
-  walletClient: Signer | MultiNetworkSigner,
-  x402Version: number,
-  requirements: PaymentRequirements,
-  config?: X402Config,
-): Promise<string> {
-  return createPaymentHeader(walletClient, x402Version, requirements, config);
+    const message = {
+      from: getAddress(authorization.from),
+      to: getAddress(authorization.to),
+      value: BigInt(authorization.value),
+      validAfter: BigInt(authorization.validAfter),
+      validBefore: BigInt(authorization.validBefore),
+      nonce: authorization.nonce,
+    };
+
+    return await this.signer.signTypedData({
+      domain,
+      types: authorizationTypes,
+      primaryType: "TransferWithAuthorization",
+      message,
+    });
+  }
 }
 
 /**
  * Enables the payment of APIs using the x402 payment protocol with x402x settlement support.
  *
- * This function wraps the native fetch API to automatically handle 402 Payment Required responses
- * by creating and sending a payment header. It extends the standard x402 behavior with settlement
- * mode support (commitment-based nonce).
+ * This function wraps the official @x402/fetch wrapFetchWithPayment with a custom scheme
+ * that supports router settlement (commitment-based nonce + EIP-712). It automatically
+ * detects when requirements.extra.settlementRouter is present and uses the appropriate mode.
  *
  * @param fetch - The fetch function to wrap (typically globalThis.fetch)
- * @param walletClient - The wallet client used to sign payment messages (supports multi-network)
- * @param maxValue - The maximum allowed payment amount in base units (defaults to 0.1 USDC)
- * @param paymentRequirementsSelector - A function that selects the payment requirements from the response
- * @param config - Optional configuration for X402 operations (e.g., custom RPC URLs)
+ * @param signer - The EVM signer for client operations
+ * @param network - The network to use (CAIP-2 format, e.g., "eip155:84532")
+ * @param policy - Optional payment policy for controlling payment behavior
  * @returns A wrapped fetch function that handles 402 responses automatically
  *
  * @example
  * ```typescript
- * import { wrapFetchWithPayment } from '@x402x/fetch';
- * import { useWalletClient } from 'wagmi';
+ * import { wrapFetchWithPayment } from '@x402x/fetch_v2';
+ * import { createWalletClient, custom } from 'viem';
+ * import { baseSepolia } from 'viem/chains';
  *
- * const { data: walletClient } = useWalletClient();
- * const fetchWithPay = wrapFetchWithPayment(fetch, walletClient);
- *
- * // With custom configuration
- * const fetchWithPay = wrapFetchWithPayment(fetch, walletClient, undefined, undefined, {
- *   svmConfig: { rpcUrl: "http://localhost:8899" }
+ * const walletClient = createWalletClient({
+ *   chain: baseSepolia,
+ *   transport: custom(window.ethereum),
  * });
+ *
+ * const fetchWithPay = wrapFetchWithPayment(
+ *   fetch,
+ *   walletClient,
+ *   'eip155:84532'
+ * );
  *
  * const response = await fetchWithPay('/api/protected-resource');
  * ```
  *
  * @throws {Error} If the payment amount exceeds the maximum allowed value
- * @throws {Error} If the request configuration is missing
- * @throws {Error} If a payment has already been attempted for this request
  * @throws {Error} If there's an error creating the payment header
  */
 export function wrapFetchWithPayment(
   fetch: typeof globalThis.fetch,
-  walletClient: Signer | MultiNetworkSigner,
-  maxValue: bigint = BigInt(0.1 * 10 ** 6), // Default to 0.10 USDC
-  paymentRequirementsSelector: PaymentRequirementsSelector = selectPaymentRequirements,
-  config?: X402Config,
+  signer: ClientEvmSigner,
+  network: string,
+  policy?: PaymentPolicy
 ) {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    // Make initial request
-    const response = await fetch(input, init);
+  // Create custom scheme with router settlement support
+  const customScheme = new ExactEvmSchemeWithRouterSettlement(signer);
 
-    // If not 402, return as is
-    if (response.status !== 402) {
-      return response;
-    }
+  // Create x402Client with custom scheme
+  const client = new x402Client(policy)
+    .register(network, customScheme);
 
-    // Parse 402 response
-    const { x402Version = 1, accepts } = (await response.json()) as Payment402Response;
-
-    if (!accepts || accepts.length === 0) {
-      throw new Error("No payment requirements provided in 402 response");
-    }
-
-    // Determine network from wallet client (for selector)
-    const network = isMultiNetworkSigner(walletClient)
-      ? undefined
-      : evm.isSignerWallet(walletClient as typeof evm.EvmSigner)
-        ? ChainIdToNetwork[(walletClient as typeof evm.EvmSigner).chain?.id]
-        : isSvmSignerWallet(walletClient)
-          ? (["solana", "solana-devnet"] as Network[])
-          : undefined;
-
-    // Select payment requirement using provided selector
-    const requirements = paymentRequirementsSelector(
-      accepts as PaymentRequirements[],
-      network,
-      "exact",
-    );
-
-    // Validate payment amount
-    if (BigInt(requirements.maxAmountRequired) > maxValue) {
-      throw new Error("Payment amount exceeds maximum allowed");
-    }
-
-    // Create payment header based on mode
-    let paymentHeader: string;
-
-    if (isSettlementMode(requirements)) {
-      // x402x settlement mode: use commitment-based nonce
-      console.log("[x402x] Using settlement mode with commitment-based nonce");
-      paymentHeader = await createSettlementPaymentHeader(
-        walletClient,
-        x402Version,
-        requirements,
-        config,
-      );
-    } else {
-      // Standard x402 mode
-      console.log("[x402x] Using standard x402 mode");
-      paymentHeader = await createStandardPaymentHeader(
-        walletClient,
-        x402Version,
-        requirements,
-        config,
-      );
-    }
-
-    if (!init) {
-      throw new Error("Missing fetch request configuration");
-    }
-
-    // Check for retry loop
-    if ((init as any)?.__is402Retry) {
-      throw new Error("Payment already attempted");
-    }
-
-    // Retry request with payment header
-    const newInit = {
-      ...init,
-      headers: {
-        ...(init?.headers || {}),
-        "X-PAYMENT": paymentHeader,
-        "Access-Control-Expose-Headers": "X-PAYMENT-RESPONSE",
-      },
-      __is402Retry: true,
-    };
-
-    const secondResponse = await fetch(input, newInit);
-    return secondResponse;
-  };
+  // Use official wrapFetchWithPayment with our custom client
+  return officialWrapFetchWithPayment(fetch, client);
 }
 
 /**
- * Simplified alias for wrapFetchWithPayment (x402x style)
- *
- * @deprecated Use wrapFetchWithPayment for full compatibility with x402
+ * Re-export official types and utilities for convenience
  */
-export function x402xFetch(
-  fetch: typeof globalThis.fetch,
-  walletClient: Signer | MultiNetworkSigner,
-  maxValue: bigint = BigInt(0.1 * 10 ** 6),
-) {
-  return wrapFetchWithPayment(fetch, walletClient, maxValue);
-}
-
-/**
- * Re-export types and utilities from @x402x/core_v2
- * 
- * Note: Some re-exported functions (decodeXPaymentResponse, createSigner) are legacy v1 stubs
- * that throw errors when called. They are included for API compatibility during migration.
- * Use the v2 x402Client/x402HTTPClient APIs instead.
- */
-export { decodeXPaymentResponse, createSigner } from "@x402x/core_v2";
-export type { Signer, MultiNetworkSigner, X402Config, PaymentRequirementsSelector } from "@x402x/core_v2";
+export { x402Client, type PaymentPolicy } from "@x402/fetch";
+export type { ClientEvmSigner } from "@x402/evm";
+export type { 
+  PaymentRequirements, 
+  PaymentPayload,
+  Network 
+} from "@x402/core/types";
 export type { Hex } from "viem";
