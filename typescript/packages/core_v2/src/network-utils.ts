@@ -29,6 +29,15 @@ const NETWORK_IDS: Record<string, Network> = {
 };
 
 /**
+ * CAIP-2 network ID to network name mapping (reverse lookup)
+ */
+const NETWORK_NAMES: Record<Network, string> = {
+  "eip155:84532": "base-sepolia",
+  "eip155:1444673419": "skale-base-sepolia",
+  "eip155:8453": "base",
+};
+
+/**
  * Default asset (USDC) configuration per network
  */
 const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
@@ -79,6 +88,29 @@ export function getNetworkId(networkName: string): Network {
     );
   }
   return networkId;
+}
+
+/**
+ * Get network name from CAIP-2 network ID
+ * 
+ * @param network - CAIP-2 network identifier (e.g., 'eip155:84532')
+ * @returns Network name (e.g., 'base-sepolia')
+ * @throws Error if network ID is not supported
+ * 
+ * @example
+ * ```typescript
+ * const networkName = getNetworkName('eip155:84532'); // 'base-sepolia'
+ * ```
+ */
+export function getNetworkName(network: Network): string {
+  const networkName = NETWORK_NAMES[network];
+  if (!networkName) {
+    throw new Error(
+      `Unsupported network ID: ${network}. ` +
+        `Supported network IDs: ${Object.keys(NETWORK_NAMES).join(", ")}`
+    );
+  }
+  return networkName;
 }
 
 /**

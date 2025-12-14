@@ -5,6 +5,8 @@
 import type { PaymentRequirements, SettlementExtra } from "./types.js";
 import { getNetworkConfig } from "./networks.js";
 import { generateSalt } from "./commitment.js";
+import { assertValidSettlementExtra } from "./validation.js";
+import { getNetworkName } from "./network-utils.js";
 
 /**
  * Add settlement extension to PaymentRequirements
@@ -47,7 +49,9 @@ export function addSettlementExtra(
     salt?: string;
   },
 ): PaymentRequirements {
-  const config = getNetworkConfig(requirements.network);
+  // Convert CAIP-2 network ID to friendly name for config lookup
+  const networkName = getNetworkName(requirements.network);
+  const config = getNetworkConfig(networkName);
 
   // Preserve existing name/version from requirements.extra if they exist (from x402 official middleware)
   // Only use config values as fallback
@@ -67,6 +71,9 @@ export function addSettlementExtra(
     hook: params.hook,
     hookData: params.hookData,
   };
+
+  // Validate the settlement extra parameters
+  assertValidSettlementExtra(extra);
 
   return {
     ...requirements,
