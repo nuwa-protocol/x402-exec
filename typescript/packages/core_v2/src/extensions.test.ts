@@ -13,13 +13,9 @@ describe("createRouterSettlementExtension", () => {
   it("should create extension with default schema version", () => {
     const extension = createRouterSettlementExtension();
 
-    expect(extension).toEqual({
-      info: {
-        schemaVersion: 1,
-        description: undefined,
-      },
-      schema: undefined,
-    });
+    expect(extension.info.schemaVersion).toBe(1);
+    expect(extension.info.description).toBeUndefined();
+    expect(extension.schema).toBeUndefined();
   });
 
   it("should create extension with description", () => {
@@ -32,8 +28,8 @@ describe("createRouterSettlementExtension", () => {
         schemaVersion: 1,
         description: "Settlement router with atomic fee distribution",
       },
-      schema: undefined,
     });
+    expect(extension.schema).toBeUndefined();
   });
 
   it("should create extension with schema", () => {
@@ -46,13 +42,9 @@ describe("createRouterSettlementExtension", () => {
 
     const extension = createRouterSettlementExtension({ schema });
 
-    expect(extension).toEqual({
-      info: {
-        schemaVersion: 1,
-        description: undefined,
-      },
-      schema,
-    });
+    expect(extension.info.schemaVersion).toBe(1);
+    expect(extension.info.description).toBeUndefined();
+    expect(extension.schema).toEqual(schema);
   });
 
   it("should create extension with both description and schema", () => {

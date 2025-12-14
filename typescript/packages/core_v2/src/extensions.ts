@@ -60,9 +60,9 @@ export function createRouterSettlementExtension(
   return {
     info: {
       schemaVersion: 1,
-      description: params?.description,
+      ...(params?.description !== undefined && { description: params.description }),
     },
-    schema: params?.schema,
+    ...(params?.schema !== undefined && { schema: params.schema }),
   };
 }
 

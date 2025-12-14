@@ -52,7 +52,7 @@ export function isValid32ByteHex(hex: string): boolean {
  * @returns true if valid numeric string
  */
 export function isValidNumericString(value: string): boolean {
-  return /^\d+$/.test(value) && BigInt(value) >= 0n;
+  return /^\d+$/.test(value);
 }
 
 /**
