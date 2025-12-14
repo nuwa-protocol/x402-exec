@@ -1,6 +1,6 @@
 /**
  * Tests for @x402x/fetch_v2
- * 
+ *
  * Validates the custom ExactEvmSchemeWithRouterSettlement client that wraps
  * official @x402/fetch with router settlement support.
  */
@@ -69,11 +69,11 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       expect(auth.value).toBe(requirements.amount);
       expect(auth.validAfter).toBeDefined();
       expect(auth.validBefore).toBeDefined();
-      
+
       // Verify nonce is commitment (not random)
       expect(auth.nonce).toBeDefined();
       expect(auth.nonce).toMatch(/^0x[a-fA-F0-9]{64}$/);
-      
+
       // Nonce should be deterministic based on commitment parameters
       // Run again with same params to verify
       const result2 = await scheme.createPaymentPayload(2, requirements);
@@ -104,9 +104,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
 
       // Verify signTypedData was called
       expect(mockSigner.signTypedData).toHaveBeenCalledTimes(1);
-      
+
       const signCall = (mockSigner.signTypedData as any).mock.calls[0][0];
-      
+
       // Verify domain parameters
       expect(signCall.domain).toMatchObject({
         name: "USD Coin",
@@ -145,9 +145,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
         },
       };
 
-      await expect(
-        scheme.createPaymentPayload(2, requirements)
-      ).rejects.toThrow(/EIP-712 domain parameters/);
+      await expect(scheme.createPaymentPayload(2, requirements)).rejects.toThrow(
+        /EIP-712 domain parameters/,
+      );
     });
   });
 
@@ -176,7 +176,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       // Verify nonce is random (not commitment-based)
       const auth = result.payload.authorization;
       expect(auth.nonce).toMatch(/^0x[a-fA-F0-9]{64}$/);
-      
+
       // Run again to verify nonce changes (random, not deterministic)
       const result2 = await scheme.createPaymentPayload(2, requirements);
       expect(result2.payload.authorization.nonce).not.toBe(auth.nonce);
@@ -200,9 +200,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       const result2 = await scheme.createPaymentPayload(2, requirements);
 
       // Nonces should be different (random)
-      expect(result1.payload.authorization.nonce).not.toBe(
-        result2.payload.authorization.nonce
-      );
+      expect(result1.payload.authorization.nonce).not.toBe(result2.payload.authorization.nonce);
     });
   });
 
@@ -231,9 +229,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       const result2 = await scheme.createPaymentPayload(2, requirementsWithRouter);
 
       // Settlement mode: nonces should be identical (deterministic commitment)
-      expect(result1.payload.authorization.nonce).toBe(
-        result2.payload.authorization.nonce
-      );
+      expect(result1.payload.authorization.nonce).toBe(result2.payload.authorization.nonce);
     });
 
     it("should select standard mode when settlementRouter is absent", async () => {
@@ -254,9 +250,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       const result2 = await scheme.createPaymentPayload(2, requirementsWithoutRouter);
 
       // Standard mode: nonces should be different (random)
-      expect(result1.payload.authorization.nonce).not.toBe(
-        result2.payload.authorization.nonce
-      );
+      expect(result1.payload.authorization.nonce).not.toBe(result2.payload.authorization.nonce);
     });
   });
 
@@ -286,11 +280,11 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       // Validate top-level structure
       expect(result).toHaveProperty("x402Version");
       expect(result).toHaveProperty("payload");
-      
+
       // Validate payload structure
       expect(result.payload).toHaveProperty("authorization");
       expect(result.payload).toHaveProperty("signature");
-      
+
       // Validate authorization structure
       const auth = result.payload.authorization;
       expect(auth).toHaveProperty("from");
@@ -299,7 +293,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       expect(auth).toHaveProperty("validAfter");
       expect(auth).toHaveProperty("validBefore");
       expect(auth).toHaveProperty("nonce");
-      
+
       // Validate types
       expect(typeof auth.from).toBe("string");
       expect(typeof auth.to).toBe("string");

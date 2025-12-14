@@ -8,15 +8,11 @@
 
 import type { Hex } from "viem";
 import { getAddress, toHex } from "viem";
-import type { 
-  PaymentRequirements, 
-  PaymentPayload,
-  SchemeNetworkClient 
-} from "@x402/core/types";
-import { 
+import type { PaymentRequirements, PaymentPayload, SchemeNetworkClient } from "@x402/core/types";
+import {
   wrapFetchWithPayment as officialWrapFetchWithPayment,
   x402Client,
-  type PaymentPolicy
+  type PaymentPolicy,
 } from "@x402/fetch";
 import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
 import { calculateCommitment, getNetworkConfig, getNetworkName } from "@x402x/core_v2";
@@ -46,7 +42,8 @@ function isSettlementMode(requirements: PaymentRequirements): boolean {
  * Create random nonce (standard x402 behavior)
  */
 function createNonce(): Hex {
-  const cryptoObj = typeof globalThis.crypto !== "undefined" ? globalThis.crypto : (globalThis as any).crypto;
+  const cryptoObj =
+    typeof globalThis.crypto !== "undefined" ? globalThis.crypto : (globalThis as any).crypto;
   if (!cryptoObj) {
     throw new Error("Crypto API not available");
   }
@@ -55,7 +52,7 @@ function createNonce(): Hex {
 
 /**
  * Custom Exact EVM Scheme with Router Settlement support
- * 
+ *
  * This scheme extends the official ExactEvmScheme to support x402x router settlement.
  * When requirements.extra.settlementRouter is present, it uses commitment-based nonce
  * and includes settlement parameters. Otherwise, it delegates to the official scheme.
@@ -77,7 +74,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
 
   /**
    * Creates a payment payload for the Exact scheme.
-   * 
+   *
    * If requirements.extra.settlementRouter is present, uses commitment-based nonce
    * for router settlement. Otherwise delegates to official ExactEvmScheme.
    *
@@ -87,7 +84,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
    */
   async createPaymentPayload(
     x402Version: number,
-    paymentRequirements: PaymentRequirements
+    paymentRequirements: PaymentRequirements,
   ): Promise<Pick<PaymentPayload, "x402Version" | "payload">> {
     // Check if settlement router mode
     if (!isSettlementMode(paymentRequirements)) {
@@ -134,7 +131,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
         validBefore,
         nonce,
       },
-      paymentRequirements
+      paymentRequirements,
     );
 
     // Create payload with authorization and signature
@@ -172,13 +169,13 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
       validBefore: string;
       nonce: Hex;
     },
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<Hex> {
     const chainId = parseInt(requirements.network.split(":")[1]);
 
     if (!requirements.extra?.name || !requirements.extra?.version) {
       throw new Error(
-        `EIP-712 domain parameters (name, version) are required in payment requirements for asset ${requirements.asset}`
+        `EIP-712 domain parameters (name, version) are required in payment requirements for asset ${requirements.asset}`,
       );
     }
 
@@ -248,14 +245,13 @@ export function wrapFetchWithPayment(
   fetch: typeof globalThis.fetch,
   signer: ClientEvmSigner,
   network: string,
-  policy?: PaymentPolicy
+  policy?: PaymentPolicy,
 ) {
   // Create custom scheme with router settlement support
   const customScheme = new ExactEvmSchemeWithRouterSettlement(signer);
 
   // Create x402Client with custom scheme
-  const client = new x402Client(policy)
-    .register(network, customScheme);
+  const client = new x402Client(policy).register(network, customScheme);
 
   // Use official wrapFetchWithPayment with our custom client
   return officialWrapFetchWithPayment(fetch, client);
@@ -266,9 +262,5 @@ export function wrapFetchWithPayment(
  */
 export { x402Client, type PaymentPolicy } from "@x402/fetch";
 export type { ClientEvmSigner } from "@x402/evm";
-export type { 
-  PaymentRequirements, 
-  PaymentPayload,
-  Network 
-} from "@x402/core/types";
+export type { PaymentRequirements, PaymentPayload, Network } from "@x402/core/types";
 export type { Hex } from "viem";

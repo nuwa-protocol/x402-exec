@@ -1,6 +1,7 @@
 {
   "name": "@x402x/fetch_v2",
   "version": "0.1.0",
+  "private": true,
   "description": "Fetch wrapper for x402x settlement framework - v2 with official x402",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
