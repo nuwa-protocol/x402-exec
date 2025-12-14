@@ -554,7 +554,7 @@ export function paymentMiddleware(
   };
 }
 
-// Re-export types from @x402x/core_v2 for compatibility
+// Export types for external consumers (public API types)
 export type { Money, Network, FacilitatorConfig, PaymentRequirements, Resource } from "@x402x/core_v2";
 
 export type { Address } from "viem";

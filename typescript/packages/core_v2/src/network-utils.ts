@@ -162,8 +162,11 @@ export function processPriceToAtomicAmount(
     const asset = getDefaultAsset(network);
     const decimals = asset.decimals;
 
-    // Convert to smallest unit (e.g., for USDC with 6 decimals: 1.5 * 10^6 = 1500000)
-    const atomicAmount = Math.floor(amount * Math.pow(10, decimals));
+    // Convert to smallest unit using integer-only arithmetic to avoid floating-point precision issues
+    // Split the amount into whole and fractional parts
+    const [whole, fractional = '0'] = amount.toString().split('.');
+    const paddedFractional = fractional.padEnd(decimals, '0').slice(0, decimals);
+    const atomicAmount = BigInt(whole) * BigInt(10 ** decimals) + BigInt(paddedFractional);
 
     return { maxAmountRequired: atomicAmount.toString() };
   } catch (error) {

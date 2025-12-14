@@ -34,6 +34,10 @@ export interface RoutePattern {
  * 
  * Converts route configuration into compiled patterns with regex matching.
  * 
+ * **Note**: When a route is specified as a simple price value (string or number),
+ * it is automatically converted to a RouteConfig with network defaulting to "base-sepolia".
+ * For production use, explicitly specify the network in your route configuration.
+ * 
  * @param routes - Routes configuration
  * @returns Array of route patterns
  * 
@@ -41,7 +45,7 @@ export interface RoutePattern {
  * ```typescript
  * const routes = {
  *   'GET /api/data': { price: '0.01', network: 'base-sepolia' },
- *   '/public/*': '0'
+ *   '/public/*': '0'  // Defaults to base-sepolia network
  * };
  * const patterns = computeRoutePatterns(routes);
  * ```

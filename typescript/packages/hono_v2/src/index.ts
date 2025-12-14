@@ -540,7 +540,7 @@ export function paymentMiddleware(
   };
 }
 
-// Re-export types for convenience
+// Export types for external consumers (public API types)
 export type {
   Money,
   Network,

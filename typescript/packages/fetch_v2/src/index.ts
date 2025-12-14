@@ -294,7 +294,13 @@ export function x402xFetch(
   return wrapFetchWithPayment(fetch, walletClient, maxValue);
 }
 
-// Re-export utilities from @x402x/core_v2 for compatibility
+/**
+ * Re-export types and utilities from @x402x/core_v2
+ * 
+ * Note: Some re-exported functions (decodeXPaymentResponse, createSigner) are legacy v1 stubs
+ * that throw errors when called. They are included for API compatibility during migration.
+ * Use the v2 x402Client/x402HTTPClient APIs instead.
+ */
 export { decodeXPaymentResponse, createSigner } from "@x402x/core_v2";
 export type { Signer, MultiNetworkSigner, X402Config, PaymentRequirementsSelector } from "@x402x/core_v2";
 export type { Hex } from "viem";
