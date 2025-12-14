@@ -7,7 +7,7 @@
  */
 
 import type { Hex } from "viem";
-import { getAddress, toHex } from "viem";
+import { getAddress } from "viem";
 import type { PaymentRequirements, PaymentPayload, SchemeNetworkClient } from "@x402/core/types";
 import {
   wrapFetchWithPayment as officialWrapFetchWithPayment,
@@ -15,7 +15,7 @@ import {
   type PaymentPolicy,
 } from "@x402/fetch";
 import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
-import { calculateCommitment, getNetworkConfig, getNetworkName } from "@x402x/core_v2";
+import { calculateCommitment } from "@x402x/core_v2";
 
 /**
  * EIP-3009 authorization types for EIP-712 signature
@@ -39,15 +39,12 @@ function isSettlementMode(requirements: PaymentRequirements): boolean {
 }
 
 /**
- * Create random nonce (standard x402 behavior)
+ * Extract numeric chain ID from CAIP-2 network format
+ * @param network - CAIP-2 network string (e.g., "eip155:84532")
+ * @returns Numeric chain ID (e.g., 84532)
  */
-function createNonce(): Hex {
-  const cryptoObj =
-    typeof globalThis.crypto !== "undefined" ? globalThis.crypto : (globalThis as any).crypto;
-  if (!cryptoObj) {
-    throw new Error("Crypto API not available");
-  }
-  return toHex(cryptoObj.getRandomValues(new Uint8Array(32)));
+function extractChainId(network: string): number {
+  return parseInt(network.split(":")[1]);
 }
 
 /**
@@ -94,11 +91,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
 
     // Settlement router mode: use commitment-based nonce
     const extra = paymentRequirements.extra as any;
-    // Convert CAIP-2 network format to network name for getNetworkConfig
-    const networkName = getNetworkName(paymentRequirements.network as any);
-    const networkConfig = getNetworkConfig(networkName);
-    // Extract numeric chainId from CAIP-2 format (e.g., "eip155:84532" -> 84532)
-    const chainId = parseInt(paymentRequirements.network.split(":")[1]);
+    const chainId = extractChainId(paymentRequirements.network);
     const from = this.signer.address;
 
     const now = Math.floor(Date.now() / 1000);
@@ -171,7 +164,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     },
     requirements: PaymentRequirements,
   ): Promise<Hex> {
-    const chainId = parseInt(requirements.network.split(":")[1]);
+    const chainId = extractChainId(requirements.network);
 
     if (!requirements.extra?.name || !requirements.extra?.version) {
       throw new Error(
@@ -183,7 +176,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     const domain = {
       name,
       version,
-      chainId: parseInt(requirements.network.split(":")[1]),
+      chainId,
       verifyingContract: getAddress(requirements.asset),
     };
 
