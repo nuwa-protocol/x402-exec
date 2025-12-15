@@ -129,86 +129,6 @@ export interface X402xRouteConfig {
 export type X402xRoutesConfig = X402xRouteConfig | Record<string, X402xRouteConfig>;
 
 /**
- * Creates a payment middleware for Hono with x402x settlement support
- *
- * This middleware is compatible with x402 official middleware API but adds
- * settlement extension support for executing on-chain hooks.
- *
- * @param payTo - The final recipient address (used in hook, not as SettlementRouter)
- * @param routes - Configuration for protected routes and their payment requirements
- * @param facilitator - Configuration for the payment facilitator service
- * @returns A Hono middleware handler
- *
- * @example
- * Simple usage - single network with default TransferHook:
- * ```typescript
- * import { Hono } from 'hono';
- * import { paymentMiddleware } from '@x402x/hono';
- *
- * const app = new Hono();
- *
- * app.use('/api/*', paymentMiddleware(
- *   '0xRecipient...', // Final recipient
- *   {
- *     price: '$0.01',
- *     network: 'base-sepolia',
- *     // hook defaults to TransferHook
- *     // hookData defaults to empty
- *   },
- *   { url: 'https://facilitator.x402.org' }
- * ));
- * ```
- *
- * @example
- * Multi-network support:
- * ```typescript
- * app.use('/api/*', paymentMiddleware(
- *   '0xRecipient...',
- *   {
- *     price: '$0.10', // Price in USD
- *     network: ['base-sepolia', 'x-layer-testnet'], // Multiple networks!
- *   },
- *   facilitator
- * ));
- * ```
- *
- * @example
- * Custom hook configuration:
- * ```typescript
- * app.post('/api/referral', paymentMiddleware(
- *   '0xPlatform...',
- *   {
- *     price: '$0.20', // Price in USD
- *     network: 'base-sepolia',
- *     hook: '0xReferralHook...',
- *     hookData: encodeReferralData(referrer, split),
- *     facilitatorFee: '$0.02', // Fee in USD (same format as price)
- *   },
- *   facilitator
- * ));
- * ```
- *
- * @example
- * Route-specific configuration:
- * ```typescript
- * app.use(paymentMiddleware(
- *   '0xRecipient...',
- *   {
- *     '/api/basic': {
- *       price: '$0.01',
- *       network: 'base-sepolia',
- *     },
- *     'POST /api/premium': {
- *       price: '$0.10', // Price in USD
- *       network: ['base-sepolia', 'polygon'],
- *       facilitatorFee: '$0.01', // Fee in USD (same format as price)
- *     },
- *   },
- *   facilitator
- * ));
- * ```
- */
-/**
  * x402x v2 custom server scheme with router settlement extension
  *
  * This custom server scheme extends the official x402 server with x402x-specific
@@ -458,6 +378,55 @@ class X402xCustomServerScheme {
  *   { url: 'https://facilitator.x402.org' }
  * ));
  * ```
+ *
+ * @example
+ * Multi-network support:
+ * ```typescript
+ * app.use('/api/*', paymentMiddleware(
+ *   '0xRecipient...',
+ *   {
+ *     price: '$0.10', // Price in USD
+ *     network: ['base-sepolia', 'x-layer-testnet'], // Multiple networks!
+ *   },
+ *   facilitator
+ * ));
+ * ```
+ *
+ * @example
+ * Custom hook configuration:
+ * ```typescript
+ * app.post('/api/referral', paymentMiddleware(
+ *   '0xPlatform...',
+ *   {
+ *     price: '$0.20', // Price in USD
+ *     network: 'base-sepolia',
+ *     hook: '0xReferralHook...',
+ *     hookData: encodeReferralData(referrer, split),
+ *     facilitatorFee: '$0.02', // Fee in USD (same format as price)
+ *   },
+ *   facilitator
+ * ));
+ * ```
+ *
+ * @example
+ * Route-specific configuration:
+ * ```typescript
+ * app.use(paymentMiddleware(
+ *   '0xRecipient...',
+ *   {
+ *     '/api/basic': {
+ *       price: '$0.01',
+ *       network: 'base-sepolia',
+ *     },
+ *     'POST /api/premium': {
+ *       price: '$0.10', // Price in USD
+ *       network: ['base-sepolia', 'polygon'],
+ *       facilitatorFee: '$0.01', // Fee in USD (same format as price)
+ *     },
+ *   },
+ *   facilitator
+ * ));
+ * ```
  */
 export function paymentMiddleware(
   payTo: string,
@@ -476,7 +445,7 @@ export function paymentMiddleware(
 
         return customServer.getPaymentRequirements(method, path, resourceUrl);
       },
-      extractPaymentContext: async (req: any, requirements: PaymentRequirements, payment: PaymentPayload) => {
+      extractPaymentContext: async (req: X402Request, requirements: PaymentRequirements, payment: PaymentPayload) => {
         return customServer.extractSettlementContext(requirements, payment);
       }
     },
