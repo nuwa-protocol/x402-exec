@@ -2,6 +2,18 @@
 
 ## Quick Start
 
+### Option 1: Create PR and Monitor (Recommended)
+1. **Let Claude create and monitor the PR**:
+   ```
+   Create a PR for my current branch and start monitoring it
+   ```
+
+2. **Claude will**:
+   - Create the PR using GitHub MCP or gh cli
+   - Start background monitoring automatically
+   - Create fix plans when issues are detected
+
+### Option 2: Monitor Existing PR
 1. **After creating a PR**, ask Claude to monitor it:
    ```
    Please monitor the current PR and create a fix plan for any issues
@@ -19,7 +31,54 @@
 
 ## Detailed Usage Examples
 
-### Example 1: Initial PR Monitoring
+### Example 1: Create PR via GitHub MCP
+```
+User: Create a PR for my current branch
+
+Claude: I'll create a PR for your current branch using GitHub MCP tools.
+[checking current branch and changes...]
+
+PR #5678 created successfully!
+Title: "Add user authentication feature"
+Description: [automatically generated from commit messages]
+
+Would you like me to start background monitoring for this PR?
+```
+
+### Example 2: Background Monitoring with Real-time Updates
+```
+User: Yes, please monitor PR #5678 in background
+
+Claude: Starting background monitor for PR #5678...
+[Background task started with PID 12345]
+
+The monitor will check for changes every 30 seconds and notify you immediately when:
+- New review comments are posted
+- CI status changes
+- New commits are pushed
+- PR state changes (closed/merged)
+
+✅ Background monitoring active for PR #5678
+```
+
+### Example 3: Real-time Notification
+```
+[System Notification - 5 minutes later]
+
+Claude: 🔔 Update on PR #5678!
+
+New changes detected:
+- CI Check: tests (FAILED) - 2 test failures
+- Review Comment: @reviewer requested changes at src/auth.js:45
+
+I've created a fix plan with 2 high-priority items:
+1. Fix failing tests in UserAuth.test.js
+2. Address review comment about input validation
+
+Would you like me to start fixing these issues?
+```
+
+### Example 4: Initial PR Monitoring (Manual)
 ```
 User: I just created PR #1234. Can you monitor it for issues?
 
@@ -124,11 +183,24 @@ This skill uses these GitHub MCP tools:
 
 ## Advanced Usage
 
-### Custom Monitoring
+### Multi-PR Monitoring
 ```
-User: Monitor PR #1234 but focus only on CI failures and critical review comments
+User: I'm working on 3 PRs. Can you monitor all of them?
 
-Claude: I'll monitor PR #1234 with a focus on CI failures and critical review comments, ignoring minor suggestions.
+Claude: I'll monitor all 3 PRs in parallel:
+- PR #1234: "Feature X" (monitoring active)
+- PR #1235: "Fix Y" (monitoring active)
+- PR #1236: "Update Z" (monitoring active)
+
+Each PR has its own background monitor and fix plan.
+```
+
+### Custom Monitoring Intervals
+```
+User: Monitor this critical PR every 10 seconds
+
+Claude: Starting high-frequency monitor for PR #1234 (10-second interval).
+This is useful for active PR reviews or when CI is about to complete.
 ```
 
 ### Selective Fixing
@@ -138,9 +210,23 @@ User: Only execute the high-priority items in the fix plan
 Claude: I'll work on just the high-priority items (CI failures and requested changes).
 ```
 
+### Automated Responses
+```
+User: Auto-respond to "fix typos" review comments
+
+Claude: I'll automatically fix minor issues like typos and formatting without asking for confirmation.
+Other issues will still be added to the fix plan for review.
+```
+
 ### Batch Fixes
 ```
 User: Can you fix all documentation-related comments in one commit?
 
 Claude: I'll group all documentation fixes into a single commit for better organization.
 ```
+
+### Integration with IDE/Editor
+The background monitor can integrate with editors for real-time notifications:
+- VS Code: Desktop notifications
+- Vim/Neovim: Status line updates
+- Emacs: Modeline notifications
