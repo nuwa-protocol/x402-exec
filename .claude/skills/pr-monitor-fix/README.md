@@ -1,5 +1,7 @@
 # PR Monitor & Fix Skill Usage Guide
 
+**🆕 Enhanced with GitHub GraphQL Thread Resolution!** Now you can actually resolve GitHub review threads (not just track them locally).
+
 ## Quick Start
 
 ### Option 1: Create PR and Monitor (Recommended)
@@ -139,9 +141,16 @@ Should I add this to the fix plan as a suggestion?
 
 ## Features
 
+### 🆕 GitHub Thread Resolution (NEW!)
+- **Actual Thread Resolution**: Resolve GitHub review threads via GraphQL API (not just local tracking)
+- **Thread ID Management**: Automatically extract and manage GitHub thread IDs
+- **Real-time Sync**: Resolution status synchronized with GitHub (reviewers can see it!)
+- **Backward Compatible**: All existing local tracking still works
+- **Enhanced Monitoring**: Background monitor now thread-aware
+
 ### Automatic Issue Categorization
 - **CI Failures**: Test failures, build errors, linting issues
-- **Review Comments**: Direct requests for changes
+- **Review Comments**: Direct requests for changes (now with actual thread resolution)
 - **Suggestions**: Improvements and best practices
 - **Documentation**: Missing or outdated docs
 
@@ -230,3 +239,79 @@ The background monitor can integrate with editors for real-time notifications:
 - VS Code: Desktop notifications
 - Vim/Neovim: Status line updates
 - Emacs: Modeline notifications
+
+## 🆕 GitHub Thread Resolution Usage
+
+### Setup Requirements
+1. **Node.js** (v14+): For GraphQL API integration
+2. **GitHub Token**: Set `GITHUB_TOKEN` environment variable with `repo` scope
+3. **Install**: The resolver script is included in the skill
+
+### Basic Thread Resolution Workflow
+```
+User: Start enhanced monitoring for PR #109 with thread resolution
+
+Claude: I'll start comprehensive monitoring with GraphQL thread resolution:
+
+🔧 Initializing enhanced monitor...
+✅ Node.js detected
+✅ GitHub token found
+🔍 Fetching review threads via GraphQL API...
+
+📋 Found 3 review threads:
+1. Thread ID: MDR0VGhyZWFkRmllbGRQdWxsUmVxdWVzdDE0MjUyNjE6MTYxODc5
+   Status: ❌ UNRESOLVED - contracts/x402x-mint/X402X.sol:2
+
+2. Thread ID: MDR0VGhyZWFkRmllbGRQdWxsUmVxdWVzdDE0MjUyNjE6MTYxODgw
+   Status: ❌ UNRESOLVED - background_monitor.sh:10
+
+✅ Enhanced monitoring active with thread resolution support
+```
+
+### Resolving Threads on GitHub
+```
+User: I've fixed the pragma issue. Can you resolve the thread?
+
+Claude: I'll resolve the thread on GitHub so reviewers can see it's fixed.
+
+🔧 Resolving thread MDR0VGhyZWFkRmllbGRQdWxsUmVxdWVzdDE0MjUyNjE6MTYxODc5 via GitHub GraphQL API...
+✅ Thread resolved successfully on GitHub!
+   Resolved by: claude at 1/15/2025, 3:45:00 PM
+   Thread ID: MDR0VGhyZWFkRmllbGRQdWxsUmVxdWVzdDE0MjUyNjE6MTYxODc5
+
+The thread is now marked as resolved on GitHub for all reviewers to see.
+```
+
+### Enhanced Status Monitoring
+```
+User: What's the current resolution status for PR #109?
+
+Claude: === Enhanced Resolution Status for PR #109 ===
+
+Local Tracking:
+- Total review comments: 5
+- Resolved comments: 3
+- Unresolved comments: 2
+
+GitHub Thread Resolution:
+✅ Thread MDR0VGhyZWFk... resolved (contracts/x402x-mint/X402X.sol:2)
+❌ Thread MDR0VGhyZWFk... unresolved (background_monitor.sh:10)
+
+💡 Use thread resolution commands to sync local fixes with GitHub
+```
+
+### Available Thread Commands
+- **List Threads**: `list-threads` - Show all threads with GitHub thread IDs
+- **Resolve Thread**: `resolve-thread <id>` - Actually resolve on GitHub
+- **Unresolve Thread**: `unresolve-thread <id>` - Mark as unresolved on GitHub
+- **Enhanced Status**: `enhanced-status` - Show both local and GitHub status
+- **Fetch Threads**: `fetch-threads` - Refresh thread information
+
+### Fallback Mode
+If Node.js or GitHub token aren't available, the system automatically falls back to local tracking:
+```
+⚠️  GraphQL features unavailable (Node.js or GITHUB_TOKEN missing)
+✅ Falling back to basic comment tracking (local resolution only)
+```
+
+For complete documentation, see: [THREAD_RESOLUTION_GUIDE.md](THREAD_RESOLUTION_GUIDE.md)
