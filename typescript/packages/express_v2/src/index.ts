@@ -28,6 +28,22 @@ import type { Address } from "viem";
 import type { Address as SolanaAddress } from "@solana/kit";
 
 /**
+ * Interface for x402 request objects with minimum required properties
+ */
+export interface X402RequestBase {
+  method?: string;
+  path?: string;
+  url?: string;
+}
+
+/**
+ * Interface for x402Response structure from official middleware
+ */
+export interface X402Response {
+  paymentContext?: X402Context;
+}
+
+/**
  * Payment context information available to handlers via req.x402
  *
  * This is an x402x extension that provides access to payment details
@@ -389,7 +405,7 @@ export function paymentMiddleware(
   // Create official x402 middleware with custom server scheme
   const officialMiddleware = x402({
     server: {
-      getPaymentRequirements: async (req: any) => {
+      getPaymentRequirements: async (req: X402RequestBase) => {
         const method = req.method || 'GET';
         const path = req.path || req.url || '/';
         const resourceUrl = req.url || path;
@@ -408,10 +424,12 @@ export function paymentMiddleware(
     // Apply the official middleware
     await officialMiddleware(req, res, next);
 
-    // Extract x402 context and set it in request for x402x compatibility
-    const x402Response = (req as any).x402Response;
-    if (x402Response?.paymentContext) {
-      (req as X402Request).x402 = x402Response.paymentContext;
+    // Only extract x402 context if the response has not already been sent
+    if (!res.headersSent) {
+      const x402Response = (req as any).x402Response as X402Response;
+      if (x402Response?.paymentContext) {
+        (req as X402Request).x402 = x402Response.paymentContext;
+      }
     }
   };
 }
