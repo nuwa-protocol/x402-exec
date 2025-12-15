@@ -93,7 +93,7 @@ while true; do
     sleep "$CHECK_INTERVAL"
 
     # Check if PR still exists and is open
-    local pr_state=$(gh pr view ${PR_NUMBER} --repo ${OWNER}/${REPO} --json state -q '.state' 2>/dev/null)
+    pr_state=$(gh pr view ${PR_NUMBER} --repo ${OWNER}/${REPO} --json state -q '.state' 2>/dev/null)
 
     if [[ "$pr_state" == "CLOSED" || "$pr_state" == "MERGED" ]]; then
         echo "$(date): PR #${PR_NUMBER} is ${pr_state}. Stopping monitor." | tee -a "$LOG_FILE"
