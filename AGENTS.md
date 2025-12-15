@@ -31,8 +31,8 @@ This repository is a pnpm workspace containing Solidity contracts, a TypeScript 
 
 ## Coding Style & Naming
 
-- TypeScript: format with Prettier (`typescript/.prettierrc`, `facilitator/.prettierrc`; 2-space indent, ~100 cols). Prefer `*.test.ts` for tests.
-- Web frontend: uses Biome (`web/frontend/biome.json`) for lint/format (`pnpm -C web/frontend check`).
+- TypeScript: format with Prettier (`typescript/.prettierrc`, `facilitator/.prettierrc`; 2-space indent, ~100 columns). Prefer `*.test.ts` for tests.
+- Web frontend: uses Biome (`web/frontend/biome.json`) for linting and formatting (`pnpm -C web/frontend check`).
 - Solidity: keep `pragma solidity ^0.8.20`, use NatSpec on public/external APIs, and follow CEI/reentrancy-safe patterns.
 
 ## Testing Guidelines
