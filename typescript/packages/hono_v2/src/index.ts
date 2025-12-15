@@ -28,6 +28,22 @@ import type { Address } from "viem";
 import type { Address as SolanaAddress } from "@solana/kit";
 
 /**
+ * Interface for x402 request objects with minimum required properties
+ */
+export interface X402Request {
+  method?: string;
+  path?: string;
+  url?: string;
+}
+
+/**
+ * Interface for x402Response structure from official middleware
+ */
+export interface X402Response {
+  paymentContext?: X402Context;
+}
+
+/**
  * Payment context information available to handlers via c.get('x402')
  *
  * This is an x402x extension that provides access to payment details
@@ -453,7 +469,7 @@ export function paymentMiddleware(
   // Create official x402 middleware with custom server scheme
   const officialMiddleware = x402({
     server: {
-      getPaymentRequirements: async (req: any) => {
+      getPaymentRequirements: async (req: X402Request) => {
         const method = req.method || 'GET';
         const path = req.path || req.url || '/';
         const resourceUrl = req.url || path;
@@ -473,7 +489,7 @@ export function paymentMiddleware(
     await officialMiddleware(c, next);
 
     // Extract x402 context and set it in Hono context for x402x compatibility
-    const x402Response = c.get('x402Response');
+    const x402Response = c.get('x402Response') as X402Response;
     if (x402Response?.paymentContext) {
       c.set('x402', x402Response.paymentContext);
     }
