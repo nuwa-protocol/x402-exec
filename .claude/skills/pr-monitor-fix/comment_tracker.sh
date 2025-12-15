@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Enhanced Comment Resolution Tracker with GraphQL API Integration
-# Helps track and actually resolve GitHub review threads using GraphQL API
+# Simple Comment Resolution Tracker with Reply-Based Resolution
+# Tracks and responds to GitHub review comments by posting replies
 
 OWNER=${1:-""}
 REPO=${2:-""}
@@ -10,50 +10,57 @@ PR_NUMBER=${3:-""}
 if [[ -z "$OWNER" || -z "$REPO" || -z "$PR_NUMBER" ]]; then
     echo "Usage: $0 <owner> <repo> <pr_number>"
     echo ""
-    echo "Enhanced Features:"
-    echo "  - Local resolution tracking (original functionality)"
-    echo "  - GraphQL API thread resolution (NEW!)"
-    echo "  - Automatic thread ID extraction"
-    echo "  - Real GitHub thread resolution"
+    echo "Features:"
+    echo "  - Reply to review comments (visible to reviewers)"
+    echo "  - Local resolution tracking for monitoring"
+    echo "  - Auto-detect GitHub token via 'gh auth token'"
     exit 1
 fi
 
 STATE_DIR="/tmp/pr_monitor_${OWNER}_${REPO}_${PR_NUMBER}"
 RESOLVED_FILE="$STATE_DIR/resolved_comments.json"
-THREADS_FILE="$STATE_DIR/threads_mapping.json"
-GRAPHQL_RESOLVER="$(dirname "$0")/github-thread-resolver.js"
 
-# Use downloaded $JQ_CMD if system $JQ_CMD not available
-if command -v $JQ_CMD &> /dev/null; then
-    JQ_CMD="$JQ_CMD"
+# Use downloaded jq if system jq not available
+if command -v jq &> /dev/null; then
+    JQ_CMD="jq"
 else
-    JQ_CMD="/tmp/$JQ_CMD"
+    JQ_CMD="/tmp/jq"
 fi
 
-# Initialize files
+# Initialize resolved comments file
 mkdir -p "$STATE_DIR"
 if [[ ! -f "$RESOLVED_FILE" ]]; then
     echo '{}' > "$RESOLVED_FILE"
 fi
-if [[ ! -f "$THREADS_FILE" ]]; then
-    echo '{}' > "$THREADS_FILE"
-fi
 
-# Function to check if Node.js is available
-check_nodejs() {
-    if ! command -v node &> /dev/null; then
-        echo "Error: Node.js is required for GraphQL API functionality"
-        echo "Please install Node.js to use enhanced thread resolution features"
-        return 1
+
+# Function to get GitHub token (auto-fetch if not set)
+get_github_token() {
+    if [[ -n "$GITHUB_TOKEN" ]]; then
+        echo "$GITHUB_TOKEN"
+        return 0
     fi
-    return 0
+
+    # Try to get token from gh cli
+    if command -v gh &> /dev/null; then
+        local gh_token=$(gh auth token 2>/dev/null)
+        if [[ $? -eq 0 && -n "$gh_token" ]]; then
+            echo "$gh_token"
+            return 0
+        fi
+    fi
+
+    return 1
 }
 
 # Function to check if GitHub token is available
 check_github_token() {
-    if [[ -z "$GITHUB_TOKEN" ]]; then
-        echo "Error: GITHUB_TOKEN environment variable is required for GraphQL API functionality"
-        echo "Please set GITHUB_TOKEN with a valid GitHub personal access token"
+    local token=$(get_github_token)
+    if [[ -z "$token" ]]; then
+        echo "Error: GitHub token is required for thread resolution functionality"
+        echo "Please either:"
+        echo "  1. Set GITHUB_TOKEN environment variable, or"
+        echo "  2. Run 'gh auth login' to authenticate with GitHub CLI"
         return 1
     fi
     return 0
@@ -64,99 +71,89 @@ get_pr_url() {
     echo "https://github.com/${OWNER}/${REPO}/pull/${PR_NUMBER}"
 }
 
-# Function to fetch and cache review threads with thread IDs
-fetch_threads() {
-    echo "🔍 Fetching review threads with GraphQL API..."
 
-    if ! check_nodejs || ! check_github_token; then
-        echo "⚠️  Falling back to basic comment tracking (no thread resolution)"
-        return 1
-    fi
-
-    local pr_url=$(get_pr_url)
-    local temp_output="$STATE_DIR/threads_output.tmp"
-
-    # Use the Node.js resolver to fetch threads
-    if node "$GRAPHQL_RESOLVER" list-threads "$pr_url" > "$temp_output" 2>&1; then
-        echo "✅ Successfully fetched review threads"
-
-        # Parse the output to extract thread mapping
-        # This is a simplified approach - in a real implementation, you'd want structured JSON output
-        echo "📋 Thread information cached for resolution operations"
-        return 0
-    else
-        echo "❌ Failed to fetch threads via GraphQL API"
-        cat "$temp_output" 2>/dev/null
-        rm -f "$temp_output"
-        return 1
-    fi
-}
-
-# Function to resolve a review thread using GraphQL API
-resolve_thread_api() {
-    local thread_id="$1"
-
-    if ! check_nodejs || ! check_github_token; then
-        echo "❌ Cannot resolve thread: Node.js or GitHub token not available"
-        return 1
-    fi
-
-    echo "🔧 Resolving thread ${thread_id} via GitHub GraphQL API..."
-
-    if node "$GRAPHQL_RESOLVER" resolve-thread "$thread_id"; then
-        echo "✅ Thread ${thread_id} resolved successfully on GitHub"
-        return 0
-    else
-        echo "❌ Failed to resolve thread ${thread_id}"
-        return 1
-    fi
-}
-
-# Function to unresolve a review thread using GraphQL API
-unresolve_thread_api() {
-    local thread_id="$1"
-
-    if ! check_nodejs || ! check_github_token; then
-        echo "❌ Cannot unresolve thread: Node.js or GitHub token not available"
-        return 1
-    fi
-
-    echo "🔧 Unresolving thread ${thread_id} via GitHub GraphQL API..."
-
-    if node "$GRAPHQL_RESOLVER" unresolve-thread "$thread_id"; then
-        echo "✅ Thread ${thread_id} unresolved successfully on GitHub"
-        return 0
-    else
-        echo "❌ Failed to unresolve thread ${thread_id}"
-        return 1
-    fi
-}
-
-# Function to map comment IDs to thread IDs
-map_comment_to_thread() {
+# Function to reply to a review comment to acknowledge it's addressed
+reply_to_review_comment() {
     local comment_id="$1"
+    local reply_message="${2:-"This issue has been addressed. Thank you for the feedback!"}"
 
-    # First try to fetch threads if we haven't recently
-    local last_fetch_file="$STATE_DIR/last_threads_fetch"
-    local current_time=$(date +%s)
+    echo "💬 Replying to review comment ${comment_id}..."
 
-    if [[ ! -f "$last_fetch_file" ]]; then
-        echo "0" > "$last_fetch_file"
+    # Try to get comment details
+    local comment_data=$(gh api repos/${OWNER}/${REPO}/pulls/comments/${comment_id} 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        echo "❌ Failed to get comment ${comment_id}"
+        return 1
     fi
 
-    local last_fetch=$(cat "$last_fetch_file")
-    local cache_duration=300  # 5 minutes cache
+    # Extract the needed fields
+    local commit_id=$(echo "$comment_data" | $JQ_CMD -r '.commit_id // empty')
+    local path=$(echo "$comment_data" | $JQ_CMD -r '.path // empty')
+    local position=$(echo "$comment_data" | $JQ_CMD -r '.position // .original_position // empty')
 
-    if [[ $((current_time - last_fetch)) -gt $cache_duration ]]; then
-        fetch_threads
-        echo "$current_time" > "$last_fetch_file"
-    fi
+    echo "🔍 Debug: commit_id=$commit_id, path=$path, position=$position" >&2
 
-    # For now, we'll use a simplified approach
-    # In a full implementation, you'd parse the GraphQL response to create this mapping
-    echo "ℹ️  Note: Thread mapping requires manual thread ID or use 'fetch-threads' command"
-    return 1
+    # If we can't get the position, try a simpler approach
+    if [[ -z "$commit_id" || -z "$path" || -z "$position" ]]; then
+        echo "⚠️  Could not determine exact comment location, trying general reply approach"
+
+        # Try to get the latest commit ID
+        local latest_commit=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/commits | $JQ_CMD -r '.[0].sha // empty')
+
+        if [[ -n "$latest_commit" && "$latest_commit" != "null" ]]; then
+            commit_id="$latest_commit"
+            echo "📋 Using latest commit: ${commit_id}"
+
+            # Create a general review comment
+            local review_data=$(cat <<EOF
+{
+    "body": "Addressing comment #${comment_id}: ${reply_message}",
+    "commit_id": "${commit_id}",
+    "event": "COMMENT"
 }
+EOF
+)
+
+            if gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/reviews \
+                --method POST \
+                --input - <<< "$review_data" \
+                --jq '.id' > /dev/null 2>&1; then
+                echo "✅ Review comment posted successfully for comment ${comment_id}"
+                return 0
+            else
+                echo "❌ Failed to post review comment for ${comment_id}"
+                return 1
+            fi
+        else
+            echo "❌ Could not get latest commit ID"
+            return 1
+        fi
+    fi
+
+    # Create a specific reply comment at the same location
+    local reply_data=$(cat <<EOF
+{
+    "body": "${reply_message}",
+    "commit_id": "${commit_id}",
+    "path": "${path}",
+    "position": ${position}
+}
+EOF
+)
+
+    if gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments \
+        --method POST \
+        --input - <<< "$reply_data" \
+        --jq '.id' > /dev/null 2>&1; then
+        echo "✅ Reply posted successfully for comment ${comment_id}"
+        return 0
+    else
+        echo "❌ Failed to post reply for comment ${comment_id}"
+        return 1
+    fi
+}
+
+
 
 # Function to list all review comments
 list_comments() {
@@ -173,42 +170,83 @@ list_comments() {
         }]' | jq -s '.'
 }
 
-# Function to mark a comment as resolved
+# Function to mark a comment as resolved (now uses reply approach)
 resolve_comment() {
     local comment_id="$1"
 
-    # Check if comment exists
-    local comment=$(gh api repos/${OWNER}/${REPO}/pulls/comments/${comment_id} 2>/dev/null)
-    if [[ $? -ne 0 ]]; then
-        echo "Error: Comment ${comment_id} not found"
-        return 1
+    echo "🔍 Processing comment ${comment_id}..."
+
+    # Try to reply to the comment on GitHub
+    if reply_to_review_comment "$comment_id"; then
+        # Mark as resolved locally for tracking
+        local comment_data=$(gh api repos/${OWNER}/${REPO}/pulls/comments/${comment_id} 2>/dev/null)
+        if [[ $? -eq 0 ]]; then
+            local comment_info=$(echo "$comment_data" | $JQ_CMD '{
+                id: .id,
+                path: .path,
+                line: .originalLine,
+                author: .user.login,
+                resolved_at: now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+                replied_on_github: true
+            }')
+
+            # Ensure the file exists and is valid JSON
+            if [[ ! -f "$RESOLVED_FILE" ]] || [[ ! -s "$RESOLVED_FILE" ]]; then
+                echo '{}' > "$RESOLVED_FILE"
+            fi
+
+            # Merge new comment info
+            $JQ_CMD --argjson comment "$comment_info" '.["\(.comment.id)"] = $comment' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
+            mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
+        fi
+
+        echo "✅ Comment ${comment_id} replied to on GitHub and tracked locally"
+        return 0
+    else
+        echo "⚠️  Failed to reply on GitHub, marking as resolved locally only"
+
+        # Fallback to local tracking
+        local comment_info='{
+            "id": "'$comment_id'",
+            "resolved_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
+            "resolved_locally_only": true
+        }'
+
+        # Ensure the file exists and is valid JSON
+        if [[ ! -f "$RESOLVED_FILE" ]] || [[ ! -s "$RESOLVED_FILE" ]]; then
+            echo '{}' > "$RESOLVED_FILE"
+        fi
+
+        # Merge new comment info
+        $JQ_CMD --argjson comment "$comment_info" '.["\(.comment.id)"] = $comment' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
+        mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
+
+        echo "Comment ${comment_id} marked as resolved locally only"
+        return 0
     fi
-
-    # Add to resolved list
-    local comment_info=$(echo "$comment" | $JQ_CMD '{
-        id: .id,
-        path: .path,
-        line: .originalLine,
-        author: .user.login,
-        resolved_at: now | strftime("%Y-%m-%dT%H:%M:%SZ")
-    }')
-
-    # Ensure the file exists and is valid JSON
-    if [[ ! -f "$RESOLVED_FILE" ]] || [[ ! -s "$RESOLVED_FILE" ]]; then
-        echo '{}' > "$RESOLVED_FILE"
-    fi
-
-    # Merge new comment info - use string key instead of numeric index
-    $JQ_CMD --argjson comment "$comment_info" '.["\(.comment.id)"] = $comment' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
-    mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
-
-    echo "Comment ${comment_id} marked as resolved"
 }
 
-# Function to mark comment as unresolved
+# Function to mark comment as unresolved (now uses thread unresolution)
 unresolve_comment() {
     local comment_id="$1"
 
+    # Check if we have a thread_id for this comment
+    local thread_id=$($JQ_CMD -r --arg id "$comment_id" '.[($id | tostring)].thread_id // empty' "$RESOLVED_FILE")
+
+    if [[ -n "$thread_id" && "$thread_id" != "null" ]]; then
+        echo "🔄 Unresolving thread ${thread_id} for comment ${comment_id}..."
+
+        # Try to unresolve on GitHub
+        if unresolve_thread_api "$thread_id"; then
+            echo "✅ Thread unresolved on GitHub"
+        else
+            echo "⚠️  Failed to unresolve on GitHub, but updating local tracking"
+        fi
+    else
+        echo "🔍 No thread ID found for comment ${comment_id}, updating local tracking only"
+    fi
+
+    # Remove from local tracking
     $JQ_CMD --argjson id "$comment_id" 'del(.[("\($id)"])]' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
     mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
 
@@ -324,56 +362,31 @@ case "$COMMAND" in
     "summary")
         generate_summary
         ;;
-    # Enhanced GraphQL API commands
-    "fetch-threads")
-        fetch_threads
-        ;;
-    "resolve-thread")
-        resolve_thread_api "${5:-}"
-        ;;
-    "unresolve-thread")
-        unresolve_thread_api "${5:-}"
-        ;;
-    "list-threads")
-        if check_nodejs && check_github_token; then
-            local pr_url=$(get_pr_url)
-            node "$GRAPHQL_RESOLVER" list-threads "$pr_url"
-        else
-            echo "❌ Node.js and GitHub token required for thread listing"
-        fi
-        ;;
-    "enhanced-status")
-        echo "=== Enhanced Resolution Status for PR #${PR_NUMBER} ==="
-        show_status
-        echo ""
-        if check_nodejs && check_github_token; then
-            echo "=== GraphQL Thread Resolution Status ==="
-            fetch_threads
-        else
-            echo "⚠️  GraphQL features unavailable (Node.js or GITHUB_TOKEN missing)"
-        fi
-        ;;
-    *)
+      *)
         echo "Usage: $0 <owner> <repo> <pr_number> [command] [args]"
         echo ""
-        echo "Local Tracking Commands:"
+        echo "Simple Comment Resolution Commands:"
         echo "  list              - List all review comments"
-        echo "  resolve <id>      - Mark comment as resolved locally"
-        echo "  unresolve <id>    - Mark comment as unresolved locally"
-        echo "  status            - Show local resolution status"
+        echo "  resolve <id>      - Resolve comment by posting a reply on GitHub"
+        echo "  unresolve <id>    - Unresolve comment (removes from local tracking)"
+        echo "  status            - Show resolution status"
         echo "  auto              - Auto-resolve from commit messages"
         echo "  summary           - Generate resolution summary"
         echo ""
-        echo "GraphQL API Commands (NEW!):"
-        echo "  fetch-threads     - Fetch and cache review threads"
-        echo "  list-threads      - List all review threads with IDs"
-        echo "  resolve-thread <id>  - Resolve thread on GitHub via GraphQL"
-        echo "  unresolve-thread <id> - Unresolve thread on GitHub via GraphQL"
-        echo "  enhanced-status   - Show both local and GitHub resolution status"
+        echo "Features:"
+        echo "  ✅ Auto-detects GitHub token via 'gh auth token'"
+        echo "  ✅ Posts replies to GitHub review comments (visible to reviewers)"
+        echo "  ✅ Falls back to local tracking if GitHub API fails"
+        echo "  ✅ Tracks resolution status locally for monitoring"
+        echo "  ✅ Simple and lightweight - no complex dependencies"
         echo ""
-        echo "Requirements for GraphQL commands:"
-        echo "  - Node.js installed"
-        echo "  - GITHUB_TOKEN environment variable set"
+        echo "How it works:"
+        echo "  • 'resolve' posts a reply comment acknowledging the issue is addressed"
+        echo "  • Reviewers can see the reply and understand the status"
+        echo "  • Local tracking maintains resolution state for monitoring"
+        echo ""
+        echo "Requirements:"
+        echo "  - GitHub CLI (gh) authenticated OR GITHUB_TOKEN environment variable"
         echo "  - GitHub token with 'repo' scope"
         exit 1
         ;;

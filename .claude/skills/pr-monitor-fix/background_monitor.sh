@@ -29,11 +29,11 @@ REVIEWS_FILE="$STATE_DIR/reviews.json"
 ISSUES_FILE="$STATE_DIR/issues.json"
 LOG_FILE="$STATE_DIR/monitor.log"
 
-# Use downloaded $JQ_CMD if system $JQ_CMD not available
-if command -v $JQ_CMD &> /dev/null; then
-    JQ_CMD="$JQ_CMD"
+# Use downloaded jq if system jq not available
+if command -v jq &> /dev/null; then
+    JQ_CMD="jq"
 else
-    JQ_CMD="/tmp/$JQ_CMD"
+    JQ_CMD="/tmp/jq"
 fi
 
 echo "$(date): Starting enhanced background monitor for ${OWNER}/${REPO} PR #${PR_NUMBER}" | tee -a "$LOG_FILE"
@@ -60,34 +60,17 @@ get_pr_data() {
     # Get issues/threads (for conversation tracking)
     local threads_data=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/review-threads 2>/dev/null)
 
-    # Enhanced thread data with GraphQL support
-    local graphql_threads=""
-    if command -v node &> /dev/null && [[ -n "$GITHUB_TOKEN" ]]; then
-        local pr_url="https://github.com/${OWNER}/${REPO}/pull/${PR_NUMBER}"
-        local resolver_script="$(dirname "$0")/github-thread-resolver.js"
-
-        if [[ -f "$resolver_script" ]]; then
-            # Try to get GraphQL thread data
-            local graphql_output=$(node "$resolver_script" list-threads "$pr_url" 2>/dev/null | $JQ_CMD -Rs 'split("\n")' 2>/dev/null || echo "[]")
-            if [[ "$graphql_output" != "[]" ]]; then
-                graphql_threads="$graphql_output"
-            fi
-        fi
-    fi
-
     # Combine all data
     local combined_data=$($JQ_CMD -n \
         --argjson pr "$pr_data" \
         --argjson comments "$comments_data" \
         --argjson reviews "$reviews_data" \
         --argjson threads "$threads_data" \
-        --argjson graphql_threads "$graphql_threads" \
         '{
             pr: $pr,
             comments: $comments,
             reviews: $reviews,
             threads: $threads,
-            graphql_threads: $graphql_threads,
             timestamp: now | strftime("%Y-%m-%dT%H:%M:%SZ")
         }')
 
@@ -129,33 +112,20 @@ extract_issues() {
         })
     ' "$data_file")
 
-    # Extract GraphQL thread information for enhanced resolution tracking
-    local graphql_threads_info=$($JQ_CMD -r '
-        if .graphql_threads and (.graphql_threads | length) > 0 then
-            ["Enhanced thread resolution available:",
-             "GraphQL threads fetched successfully. Use comment_tracker.sh enhanced-status command."]
-        else
-            ["Basic thread tracking only - GraphQL features require Node.js and GITHUB_TOKEN"]
-        end
-    ' "$data_file")
-
     # Extract review decisions
     local review_decision=$($JQ_CMD -r '.pr.reviewDecision' "$data_file")
 
-    # Merge into issues list with enhanced thread tracking
+    # Merge into issues list
     $JQ_CMD -n \
         --argjson ci "$ci_failures" \
         --argjson comments "$review_comments" \
         --argjson decision "$review_decision" \
-        --argjson threads_info "$graphql_threads_info" \
         '{
             ci_failures: $ci,
             review_comments: $comments,
             review_decision: $decision,
-            graphql_info: $threads_info,
             unresolved_count: ($comments | map(select(.resolved == false)) | length),
-            total_issues: ($ci | length) + ($comments | length),
-            has_thread_ids: ($comments | map(select(.threadId != null)) | length > 0)
+            total_issues: ($ci | length) + ($comments | length)
         }'
 }
 
