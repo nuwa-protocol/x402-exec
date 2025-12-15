@@ -29,6 +29,13 @@ REVIEWS_FILE="$STATE_DIR/reviews.json"
 ISSUES_FILE="$STATE_DIR/issues.json"
 LOG_FILE="$STATE_DIR/monitor.log"
 
+# Use downloaded jq if system jq not available
+if command -v jq &> /dev/null; then
+    JQ_CMD="jq"
+else
+    JQ_CMD="/tmp/jq"
+fi
+
 echo "$(date): Starting enhanced background monitor for ${OWNER}/${REPO} PR #${PR_NUMBER}" | tee -a "$LOG_FILE"
 echo "Check interval: ${CHECK_INTERVAL} seconds" | tee -a "$LOG_FILE"
 echo "State directory: $STATE_DIR" | tee -a "$LOG_FILE"
@@ -54,7 +61,7 @@ get_pr_data() {
     local threads_data=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/review-threads 2>/dev/null)
 
     # Combine all data
-    local combined_data=$(jq -n \
+    local combined_data=$($JQ_CMD -n \
         --argjson pr "$pr_data" \
         --argjson comments "$comments_data" \
         --argjson reviews "$reviews_data" \
@@ -75,7 +82,7 @@ extract_issues() {
     local data_file="$1"
 
     # Extract CI failures
-    local ci_failures=$(jq -r '
+    local ci_failures=$($JQ_CMD -r '
         .pr.statusCheckRollup[]
         | select(.conclusion == "FAILURE" or .status == "IN_PROGRESS" and (.conclusion == null or .conclusion != "SUCCESS"))
         | {
@@ -87,10 +94,11 @@ extract_issues() {
         }
     ' "$data_file")
 
-    # Extract unresolved review comments
-    local review_comments=$(jq -r '
+    # Extract unresolved review comments with enhanced thread support
+    local review_comments=$($JQ_CMD -r '
         [.comments[] | select(.subject_type == "line" and .path != null)]
         + [.reviews[] | .comments[]? | select(.path != null)]
+        + [.threads[] | select(.resolved == false) | .comments[]? | select(.path != null)]
         | group_by(.path + ":" + (.originalLine | tostring))
         | map({
             path: .[0].path,
@@ -99,15 +107,16 @@ extract_issues() {
             author: .[0].user.login,
             resolved: false,
             url: .[0].html_url,
-            count: length
+            count: length,
+            threadId: .[0].threadId // null
         })
     ' "$data_file")
 
     # Extract review decisions
-    local review_decision=$(jq -r '.pr.reviewDecision' "$data_file")
+    local review_decision=$($JQ_CMD -r '.pr.reviewDecision' "$data_file")
 
     # Merge into issues list
-    jq -n \
+    $JQ_CMD -n \
         --argjson ci "$ci_failures" \
         --argjson comments "$review_comments" \
         --argjson decision "$review_decision" \
@@ -133,8 +142,8 @@ check_changes() {
         echo "$current_data" > "$STATE_FILE"
 
         # Report initial state
-        local initial_issues=$(jq -r '.total_issues' "$current_issues_file")
-        local unresolved=$(jq -r '.unresolved_count' "$current_issues_file")
+        local initial_issues=$($JQ_CMD -r '.total_issues' "$current_issues_file")
+        local unresolved=$($JQ_CMD -r '.unresolved_count' "$current_issues_file")
         echo "$(date): Initial state - $initial_issues total issues, $unresolved unresolved" | tee -a "$LOG_FILE"
 
         return 1
@@ -149,31 +158,31 @@ check_changes() {
     local changes_detected=false
 
     # Check for new issues
-    local new_ci_count=$(jq -r '.ci_failures | length' "$current_issues_file")
-    local old_ci_count=$(jq -r '.ci_failures | length' "$previous_issues_file")
+    local new_ci_count=$($JQ_CMD -r '.ci_failures | length' "$current_issues_file")
+    local old_ci_count=$($JQ_CMD -r '.ci_failures | length' "$previous_issues_file")
 
     if [[ $new_ci_count -gt $old_ci_count ]]; then
         echo "$(date): *** NEW CI FAILURES DETECTED ***" | tee -a "$LOG_FILE"
-        jq -r '.ci_failures[] | "  - \(.name): \(.status) (\(.conclusion // "IN_PROGRESS"))"' "$current_issues_file" | tee -a "$LOG_FILE"
+        $JQ_CMD -r '.ci_failures[] | "  - \(.name): \(.status) (\(.conclusion // "IN_PROGRESS"))"' "$current_issues_file" | tee -a "$LOG_FILE"
         changes_detected=true
     fi
 
     # Check for new review comments
-    local new_comments_count=$(jq -r '.review_comments | length' "$current_issues_file")
-    local old_comments_count=$(jq -r '.review_comments | length' "$previous_issues_file")
+    local new_comments_count=$($JQ_CMD -r '.review_comments | length' "$current_issues_file")
+    local old_comments_count=$($JQ_CMD -r '.review_comments | length' "$previous_issues_file")
 
     if [[ $new_comments_count -gt $old_comments_count ]]; then
         echo "$(date): *** NEW REVIEW COMMENTS DETECTED ***" | tee -a "$LOG_FILE"
-        jq -r '.review_comments[-1] | "  - \(.path):\(.line) by \(.author) - \(.count) comment(s)"' "$current_issues_file" | tee -a "$LOG_FILE"
+        $JQ_CMD -r '.review_comments[-1] | "  - \(.path):\(.line) by \(.author) - \(.count) comment(s)"' "$current_issues_file" | tee -a "$LOG_FILE"
         changes_detected=true
     fi
 
     # Check for resolved CI issues
-    local resolved_ci=$(jq -r '
+    local resolved_ci=$($JQ_CMD -r '
         [.previous_ci_failures[] | select(.name as $name | $name | IN($current_ci_failures[].name) | not)]
         | .name
-    ' --argjson current_ci_failures "$(jq '.ci_failures' "$current_issues_file")" \
-        --argjson previous_ci_failures "$(jq '.ci_failures' "$previous_issues_file")" "$previous_issues_file")
+    ' --argjson current_ci_failures "$($JQ_CMD '.ci_failures' "$current_issues_file")" \
+        --argjson previous_ci_failures "$($JQ_CMD '.ci_failures' "$previous_issues_file")" "$previous_issues_file")
 
     if [[ "$resolved_ci" != "null" && "$resolved_ci" != "" ]]; then
         echo "$(date): *** CI ISSUES RESOLVED ***" | tee -a "$LOG_FILE"
@@ -186,9 +195,9 @@ check_changes() {
 
     if [[ "$changes_detected" == "true" ]]; then
         echo "$(date): Changes detected, current status:" | tee -a "$LOG_FILE"
-        echo "  Total issues: $(jq -r '.total_issues' "$current_issues_file")" | tee -a "$LOG_FILE"
-        echo "  Unresolved: $(jq -r '.unresolved_count' "$current_issues_file")" | tee -a "$LOG_FILE"
-        echo "  Review decision: $(jq -r '.review_decision // "NONE"' "$current_issues_file")" | tee -a "$LOG_FILE"
+        echo "  Total issues: $($JQ_CMD -r '.total_issues' "$current_issues_file")" | tee -a "$LOG_FILE"
+        echo "  Unresolved: $($JQ_CMD -r '.unresolved_count' "$current_issues_file")" | tee -a "$LOG_FILE"
+        echo "  Review decision: $($JQ_CMD -r '.review_decision // "NONE"' "$current_issues_file")" | tee -a "$LOG_FILE"
         return 1  # Changes detected
     fi
 
@@ -204,11 +213,11 @@ create_summary_report() {
 # PR #${PR_NUMBER} Monitor Summary
 
 ## Basic Info
-- **Title**: $(jq -r '.pr.title' "$data_file")
-- **State**: $(jq -r '.pr.state' "$data_file")
-- **Author**: $(jq -r '.pr.author.login' "$data_file")
-- **Review Decision**: $(jq -r '.pr.reviewDecision // "NONE"' "$data_file")
-- **Mergeable**: $(jq -r '.pr.mergeable' "$data_file")
+- **Title**: $($JQ_CMD -r '.pr.title' "$data_file")
+- **State**: $($JQ_CMD -r '.pr.state' "$data_file")
+- **Author**: $($JQ_CMD -r '.pr.author.login' "$data_file")
+- **Review Decision**: $($JQ_CMD -r '.pr.reviewDecision // "NONE"' "$data_file")
+- **Mergeable**: $($JQ_CMD -r '.pr.mergeable' "$data_file")
 
 ## Issues Status
 EOF
@@ -216,15 +225,15 @@ EOF
     local issues_file="$STATE_DIR/current_issues.json"
     if [[ -f "$issues_file" ]]; then
         cat >> "$report_file" << EOF
-### CI Failures: $(jq -r '.ci_failures | length' "$issues_file")
+### CI Failures: $($JQ_CMD -r '.ci_failures | length' "$issues_file")
 EOF
-        jq -r '.ci_failures[] | "- **\(.name)**: \(.status) (\(.conclusion // "IN_PROGRESS"))"' "$issues_file" >> "$report_file"
+        $JQ_CMD -r '.ci_failures[] | "- **\(.name)**: \(.status) (\(.conclusion // "IN_PROGRESS"))"' "$issues_file" >> "$report_file"
 
         cat >> "$report_file" << EOF
 
-### Review Comments: $(jq -r '.unresolved_count' "$issues_file") unresolved
+### Review Comments: $($JQ_CMD -r '.unresolved_count' "$issues_file") unresolved
 EOF
-        jq -r '.review_comments[] | "- **\(.path):\(.line)** by \(.author) (\(.count) comment(s))"' "$issues_file" >> "$report_file"
+        $JQ_CMD -r '.review_comments[] | "- **\(.path):\(.line)** by \(.author) (\(.count) comment(s))"' "$issues_file" >> "$report_file"
     fi
 
     echo "$(date): Summary report created: $report_file" | tee -a "$LOG_FILE"
@@ -240,7 +249,7 @@ generate_fix_plan() {
         return 1
     fi
 
-    jq '{
+    $JQ_CMD '{
         ci_failures: .ci_failures | map({
             type: "ci",
             priority: "HIGH",
@@ -264,8 +273,8 @@ generate_fix_plan() {
     }' "$issues_file" > "$plan_file"
 
     echo "$(date): Fix plan generated: $plan_file" | tee -a "$LOG_FILE"
-    echo "  Total items: $(jq -r '.total_count' "$plan_file")" | tee -a "$LOG_FILE"
-    echo "  Unresolved: $(jq -r '.unresolved_count' "$plan_file")" | tee -a "$LOG_FILE"
+    echo "  Total items: $($JQ_CMD -r '.total_count' "$plan_file")" | tee -a "$LOG_FILE"
+    echo "  Unresolved: $($JQ_CMD -r '.unresolved_count' "$plan_file")" | tee -a "$LOG_FILE"
 }
 
 # Initialize

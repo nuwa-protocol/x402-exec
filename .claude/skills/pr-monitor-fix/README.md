@@ -1,5 +1,7 @@
 # PR Monitor & Fix Skill Usage Guide
 
+**Simple Reply-Based Comment Resolution** - Monitor PRs and resolve review comments by posting reply acknowledgments.
+
 ## Quick Start
 
 ### Option 1: Create PR and Monitor (Recommended)
@@ -139,9 +141,16 @@ Should I add this to the fix plan as a suggestion?
 
 ## Features
 
+### Reply-Based Comment Resolution
+- **GitHub Reply Integration**: Post reply comments to acknowledge review feedback
+- **Auto Token Detection**: Automatically uses GitHub token from `gh auth token`
+- **Local Tracking**: Maintain resolution status for monitoring and progress tracking
+- **Lightweight**: No complex dependencies, uses reliable GitHub REST API
+- **Real-time Notifications**: Background monitoring detects new comments instantly
+
 ### Automatic Issue Categorization
 - **CI Failures**: Test failures, build errors, linting issues
-- **Review Comments**: Direct requests for changes
+- **Review Comments**: Direct requests for changes (with reply-based resolution)
 - **Suggestions**: Improvements and best practices
 - **Documentation**: Missing or outdated docs
 
@@ -230,3 +239,51 @@ The background monitor can integrate with editors for real-time notifications:
 - VS Code: Desktop notifications
 - Vim/Neovim: Status line updates
 - Emacs: Modeline notifications
+
+## Simple Setup Requirements
+
+### Prerequisites
+1. **GitHub CLI (gh)**: Install and authenticate with `gh auth login`
+2. **GitHub Token**: Either from `gh auth login` or set `GITHUB_TOKEN` environment variable
+3. **jq**: JSON processor for data handling
+
+### Basic Resolution Workflow
+```
+User: Start monitoring for PR #109
+
+Claude: I'll start comprehensive monitoring with reply-based resolution:
+
+🔧 Initializing monitor...
+✅ GitHub CLI detected
+✅ GitHub token found via 'gh auth token'
+🔍 Fetching review comments...
+
+📋 Found 3 review comments:
+1. Comment ID: 123456 - contracts/x402x-mint/X402X.sol:2
+2. Comment ID: 123457 - background_monitor.sh:10
+3. Comment ID: 123458 - src/utils.js:45
+
+✅ Monitoring active with reply-based resolution
+```
+
+### Resolving Comments with Replies
+```
+User: I've fixed the pragma issue. Can you resolve the comment?
+
+Claude: I'll post a reply comment to acknowledge the fix:
+
+🔧 Posting reply to comment #123456...
+✅ Reply posted successfully!
+   Comment: "This issue has been addressed. Thank you for the feedback!"
+   Location: contracts/x402x-mint/X402X.sol:2
+
+The reviewer can see the reply and understand the issue is resolved.
+```
+
+### Available Commands
+- **list**: List all review comments
+- **resolve <id>**: Post a reply acknowledging the issue is addressed
+- **unresolve <id>**: Remove from local resolution tracking
+- **status**: Show current resolution status
+- **auto**: Auto-resolve from commit message references
+- **summary**: Generate resolution summary report
