@@ -24,7 +24,7 @@ fi
 list_comments() {
     echo "=== Review Comments for PR #${PR_NUMBER} ==="
     gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | \
-        jq -r '.[] | select(.subject_type == "line") | {
+        jq '[.[] | select(.subject_type == "line") | {
             id: .id,
             path: .path,
             line: .originalLine,
@@ -32,7 +32,7 @@ list_comments() {
             body: .body | split("\n")[0],
             url: .html_url,
             resolved: false
-        }' | jq -s '.'
+        }]' | jq -s '.'
 }
 
 # Function to mark a comment as resolved
@@ -55,7 +55,13 @@ resolve_comment() {
         resolved_at: now | strftime("%Y-%m-%dT%H:%M:%SZ")
     }')
 
-    jq --argjson comment "$comment_info" '.[$comment.id] = $comment' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
+    # Ensure the file exists and is valid JSON
+    if [[ ! -f "$RESOLVED_FILE" ]] || [[ ! -s "$RESOLVED_FILE" ]]; then
+        echo '{}' > "$RESOLVED_FILE"
+    fi
+
+    # Merge new comment info - use string key instead of numeric index
+    jq --argjson comment "$comment_info" '.["\(.comment.id)"] = $comment' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
     mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
 
     echo "Comment ${comment_id} marked as resolved"
@@ -65,7 +71,7 @@ resolve_comment() {
 unresolve_comment() {
     local comment_id="$1"
 
-    jq --argjson id "$comment_id" 'del(.[$id])' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
+    jq --argjson id "$comment_id" 'del(.[("\($id)"])]' "$RESOLVED_FILE" > "${RESOLVED_FILE}.tmp"
     mv "${RESOLVED_FILE}.tmp" "$RESOLVED_FILE"
 
     echo "Comment ${comment_id} marked as unresolved"
@@ -75,15 +81,16 @@ unresolve_comment() {
 show_status() {
     echo "=== Comment Resolution Status ==="
 
-    # Get all comments
-    local all_comments=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | \
-        jq -r '.[] | select(.subject_type == "line")')
+    # Get all comments count directly
+    local total_count=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | \
+        jq '[.[] | select(.subject_type == "line")] | length' | tr -d '\n')
 
     # Get resolved count
-    local resolved_count=$(jq 'keys | length' "$RESOLVED_FILE")
+    local resolved_count=$(jq 'keys | length' "$RESOLVED_FILE" | tr -d '\n')
 
-    # Get total count
-    local total_count=$(echo "$all_comments" | jq 'length')
+    # Get all comments for unresolved listing
+    local all_comments=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | \
+        jq '[.[] | select(.subject_type == "line")]')
 
     echo "Total review comments: $total_count"
     echo "Resolved comments: $resolved_count"
@@ -98,7 +105,7 @@ show_status() {
     if [[ $((total_count - resolved_count)) -gt 0 ]]; then
         echo ""
         echo "=== Unresolved Comments ==="
-        echo "$all_comments" | jq -r --argjson resolved "$(cat "$RESOLVED_FILE")" '.[] | select(.id as $id | $id | IN($resolved | keys[]) | not) |
+        echo "$all_comments" | jq -r --argjson resolved "$(cat "$RESOLVED_FILE")" '.[] | select(.id as $id | ($id | tostring) | IN($resolved | keys[]) | not) |
             "  \(.id): \(.path):\(.line) by \(.user.login) - \(.body | split("\n")[0])"'
     fi
 }
@@ -132,18 +139,24 @@ auto_resolve() {
 generate_summary() {
     local summary_file="${STATE_DIR}/resolution_summary.md"
 
+    # Calculate counts first
+    local total_count=$(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | \
+        jq '[.[] | select(.subject_type == "line")] | length' | tr -d '\n')
+    local resolved_count=$(jq 'keys | length' "$RESOLVED_FILE" | tr -d '\n')
+    local pending_count=$((total_count - resolved_count))
+
     cat > "$summary_file" << EOF
 # PR #${PR_NUMBER} Comment Resolution Summary
 
 ## Statistics
-- **Total Review Comments**: $(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | jq '[.[] | select(.subject_type == "line")] | length')
-- **Resolved Comments**: $(jq 'keys | length' "$RESOLVED_FILE")
-- **Pending Comments**: $($(gh api repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/comments | jq '[.[] | select(.subject_type == "line")] | length') - $(jq 'keys | length' "$RESOLVED_FILE"))
+- **Total Review Comments**: ${total_count}
+- **Resolved Comments**: ${resolved_count}
+- **Pending Comments**: ${pending_count}
 
 ## Resolved Comments
 EOF
 
-    if [[ $(jq 'keys | length' "$RESOLVED_FILE") -gt 0 ]]; then
+    if [[ ${resolved_count} -gt 0 ]]; then
         jq -r 'to_entries[] |
             "- **Comment \(.key)**: \(.value.path):\(.value.line) (resolved at \(.value.resolved_at))"' "$RESOLVED_FILE" >> "$summary_file"
     fi
@@ -152,15 +165,17 @@ EOF
 }
 
 # Main command handling
-case "${1:-list}" in
+COMMAND="${4:-list}"
+
+case "$COMMAND" in
     "list")
         list_comments
         ;;
     "resolve")
-        resolve_comment "${2:-}"
+        resolve_comment "${5:-}"
         ;;
     "unresolve")
-        unresolve_comment "${2:-}"
+        unresolve_comment "${5:-}"
         ;;
     "status")
         show_status
@@ -172,7 +187,7 @@ case "${1:-list}" in
         generate_summary
         ;;
     *)
-        echo "Usage: $0 [list|resolve <id>|unresolve <id>|status|auto|summary]"
+        echo "Usage: $0 <owner> <repo> <pr_number> [command] [args]"
         echo ""
         echo "Commands:"
         echo "  list        - List all review comments"
