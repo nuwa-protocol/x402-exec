@@ -98,7 +98,7 @@ show_status() {
     if [[ $((total_count - resolved_count)) -gt 0 ]]; then
         echo ""
         echo "=== Unresolved Comments ==="
-        echo "$all_comments" | jq -r '.[] | select(.id as $id | $id | IN($resolved | keys[]) | not) |
+        echo "$all_comments" | jq -r --argjson resolved "$(cat "$RESOLVED_FILE")" '.[] | select(.id as $id | $id | IN($resolved | keys[]) | not) |
             "  \(.id): \(.path):\(.line) by \(.user.login) - \(.body | split("\n")[0])"'
     fi
 }
