@@ -44,7 +44,11 @@ function isSettlementMode(requirements: PaymentRequirements): boolean {
  * @returns Numeric chain ID (e.g., 84532)
  */
 function extractChainId(network: string): number {
-  return parseInt(network.split(":")[1]);
+  const parts = network.split(":");
+  if (parts.length !== 2 || !parts[1] || isNaN(Number(parts[1]))) {
+    throw new Error(`Invalid network format: "${network}". Expected format "namespace:chainId" (e.g., "eip155:84532")`);
+  }
+  return parseInt(parts[1], 10);
 }
 
 /**
@@ -100,7 +104,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
 
     // Calculate commitment as nonce (binds all settlement parameters)
     const nonce = calculateCommitment({
-      chainId: chainId,
+      chainId,
       hub: extra.settlementRouter,
       asset: paymentRequirements.asset,
       from,
@@ -130,8 +134,8 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     // Create payload with authorization and signature
     const payload = {
       authorization: {
-        from,
-        to: paymentRequirements.payTo,
+        from: getAddress(from),
+        to: getAddress(paymentRequirements.payTo),
         value: paymentRequirements.amount,
         validAfter,
         validBefore,
