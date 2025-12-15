@@ -44,3 +44,23 @@ This repository is a pnpm workspace containing Solidity contracts, a TypeScript 
 
 - Commits generally follow conventional commits (e.g., `feat: ...`, `fix: ...`, `docs: ...`); add a scope when helpful (`feat(facilitator): ...`).
 - PRs should include: summary, linked issue(s), how to test, and any required config/deploy notes. For contract changes, include `forge test` results and note any gas-sensitive changes.
+
+## PR Monitoring with Claude Skills
+
+After creating a PR, use the built-in `pr-monitor-fix` skill for automatic monitoring:
+
+```bash
+# Start monitoring a PR
+"Please monitor PR #108 and create a fix plan for any issues"
+
+# Create and monitor in one step
+"Create a PR for my current branch and start automatic monitoring"
+```
+
+The skill will:
+- Monitor PR for new comments, review feedback, and CI status changes
+- Automatically generate structured fix plans when issues are detected
+- Prioritize CI failures and review comments
+- Help implement fixes systematically
+
+This ensures quick response to feedback and keeps PRs moving efficiently.
