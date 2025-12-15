@@ -18,4 +18,7 @@ apps/*/pnpm-lock.yaml
 .vercel
 .pnpm-store
 
-.claude
+# Ignore .claude directory but allow skills to be shared
+!.claude/skills/
+!.claude/skills/**
+.claude/
