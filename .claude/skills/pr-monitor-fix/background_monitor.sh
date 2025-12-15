@@ -8,6 +8,13 @@ REPO=${2:-""}
 PR_NUMBER=${3:-""}
 CHECK_INTERVAL=${4:-30}  # Default check every 30 seconds
 
+# Enforce a minimum interval to avoid API rate limiting
+MIN_INTERVAL=10
+if [[ "$CHECK_INTERVAL" -lt "$MIN_INTERVAL" ]]; then
+    echo "Warning: CHECK_INTERVAL too low ($CHECK_INTERVAL). Setting to minimum allowed ($MIN_INTERVAL seconds)." | tee -a "$LOG_FILE"
+    CHECK_INTERVAL=$MIN_INTERVAL
+fi
+
 if [[ -z "$OWNER" || -z "$REPO" || -z "$PR_NUMBER" ]]; then
     echo "Usage: $0 <owner> <repo> <pr_number> [check_interval]"
     exit 1
