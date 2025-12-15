@@ -18,7 +18,11 @@ apps/*/pnpm-lock.yaml
 .vercel
 .pnpm-store
 
-# Ignore .claude directory but allow skills to be shared
-!.claude/skills/
-!.claude/skills/**
-.claude/
+# Claude Code: ignore personal settings but allow shared skills
+.claude/settings*
+.claude/*.local.*
+.claude/config*
+.claude/credentials*
+.claude/.cache/
+.claude/logs/
+.claude/tmp/
