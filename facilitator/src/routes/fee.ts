@@ -136,7 +136,6 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         hookAllowed: String(feeCalculation.hookAllowed),
       });
 
-      // Get token info (networkConfig already declared above)
 
       // Calculate fee validity period (60 seconds recommended)
       const validitySeconds = 60;
