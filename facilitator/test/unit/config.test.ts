@@ -12,10 +12,30 @@ vi.mock("@x402x/core", () => ({
   getSupportedNetworks: vi.fn(() => ["base-sepolia", "base", "x-layer-testnet", "x-layer"]),
   getNetworkConfig: vi.fn((network: string) => {
     const configs: Record<string, any> = {
-      "base-sepolia": { settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6" },
-      "x-layer-testnet": { settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d" },
+      "base-sepolia": {
+        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+        defaultAsset: {
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          symbol: "USDC",
+          decimals: 6,
+        },
+      },
+      "x-layer-testnet": {
+        settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
+        defaultAsset: {
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          symbol: "USDC",
+          decimals: 6,
+        },
+      },
     };
-    return configs[network] || {};
+    return configs[network] || {
+      defaultAsset: {
+        address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        symbol: "USDC",
+        decimals: 6,
+      },
+    };
   }),
   isNetworkSupported: vi.fn((network: string) =>
     ["base-sepolia", "base", "x-layer-testnet", "x-layer"].includes(network),
