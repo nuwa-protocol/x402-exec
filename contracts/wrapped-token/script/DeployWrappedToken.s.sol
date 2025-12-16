@@ -28,8 +28,9 @@ import {WrappedToken} from "../src/WrappedToken.sol";
  */
 contract DeployWrappedToken is Script {
     // Configuration
+    // mainnet 0x55d398326f99059fF775485246999027B3197955
     address constant UNDERLYING_TOKEN = 0x221c5B1a293aAc1187ED3a7D7d2d9aD7fE1F3FB0;
-    string constant TOKEN_NAME = "x402 Wrapped";
+    string constant TOKEN_NAME = "x402 Wrapped USDT";
     string constant TOKEN_SYMBOL = "USDTx";
     
     function run() external {
