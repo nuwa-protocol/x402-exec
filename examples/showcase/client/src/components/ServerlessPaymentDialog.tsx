@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { TransferHook, calculateFacilitatorFee } from "@x402x/core";
+import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount } from "@x402x/core";
 import { useX402Client, X402Client } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
@@ -307,11 +307,17 @@ export function ServerlessPaymentDialog({
 
   if (!isOpen) return null;
 
-  // Format amount for display
-  const amountInUsdc = (parseFloat(amount) / 1_000_000).toFixed(2);
-  const totalAmount = feeInfo
-    ? ((parseFloat(amount) + parseFloat(feeInfo.facilitatorFee)) / 1_000_000).toFixed(6)
-    : amountInUsdc;
+  // Format amount for display using dynamic decimals
+  const amountInUsd = selectedNetwork
+    ? formatDefaultAssetAmount(amount, selectedNetwork)
+    : (parseFloat(amount) / 1_000_000).toFixed(6); // Fallback for network not selected
+
+  const totalAmount = feeInfo && selectedNetwork
+    ? formatDefaultAssetAmount(
+        (BigInt(amount) + BigInt(feeInfo.facilitatorFee)).toString(),
+        selectedNetwork
+      )
+    : amountInUsd;
 
   return (
     <>
@@ -376,7 +382,7 @@ export function ServerlessPaymentDialog({
               </h2>
               <p style={{ marginBottom: "25px", color: "#666", fontSize: "14px" }}>
                 {isConnected
-                  ? `Choose the blockchain network for your $${amountInUsdc} USDC payment`
+                  ? `Choose the blockchain network for your $${amountInUsd} payment`
                   : `Choose a network to get started (wallet connection will be requested next)`}
               </p>
 
@@ -579,7 +585,7 @@ export function ServerlessPaymentDialog({
                 >
                   <span style={{ color: "#4b5563" }}>Payment Amount:</span>
                   <span style={{ fontWeight: "600", fontFamily: "monospace" }}>
-                    ${amountInUsdc} USDC
+                    ${amountInUsd}
                   </span>
                 </div>
 
