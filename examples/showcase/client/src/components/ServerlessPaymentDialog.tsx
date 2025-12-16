@@ -24,7 +24,8 @@ type PaymentStep = "select-network" | "switch-network" | "loading-fee" | "confir
 interface ServerlessPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
+  amount?: string; // DEPRECATED: In atomic units (e.g., "100000" for 0.1 USDC)
+  amountCalculator?: (network: Network) => string; // Function to calculate amount based on selected network
   payTo: string; // Recipient address
   hook?: `0x${string}`; // Optional: custom hook address (defaults to TransferHook)
   hookData?: `0x${string}`; // Optional: custom hook data (defaults to empty TransferHook)
@@ -37,6 +38,7 @@ export function ServerlessPaymentDialog({
   isOpen,
   onClose,
   amount,
+  amountCalculator,
   payTo: recipient,
   hook: customHook,
   hookData: customHookData,
@@ -55,6 +57,15 @@ export function ServerlessPaymentDialog({
   const { address, isConnected, chain } = useAccount();
   const { data: walletClient } = useWalletClient();
   const facilitatorUrl = getFacilitatorUrl(); // Get facilitator URL from config
+
+  // Function to get the current amount based on selected network
+  const getCurrentAmount = useCallback(() => {
+    if (amountCalculator && selectedNetwork) {
+      return amountCalculator(selectedNetwork);
+    }
+    // Fallback to deprecated amount prop or default
+    return amount || "100000"; // Default to 0.1 USDC equivalent for 6 decimals
+  }, [amountCalculator, selectedNetwork, amount]);
   
   // Fix: Pass selectedNetwork explicitly to useX402Client
   // This ensures the client is recreated whenever the user selects a different network,
@@ -280,7 +291,7 @@ export function ServerlessPaymentDialog({
         {
           hook,
           hookData,
-          amount,
+          amount: currentAmount,
           payTo: recipient as `0x${string}`,
           facilitatorFee: feeInfo.facilitatorFee,
         },
@@ -307,14 +318,17 @@ export function ServerlessPaymentDialog({
 
   if (!isOpen) return null;
 
+  // Get current amount based on selected network
+  const currentAmount = getCurrentAmount();
+
   // Format amount for display using dynamic decimals
   const amountInUsd = selectedNetwork
-    ? formatDefaultAssetAmount(amount, selectedNetwork)
-    : (parseFloat(amount) / 1_000_000).toFixed(6); // Fallback for network not selected
+    ? formatDefaultAssetAmount(currentAmount, selectedNetwork)
+    : (parseFloat(currentAmount) / 1_000_000).toFixed(6); // Fallback for network not selected
 
   const totalAmount = feeInfo && selectedNetwork
     ? formatDefaultAssetAmount(
-        (BigInt(amount) + BigInt(feeInfo.facilitatorFee)).toString(),
+        (BigInt(currentAmount) + BigInt(feeInfo.facilitatorFee)).toString(),
         selectedNetwork
       )
     : amountInUsd;

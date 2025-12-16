@@ -19,7 +19,7 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { parseDefaultAssetAmount } from "@x402x/core";
-import { getPreferredNetwork, type Network } from "../config";
+import { type Network } from "../config";
 import splitPaymentCode from "../code-examples/split-payment.ts?raw";
 
 // Default recipient from environment or fallback
@@ -535,7 +535,7 @@ export function ServerlessSplitPayment() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={getAmountForNetwork(getPreferredNetwork() || "base-sepolia")}
+        amountCalculator={getAmountForNetwork}
         payTo={payTo}
         hookData={hookData}
         onSuccess={handleSuccess}

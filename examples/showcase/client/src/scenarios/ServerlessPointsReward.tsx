@@ -17,7 +17,7 @@ import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksRewardTokenData } from "../hooks/useRewardTokenData";
 import { RewardHook, parseDefaultAssetAmount } from "@x402x/core";
-import { type Network, NETWORK_UI_CONFIG, getPreferredNetwork } from "../config";
+import { type Network, NETWORK_UI_CONFIG } from "../config";
 import pointsRewardCode from "../code-examples/points-reward.ts?raw";
 
 // Helper function to get amount for a specific network
@@ -314,7 +314,7 @@ export function ServerlessPointsReward() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={getAmountForNetwork(getPreferredNetwork() || "base-sepolia")}
+        amountCalculator={getAmountForNetwork}
         payTo={connectedAddress || "0x0000000000000000000000000000000000000000"}
         prepareHookData={prepareRewardForNetwork}
         onSuccess={handlePaymentSuccess}
