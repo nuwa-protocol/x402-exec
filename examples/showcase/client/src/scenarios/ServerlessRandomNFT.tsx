@@ -16,11 +16,14 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksNFTData } from "../hooks/useNFTData";
-import { NFTMintHook } from "@x402x/core";
-import { type Network, NETWORK_UI_CONFIG } from "../config";
+import { NFTMintHook, parseDefaultAssetAmount } from "@x402x/core";
+import { type Network, NETWORK_UI_CONFIG, getPreferredNetwork } from "../config";
 import nftMintCode from "../code-examples/nft-mint.ts?raw";
 
-const AMOUNT = "100000"; // 0.1 USDC (6 decimals)
+// Helper function to get amount for a specific network
+const getAmountForNetwork = (network: Network): string => {
+  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+};
 
 export function ServerlessRandomNFT() {
   const { address: connectedAddress } = useAccount();
@@ -299,7 +302,7 @@ export function ServerlessRandomNFT() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={AMOUNT}
+        amount={getAmountForNetwork(getPreferredNetwork() || "base-sepolia")}
         payTo={connectedAddress || "0x0000000000000000000000000000000000000000"}
         prepareHookData={prepareNFTMintForNetwork}
         onSuccess={handlePaymentSuccess}
