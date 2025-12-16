@@ -37,7 +37,7 @@
   "dependencies": {
     "@x402x/core": "workspace:*",
     "viem": "2.40.3",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
+    "x402": "npm:@x402x/x402@^0.6.6-patch.5"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -27,6 +27,8 @@ usage() {
     echo "  xlayer-testnet    X-Layer Testnet (Chain ID: 1952)"
     echo "  xlayer            X-Layer Mainnet (Chain ID: 196)"
     echo "  skale-base-sepolia SKALE Base Sepolia (Chain ID: 324705682)"
+    echo "  bsc-testnet       BSC Testnet (Chain ID: 97)"
+    echo "  bsc               BSC Mainnet (Chain ID: 56)"
     echo ""
     echo "Options:"
     echo "  --settlement      Deploy only SettlementRouter"
@@ -74,7 +76,7 @@ WITH_HOOKS=false  # Flag for --with-hooks option
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        base-sepolia|base|xlayer-testnet|xlayer|skale-base-sepolia)
+        base-sepolia|base|xlayer-testnet|xlayer|skale-base-sepolia|bsc-testnet|bsc)
             NETWORK=$1
             shift
             ;;
@@ -163,6 +165,12 @@ get_env_prefix() {
         skale-base-sepolia)
             echo "SKALE_BASE_SEPOLIA"
             ;;
+        bsc-testnet)
+            echo "BSC_TESTNET"
+            ;;
+        bsc)
+            echo "BSC"
+            ;;
     esac
 }
 
@@ -184,6 +192,12 @@ get_network_info() {
         skale-base-sepolia)
             echo "SKALE Base Sepolia|324705682"
             ;;
+        bsc-testnet)
+            echo "BSC Testnet|97"
+            ;;
+        bsc)
+            echo "BSC Mainnet|56"
+            ;;
     esac
 }
 
@@ -204,6 +218,12 @@ get_default_rpc_url() {
             ;;
         skale-base-sepolia)
             echo "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha"
+            ;;
+        bsc-testnet)
+            echo "https://data-seed-prebsc-1-s1.binance.org:8545"
+            ;;
+        bsc)
+            echo "https://bsc-dataseed.binance.org"
             ;;
     esac
 }
@@ -322,7 +342,57 @@ if [ "$VERIFY" = true ]; then
     print_info "Contract verification enabled"
     print_warning "Note: Forge's built-in verification may timeout for complex contracts"
     print_warning "If verification fails, run: ./verify-contracts.sh $NETWORK"
-    VERIFY_FLAG="--verify"
+    
+    # Build verification flags based on network
+    # Use chain ID for --chain and explicitly specify API key and verifier URL
+    case $NETWORK in
+        base-sepolia)
+            if [ -n "$BASESCAN_API_KEY" ]; then
+                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BASESCAN_API_KEY"
+            else
+                print_error "BASESCAN_API_KEY not set, skipping verification"
+                VERIFY_FLAG=""
+            fi
+            ;;
+        base)
+            if [ -n "$BASESCAN_API_KEY" ]; then
+                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BASESCAN_API_KEY"
+            else
+                print_error "BASESCAN_API_KEY not set, skipping verification"
+                VERIFY_FLAG=""
+            fi
+            ;;
+        xlayer-testnet)
+            OKLINK_KEY="${OKLINK_API_KEY:-not-required}"
+            VERIFY_FLAG="--verify --chain $CHAIN_ID --verifier-url https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET --etherscan-api-key $OKLINK_KEY"
+            ;;
+        xlayer)
+            OKLINK_KEY="${OKLINK_API_KEY:-not-required}"
+            VERIFY_FLAG="--verify --chain $CHAIN_ID --verifier-url https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER --etherscan-api-key $OKLINK_KEY"
+            ;;
+        bsc-testnet)
+            if [ -n "$BSCSCAN_API_KEY" ]; then
+                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BSCSCAN_API_KEY"
+            else
+                print_error "BSCSCAN_API_KEY not set, skipping verification"
+                VERIFY_FLAG=""
+            fi
+            ;;
+        bsc)
+            if [ -n "$BSCSCAN_API_KEY" ]; then
+                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BSCSCAN_API_KEY"
+            else
+                print_error "BSCSCAN_API_KEY not set, skipping verification"
+                VERIFY_FLAG=""
+            fi
+            ;;
+        skale-base-sepolia)
+            # SKALE doesn't support automated verification via forge
+            print_warning "SKALE Base Sepolia doesn't support automated verification"
+            print_warning "You'll need to verify manually after deployment"
+            VERIFY_FLAG=""
+            ;;
+    esac
 fi
 
 # Export environment variables for Forge scripts
@@ -330,9 +400,9 @@ export SETTLEMENT_ROUTER_ADDRESS="$SETTLEMENT_ROUTER"
 
 # Determine additional flags based on network
 LEGACY_FLAG=""
-if [ "$NETWORK" = "skale-base-sepolia" ]; then
+if [ "$NETWORK" = "skale-base-sepolia" ] || [ "$NETWORK" = "bsc-testnet" ] || [ "$NETWORK" = "bsc" ]; then
     LEGACY_FLAG="--legacy"
-    print_info "Using legacy gas pricing for SKALE network"
+    print_info "Using legacy gas pricing for $NETWORK_NAME"
 fi
 
 # Deploy SettlementRouter
@@ -506,6 +576,12 @@ case $NETWORK in
         ;;
     skale-base-sepolia)
         echo "View contracts: https://base-sepolia-testnet-explorer.skalenodes.com/"
+        ;;
+    bsc-testnet)
+        echo "View contracts: https://testnet.bscscan.com/"
+        ;;
+    bsc)
+        echo "View contracts: https://bscscan.com/"
         ;;
 esac
 echo ""
