@@ -111,17 +111,17 @@ If you want to use x402-exec in your own project, we provide an enhanced version
 
 ```bash
 # Using npm alias (recommended)
-npm install x402@npm:@x402x/x402@0.6.6-patch.3
+npm install x402@npm:@x402x/x402@0.6.6-patch.5
 
 # Or using pnpm
-pnpm add x402@npm:@x402x/x402@0.6.6-patch.3
+pnpm add x402@npm:@x402x/x402@0.6.6-patch.5
 ```
 
 In `package.json`:
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@0.6.6-patch.3"
+    "x402": "npm:@x402x/x402@0.6.6-patch.5"
   }
 }
 ```

@@ -39,6 +39,12 @@ get_env_prefix() {
         skale-base-sepolia)
             echo "SKALE_BASE_SEPOLIA"
             ;;
+        bsc-testnet)
+            echo "BSC_TESTNET"
+            ;;
+        bsc)
+            echo "BSC"
+            ;;
     esac
 }
 

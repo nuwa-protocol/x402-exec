@@ -34,6 +34,22 @@ describe("networks", () => {
     expect(networks["x-layer"].hooks.transfer).toBeDefined();
   });
 
+  it("should contain bsc-testnet configuration", () => {
+    expect(networks["bsc-testnet"]).toBeDefined();
+    expect(networks["bsc-testnet"].chainId).toBe(97);
+    expect(networks["bsc-testnet"].settlementRouter).toBeDefined();
+    expect(networks["bsc-testnet"].defaultAsset).toBeDefined();
+    expect(networks["bsc-testnet"].hooks.transfer).toBeDefined();
+  });
+
+  it("should contain bsc mainnet configuration", () => {
+    expect(networks["bsc"]).toBeDefined();
+    expect(networks["bsc"].chainId).toBe(56);
+    expect(networks["bsc"].settlementRouter).toBeDefined();
+    expect(networks["bsc"].defaultAsset).toBeDefined();
+    expect(networks["bsc"].hooks.transfer).toBeDefined();
+  });
+
   it("should have valid default asset configuration for base-sepolia", () => {
     const defaultAsset = networks["base-sepolia"].defaultAsset;
     expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
@@ -67,11 +83,29 @@ describe("networks", () => {
     expect(defaultAsset.decimals).toBe(6);
   });
 
+  it("should have valid default asset configuration for bsc-testnet", () => {
+    const defaultAsset = networks["bsc-testnet"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(defaultAsset.eip712.name).toBe("x402 Wrapped USDT");
+    expect(defaultAsset.eip712.version).toBe("2"); // From x402 shared config
+    expect(defaultAsset.decimals).toBe(6);
+  });
+
+  it("should have valid default asset configuration for bsc mainnet", () => {
+    const defaultAsset = networks["bsc"].defaultAsset;
+    expect(defaultAsset.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(defaultAsset.eip712.name).toBe("x402 Wrapped USDT");
+    expect(defaultAsset.eip712.version).toBe("2"); // From x402 shared config
+    expect(defaultAsset.decimals).toBe(6);
+  });
+
   it("should have valid settlementRouter addresses", () => {
     expect(networks["base-sepolia"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["x-layer-testnet"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["base"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["x-layer"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["bsc-testnet"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["bsc"].settlementRouter).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
   it("should have valid hook addresses", () => {
@@ -79,6 +113,22 @@ describe("networks", () => {
     expect(networks["x-layer-testnet"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["base"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
     expect(networks["x-layer"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["bsc-testnet"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(networks["bsc"].hooks.transfer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+  });
+
+  it("should have same settlementRouter address for bsc testnet and mainnet", () => {
+    // BSC uses deterministic deployment - addresses should be the same
+    const testnetRouter = networks["bsc-testnet"].settlementRouter.toLowerCase();
+    const mainnetRouter = networks["bsc"].settlementRouter.toLowerCase();
+    expect(testnetRouter).toBe(mainnetRouter);
+  });
+
+  it("should have same TransferHook address for bsc testnet and mainnet", () => {
+    // BSC uses deterministic deployment - addresses should be the same
+    const testnetHook = networks["bsc-testnet"].hooks.transfer.toLowerCase();
+    const mainnetHook = networks["bsc"].hooks.transfer.toLowerCase();
+    expect(testnetHook).toBe(mainnetHook);
   });
 
   it("should have same settlementRouter address for base and x-layer mainnets", () => {
@@ -168,6 +218,14 @@ describe("isNetworkSupported", () => {
     expect(isNetworkSupported("x-layer")).toBe(true);
   });
 
+  it("should return true for bsc-testnet", () => {
+    expect(isNetworkSupported("bsc-testnet")).toBe(true);
+  });
+
+  it("should return true for bsc mainnet", () => {
+    expect(isNetworkSupported("bsc")).toBe(true);
+  });
+
   it("should return false for unsupported network", () => {
     expect(isNetworkSupported("ethereum")).toBe(false);
     expect(isNetworkSupported("polygon")).toBe(false);
@@ -223,6 +281,18 @@ describe("getSupportedNetworks", () => {
     const networks = getSupportedNetworks();
 
     expect(networks).toContain("x-layer");
+  });
+
+  it("should include bsc-testnet", () => {
+    const networks = getSupportedNetworks();
+
+    expect(networks).toContain("bsc-testnet");
+  });
+
+  it("should include bsc mainnet", () => {
+    const networks = getSupportedNetworks();
+
+    expect(networks).toContain("bsc");
   });
 
   it("should return all configured networks", () => {

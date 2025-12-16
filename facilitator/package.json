@@ -64,7 +64,7 @@
     "pino-http": "^10.2.0",
     "pino-pretty": "^11.2.2",
     "viem": "2.40.3",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.3",
+    "x402": "npm:@x402x/x402@^0.6.6-patch.5",
     "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {
