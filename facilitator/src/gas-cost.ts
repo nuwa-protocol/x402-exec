@@ -255,10 +255,12 @@ export function calculateEffectiveGasLimit(
   facilitatorFee: string,
   gasPrice: string,
   nativeTokenPrice: number,
+  tokenDecimals: number,
   config: GasCostConfig,
 ): number {
-  // Convert facilitator fee to USD (assuming 6 decimals for USDC)
-  const feeUSD = parseFloat(facilitatorFee) / 1e6;
+  // Convert facilitator fee to USD using dynamic decimals
+  const decimalDivisor = Math.pow(10, tokenDecimals);
+  const feeUSD = parseFloat(facilitatorFee) / decimalDivisor;
 
   // Calculate available amount for gas (after reserving profit margin)
   const availableForGasUSD = feeUSD * (1 - config.dynamicGasLimitMargin);

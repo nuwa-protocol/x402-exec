@@ -81,8 +81,9 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         });
       }
 
-      // Get token decimals (USDC has 6 decimals)
-      const tokenDecimals = 6;
+      // Get token decimals dynamically from network config
+      const networkConfig = getNetworkConfig(network);
+      const tokenDecimals = networkConfig.defaultAsset.decimals;
 
       // Calculate minimum facilitator fee
       let feeCalculation;
@@ -135,8 +136,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         hookAllowed: String(feeCalculation.hookAllowed),
       });
 
-      // Get token info
-      const networkConfig = getNetworkConfig(network);
+      // Get token info (networkConfig already declared above)
 
       // Calculate fee validity period (60 seconds recommended)
       const validitySeconds = 60;
@@ -156,7 +156,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         validitySeconds,
         token: {
           address: networkConfig.defaultAsset.address,
-          symbol: "USDC",
+          symbol: networkConfig.defaultAsset.symbol,
           decimals: tokenDecimals,
         },
         // Note: breakdown and prices removed to avoid exposing internal cost structure
