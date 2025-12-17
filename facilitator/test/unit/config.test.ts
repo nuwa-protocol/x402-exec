@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loadConfig } from "../../src/config.js";
-import { networkChainResolver } from "../../src/network-chain-resolver.js";
+
 
 // Mock networkChainResolver
 vi.mock("../../src/network-chain-resolver.js", () => ({

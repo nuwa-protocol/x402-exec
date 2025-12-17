@@ -136,7 +136,7 @@ export class NetworkChainResolver {
       }
     } catch (error) {
       const logger = getLogger();
-    logger.debug({ network, error: String(error) }, "Network not found in x402 chains");
+      logger.debug({ network, error: String(error) }, "Network not found in x402 chains");
     }
 
     const logger = getLogger();
@@ -205,10 +205,11 @@ export class NetworkChainResolver {
   }
 
   /**
-   * Clear the resolver cache
+   * Clear the resolver cache and reset initialization state
    */
   clearCache(): void {
     this.chainCache.clear();
+    this.initialized = false;
   }
 
   /**
