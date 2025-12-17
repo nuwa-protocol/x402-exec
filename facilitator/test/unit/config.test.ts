@@ -130,7 +130,7 @@ describe("config", () => {
       expect(config.accountPool.strategy).toBe("random");
     });
 
-    it("should throw on invalid account selection strategy", () => {
+    it("should throw on invalid account selection strategy", async () => {
       process.env.ACCOUNT_SELECTION_STRATEGY = "invalid";
       process.env.EVM_PRIVATE_KEY =
         "0x0000000000000000000000000000000000000000000000000000000000000001";

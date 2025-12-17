@@ -260,9 +260,8 @@ describe("Network Auto Discovery E2E", () => {
         .expect(200);
 
       expect(response.body).toHaveProperty("kinds");
-      const supportedNetworks = response.body.kinds
-        .filter((kind: any) => kind.paymentType === "evm")
-        .map((kind: any) => kind.network);
+      // All networks are EVM networks, so we can directly map to network names
+      const supportedNetworks = response.body.kinds.map((kind: any) => kind.network);
 
       // Should include all networks from @x402x/core
       expect(supportedNetworks).toContain("base");

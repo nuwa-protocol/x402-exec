@@ -166,6 +166,9 @@ describe("NetworkChainResolver", () => {
     });
 
     it("should use environment variable override", async () => {
+      // Clear cache to ensure environment variable is picked up
+      networkChainResolver.clearCache();
+      
       process.env.BSC_RPC_URL = "https://custom-bsc.example.com";
 
       const chainInfo = await networkChainResolver.resolveNetworkChain("bsc");
