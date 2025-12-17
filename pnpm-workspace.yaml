@@ -5,7 +5,7 @@ packages:
   # Facilitator (Production-ready component)
   - 'facilitator'
 
-  # Examples (x402 dependency resolved via npm alias: npm:@x402x/x402@0.6.6-patch.5)
+  # Examples (x402 dependency resolved via npm alias: npm:@x402x/x402@0.6.6-patch.7)
   - 'examples/showcase/server'
   - 'examples/showcase/client'
 

@@ -4,7 +4,7 @@ This guide explains how to modify and publish x402 patch versions in the x402-ex
 
 ## Prerequisites
 
-- All packages reference x402 via npm alias: `npm:@x402x/x402@0.6.6-patch.5`
+- All packages reference x402 via npm alias: `npm:@x402x/x402@0.6.6-patch.7`
 - x402 source code is located in `deps/x402/` directory
 - GitHub repository must have `NPM_TOKEN` secret configured for automated publishing
 
@@ -54,7 +54,7 @@ pnpm install
 pnpm run test
 
 # Restore npm alias after testing:
-# "x402": "npm:@x402x/x402@0.6.6-patch.5"
+# "x402": "npm:@x402x/x402@0.6.6-patch.7"
 ```
 
 ## Publishing New Patch Versions

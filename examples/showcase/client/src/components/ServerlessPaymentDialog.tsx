@@ -47,10 +47,9 @@ export function ServerlessPaymentDialog({
   onError,
 }: ServerlessPaymentDialogProps) {
   const [step, setStep] = useState<PaymentStep>("select-network");
-  const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [feeInfo, setFeeInfo] = useState<FeeCalculationResult | null>(null);
   const [isPaying, setIsPaying] = useState(false);
-  const [isLoadingFee, setIsLoadingFee] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
 
@@ -112,7 +111,6 @@ export function ServerlessPaymentDialog({
   // Helper function to load fee
   const loadFee = useCallback(
     async (network: Network) => {
-      setIsLoadingFee(true);
       try {
         console.log("[ServerlessPaymentDialog] Loading fee for network:", network);
 
@@ -156,8 +154,6 @@ export function ServerlessPaymentDialog({
         console.error("[ServerlessPaymentDialog] Failed to load fee:", err);
         setError(err.message || "Failed to load facilitator fee");
         setStep("select-network");
-      } finally {
-        setIsLoadingFee(false);
       }
     },
     [address, client, customHook, customHookData, facilitatorUrl, prepareHookData],
@@ -222,17 +218,8 @@ export function ServerlessPaymentDialog({
     }
   }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client, loadFee]);
 
-  // If we entered loading-fee while client/address were not ready, retry once they appear
-  useEffect(() => {
-    if (
-      step === "loading-fee" &&
-      selectedNetwork &&
-      !feeInfo &&
-      !isLoadingFee
-    ) {
-      void loadFee(selectedNetwork);
-    }
-  }, [step, selectedNetwork, feeInfo, isLoadingFee, loadFee]);
+  // Note: Removed auto-retry useEffect to prevent infinite retry loops
+  // Users can manually retry by clicking the retry button in the error message
 
   // Handle payment
   const handlePay = async () => {
@@ -410,7 +397,41 @@ export function ServerlessPaymentDialog({
                     border: "1px solid #fcc",
                   }}
                 >
-                  <div style={{ fontSize: "14px", color: "#c00" }}>❌ {error}</div>
+                  <div style={{ fontSize: "14px", color: "#c00", marginBottom: "10px" }}>
+                    ❌ {error}
+                  </div>
+                  {selectedNetwork && (
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        const targetChainId = NETWORKS[selectedNetwork].chainId;
+                        if (isConnected && chain?.id !== targetChainId) {
+                          setStep("switch-network");
+                        } else {
+                          setStep("loading-fee");
+                          loadFee(selectedNetwork);
+                        }
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2563eb";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#3b82f6";
+                      }}
+                    >
+                      🔄 Retry
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -529,6 +550,12 @@ export function ServerlessPaymentDialog({
                 💳 Confirm Payment
               </h2>
 
+              {/* Get token name from network config */}
+              {(() => {
+                const tokenName = NETWORKS[selectedNetwork].defaultAsset.eip712.name;
+
+              return (
+                <>
               {/* Network Info */}
               <div
                 style={{
@@ -608,7 +635,7 @@ export function ServerlessPaymentDialog({
                 >
                   <span style={{ color: "#4b5563" }}>Facilitator Fee:</span>
                   <span style={{ fontWeight: "600", fontFamily: "monospace", color: "#059669" }}>
-                    ${(parseFloat(feeInfo.facilitatorFee) / 1_000_000).toFixed(6)} USDC
+                    ${feeInfo.facilitatorFeeUSD}
                   </span>
                 </div>
 
@@ -630,7 +657,7 @@ export function ServerlessPaymentDialog({
                       color: "#1e40af",
                     }}
                   >
-                    ${totalAmount} USDC
+                    ${totalAmount} {tokenName}
                   </span>
                 </div>
               </div>
@@ -691,9 +718,12 @@ export function ServerlessPaymentDialog({
                     if (!isPaying) e.currentTarget.style.backgroundColor = "#3b82f6";
                   }}
                 >
-                  {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} USDC`}
+                  {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} ${tokenName}`}
                 </button>
               </div>
+                </>
+              );
+              })()}
             </>
           )}
 

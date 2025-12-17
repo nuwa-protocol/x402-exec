@@ -111,17 +111,17 @@ x402-exec/
 
 ```bash
 # 使用 npm alias（推荐）
-npm install x402@npm:@x402x/x402@0.6.6-patch.5
+npm install x402@npm:@x402x/x402@0.6.6-patch.7
 
 # 或使用 pnpm
-pnpm add x402@npm:@x402x/x402@0.6.6-patch.5
+pnpm add x402@npm:@x402x/x402@0.6.6-patch.7
 ```
 
 在 `package.json` 中：
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@0.6.6-patch.5"
+    "x402": "npm:@x402x/x402@0.6.6-patch.7"
   }
 }
 ```

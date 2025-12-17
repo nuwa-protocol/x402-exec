@@ -220,7 +220,7 @@ get_default_rpc_url() {
             echo "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha"
             ;;
         bsc-testnet)
-            echo "https://data-seed-prebsc-1-s1.binance.org:8545"
+            echo "https://data-seed-prebsc-1-s1.bnbchain.org:8545"
             ;;
         bsc)
             echo "https://bsc-dataseed.binance.org"

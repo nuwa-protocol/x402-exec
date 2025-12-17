@@ -70,7 +70,7 @@ vi.mock("x402/types", () => ({
           name: "BSC Testnet",
           rpcUrls: {
             default: {
-              http: ["https://data-seed-prebsc-1-s1.binance.org:8545"],
+              http: ["https://data-seed-prebsc-1-s1.bnbchain.org:8545"],
             },
           },
         },

@@ -16,12 +16,12 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksNFTData } from "../hooks/useNFTData";
-import { NFTMintHook, parseDefaultAssetAmount } from "@x402x/core";
-import { type Network, NETWORK_UI_CONFIG } from "../config";
+import { NFTMintHook, parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { NETWORKS } from "../config";
 import nftMintCode from "../code-examples/nft-mint.ts?raw";
 
 // Helper function to get amount for a specific network
-const getAmountForNetwork = (network: Network): string => {
+const getAmountForNetwork = (network: string): string => {
   return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
 };
 
@@ -35,7 +35,7 @@ export function ServerlessRandomNFT() {
 
   // NFT mint preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
-  const prepareNFTMintForNetwork = (network: Network) => {
+  const prepareNFTMintForNetwork = (network: string) => {
     // Get NFT mint hook address for the selected network
     // This will throw an error if not configured, which is intentional
     const hook = NFTMintHook.getAddress(network);
@@ -142,12 +142,12 @@ export function ServerlessRandomNFT() {
               </thead>
               <tbody>
                 {Object.entries(allNetworksData).map(([network, data]) => {
-                  const uiConfig = NETWORK_UI_CONFIG[network as keyof typeof NETWORK_UI_CONFIG];
+                  const networkConfig = NETWORKS[network];
                   return (
                     <tr key={network} style={{ borderBottom: "1px solid #fed7aa" }}>
                       <td style={{ padding: "12px", color: "#78350f" }}>
-                        <span style={{ marginRight: "6px" }}>{uiConfig.icon}</span>
-                        <strong>{uiConfig.displayName}</strong>
+                        <span style={{ marginRight: "6px" }}>{networkConfig?.icon}</span>
+                        <strong>{networkConfig?.displayName || network}</strong>
                       </td>
                       <td
                         style={{
@@ -344,15 +344,17 @@ export function ServerlessRandomNFT() {
           txHash={paymentResult.txHash}
           network={paymentResult.network}
           details={[
-            { label: "Payment", value: <strong>$0.1 USDC (returned to you)</strong> },
+            { 
+              label: "Payment", 
+              value: <strong>$0.1 {NETWORKS[paymentResult.network].defaultAsset.eip712.name} (returned to you)</strong> 
+            },
             { label: "NFT", value: <strong>Minted to your wallet 🎨</strong> },
             { label: "Hook", value: <code>NFTMintHook</code> },
             {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${(parseFloat(paymentResult.facilitatorFee) / 1_000_000).toFixed(4)} facilitator
-                  fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>

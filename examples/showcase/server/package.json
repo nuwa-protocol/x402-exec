@@ -19,7 +19,7 @@
     "ethers": "^6.13.0",
     "hono": "^4.5.0",
     "viem": "^2.21.26",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.5"
+    "x402": "npm:@x402x/x402@^0.6.6-patch.7"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
