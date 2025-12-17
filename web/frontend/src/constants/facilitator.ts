@@ -221,7 +221,8 @@ export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
 
 		result[n] = [
 			{
-				symbol: tokenName,
+        //TODO config symbol from network config
+				symbol: "USDC",
 				label: tokenName,
 				address: defaultAsset.address,
 				explorerUrl: addressBase ? `${addressBase}${defaultAsset.address}` : undefined,
