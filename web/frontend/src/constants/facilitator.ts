@@ -210,20 +210,21 @@ export type SupportedNetwork = {
 };
 
 // Build supported payment tokens from the SDK's per-network config.
-// Today each network supports a single USDC token.
+// Each network supports its configured default asset.
 export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
   const result: Record<string, PaymentToken[]> = {};
   for (const n of getSupportedNetworks()) {
     const cfg = getNetworkConfig(n);
     const addressBase = cfg.addressExplorerBaseUrl;
-    const usdcAddress = cfg.defaultAsset.address;
+    const defaultAsset = cfg.defaultAsset;
+    const tokenName = defaultAsset.eip712.name;
 
 		result[n] = [
 			{
-				symbol: "USDC",
-				label: "USDC",
-				address: usdcAddress,
-				explorerUrl: addressBase ? `${addressBase}${usdcAddress}` : undefined,
+				symbol: tokenName,
+				label: tokenName,
+				address: defaultAsset.address,
+				explorerUrl: addressBase ? `${addressBase}${defaultAsset.address}` : undefined,
 			},
 		];
 	}
