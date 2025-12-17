@@ -86,7 +86,7 @@ Networks and Addresses
 - Reference: https://www.x402x.dev/facilitator for current facilitator endpoints and network/router/hook details.
 
 Quick Integration Checklist
-- Install aliased x402 to enable paymentRequirements: npm install x402@npm:@x402x/x402@0.6.6-patch.3 (or pnpm/yarn).
+- Install aliased x402 to enable paymentRequirements: npm install x402@npm:@x402x/x402@0.6.6-patch.7 (or pnpm/yarn).
 - Generate PaymentRequirements with extra using @x402x/core (addSettlementExtra). Keep salt unique per quote. payTo in extra is the final recipient; base payTo (without extra) points to settlementRouter.
 - On client, compute commitment or use @x402x/client/@x402x/fetch to do it automatically.
 - Include paymentRequirements in X-PAYMENT header so facilitator can validate the same parameters.

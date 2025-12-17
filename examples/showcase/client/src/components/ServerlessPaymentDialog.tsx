@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { TransferHook, calculateFacilitatorFee } from "@x402x/core";
+import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount } from "@x402x/core";
 import { useX402Client, X402Client } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
@@ -24,7 +24,8 @@ type PaymentStep = "select-network" | "switch-network" | "loading-fee" | "confir
 interface ServerlessPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  amount: string; // In atomic units (e.g., "100000" for 0.1 USDC)
+  amount?: string; // DEPRECATED: In atomic units (e.g., "100000" for 0.1 USDC)
+  amountCalculator?: (network: Network) => string; // Function to calculate amount based on selected network
   payTo: string; // Recipient address
   hook?: `0x${string}`; // Optional: custom hook address (defaults to TransferHook)
   hookData?: `0x${string}`; // Optional: custom hook data (defaults to empty TransferHook)
@@ -37,6 +38,7 @@ export function ServerlessPaymentDialog({
   isOpen,
   onClose,
   amount,
+  amountCalculator,
   payTo: recipient,
   hook: customHook,
   hookData: customHookData,
@@ -45,16 +47,24 @@ export function ServerlessPaymentDialog({
   onError,
 }: ServerlessPaymentDialogProps) {
   const [step, setStep] = useState<PaymentStep>("select-network");
-  const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [feeInfo, setFeeInfo] = useState<FeeCalculationResult | null>(null);
   const [isPaying, setIsPaying] = useState(false);
-  const [isLoadingFee, setIsLoadingFee] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
 
   const { address, isConnected, chain } = useAccount();
   const { data: walletClient } = useWalletClient();
   const facilitatorUrl = getFacilitatorUrl(); // Get facilitator URL from config
+
+  // Function to get the current amount based on selected network
+  const getCurrentAmount = useCallback(() => {
+    if (amountCalculator && selectedNetwork) {
+      return amountCalculator(selectedNetwork);
+    }
+    // Fallback to deprecated amount prop or default
+    return amount || "100000"; // Default to 0.1 USDC equivalent for 6 decimals
+  }, [amountCalculator, selectedNetwork, amount]);
   
   // Fix: Pass selectedNetwork explicitly to useX402Client
   // This ensures the client is recreated whenever the user selects a different network,
@@ -101,7 +111,6 @@ export function ServerlessPaymentDialog({
   // Helper function to load fee
   const loadFee = useCallback(
     async (network: Network) => {
-      setIsLoadingFee(true);
       try {
         console.log("[ServerlessPaymentDialog] Loading fee for network:", network);
 
@@ -145,8 +154,6 @@ export function ServerlessPaymentDialog({
         console.error("[ServerlessPaymentDialog] Failed to load fee:", err);
         setError(err.message || "Failed to load facilitator fee");
         setStep("select-network");
-      } finally {
-        setIsLoadingFee(false);
       }
     },
     [address, client, customHook, customHookData, facilitatorUrl, prepareHookData],
@@ -211,17 +218,8 @@ export function ServerlessPaymentDialog({
     }
   }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client, loadFee]);
 
-  // If we entered loading-fee while client/address were not ready, retry once they appear
-  useEffect(() => {
-    if (
-      step === "loading-fee" &&
-      selectedNetwork &&
-      !feeInfo &&
-      !isLoadingFee
-    ) {
-      void loadFee(selectedNetwork);
-    }
-  }, [step, selectedNetwork, feeInfo, isLoadingFee, loadFee]);
+  // Note: Removed auto-retry useEffect to prevent infinite retry loops
+  // Users can manually retry by clicking the retry button in the error message
 
   // Handle payment
   const handlePay = async () => {
@@ -280,7 +278,7 @@ export function ServerlessPaymentDialog({
         {
           hook,
           hookData,
-          amount,
+          amount: currentAmount,
           payTo: recipient as `0x${string}`,
           facilitatorFee: feeInfo.facilitatorFee,
         },
@@ -307,11 +305,20 @@ export function ServerlessPaymentDialog({
 
   if (!isOpen) return null;
 
-  // Format amount for display
-  const amountInUsdc = (parseFloat(amount) / 1_000_000).toFixed(2);
-  const totalAmount = feeInfo
-    ? ((parseFloat(amount) + parseFloat(feeInfo.facilitatorFee)) / 1_000_000).toFixed(6)
-    : amountInUsdc;
+  // Get current amount based on selected network
+  const currentAmount = getCurrentAmount();
+
+  // Format amount for display using dynamic decimals
+  const amountInUsd = selectedNetwork
+    ? formatDefaultAssetAmount(currentAmount, selectedNetwork)
+    : (parseFloat(currentAmount) / 1_000_000).toFixed(6); // Fallback for network not selected
+
+  const totalAmount = feeInfo && selectedNetwork
+    ? formatDefaultAssetAmount(
+        (BigInt(currentAmount) + BigInt(feeInfo.facilitatorFee)).toString(),
+        selectedNetwork
+      )
+    : amountInUsd;
 
   return (
     <>
@@ -376,7 +383,7 @@ export function ServerlessPaymentDialog({
               </h2>
               <p style={{ marginBottom: "25px", color: "#666", fontSize: "14px" }}>
                 {isConnected
-                  ? `Choose the blockchain network for your $${amountInUsdc} USDC payment`
+                  ? `Choose the blockchain network for your $${amountInUsd} payment`
                   : `Choose a network to get started (wallet connection will be requested next)`}
               </p>
 
@@ -390,7 +397,41 @@ export function ServerlessPaymentDialog({
                     border: "1px solid #fcc",
                   }}
                 >
-                  <div style={{ fontSize: "14px", color: "#c00" }}>❌ {error}</div>
+                  <div style={{ fontSize: "14px", color: "#c00", marginBottom: "10px" }}>
+                    ❌ {error}
+                  </div>
+                  {selectedNetwork && (
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        const targetChainId = NETWORKS[selectedNetwork].chainId;
+                        if (isConnected && chain?.id !== targetChainId) {
+                          setStep("switch-network");
+                        } else {
+                          setStep("loading-fee");
+                          loadFee(selectedNetwork);
+                        }
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2563eb";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#3b82f6";
+                      }}
+                    >
+                      🔄 Retry
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -509,6 +550,12 @@ export function ServerlessPaymentDialog({
                 💳 Confirm Payment
               </h2>
 
+              {/* Get token name from network config */}
+              {(() => {
+                const tokenName = NETWORKS[selectedNetwork].defaultAsset.eip712.name;
+
+              return (
+                <>
               {/* Network Info */}
               <div
                 style={{
@@ -579,7 +626,7 @@ export function ServerlessPaymentDialog({
                 >
                   <span style={{ color: "#4b5563" }}>Payment Amount:</span>
                   <span style={{ fontWeight: "600", fontFamily: "monospace" }}>
-                    ${amountInUsdc} USDC
+                    ${amountInUsd}
                   </span>
                 </div>
 
@@ -588,7 +635,7 @@ export function ServerlessPaymentDialog({
                 >
                   <span style={{ color: "#4b5563" }}>Facilitator Fee:</span>
                   <span style={{ fontWeight: "600", fontFamily: "monospace", color: "#059669" }}>
-                    ${(parseFloat(feeInfo.facilitatorFee) / 1_000_000).toFixed(6)} USDC
+                    ${feeInfo.facilitatorFeeUSD}
                   </span>
                 </div>
 
@@ -610,7 +657,7 @@ export function ServerlessPaymentDialog({
                       color: "#1e40af",
                     }}
                   >
-                    ${totalAmount} USDC
+                    ${totalAmount} {tokenName}
                   </span>
                 </div>
               </div>
@@ -671,9 +718,12 @@ export function ServerlessPaymentDialog({
                     if (!isPaying) e.currentTarget.style.backgroundColor = "#3b82f6";
                   }}
                 >
-                  {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} USDC`}
+                  {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} ${tokenName}`}
                 </button>
               </div>
+                </>
+              );
+              })()}
             </>
           )}
 

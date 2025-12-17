@@ -174,8 +174,10 @@ export const GAS_PRICE_DEFAULTS = {
  * Fee claim default configuration
  */
 export const FEE_CLAIM_DEFAULTS = {
-  /** Minimum claim amount for USDC (6 decimals, 1 USDC = 1000000) */
-  MIN_CLAIM_AMOUNT_USDC: "1000000", // 1 USDC
+  /** Minimum claim amount for USDC (6 decimals): 1 USDC = 1,000,000. 
+   *  If using a token with different decimals, adjust this value accordingly (e.g., 1e18 for 18-decimal tokens).
+   */
+  MIN_CLAIM_AMOUNT_USDC: "1000000", // 1 USDC (6 decimals)
 } as const;
 
 /**

@@ -30,6 +30,8 @@ const CHAIN_ID_TO_NETWORK: Record<number, string> = {
   8453: "base",
   196: "x-layer",
   1952: "x-layer-testnet",
+  97: "bsc-testnet",
+  56: "bsc",
 };
 
 /**

@@ -142,6 +142,50 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "OKB",
     },
   },
+  "bsc-testnet": {
+    chainId: getNetworkId("bsc-testnet"),
+    name: "BSC Testnet",
+    type: "testnet",
+    addressExplorerBaseUrl: "https://testnet.bscscan.com/address/",
+    txExplorerBaseUrl: "https://testnet.bscscan.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig("bsc-testnet"),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      randomNFT: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+      reward: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      rewardToken: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "BNB",
+    },
+  },
+  bsc: {
+    chainId: getNetworkId("bsc"),
+    name: "BSC Mainnet",
+    type: "mainnet",
+    addressExplorerBaseUrl: "https://bscscan.com/address/",
+    txExplorerBaseUrl: "https://bscscan.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig("bsc"),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      randomNFT: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+      reward: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      rewardToken: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "BNB",
+    },
+  },
 };
 
 /**

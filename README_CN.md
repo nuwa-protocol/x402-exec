@@ -111,17 +111,17 @@ x402-exec/
 
 ```bash
 # 使用 npm alias（推荐）
-npm install x402@npm:@x402x/x402@0.6.6-patch.3
+npm install x402@npm:@x402x/x402@0.6.6-patch.7
 
 # 或使用 pnpm
-pnpm add x402@npm:@x402x/x402@0.6.6-patch.3
+pnpm add x402@npm:@x402x/x402@0.6.6-patch.7
 ```
 
 在 `package.json` 中：
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@0.6.6-patch.3"
+    "x402": "npm:@x402x/x402@0.6.6-patch.7"
   }
 }
 ```
@@ -206,8 +206,11 @@ cd contracts
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | Base Sepolia (测试网) | [`0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb`](https://sepolia.basescan.org/address/0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb)       | ✅ 活跃   |
 | X-Layer 测试网        | [`0xba9980fb08771e2fd10c17450f52d39bcb9ed576`](https://www.oklink.com/xlayer-test/address/0xba9980fb08771e2fd10c17450f52d39bcb9ed576) | ✅ 活跃   |
+| SKALE Base Sepolia    | [`0x1Ae0E196dC18355aF3a19985faf67354213F833D`](https://base-sepolia-testnet-explorer.skalenodes.com/address/0x1Ae0E196dC18355aF3a19985faf67354213F833D) | ✅ 活跃   |
+| BSC 测试网            | [`0x1Ae0E196dC18355aF3a19985faf67354213F833D`](https://testnet.bscscan.com/address/0x1Ae0E196dC18355aF3a19985faf67354213F833D)        | ✅ 活跃   |
 | Base 主网             | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://basescan.org/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)               | 🎉 已上线 |
 | X-Layer 主网          | [`0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B`](https://www.oklink.com/xlayer/address/0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B)      | 🎉 已上线 |
+| BSC 主网              | [`0x1Ae0E196dC18355aF3a19985faf67354213F833D`](https://bscscan.com/address/0x1Ae0E196dC18355aF3a19985faf67354213F833D)                | 🎉 已上线 |
 | Ethereum 主网         | -                                                                                                                                     | 🚧 计划中 |
 
 ### TransferHook（内置）
@@ -216,8 +219,11 @@ cd contracts
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | Base Sepolia (测试网) | [`0x4DE234059C6CcC94B8fE1eb1BD24804794083569`](https://sepolia.basescan.org/address/0x4DE234059C6CcC94B8fE1eb1BD24804794083569)       | ✅ 活跃   |
 | X-Layer 测试网        | [`0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE`](https://www.oklink.com/xlayer-test/address/0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE) | ✅ 活跃   |
+| SKALE Base Sepolia    | [`0x2f05fe5674aE756E25C26855258B4877E9e021Fd`](https://base-sepolia-testnet-explorer.skalenodes.com/address/0x2f05fe5674aE756E25C26855258B4877E9e021Fd) | ✅ 活跃   |
+| BSC 测试网            | [`0x2f05fe5674aE756E25C26855258B4877E9e021Fd`](https://testnet.bscscan.com/address/0x2f05fe5674aE756E25C26855258B4877E9e021Fd)        | ✅ 活跃   |
 | Base 主网             | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://basescan.org/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)               | 🎉 已上线 |
 | X-Layer 主网          | [`0x081258287F692D61575387ee2a4075f34dd7Aef7`](https://www.oklink.com/xlayer/address/0x081258287F692D61575387ee2a4075f34dd7Aef7)      | 🎉 已上线 |
+| BSC 主网              | [`0x2f05fe5674aE756E25C26855258B4877E9e021Fd`](https://bscscan.com/address/0x2f05fe5674aE756E25C26855258B4877E9e021Fd)                | 🎉 已上线 |
 | Ethereum 主网         | -                                                                                                                                     | 🚧 计划中 |
 
 ### 在线示例

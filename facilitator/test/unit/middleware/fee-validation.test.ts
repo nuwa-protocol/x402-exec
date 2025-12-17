@@ -30,7 +30,11 @@ vi.mock("../../../src/settlement.js", () => ({
 
 vi.mock("@x402x/core", () => ({
   getNetworkConfig: vi.fn(() => ({
-    usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    defaultAsset: {
+      address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      symbol: "USDC",
+      decimals: 6,
+    },
   })),
 }));
 

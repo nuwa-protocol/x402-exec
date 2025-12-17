@@ -25,7 +25,7 @@
     "tailwind-merge": "^3.3.1",
     "viem": "2.40.3",
     "wagmi": "2.19.5",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.3"
+    "x402": "npm:@x402x/x402@^0.6.6-patch.7"
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",
