@@ -135,7 +135,7 @@ describe("config", () => {
       process.env.EVM_PRIVATE_KEY =
         "0x0000000000000000000000000000000000000000000000000000000000000001";
 
-      expect(async () => await loadConfig()).rejects.toThrow("Invalid ACCOUNT_SELECTION_STRATEGY");
+      await expect(loadConfig()).rejects.toThrow("Invalid ACCOUNT_SELECTION_STRATEGY");
     });
 
     it("should load default queue depth values", async () => {
@@ -175,7 +175,7 @@ describe("config", () => {
       process.env.EVM_PRIVATE_KEY =
         "0x0000000000000000000000000000000000000000000000000000000000000001";
 
-      expect(async () => await loadConfig()).rejects.toThrow(
+      await expect(loadConfig()).rejects.toThrow(
         "Invalid ACCOUNT_POOL_MAX_QUEUE_DEPTH: invalid. Must be a positive integer.",
       );
     });
@@ -185,7 +185,7 @@ describe("config", () => {
       process.env.EVM_PRIVATE_KEY =
         "0x0000000000000000000000000000000000000000000000000000000000000001";
 
-      expect(async () => await loadConfig()).rejects.toThrow(
+      await expect(loadConfig()).rejects.toThrow(
         "Invalid ACCOUNT_POOL_MAX_QUEUE_DEPTH: -5. Must be a positive integer.",
       );
     });
@@ -195,7 +195,7 @@ describe("config", () => {
       process.env.EVM_PRIVATE_KEY =
         "0x0000000000000000000000000000000000000000000000000000000000000001";
 
-      expect(async () => await loadConfig()).rejects.toThrow(
+      await expect(loadConfig()).rejects.toThrow(
         "ACCOUNT_POOL_MAX_QUEUE_DEPTH too large: 2000. Maximum allowed is 1000.",
       );
     });

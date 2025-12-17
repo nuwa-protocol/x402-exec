@@ -238,7 +238,7 @@ describe("NetworkChainResolver", () => {
 
       expect(Object.keys(status)).toContain("base");
       expect(Object.keys(status)).toContain("bsc");
-      expect(Object.keys(status)).toContain("invalid-network" in status ? false : true);
+      expect(status).not.toHaveProperty("invalid-network");
 
       // All supported networks should be valid
       expect(status["base"].valid).toBe(true);
