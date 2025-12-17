@@ -16,8 +16,7 @@ import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x40
 import type { GasCostConfig } from "./gas-cost.js";
 import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { TokenPriceConfig } from "./token-price.js";
-import { baseSepolia, base } from "viem/chains";
-import type { Chain } from "viem";
+import { networkChainResolver } from "./network-chain-resolver.js";
 import { DEFAULTS } from "./defaults.js";
 
 // Load environment variables
@@ -447,7 +446,7 @@ function parseGasCostConfig(): GasCostConfig {
  *
  * @returns Dynamic gas price configuration object
  */
-function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
+async function parseDynamicGasPriceConfig(): Promise<DynamicGasPriceConfig> {
   const supportedNetworks = getSupportedNetworks();
 
   // Determine strategy:
@@ -466,40 +465,13 @@ function parseDynamicGasPriceConfig(): DynamicGasPriceConfig {
   const strategyEnv = process.env.GAS_PRICE_STRATEGY as "static" | "dynamic" | "hybrid" | undefined;
   const strategy = strategyEnv || (hasExplicitGasPrice ? "static" : "hybrid");
 
-  // Map of network names to viem chains
-  const viemChains: Record<string, Chain> = {
-    "base-sepolia": baseSepolia,
-    base: base,
-    "x-layer-testnet": evm.xLayerTestnet,
-    "x-layer": evm.xLayer,
-  };
-
-  // Parse RPC URLs for each network
-  const rpcUrls: Record<string, string> = {};
-  for (const network of supportedNetworks) {
-    // First check environment variable
-    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_RPC_URL`;
-    const rpcUrl = process.env[envVarName];
-    if (rpcUrl) {
-      rpcUrls[network] = rpcUrl;
-    } else {
-      // Try to get from viem chain definition or x402 chain definition
-      const chain = viemChains[network];
-      if (chain?.rpcUrls?.default?.http?.[0]) {
-        rpcUrls[network] = chain.rpcUrls.default.http[0];
-      } else {
-        // Try to get from x402 chain definition
-        try {
-          const x402Chain = evm.getChainFromNetwork(network);
-          if (x402Chain?.rpcUrls?.default?.http?.[0]) {
-            rpcUrls[network] = x402Chain.rpcUrls.default.http[0];
-          }
-        } catch {
-          // Chain not found in x402 either, skip
-        }
-      }
-    }
+  // Initialize the network chain resolver if not already done
+  if (!networkChainResolver.isInitialized()) {
+    await networkChainResolver.initialize();
   }
+
+  // Get all RPC URLs using the dynamic resolver
+  const rpcUrls = await networkChainResolver.getAllRpcUrls();
 
   return {
     strategy,
@@ -576,7 +548,7 @@ function parseTokenPriceConfig(): TokenPriceConfig {
  *
  * @returns Complete application configuration object
  */
-export function loadConfig(): AppConfig {
+export async function loadConfig(): Promise<AppConfig> {
   return {
     cache: parseCacheConfig(),
     accountPool: parseAccountPoolConfig(),
@@ -587,7 +559,7 @@ export function loadConfig(): AppConfig {
     x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),
     gasCost: parseGasCostConfig(),
-    dynamicGasPrice: parseDynamicGasPriceConfig(),
+    dynamicGasPrice: await parseDynamicGasPriceConfig(),
     tokenPrice: parseTokenPriceConfig(),
     feeClaim: parseFeeClaimConfig(),
   };
