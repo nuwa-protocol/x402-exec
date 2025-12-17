@@ -18,13 +18,18 @@ import { StatusMessage } from "../components/StatusMessage";
 import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
+import { parseDefaultAssetAmount } from "@x402x/core";
+import { type Network } from "../config";
 import splitPaymentCode from "../code-examples/split-payment.ts?raw";
 
 // Default recipient from environment or fallback
 const DEFAULT_RECIPIENT =
   import.meta.env.VITE_DEFAULT_RECIPIENT_ADDRESS || "0x1111111111111111111111111111111111111111";
 
-const AMOUNT = "100000"; // 0.1 USDC (6 decimals)
+// Helper function to get amount for a specific network
+const getAmountForNetwork = (network: Network): string => {
+  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+};
 
 interface Split {
   id: string;
@@ -530,7 +535,7 @@ export function ServerlessSplitPayment() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={AMOUNT}
+        amountCalculator={getAmountForNetwork}
         payTo={payTo}
         hookData={hookData}
         onSuccess={handleSuccess}

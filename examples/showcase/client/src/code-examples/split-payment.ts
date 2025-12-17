@@ -18,7 +18,7 @@ const client = new X402Client({ facilitatorUrl });
 await client.execute({
   hook: TransferHook.address,
   hookData,
-  amount: "100000", // 0.1 USDC (6 decimals)
+  amount: "100000", // 0.1 token (atomic units, decimals vary by network)
   payTo: primaryRecipient, // Receives remainder (50%)
 });
 

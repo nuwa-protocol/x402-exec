@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { createPublicClient, http, Address, formatUnits } from "viem";
+import { getNetworkConfig } from "@x402x/core";
 import { NETWORKS, Network } from "../config";
 
 // ERC-20 ABI for balanceOf
@@ -128,9 +129,10 @@ export function useNetworkBalances(address: string | undefined) {
           args: [address as Address],
         });
 
+        const networkConfig = getNetworkConfig(network);
         return {
           network,
-          balance: formatUnits(balance, 6), // USDC has 6 decimals
+          balance: formatUnits(balance, networkConfig.defaultAsset.decimals),
           raw: balance,
           loading: false,
           error: null,

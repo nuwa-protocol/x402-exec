@@ -11,6 +11,7 @@ import { PaymentStatus } from "./PaymentStatus";
 import { usePayment } from "../hooks/usePayment";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
 import { useNetworkBalances } from "../hooks/useNetworkBalances";
+import { formatDefaultAssetAmount } from "@x402x/core";
 import {
   Network,
   NETWORKS,
@@ -369,8 +370,9 @@ export function PaymentDialog({
                     >
                       <span>Business Amount:</span>
                       <strong>
-                        {(parseFloat(paymentRequirements.extra.businessAmount) / 1000000).toFixed(
-                          6,
+                        {formatDefaultAssetAmount(
+                          paymentRequirements.extra.businessAmount,
+                          paymentRequirements.network,
                         )}{" "}
                         {currency}
                       </strong>
@@ -385,8 +387,9 @@ export function PaymentDialog({
                       >
                         <span>Facilitator Fee:</span>
                         <strong>
-                          {(parseFloat(paymentRequirements.extra.facilitatorFee) / 1000000).toFixed(
-                            6,
+                          {formatDefaultAssetAmount(
+                            paymentRequirements.extra.facilitatorFee,
+                            paymentRequirements.network,
                           )}{" "}
                           {currency}
                         </strong>
@@ -404,7 +407,10 @@ export function PaymentDialog({
                         <strong>Total Amount:</strong>
                       </span>
                       <strong>
-                        {(parseFloat(paymentRequirements.maxAmountRequired) / 1000000).toFixed(6)}{" "}
+                        {formatDefaultAssetAmount(
+                          paymentRequirements.maxAmountRequired,
+                          paymentRequirements.network,
+                        )}{" "}
                         {currency}
                       </strong>
                     </div>
