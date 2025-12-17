@@ -15,7 +15,7 @@ app.post(
       const content = getContentMetadata(contentId);
 
       return {
-        amount: "100000", // 0.1 USDC (6 decimals)
+        amount: "100000", // 0.1 token (atomic units, decimals vary by network)
         currency: "USDC",
         payTo: merchantAddress,
         memo: `Purchase: ${content.title}`,
