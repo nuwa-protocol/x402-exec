@@ -155,7 +155,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         validitySeconds,
         token: {
           address: networkConfig.defaultAsset.address,
-          symbol: networkConfig.defaultAsset.symbol,
+          name: networkConfig.defaultAsset.eip712.name,
           decimals: tokenDecimals,
         },
         // Note: breakdown and prices removed to avoid exposing internal cost structure
