@@ -22,6 +22,12 @@ declare -a NETWORK_CONFIGS=(
 
     # SKALE Base Sepolia
     "skale-base-sepolia|SKALE Base Sepolia|324705682|https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha|https://base-sepolia-testnet-explorer.skalenodes.com|blockscout|https://base-sepolia-testnet-explorer.skalenodes.com:443/api/|SKALE_API_KEY|false"
+
+    # BSC Testnet
+    "bsc-testnet|BSC Testnet|97|https://data-seed-prebsc-1-s1.bnbchain.org:8545|https://testnet.bscscan.com|etherscan||BSCSCAN_API_KEY|true"
+
+    # BSC Mainnet
+    "bsc|BSC Mainnet|56|https://bsc-dataseed.binance.org|https://bscscan.com|etherscan||BSCSCAN_API_KEY|true"
 )
 
 # Helper function to get network config by key

@@ -177,7 +177,7 @@ export default function FacilitatorPage() {
                         className="flex flex-wrap justify-between items-center gap-2"
                       >
                         <div className="flex justify-start items-center gap-2 text-muted-foreground font-semibold">
-                          {token.label} ({token.symbol})
+                          {token.label}
                         </div>
                         <a
                           href={token.explorerUrl}

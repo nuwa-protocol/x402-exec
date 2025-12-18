@@ -19,58 +19,59 @@ import { createBalanceChecker, type BalanceChecker } from "./balance-check.js";
 initTelemetry();
 const logger = getLogger();
 
-// Load configuration
-const config = loadConfig();
-
-// Initialize graceful shutdown
-const shutdownManager = initShutdown({
-  timeoutMs: config.server.shutdownTimeoutMs,
-});
-
-// Initialize cache
+// Initialize cache and shutdown managers (will be used inside main)
 let tokenCache: TokenCache | undefined = undefined;
 let balanceChecker: BalanceChecker | undefined = undefined;
-
-if (config.cache.enabled) {
-  const memoryCache = createMemoryCache({
-    stdTTL: config.cache.ttlTokenVersion,
-    maxKeys: config.cache.maxKeys,
-  });
-
-  tokenCache = createTokenCache(memoryCache, {
-    versionTTL: config.cache.ttlTokenVersion,
-    metadataTTL: config.cache.ttlTokenMetadata,
-  });
-
-  // Create dedicated cache instance for balance checks to avoid cache conflicts
-  const balanceCache = createMemoryCache({
-    stdTTL: 30, // 30 seconds TTL for balance checks
-    maxKeys: config.cache.maxKeys,
-  });
-
-  balanceChecker = createBalanceChecker(balanceCache, {
-    cacheTTL: 30, // 30 seconds TTL for balance checks
-    maxCacheKeys: config.cache.maxKeys,
-  });
-
-  logger.info(
-    {
-      enabled: true,
-      versionTTL: config.cache.ttlTokenVersion,
-      metadataTTL: config.cache.ttlTokenMetadata,
-      balanceCacheTTL: 30,
-      maxKeys: config.cache.maxKeys,
-    },
-    "Token cache and balance checker initialized",
-  );
-} else {
-  logger.info("Token cache and balance checker disabled");
-}
 
 /**
  * Initialize and start the facilitator application
  */
 async function main() {
+  // Load configuration
+  const config = await loadConfig();
+
+  // Initialize graceful shutdown
+  const shutdownManager = initShutdown({
+    timeoutMs: config.server.shutdownTimeoutMs,
+  });
+
+  // Initialize cache
+  if (config.cache.enabled) {
+    const memoryCache = createMemoryCache({
+      stdTTL: config.cache.ttlTokenVersion,
+      maxKeys: config.cache.maxKeys,
+    });
+
+    tokenCache = createTokenCache(memoryCache, {
+      versionTTL: config.cache.ttlTokenVersion,
+      metadataTTL: config.cache.ttlTokenMetadata,
+    });
+
+    // Create dedicated cache instance for balance checks to avoid cache conflicts
+    const balanceCache = createMemoryCache({
+      stdTTL: 30, // 30 seconds TTL for balance checks
+      maxKeys: config.cache.maxKeys,
+    });
+
+    balanceChecker = createBalanceChecker(balanceCache, {
+      cacheTTL: 30, // 30 seconds TTL for balance checks
+      maxCacheKeys: config.cache.maxKeys,
+    });
+
+    logger.info(
+      {
+        enabled: true,
+        versionTTL: config.cache.ttlTokenVersion,
+        metadataTTL: config.cache.ttlTokenMetadata,
+        balanceCacheTTL: 30,
+        maxKeys: config.cache.maxKeys,
+      },
+      "Token cache and balance checker initialized",
+    );
+  } else {
+    logger.info("Token cache and balance checker disabled");
+  }
+
   try {
     // Log rate limiting configuration
     logger.info(

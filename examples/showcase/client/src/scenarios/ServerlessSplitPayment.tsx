@@ -18,13 +18,18 @@ import { StatusMessage } from "../components/StatusMessage";
 import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
+import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { NETWORKS } from "../config";
 import splitPaymentCode from "../code-examples/split-payment.ts?raw";
 
 // Default recipient from environment or fallback
 const DEFAULT_RECIPIENT =
   import.meta.env.VITE_DEFAULT_RECIPIENT_ADDRESS || "0x1111111111111111111111111111111111111111";
 
-const AMOUNT = "100000"; // 0.1 USDC (6 decimals)
+// Helper function to get amount for a specific network
+const getAmountForNetwork = (network: string): string => {
+  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+};
 
 interface Split {
   id: string;
@@ -485,7 +490,7 @@ export function ServerlessSplitPayment() {
           txHash={paymentResult.txHash}
           network={paymentResult.network}
           details={[
-            { label: "Payment", value: <strong>$0.1 USDC</strong> },
+            { label: "Payment", value: <strong>$0.1 {NETWORKS[paymentResult.network].defaultAsset.eip712.name}</strong> },
             {
               label: "Recipients",
               value: <strong>{getHookDataForPayment().length + 1} addresses</strong>,
@@ -514,8 +519,7 @@ export function ServerlessSplitPayment() {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${(parseFloat(paymentResult.facilitatorFee) / 1_000_000).toFixed(4)} facilitator
-                  fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>
@@ -530,7 +534,7 @@ export function ServerlessSplitPayment() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={AMOUNT}
+        amountCalculator={getAmountForNetwork}
         payTo={payTo}
         hookData={hookData}
         onSuccess={handleSuccess}

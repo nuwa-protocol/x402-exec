@@ -16,11 +16,14 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksRewardTokenData } from "../hooks/useRewardTokenData";
-import { RewardHook } from "@x402x/core";
-import { type Network, NETWORK_UI_CONFIG } from "../config";
+import { RewardHook, parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { NETWORKS } from "../config";
 import pointsRewardCode from "../code-examples/points-reward.ts?raw";
 
-const AMOUNT = "100000"; // 0.1 USDC (6 decimals)
+// Helper function to get amount for a specific network
+const getAmountForNetwork = (network: string): string => {
+  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+};
 
 export function ServerlessPointsReward() {
   const { address: connectedAddress } = useAccount();
@@ -33,7 +36,7 @@ export function ServerlessPointsReward() {
 
   // Reward preparation function that takes network as parameter
   // This will be called by ServerlessPaymentDialog with the selected network
-  const prepareRewardForNetwork = (network: Network) => {
+  const prepareRewardForNetwork = (network: string) => {
     // Get reward hook address for the selected network
     // This will throw an error if not configured, which is intentional
     const hook = RewardHook.getAddress(network);
@@ -140,12 +143,12 @@ export function ServerlessPointsReward() {
               </thead>
               <tbody>
                 {Object.entries(allNetworksData).map(([network, data]) => {
-                  const uiConfig = NETWORK_UI_CONFIG[network as keyof typeof NETWORK_UI_CONFIG];
+                  const networkConfig = NETWORKS[network];
                   return (
                     <tr key={network} style={{ borderBottom: "1px solid #fde68a" }}>
                       <td style={{ padding: "12px", color: "#78350f" }}>
-                        <span style={{ marginRight: "6px" }}>{uiConfig.icon}</span>
-                        <strong>{uiConfig.displayName}</strong>
+                        <span style={{ marginRight: "6px" }}>{networkConfig?.icon}</span>
+                        <strong>{networkConfig?.displayName || network}</strong>
                       </td>
                       <td
                         style={{
@@ -311,7 +314,7 @@ export function ServerlessPointsReward() {
       <ServerlessPaymentDialog
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
-        amount={AMOUNT}
+        amountCalculator={getAmountForNetwork}
         payTo={connectedAddress || "0x0000000000000000000000000000000000000000"}
         prepareHookData={prepareRewardForNetwork}
         onSuccess={handlePaymentSuccess}
@@ -353,15 +356,17 @@ export function ServerlessPointsReward() {
           txHash={paymentResult.txHash}
           network={paymentResult.network}
           details={[
-            { label: "Payment", value: <strong>$0.1 USDC (returned to you)</strong> },
+            { 
+              label: "Payment", 
+              value: <strong>$0.1 {NETWORKS[paymentResult.network].defaultAsset.eip712.name} (returned to you)</strong> 
+            },
             { label: "Rewards", value: <strong>1000 Points sent to you 🎁</strong> },
             { label: "Hook", value: <code>RewardHook</code> },
             {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${(parseFloat(paymentResult.facilitatorFee) / 1_000_000).toFixed(4)} facilitator
-                  fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>

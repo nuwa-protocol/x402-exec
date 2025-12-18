@@ -17,6 +17,8 @@ describe("routes/health", () => {
     // Create mock dependencies
     const mockPool = {
       getAccountsInfo: vi.fn(() => [{ address: "0xabc", queueDepth: 0, totalProcessed: 10 }]),
+      getTotalQueueDepth: vi.fn(() => 0),
+      getPendingPayersCount: vi.fn(() => 0),
     };
 
     mockDeps = {

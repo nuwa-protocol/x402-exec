@@ -65,6 +65,8 @@ describe("E2E: Facilitator Server", () => {
       ]),
       getAccountCount: vi.fn(() => 1),
       getTotalProcessed: vi.fn(() => 0),
+      getTotalQueueDepth: vi.fn(() => 0),
+      getPendingPayersCount: vi.fn(() => 0),
     };
 
     const mockShutdownManager = {

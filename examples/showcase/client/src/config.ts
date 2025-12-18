@@ -1,39 +1,45 @@
 /**
- * Client configuration
- * Manages environment variables and runtime configuration
+ * Auto-generated network configuration
+ * Automatically supports all networks from @x402x/core
  *
- * This config maximizes reuse of x402 protocol definitions:
- * - Chain definitions from x402/types (xLayerTestnet, etc.)
- * - USDC addresses from x402 evm.config
- * - Explorer URLs from chain.blockExplorers
- *
- * Only UI-specific fields (icon, displayName, faucetUrl) are defined locally.
+ * Benefits:
+ * - No manual updates needed when adding new networks
+ * - Type-safe network identifiers
+ * - Optional UI customization via NETWORK_UI_OVERRIDES
  */
 
-import { Chain } from "viem";
+import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/core";
 import { evm } from "x402/types";
-
-// Re-export chains from evm namespace
-const { xLayerTestnet, xLayer, skaleBaseSepolia } = evm;
+import type { Chain } from "viem";
 
 /**
- * Supported network identifiers
+ * Supported network identifiers (auto-generated from @x402x/core)
  */
-export type Network = "base-sepolia" | "x-layer-testnet" | "skale-base-sepolia" | "base" | "x-layer";
+export type Network = ReturnType<typeof getSupportedNetworks>[number];
 
 /**
- * UI-specific network configuration
- * Only contains presentation fields not available in x402
+ * Optional UI configuration for specific networks
  */
-export interface NetworkUIConfig {
-  icon: string;
-  displayName: string;
-  faucetUrl: string;
+interface NetworkUIOverride {
+  icon?: string;
+  displayName?: string;
+  faucetUrl?: string;
 }
 
 /**
+ * Optional UI overrides for specific networks
+ * Only add entries here if you want to customize the default display
+ */
+const NETWORK_UI_OVERRIDES: Partial<Record<string, NetworkUIOverride>> = {
+  // Uncomment to customize specific networks:
+  // "base-sepolia": {
+  //   icon: "🔵",
+  //   faucetUrl: "https://faucet.circle.com/",
+  // },
+};
+
+/**
  * Complete network configuration
- * Combines x402 protocol data with UI metadata
  */
 export interface NetworkConfig {
   chainId: number;
@@ -44,83 +50,96 @@ export interface NetworkConfig {
   faucetUrl: string;
   explorerUrl: string;
   usdcAddress: string;
-}
-
-/**
- * UI configuration for supported networks
- * Only contains presentation-layer fields
- */
-export const NETWORK_UI_CONFIG: Record<string, NetworkUIConfig> = {
-  "base-sepolia": {
-    icon: "🔵",
-    displayName: "Base Sepolia",
-    faucetUrl: "https://faucet.circle.com/",
-  },
-  "x-layer-testnet": {
-    icon: "⭕",
-    displayName: "X Layer Testnet",
-    faucetUrl: "https://www.okx.com/xlayer/faucet",
-  },
-  "skale-base-sepolia": {
-    icon: "💎",
-    displayName: "SKALE Base Sepolia",
-    faucetUrl: "https://base-sepolia-faucet.skale.space",
-  },
-  base: {
-    icon: "🔵",
-    displayName: "Base Mainnet",
-    faucetUrl: "https://docs.base.org/docs/tools/bridge-funds/",
-  },
-  "x-layer": {
-    icon: "⭕",
-    displayName: "X Layer",
-    faucetUrl: "https://www.okx.com/xlayer/bridge",
-  },
-};
-
-/**
- * Get complete network configuration by combining x402 data with UI config
- * @param network Network identifier
- * @returns Complete network configuration
- */
-export function getNetworkConfig(network: Network): NetworkConfig {
-  const chain = evm.getChainFromNetwork(network) as Chain;
-  const chainConfig = evm.config[chain.id.toString()];
-  const uiConfig = NETWORK_UI_CONFIG[network];
-
-  if (!chainConfig) {
-    throw new Error(`No chain config found for network: ${network} (chain ID: ${chain.id})`);
-  }
-
-  return {
-    chainId: chain.id,
-    name: network,
-    chain,
-    usdcAddress: chainConfig.usdcAddress as string,
-    explorerUrl: chain.blockExplorers?.default.url || "",
-    ...uiConfig,
+  defaultAsset: {
+    address: string;
+    decimals: number;
+    eip712: {
+      name: string;
+      version: string;
+    };
   };
 }
 
 /**
- * All supported networks configurations
- * Data sourced from x402, only UI fields are local
+ * Get default icon based on network name
  */
-export const NETWORKS: Record<Network, NetworkConfig> = {
-  "base-sepolia": getNetworkConfig("base-sepolia"),
-  "x-layer-testnet": getNetworkConfig("x-layer-testnet"),
-  "skale-base-sepolia": getNetworkConfig("skale-base-sepolia"),
-  base: getNetworkConfig("base"),
-  "x-layer": getNetworkConfig("x-layer"),
-};
+function getDefaultIcon(networkName: string): string {
+  if (networkName.includes("bsc")) return "🟡";
+  if (networkName.includes("base")) return "🔵";
+  if (networkName.includes("x-layer") || networkName.includes("xlayer")) return "⭕";
+  if (networkName.includes("skale")) return "💎";
+  if (networkName.includes("avalanche") || networkName.includes("avax")) return "🔺";
+  if (networkName.includes("polygon")) return "🟣";
+  return "🌐"; // default
+}
+
+/**
+ * Get default faucet URL based on network
+ */
+function getDefaultFaucetUrl(networkName: string, chain: Chain): string {
+  // For mainnets, return bridge/buy link
+  if (!chain.testnet) {
+    if (networkName.includes("bsc")) return "https://www.bnbchain.org/en/bridge";
+    if (networkName.includes("base")) return "https://docs.base.org/docs/tools/bridge-funds/";
+    if (networkName.includes("x-layer")) return "https://www.okx.com/xlayer/bridge";
+    return chain.blockExplorers?.default.url || "";
+  }
+
+  // For testnets, return faucet
+  if (networkName.includes("bsc")) return "https://testnet.bnbchain.org/faucet-smart";
+  if (networkName.includes("base")) return "https://faucet.circle.com/";
+  if (networkName.includes("x-layer")) return "https://www.okx.com/xlayer/faucet";
+  if (networkName.includes("skale")) return "https://base-sepolia-faucet.skale.space";
+
+  return ""; // no faucet known
+}
+
+/**
+ * Get complete network configuration
+ * Automatically combines @x402x/core data with x402 chain info and optional UI overrides
+ */
+export function getNetworkConfig(network: string): NetworkConfig {
+  // Get core network config
+  const coreConfig = getCoreNetworkConfig(network);
+
+  // Get chain from x402
+  const chain = evm.getChainFromNetwork(network) as Chain;
+
+  // Get optional UI overrides
+  const uiOverride = NETWORK_UI_OVERRIDES[network] || {};
+
+  return {
+    chainId: coreConfig.chainId,
+    name: network,
+    chain,
+    usdcAddress: coreConfig.defaultAsset.address,
+    explorerUrl: chain.blockExplorers?.default.url || "",
+    defaultAsset: coreConfig.defaultAsset,
+
+    // Use override or defaults
+    displayName: uiOverride.displayName || coreConfig.name,
+    icon: uiOverride.icon || getDefaultIcon(network),
+    faucetUrl: uiOverride.faucetUrl || getDefaultFaucetUrl(network, chain),
+  };
+}
+
+/**
+ * All supported networks configurations (auto-generated)
+ * Automatically includes all networks from @x402x/core
+ */
+export const NETWORKS = getSupportedNetworks().reduce(
+  (acc, network) => {
+    acc[network] = getNetworkConfig(network);
+    return acc;
+  },
+  {} as Record<string, NetworkConfig>,
+);
 
 /**
  * Get network config by chain ID
  */
-export function getNetworkByChainId(chainId: number): Network | undefined {
-  return Object.entries(NETWORKS).find(([_, config]) => config.chainId === chainId)?.[0] as
-    | Network
-    | undefined;
+export function getNetworkByChainId(chainId: number): string | undefined {
+  return Object.entries(NETWORKS).find(([_, config]) => config.chainId === chainId)?.[0];
 }
 
 /**
@@ -131,10 +150,10 @@ export const PREFERRED_NETWORK_KEY = "x402-preferred-network";
 /**
  * Get user's preferred network from localStorage
  */
-export function getPreferredNetwork(): Network | null {
+export function getPreferredNetwork(): string | null {
   const stored = localStorage.getItem(PREFERRED_NETWORK_KEY);
   if (stored && stored in NETWORKS) {
-    return stored as Network;
+    return stored;
   }
   return null;
 }
@@ -142,7 +161,7 @@ export function getPreferredNetwork(): Network | null {
 /**
  * Save user's preferred network to localStorage
  */
-export function setPreferredNetwork(network: Network): void {
+export function setPreferredNetwork(network: string): void {
   localStorage.setItem(PREFERRED_NETWORK_KEY, network);
 }
 
@@ -201,7 +220,3 @@ export const config = {
   buildApiUrl,
   networks: NETWORKS,
 };
-
-
-// Re-export chains for wagmi config
-export { xLayerTestnet, xLayer, skaleBaseSepolia };

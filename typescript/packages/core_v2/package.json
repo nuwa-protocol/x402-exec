@@ -1,0 +1,51 @@
+{
+  "name": "@x402x/core_v2",
+  "version": "0.1.0",
+  "description": "Core utilities for x402x settlement framework - v2 with official x402",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src",
+    "format": "prettier --config ../../.prettierrc --ignore-path ../../.prettierignore --write \"**/*.{ts,js,cjs,json,md}\"",
+    "format:check": "prettier --config ../../.prettierrc --ignore-path ../../.prettierignore --check \"**/*.{ts,js,cjs,json,md}\""
+  },
+  "keywords": [
+    "x402",
+    "x402x",
+    "payment",
+    "settlement",
+    "eip-3009"
+  ],
+  "author": "Nuwa Protocol",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@x402/core": "2.0.0",
+    "@x402/evm": "2.0.0",
+    "viem": "2.40.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "3.5.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^1.0.0"
+  }
+}

@@ -378,10 +378,12 @@ export async function settleWithRouter(
         const nativePrice = nativeTokenPrices?.[network] || 0;
 
         // Calculate effective gas limit with triple constraints
+        const networkConfig = getNetworkConfig(network);
         const calculatedLimit = calculateEffectiveGasLimit(
           extra.facilitatorFee,
           gasPrice,
           nativePrice,
+          networkConfig.defaultAsset.decimals,
           gasCostConfig,
         );
 
@@ -631,13 +633,14 @@ export async function settleWithRouter(
 
     // 9. Calculate gas metrics
     const nativePrice = nativeTokenPrices?.[network] || 0;
+    const networkConfig = getNetworkConfig(network);
     const gasMetrics = calculateGasMetrics(
       receipt,
       extra.facilitatorFee,
       extra.hook,
       network,
       nativePrice.toString(),
-      6, // USDC decimals (all current settlements use USDC)
+      networkConfig.defaultAsset.decimals,
     );
 
     // 10. Log settlement success with gas metrics
