@@ -41,10 +41,29 @@ vi.mock("@x402x/core_v2", () => ({
   })),
 }));
 
+// Mock viem for signature verification
+vi.mock("viem", async () => {
+  const actual = await vi.importActual("viem");
+  return {
+    ...actual,
+    verifyTypedData: vi.fn().mockResolvedValue(true), // Mock successful signature verification
+    parseErc6492Signature: vi.fn((signature: string) => ({
+      signature,
+      address: "0x0000000000000000000000000000000000000000",
+      data: "0x",
+    })),
+  };
+});
+
 describe("SettlementRouter integration", () => {
   beforeEach(() => {
     resetAllMocks();
     setupViemMocks();
+
+    // Configure mocks for successful operations
+    mockPublicClient.readContract
+      .mockResolvedValueOnce(false) // isSettled check
+      .mockResolvedValue(BigInt(MOCK_VALUES.usdcBalance)); // balance check
   });
 
   describe("createPublicClientForNetwork", () => {
@@ -209,13 +228,14 @@ describe("SettlementRouter integration", () => {
         facilitatorFee: MOCK_VALUES.facilitatorFee,
         hook: MOCK_ADDRESSES.hook,
         hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
       };
 
       const txHash = await executeSettlementWithRouter(mockWalletClient, params);
 
       expect(txHash).toBe(mockSettleResponse.transaction);
       expect(mockWalletClient.writeContract).toHaveBeenCalledWith({
-        address: MOCK_ADDRESSES.token,
+        address: MOCK_ADDRESSES.settlementRouter,
         functionName: "settleAndExecute",
         args: [
           MOCK_ADDRESSES.token,
@@ -249,6 +269,7 @@ describe("SettlementRouter integration", () => {
         facilitatorFee: MOCK_VALUES.facilitatorFee,
         hook: MOCK_ADDRESSES.hook,
         hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
       };
 
       await executeSettlementWithRouter(mockWalletClient, params, {
@@ -278,6 +299,7 @@ describe("SettlementRouter integration", () => {
         facilitatorFee: MOCK_VALUES.facilitatorFee,
         hook: MOCK_ADDRESSES.hook,
         hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
       };
 
       await expect(executeSettlementWithRouter(mockWalletClient, params)).rejects.toThrow(
@@ -303,6 +325,7 @@ describe("SettlementRouter integration", () => {
         facilitatorFee: MOCK_VALUES.facilitatorFee,
         hook: MOCK_ADDRESSES.hook,
         hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
       });
     });
 

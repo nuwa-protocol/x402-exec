@@ -103,10 +103,9 @@ export const mockVerifyResponse = {
 
 // Mock viem public client
 export const mockPublicClient = {
-  readContract: vi.fn().mockResolvedValue(false), // isSettled returns false
+  readContract: vi.fn(),
   waitForTransactionReceipt: vi.fn().mockResolvedValue(mockTransactionReceipt),
   getBalance: vi.fn().mockResolvedValue(BigInt(MOCK_VALUES.ethBalance)),
-  readContract: vi.fn().mockResolvedValue(BigInt(MOCK_VALUES.usdcBalance)),
 };
 
 // Mock viem wallet client
@@ -150,8 +149,11 @@ export function resetAllMocks() {
   mockCreatePublicClient.mockClear();
   mockCreateWalletClient.mockClear();
   mockParseErc6492Signature.mockClear();
-  mockPublicClient.readContract.mockClear();
+  mockPublicClient.readContract.mockReset();
   mockPublicClient.waitForTransactionReceipt.mockClear();
   mockPublicClient.getBalance.mockClear();
   mockWalletClient.writeContract.mockClear();
+
+  // Reset readContract to default behavior - will be configured per test
+  mockPublicClient.readContract.mockReset();
 }

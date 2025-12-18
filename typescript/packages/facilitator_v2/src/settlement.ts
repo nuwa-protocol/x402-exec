@@ -135,7 +135,7 @@ export async function executeSettlementWithRouter(
 
   try {
     const txHash = await walletClient.writeContract({
-      address: params.token,
+      address: params.settlementRouter,
       abi: SETTLEMENT_ROUTER_ABI,
       functionName: "settleAndExecute",
       args: [
@@ -228,6 +228,7 @@ export function parseSettlementRouterParams(
     facilitatorFee: extra.facilitatorFee,
     hook: extra.hook as Address,
     hookData: extra.hookData,
+    settlementRouter: extra.settlementRouter as Address,
   };
 }
 

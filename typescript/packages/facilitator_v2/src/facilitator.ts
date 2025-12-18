@@ -11,11 +11,50 @@ import type {
   FacilitatorConfig,
   Address,
   Network,
-  SettlementRouterError,
 } from "./types.js";
-import { FacilitatorValidationError } from "./types.js";
+import { FacilitatorValidationError, SettlementRouterError } from "./types.js";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
-import { settleWithSettlementRouter } from "./settlement.js";
+import { calculateCommitment } from "@x402x/core_v2";
+import { settleWithSettlementRouter, createPublicClientForNetwork, createWalletClientForNetwork, waitForSettlementReceipt } from "./settlement.js";
+import { verifyTypedData, parseErc6492Signature } from "viem";
+
+// EIP-712 authorization types for EIP-3009
+const authorizationTypes = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+} as const;
+
+// EIP-3009 ABI for token contracts
+const eip3009ABI = [
+  {
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "signature", type: "bytes" },
+    ],
+    name: "transferWithAuthorization",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
 import {
   validateFacilitatorConfig,
   validateNetwork,
@@ -242,9 +281,122 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       this.config.feeConfig?.maxFee
     );
 
-    // TODO: Add signature verification using @x402/evm
-    // TODO: Add commitment verification (nonce must equal calculated commitment)
-    // TODO: Add balance checks using viem public client
+    // Create public client for balance checks and commitment verification
+    const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
+
+    // Signature verification using EIP-712 typed data
+    try {
+      // Parse signature (handle ERC-6492 for smart wallets)
+      const parsedSignature = parseErc6492Signature(payload.signature);
+
+      // Build EIP-712 typed data for verification
+      const typedData = {
+        types: authorizationTypes,
+        primaryType: "TransferWithAuthorization",
+        domain: {
+          name: settlementExtra.name,
+          version: settlementExtra.version,
+          chainId: parseInt(requirements.network.split(":")[1]),
+          verifyingContract: requirements.asset,
+        },
+        message: {
+          from: payload.payer,
+          to: settlementExtra.payTo,
+          value: BigInt(requirements.maxAmountRequired),
+          validAfter: BigInt(payload.validAfter || "0x0"),
+          validBefore: BigInt(payload.validBefore || "0xFFFFFFFFFFFFFFFF"),
+          nonce: payload.nonce,
+        },
+      };
+
+      // Verify signature using viem
+      const isValidSignature = await verifyTypedData({
+        address: payload.payer,
+        ...typedData,
+        signature: parsedSignature.signature,
+      });
+
+      if (!isValidSignature) {
+        return {
+          isValid: false,
+          invalidReason: "Invalid signature",
+          payer: payload.payer,
+        };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        invalidReason: `Signature verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        payer: payload.payer,
+      };
+    }
+
+    // Commitment verification using @x402x/core_v2
+    try {
+      const chainId = parseInt(requirements.network.split(":")[1]);
+      const calculatedCommitment = calculateCommitment({
+        chainId,
+        hub: settlementExtra.settlementRouter,
+        asset: requirements.asset,
+        from: payload.payer,
+        value: requirements.maxAmountRequired,
+        validAfter: payload.validAfter || "0x0",
+        validBefore: payload.validBefore || "0xFFFFFFFFFFFFFFFF",
+        salt: settlementExtra.salt,
+        payTo: settlementExtra.payTo,
+        facilitatorFee: settlementExtra.facilitatorFee,
+        hook: settlementExtra.hook,
+        hookData: settlementExtra.hookData,
+      });
+
+      if (payload.nonce !== calculatedCommitment) {
+        return {
+          isValid: false,
+          invalidReason: "Commitment mismatch: nonce does not match calculated commitment",
+          payer: payload.payer,
+        };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        invalidReason: `Commitment verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        payer: payload.payer,
+      };
+    }
+
+    // Balance checks using viem public client
+    try {
+      // Check token balance
+      const balance = await publicClient.readContract({
+        address: requirements.asset,
+        abi: [
+          {
+            type: "function",
+            name: "balanceOf",
+            inputs: [{ name: "account", type: "address" }],
+            outputs: [{ name: "", type: "uint256" }],
+            stateMutability: "view"
+          }
+        ],
+        functionName: "balanceOf",
+        args: [payload.payer],
+      });
+
+      const totalRequired = BigInt(requirements.maxAmountRequired) + BigInt(settlementExtra.facilitatorFee);
+      if (balance < totalRequired) {
+        return {
+          isValid: false,
+          invalidReason: `Insufficient balance: have ${balance}, need ${totalRequired}`,
+          payer: payload.payer,
+        };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        invalidReason: `Balance check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        payer: payload.payer,
+      };
+    }
 
     return {
       isValid: true,
@@ -259,13 +411,75 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     payload: PaymentPayload,
     requirements: PaymentRequirements
   ): Promise<VerifyResponse> {
-    // TODO: Implement standard EIP-3009 verification
-    // This would be used for compatibility with non-SettlementRouter flows
+    // Create viem public client
+    const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
 
-    return {
-      isValid: true,
-      payer: payload.payer,
-    };
+    try {
+      // Parse signature (handle ERC-6492 if needed)
+      const parsedSignature = parseErc6492Signature(payload.signature);
+
+      // Build EIP-712 typed data for verification
+      const typedData = {
+        types: authorizationTypes,
+        primaryType: "TransferWithAuthorization",
+        domain: {
+          name: requirements.extra?.name || "USD Coin",
+          version: requirements.extra?.version || "3",
+          chainId: parseInt(requirements.network.split(":")[1]),
+          verifyingContract: requirements.asset,
+        },
+        message: {
+          from: payload.payer,
+          to: requirements.payTo,
+          value: BigInt(requirements.maxAmountRequired),
+          validAfter: BigInt(payload.validAfter || "0x0"),
+          validBefore: BigInt(payload.validBefore || "0xFFFFFFFFFFFFFFFF"),
+          nonce: payload.nonce,
+        },
+      };
+
+      // Verify signature
+      const isValidSignature = await verifyTypedData({
+        address: payload.payer,
+        ...typedData,
+        signature: parsedSignature.signature,
+      });
+
+      if (!isValidSignature) {
+        return {
+          isValid: false,
+          invalidReason: "Invalid signature",
+          payer: payload.payer,
+        };
+      }
+
+      // Check balance
+      const balance = await publicClient.readContract({
+        address: requirements.asset,
+        abi: eip3009ABI,
+        functionName: "balanceOf",
+        args: [payload.payer],
+      });
+
+      if (BigInt(balance) < BigInt(requirements.maxAmountRequired)) {
+        return {
+          isValid: false,
+          invalidReason: "Insufficient balance",
+          payer: payload.payer,
+        };
+      }
+
+      return {
+        isValid: true,
+        payer: payload.payer,
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        invalidReason: `Standard verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        payer: payload.payer,
+      };
+    }
   }
 
   /**
@@ -288,16 +502,48 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     payload: PaymentPayload,
     requirements: PaymentRequirements
   ): Promise<SettleResponse> {
-    // TODO: Implement standard EIP-3009 settlement
-    // This would be used for compatibility with non-SettlementRouter flows
+    const walletClient = createWalletClientForNetwork(requirements.network, this.config.signer, this.config.rpcUrls);
+    const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
 
-    return {
-      success: false,
-      transaction: "",
-      network: requirements.network,
-      payer: payload.payer,
-      errorReason: "Standard settlement mode not yet implemented",
-    };
+    try {
+      // Parse signature
+      const parsedSignature = parseErc6492Signature(payload.signature);
+
+      // Execute EIP-3009 transfer
+      const txHash = await walletClient.writeContract({
+        address: requirements.asset,
+        abi: eip3009ABI,
+        functionName: "transferWithAuthorization",
+        args: [
+          payload.payer,
+          requirements.payTo,
+          BigInt(requirements.maxAmountRequired),
+          BigInt(payload.validAfter || "0x0"),
+          BigInt(payload.validBefore || "0xFFFFFFFFFFFFFFFF"),
+          payload.nonce,
+          parsedSignature.signature,
+        ],
+      });
+
+      // Wait for receipt
+      const receipt = await waitForSettlementReceipt(publicClient, txHash);
+
+      return {
+        success: receipt.success,
+        transaction: txHash,
+        network: requirements.network,
+        payer: payload.payer,
+        errorReason: receipt.success ? undefined : "Transaction failed",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        transaction: "",
+        network: requirements.network,
+        payer: payload.payer,
+        errorReason: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 }
 

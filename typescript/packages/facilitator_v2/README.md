@@ -290,7 +290,6 @@ pnpm format
 
 - `@x402/core`: Official x402 v2 core types
 - `@x402/evm`: Official x402 v2 EVM utilities
-- `@x402/facilitator`: Official x402 v2 facilitator types
 - `@x402x/core_v2`: x402x core utilities (workspace)
 - `viem`: Ethereum TypeScript library
 

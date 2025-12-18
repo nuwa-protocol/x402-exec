@@ -161,4 +161,5 @@ export interface SettlementRouterParams {
   facilitatorFee: string;
   hook: Address;
   hookData: string;
+  settlementRouter: Address;
 }
