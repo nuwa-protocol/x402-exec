@@ -523,10 +523,12 @@ export async function settleWithRouter(
           networkGasPrice: {},
           nativeTokenPrice: {},
         };
+        const networkConfig = getNetworkConfig(network);
         effectiveGasLimit = BigInt(calculateEffectiveGasLimit(
           extra.facilitatorFee,
           await getGasPrice(network, fallbackGasCostConfig, dynamicGasPriceConfig),
           nativeTokenPrices?.[network] || 0,
+          networkConfig.defaultAsset.decimals,
           fallbackGasCostConfig,
         ));
         gasLimitMode = "static_fallback";
