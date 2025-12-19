@@ -44,10 +44,10 @@ describe("SimulationBasedGasEstimator", () => {
       authorization: {
         validAfter: 1000000n,
         validBefore: 2000000n,
-        nonce: "0x1234567890abcdef",
+        nonce: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       },
       signature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
-      salt: "0x1234567890abcdef1234567890abcdef",
+      salt: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       payTo: "0x2222222222222222222222222222222222222222",
       facilitatorFee: 10000n,
       hookAmount: 990000n,
@@ -112,14 +112,14 @@ describe("SimulationBasedGasEstimator", () => {
     });
 
     it("should apply max gas limit constraint", async () => {
-      const estimatedGas = 4000000n; // High estimate
+      const estimatedGas = 4500000n; // High estimate that, after safety multiplier (1.2), exceeds maxGasLimit (5000000)
       mockWalletClient.estimateGas.mockResolvedValue(estimatedGas);
 
       const result = await estimator.estimateGas(mockParams);
 
       expect(result.isValid).toBe(true);
-      expect(result.gasLimit).toBe(5000000); // maxGasLimit
-      expect(result.metadata?.rawEstimate).toBe(4000000);
+      expect(result.gasLimit).toBe(5000000); // maxGasLimit (4500000 * 1.2 = 5400000, capped at 5000000)
+      expect(result.metadata?.rawEstimate).toBe(4500000);
     });
 
     it("should handle different safety multipliers", async () => {
