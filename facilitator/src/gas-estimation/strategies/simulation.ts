@@ -28,24 +28,39 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
 
     try {
       // Prepare transaction data
-      const txData = encodeFunctionData({
-        abi: SETTLEMENT_ROUTER_ABI,
-        functionName: 'settleAndExecute',
-        args: [
-          params.token as `0x${string}`,
-          params.from as `0x${string}`,
-          params.value,
-          params.authorization.validAfter,
-          params.authorization.validBefore,
-          params.authorization.nonce as `0x${string}`,
-          params.signature as `0x${string}`,
-          params.salt as `0x${string}`,
-          params.payTo as `0x${string}`,
-          params.facilitatorFee,
-          params.hook as `0x${string}`,
-          params.hookData as `0x${string}`,
-        ],
-      });
+      let txData: `0x${string}`;
+      try {
+        txData = encodeFunctionData({
+          abi: SETTLEMENT_ROUTER_ABI,
+          functionName: 'settleAndExecute',
+          args: [
+            params.token as `0x${string}`,
+            params.from as `0x${string}`,
+            params.value,
+            params.authorization.validAfter,
+            params.authorization.validBefore,
+            params.authorization.nonce as `0x${string}`,
+            params.signature as `0x${string}`,
+            params.salt as `0x${string}`,
+            params.payTo as `0x${string}`,
+            params.facilitatorFee,
+            params.hook as `0x${string}`,
+            params.hookData as `0x${string}`,
+          ],
+        });
+      } catch (encodingError) {
+        // Handle ABI encoding errors separately
+        const duration = Date.now() - startTime;
+        return {
+          gasLimit: 0,
+          isValid: false,
+          errorReason: `Transaction encoding failed: ${encodingError instanceof Error ? encodingError.message : 'Invalid parameters'}`,
+          strategyUsed: 'rpc_simulation',
+          metadata: {
+            hookType: getHookTypeInfo(params.network, params.hook).hookType,
+          },
+        };
+      }
 
       // Call estimateGas with timeout
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -87,7 +102,13 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorReason = parseEstimateGasError(error);
+      let errorReason: string;
+      try {
+        errorReason = parseEstimateGasError(error);
+      } catch (parseError) {
+        // If error parsing itself fails, use fallback message
+        errorReason = 'Gas estimation failed - unable to determine cause';
+      }
 
       return {
         gasLimit: 0,
