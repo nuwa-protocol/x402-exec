@@ -19,7 +19,7 @@ export const MOCK_VALUES = {
   usdcBalance: "1000000000", // 1000 USDC (6 decimals)
   ethBalance: "1000000000000000000", // 1 ETH
   paymentAmount: "1000000", // 1 USDC
-  facilitatorFee: "100000", // 0.1 USDC
+  facilitatorFee: "0x186A0", // 0.1 USDC in hex (100000)
   salt: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
   nonce: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
   signature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -30,7 +30,7 @@ export const MOCK_VALUES = {
 
 // Mock transaction receipt
 export const mockTransactionReceipt = {
-  success: true,
+  status: "success" as const,
   blockNumber: 12345678n,
   gasUsed: 250000n,
   effectiveGasPrice: 1000000000n,
@@ -130,17 +130,13 @@ export const mockParseErc6492Signature = vi.fn((signature: string) => ({
   data: "0x",
 }));
 
-// Setup viem mocks
+// Setup viem mocks with signature verification
 export function setupViemMocks() {
-  vi.mock("viem", async () => {
-    const actual = await vi.importActual("viem");
-    return {
-      ...actual,
-      createPublicClient: mockCreatePublicClient,
-      createWalletClient: mockCreateWalletClient,
-      parseErc6492Signature: mockParseErc6492Signature,
-    };
-  });
+  // Note: viem.mock is already called at module level in individual test files
+  // This function now just resets mock states
+  mockCreatePublicClient.mockClear();
+  mockCreateWalletClient.mockClear();
+  mockParseErc6492Signature.mockClear();
 }
 
 // Reset all mocks
