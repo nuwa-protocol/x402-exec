@@ -70,8 +70,8 @@ describe("routes/settle", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.endpoint).toBe("/settle");
-      expect(response.body.supportedModes).toContain("standard");
-      expect(response.body.supportedModes).toContain("settlementRouter");
+      expect(response.body.supportedModes).toContain("v1_standard");
+      expect(response.body.supportedModes).toContain("v1_settlementRouter");
     });
   });
 
