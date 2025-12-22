@@ -33,7 +33,7 @@ Or clone and run from source (see [Development](#development) section below).
 
 ### 🔄 Version Support
 
-### Dual-Stack Mode (v1 + v2)
+#### Dual-Stack Mode (v1 + v2)
 
 The facilitator supports both x402 v1 and v2 standards simultaneously, enabling smooth migration and backward compatibility.
 
@@ -83,7 +83,7 @@ FACILITATOR_V2_STRICT_MODE=false  # Allow both v1 and v2 formats
 
 #### API Examples by Version
 
-##### v1 Examples (Current)
+##### v1 Examples
 
 ```bash
 # Get supported v1 networks
@@ -251,7 +251,7 @@ curl -X POST http://localhost:3000/settle \
   }'
 ```
 
-## 🔄 Dual-Mode Settlement Support
+### 🔄 Dual-Mode Settlement Support
 
 - **Standard Mode**: Direct ERC-3009 token transfers
 - **SettlementRouter Mode**: Extended settlement with Hook execution
@@ -1630,7 +1630,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
    BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
    X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0xba9980fb08771e2fd10c17450f52d39bcb9ed576
 
-   # v2-specific (new) - optional, uses defaults from @x402/core_v2
+   # v2-specific (new) - optional, uses defaults from @x402x/core_v2
    # FACILITATOR_V2_ROUTERS_eip155:84532=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
    ```
 
