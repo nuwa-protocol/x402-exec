@@ -1,116 +1,116 @@
 # E2E Mock Contract Tests for v2 Stack
 
-这个目录包含了针对 x402 v2 技术栈的模拟端到端合约测试，实现了 GitHub Issue #90 的要求。
+This directory contains mock end-to-end contract tests for the x402 v2 technology stack, implementing the requirements from GitHub Issue #90.
 
-## Issue #90 实现状态
+## Issue #90 Implementation Status
 
-### ✅ 已完全实现的功能
+### ✅ Fully Implemented Features
 
-1. **PAYMENT-* headers 验证** ✅
-   - PAYMENT-REQUIRED / PAYMENT-SIGNATURE / PAYMENT-RESPONSE 头部处理
-   - 完整的支付流程验证（客户端 -> 服务端 -> facilitator）
-   - 在 `mock-contract.test.ts` 中实现了完整的 HTTP 服务器模拟测试
+1. **PAYMENT-* headers validation** ✅
+   - PAYMENT-REQUIRED / PAYMENT-SIGNATURE / PAYMENT-RESPONSE header handling
+   - Complete payment flow validation (client -> server -> facilitator)
+   - Full HTTP server simulation tests implemented in `mock-contract.test.ts`
 
-2. **Extensions echo 行为** ✅
-   - 自定义扩展数据传递和回显
-   - 扩展数据的正确处理
-   - 在 `/api/extensions-echo` 端点中测试了扩展数据的完整传递
+2. **Extensions echo behavior** ✅
+   - Custom extension data transmission and echo
+   - Proper extension data handling
+   - Complete extension data transmission tested at `/api/extensions-echo` endpoint
 
-3. **eip155:* wildcard 路径支持** ✅
-   - 多网络支持的通配符路径处理
-   - 网络地址解析和验证
-   - 支持测试 networks: Base Sepolia (84532), Base Mainnet (8453), Ethereum (1)
+3. **eip155:* wildcard path support** ✅
+   - Multi-network wildcard path support
+   - Network address resolution and validation
+   - Test networks supported: Base Sepolia (84532), Base Mainnet (8453), Ethereum (1)
 
-4. **Router settlement 参数传播** ✅
-   - SettlementRouter 参数的正确传播
-   - Hook data 和 facilitator fee 的处理
-   - Commitment-based nonce 的验证
-   - 在 `mock-contract-simple.test.ts` 中实现了简化的组件集成测试
+4. **Router settlement parameter propagation** ✅
+   - Correct SettlementRouter parameter propagation
+   - Hook data and facilitator fee handling
+   - Commitment-based nonce validation
+   - Simplified component integration tests implemented in `mock-contract-simple.test.ts`
 
-### 📋 测试实现情况
+### 📋 Test Implementation Status
 
-- **mock-contract.test.ts**: 完整的 HTTP 服务器模拟测试，覆盖所有 Issue #90 要求
-- **mock-contract-simple.test.ts**: 简化的组件集成测试，专注于核心功能验证
-- **测试覆盖**: 100% 覆盖 Issue #90 的所有功能需求
+- **mock-contract.test.ts**: Complete HTTP server simulation tests covering all Issue #90 requirements
+- **mock-contract-simple.test.ts**: Simplified component integration tests focused on core functionality validation
+- **Test coverage**: 100% coverage of all Issue #90 functional requirements
 
-### ⚠️ 当前状态
+### ⚠️ Current Status
 
-虽然测试实现已完整覆盖 Issue #90 的所有要求，但由于 E2E 测试环境的复杂性和 mock 配置挑战，部分 E2E 测试当前存在配置问题。不过，核心功能测试（78 个测试）全部通过，证明 Issue #90 的功能需求已正确实现。
+Although the test implementation completely covers all Issue #90 requirements, some E2E tests currently have configuration issues due to the complexity of the E2E test environment and mock configuration challenges. However, all core functionality tests (78 tests) pass, proving that the Issue #90 functional requirements are correctly implemented.
 
-### 📁 测试文件
+### 📁 Test Files
 
-- `mock-contract.test.ts` - 完整的 HTTP 服务器模拟测试
-- `mock-contract-simple.test.ts` - 简化的组件集成测试
-- `README.md` - 本文档
+- `mock-contract.test.ts` - Complete HTTP server simulation tests
+- `mock-contract-simple.test.ts` - Simplified component integration tests
+- `README.md` - This documentation
 
-### 🔧 技术架构
+### 🔧 Technical Architecture
 
-测试使用了以下组件的组合：
+Tests use the following combination of components:
 
-1. **客户端**: `@x402x/fetch_v2` - ExactEvmSchemeWithRouterSettlement
-2. **服务端**: `@x402x/hono_v2` - paymentMiddleware
+1. **Client**: `@x402x/fetch_v2` - ExactEvmSchemeWithRouterSettlement
+2. **Server**: `@x402x/hono_v2` - paymentMiddleware
 3. **Facilitator**: `@x402x/facilitator_v2` - RouterSettlementFacilitator
-4. **Mock 组件**: viem, 区块链组件模拟
+4. **Mock Components**: viem, blockchain component mocks
 
-### 🏃‍♂️ 运行测试
+### 🏃‍♂️ Running Tests
 
 ```bash
-# 运行所有 E2E 测试
+# Run all E2E tests
 pnpm test test/e2e/
 
-# 运行特定的 E2E 测试文件
+# Run specific E2E test files
 pnpm test test/e2e/mock-contract-simple.test.ts
 pnpm test test/e2e/mock-contract.test.ts
 
-# 运行所有测试（包括现有的单元测试）
+# Run all tests (including existing unit tests)
 pnpm test
 ```
 
-### 📊 验证内容
+### 📊 Validation Content
 
-测试验证了以下关键行为：
+Tests validate the following key behaviors:
 
-1. **完整的支付流程**
-   - 客户端创建支付 payload
-   - 服务端验证支付
-   - Facilitator 执行结算
+1. **Complete Payment Flow**
+   - Client creates payment payload
+   - Server validates payment
+   - Facilitator executes settlement
 
-2. **Settlement Router 集成**
-   - Router 地址验证
-   - Hook 执行
-   - Facilitator fee 处理
+2. **Settlement Router Integration**
+   - Router address validation
+   - Hook execution
+   - Facilitator fee handling
 
-3. **多网络支持**
+3. **Multi-Network Support**
    - eip155:84532 (Base Sepolia)
    - eip155:8453 (Base Mainnet)
    - eip155:1 (Ethereum Mainnet)
-   - 其他 EVM 网络
+   - Other EVM networks
 
-4. **错误处理**
-   - 无效签名处理
-   - 网络配置错误
-   - SettlementRouter 地址验证
+4. **Error Handling**
+   - Invalid signature handling
+   - Network configuration errors
+   - SettlementRouter address validation
 
-### 🎯 CI/CD 兼容性
+### 🎯 CI/CD Compatibility
 
-- ✅ 无需真实区块链 RPC
-- ✅ 使用 mock 的 viem 客户端
-- ✅ 确定性的测试结果
-- ✅ 快速执行（< 30 秒）
-- ✅ 无外部依赖
+- ✅ No real blockchain RPC required
+- ✅ Uses mocked viem clients
+- ✅ Deterministic test results
+- ✅ Fast execution (< 30 seconds)
+- ✅ No external dependencies
 
-### 📋 验证清单
+### 📋 Verification Checklist
 
-- [x] PAYMENT-REQUIRED header 处理
-- [x] PAYMENT-SIGNATURE header 验证
-- [x] PAYMENT-RESPONSE header 生成
-- [x] Extensions 数据 echo
-- [x] eip155:* wildcard 路径
-- [x] Router settlement 参数传播
-- [x] 多网络支持
-- [x] 错误处理和边界情况
-- [x] CI 友好的 mock 环境
+- [x] PAYMENT-REQUIRED header handling
+- [x] PAYMENT-SIGNATURE header validation
+- [x] PAYMENT-RESPONSE header generation
+- [x] Extensions data echo
+- [x] eip155:* wildcard paths
+- [x] Router settlement parameter propagation
+- [x] Multi-network support
+- [x] Error handling and edge cases
+- [x] CI-friendly mock environment
 
-## 总结
+## Summary
 
-Issue #90 的要求已完全实现。测试套件提供了全面的端到端验证，确保 v2 技术栈的各个组件能够正确协作，同时保持 CI/CD 环境的友好性。
+Issue #90 requirements are fully implemented. The test suite provides comprehensive end-to-end validation, ensuring that all components of the v2 technology stack can work together correctly while maintaining CI/CD environment friendliness.
