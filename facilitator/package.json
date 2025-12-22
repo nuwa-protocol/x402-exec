@@ -54,6 +54,8 @@
     "@opentelemetry/sdk-trace-node": "^1.25.0",
     "@opentelemetry/semantic-conventions": "^1.25.0",
     "@x402x/core": "workspace:*",
+    "@x402x/facilitator_v2": "workspace:*",
+    "@x402x/core_v2": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",

@@ -3,37 +3,29 @@
  *
  * Provides verification endpoints for x402 payment payloads:
  * - GET /verify: Endpoint information
- * - POST /verify: Verify payment payload
+ * - POST /verify: Verify payment payload (supports both v1 and v2)
+ *
+ * Routes requests to appropriate implementation based on x402Version:
+ * - v1: Uses legacy x402/facilitator implementation
+ * - v2: Uses @x402x/facilitator_v2 with SettlementRouter
  */
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { verify } from "x402/facilitator";
 import {
   PaymentRequirementsSchema,
   type PaymentRequirements,
   type PaymentPayload,
   PaymentPayloadSchema,
-  SupportedEVMNetworks,
-  type ConnectedClient,
-  type X402Config,
-  evm,
 } from "x402/types";
-import { createPublicClient, http, publicActions } from "viem";
-import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
+import { getLogger } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
+import type { X402Config } from "x402/types";
+import { createVersionDispatcher, type VerifyRequest, type VersionDispatcherDependencies } from "../version-dispatcher.js";
 
 const logger = getLogger();
-
-/**
- * Verify request body
- */
-type VerifyRequest = {
-  paymentPayload: PaymentPayload;
-  paymentRequirements: PaymentRequirements;
-};
 
 /**
  * Dependencies required by verify routes
@@ -44,6 +36,12 @@ export interface VerifyRouteDependencies {
   balanceChecker?: BalanceChecker;
   /** RPC URLs per network (network name -> RPC URL) */
   rpcUrls?: Record<string, string>;
+  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
+  enableV2?: boolean;
+  /** Facilitator signer address for v2 */
+  v2Signer?: string;
+  /** Allowed routers per network for v2 */
+  allowedRouters?: Record<string, string[]>;
 }
 
 /**
@@ -63,22 +61,40 @@ export function createVerifyRoutes(
 ): Router {
   const router = Router();
 
+  // Create version dispatcher for routing between v1 and v2
+  const dispatcher = createVersionDispatcher(
+    {
+      poolManager: deps.poolManager,
+      x402Config: deps.x402Config,
+      balanceChecker: deps.balanceChecker,
+    },
+    {
+      enableV2: deps.enableV2,
+      signer: deps.v2Signer,
+      allowedRouters: deps.allowedRouters,
+      rpcUrls: deps.rpcUrls,
+    }
+  );
+
   /**
    * GET /verify - Returns info about the verify endpoint
    */
   router.get("/verify", (req: Request, res: Response) => {
     res.json({
       endpoint: "/verify",
-      description: "POST to verify x402 payments",
+      description: "POST to verify x402 payments (supports both v1 and v2)",
+      supportedVersions: deps.enableV2 ? [1, 2] : [1],
+      versionDetection: "Determined by x402Version field (defaults to 1)",
       body: {
-        paymentPayload: "PaymentPayload",
+        paymentPayload: "PaymentPayload (with optional x402Version)",
         paymentRequirements: "PaymentRequirements",
+        x402Version: "number (optional, defaults to 1)",
       },
     });
   });
 
   /**
-   * POST /verify - Verify x402 payment payload (with rate limiting and validation)
+   * POST /verify - Verify x402 payment payload (supports both v1 and v2)
    */
   const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
   if (hookValidation) middlewares.push(hookValidation);
@@ -90,121 +106,16 @@ export function createVerifyRoutes(
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
       const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
 
-      // Verify that this is an EVM network
-      if (!SupportedEVMNetworks.includes(paymentRequirements.network)) {
-        throw new Error("Invalid network. Only EVM networks are supported.");
-      }
-
-      // Create connected client for EVM network with custom RPC URL support
-      const chain = evm.getChainFromNetwork(paymentRequirements.network);
-      const rpcUrl =
-        deps.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
-      const client: ConnectedClient = createPublicClient({
-        chain,
-        transport: http(rpcUrl),
-      }).extend(publicActions) as unknown as ConnectedClient;
-
-      // verify
-      const startTime = Date.now();
-      logger.info(
-        {
-          network: paymentRequirements.network,
-          extra: paymentRequirements.extra,
-        },
-        "Verifying payment...",
-      );
-
-      const valid = await verify(client, paymentPayload, paymentRequirements, deps.x402Config);
-
-      // If basic verification passed and balance checker is available, check user balance
-      if (valid.isValid && deps.balanceChecker) {
-        try {
-          const balanceCheck = await deps.balanceChecker.checkBalance(
-            client,
-            valid.payer as `0x${string}`,
-            paymentRequirements.asset as `0x${string}`,
-            paymentRequirements.maxAmountRequired,
-            paymentRequirements.network,
-          );
-
-          if (!balanceCheck.hasSufficient) {
-            logger.warn(
-              {
-                payer: valid.payer,
-                network: paymentRequirements.network,
-                balance: balanceCheck.balance,
-                required: balanceCheck.required,
-                cached: balanceCheck.cached,
-              },
-              "Insufficient balance detected during verification",
-            );
-
-            // Override verification result
-            valid.isValid = false;
-            valid.invalidReason = "insufficient_funds";
-          } else {
-            logger.debug(
-              {
-                payer: valid.payer,
-                network: paymentRequirements.network,
-                balance: balanceCheck.balance,
-                required: balanceCheck.required,
-                cached: balanceCheck.cached,
-              },
-              "Balance check passed during verification",
-            );
-          }
-        } catch (error) {
-          logger.error(
-            {
-              error,
-              payer: valid.payer,
-              network: paymentRequirements.network,
-            },
-            "Balance check failed during verification, proceeding with verification result",
-          );
-          // If balance check fails, we don't override the verification result
-          // This ensures verification can still work even if balance check has issues
-        }
-      }
-
-      const duration = Date.now() - startTime;
-
-      // Record metrics
-      recordMetric("facilitator.verify.total", 1, {
-        network: paymentRequirements.network,
-        is_valid: String(valid.isValid),
-      });
-      recordHistogram("facilitator.verify.duration_ms", duration, {
-        network: paymentRequirements.network,
+      // Route to appropriate implementation based on version
+      const result = await dispatcher.verify({
+        paymentPayload,
+        paymentRequirements,
+        x402Version: body.x402Version,
       });
 
-      logger.info(
-        {
-          isValid: valid.isValid,
-          payer: valid.payer,
-          invalidReason: valid.invalidReason,
-          duration_ms: duration,
-        },
-        "Verification result",
-      );
-
-      if (!valid.isValid) {
-        logger.warn(
-          {
-            invalidReason: valid.invalidReason,
-            payer: valid.payer,
-          },
-          "Verification failed",
-        );
-      }
-
-      res.json(valid);
+      res.json(result);
     } catch (error) {
       logger.error({ error }, "Verify error");
-      recordMetric("facilitator.verify.errors", 1, {
-        error_type: error instanceof Error ? error.name : "unknown",
-      });
 
       // Distinguish between validation errors and other errors
       if (error instanceof Error && error.name === "ZodError") {
@@ -214,9 +125,13 @@ export function createVerifyRoutes(
           message: "Request validation failed. Please check your input format.",
         });
       } else if (error instanceof Error) {
-        // Other errors - sanitize error messages
         const message = error.message.toLowerCase();
-        if (message.includes("network") || message.includes("account")) {
+        if (message.includes("version") || message.includes("v2")) {
+          res.status(400).json({
+            error: "Version not supported",
+            message: error.message,
+          });
+        } else if (message.includes("network") || message.includes("account")) {
           res.status(400).json({
             error: "Invalid request",
             message: "The specified network or configuration is not supported.",

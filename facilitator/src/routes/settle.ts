@@ -3,41 +3,33 @@
  *
  * Provides settlement endpoints for x402 payments:
  * - GET /settle: Endpoint information
- * - POST /settle: Settle payment (auto-detects standard or SettlementRouter mode)
+ * - POST /settle: Settle payment (supports both v1 and v2)
+ *
+ * Routes requests to appropriate implementation based on x402Version:
+ * - v1: Uses legacy x402/facilitator implementation with SettlementRouter support
+ * - v2: Uses @x402x/facilitator_v2 with SettlementRouter
  */
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { settle } from "x402/facilitator";
 import {
   PaymentRequirementsSchema,
   type PaymentRequirements,
   type PaymentPayload,
   PaymentPayloadSchema,
-  SupportedEVMNetworks,
-  type Signer,
   type X402Config,
 } from "x402/types";
-import { isSettlementMode, settleWithRouter } from "../settlement.js";
-import { getLogger, traced, recordMetric, recordHistogram } from "../telemetry.js";
+import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
-import { isStandardX402Allowed } from "../config.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { GasEstimationConfig } from "../gas-estimation/index.js";
 import { DuplicatePayerError, QueueOverloadError } from "../errors.js";
+import { createVersionDispatcher, type SettleRequest, type VersionDispatcherDependencies } from "../version-dispatcher.js";
 
 const logger = getLogger();
-
-/**
- * Settle request body
- */
-type SettleRequest = {
-  paymentPayload: PaymentPayload;
-  paymentRequirements: PaymentRequirements;
-};
 
 /**
  * Dependencies required by settle routes
@@ -50,6 +42,14 @@ export interface SettleRouteDependencies {
   dynamicGasPrice?: DynamicGasPriceConfig; // Dynamic gas price config for gas limit calculation
   balanceChecker?: BalanceChecker;
   gasEstimation?: GasEstimationConfig; // Gas estimation config for pre-validation
+  /** RPC URLs per network (network name -> RPC URL) */
+  rpcUrls?: Record<string, string>;
+  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
+  enableV2?: boolean;
+  /** Facilitator signer address for v2 */
+  v2Signer?: string;
+  /** Allowed routers per network for v2 */
+  allowedRouters?: Record<string, string[]>;
 }
 
 /**
@@ -69,29 +69,44 @@ export function createSettleRoutes(
 ): Router {
   const router = Router();
 
+  // Create version dispatcher for routing between v1 and v2
+  const dispatcher = createVersionDispatcher(
+    {
+      poolManager: deps.poolManager,
+      x402Config: deps.x402Config,
+      balanceChecker: deps.balanceChecker,
+      allowedSettlementRouters: deps.allowedSettlementRouters,
+    },
+    {
+      enableV2: deps.enableV2,
+      signer: deps.v2Signer,
+      allowedRouters: deps.allowedRouters,
+      rpcUrls: deps.rpcUrls,
+    }
+  );
+
   /**
    * GET /settle - Returns info about the settle endpoint
    */
   router.get("/settle", (req: Request, res: Response) => {
     res.json({
       endpoint: "/settle",
-      description: "POST to settle x402 payments",
-      supportedModes: ["standard", "settlementRouter"],
+      description: "POST to settle x402 payments (supports both v1 and v2)",
+      supportedVersions: deps.enableV2 ? [1, 2] : [1],
+      versionDetection: "Determined by x402Version field (defaults to 1)",
+      supportedModes: deps.enableV2
+        ? ["v1_standard", "v1_settlementRouter", "v2_router"]
+        : ["v1_standard", "v1_settlementRouter"],
       body: {
-        paymentPayload: "PaymentPayload",
-        paymentRequirements: "PaymentRequirements (with optional extra.settlementRouter)",
+        paymentPayload: "PaymentPayload (with optional x402Version)",
+        paymentRequirements: "PaymentRequirements",
+        x402Version: "number (optional, defaults to 1)",
       },
     });
   });
 
   /**
-   * POST /settle - Settle x402 payment using account pool (with rate limiting)
-   *
-   * This endpoint supports two settlement modes:
-   * 1. Standard mode: Direct token transfer using ERC-3009
-   * 2. Settlement Router mode: Token transfer + Hook execution via SettlementRouter
-   *
-   * The mode is automatically detected based on the presence of extra.settlementRouter
+   * POST /settle - Settle x402 payment (supports both v1 and v2)
    */
   const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
   if (hookValidation) middlewares.push(hookValidation);
@@ -103,218 +118,12 @@ export function createSettleRoutes(
       const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
       const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
 
-      // Extract payer address from payment payload for duplicate detection
-      // For EVM exact scheme: paymentPayload.payload.authorization.from
-      let payerAddress: string | undefined;
-      if (
-        paymentPayload.payload &&
-        typeof paymentPayload.payload === "object" &&
-        "authorization" in paymentPayload.payload &&
-        paymentPayload.payload.authorization &&
-        typeof paymentPayload.payload.authorization === "object" &&
-        "from" in paymentPayload.payload.authorization
-      ) {
-        payerAddress = (paymentPayload.payload.authorization as { from: string }).from;
-      }
-
-      // Get the appropriate account pool
-      let accountPool = deps.poolManager.getPool(paymentRequirements.network);
-
-      if (!accountPool) {
-        throw new Error(`No account pool available for network: ${paymentRequirements.network}`);
-      }
-
-      const startTime = Date.now();
-
-      // Execute settlement in the account pool's queue
-      // This ensures serial execution per account (no nonce conflicts)
-      // Pass payer address for duplicate detection
-      const result = await accountPool.execute(async (signer: Signer) => {
-        // Check if this is a Settlement Router payment
-        if (isSettlementMode(paymentRequirements)) {
-          logger.info(
-            {
-              router: paymentRequirements.extra?.settlementRouter,
-              hook: paymentRequirements.extra?.hook,
-              facilitatorFee: paymentRequirements.extra?.facilitatorFee,
-              salt: paymentRequirements.extra?.salt,
-            },
-            "Settlement Router mode detected",
-          );
-
-          // Ensure this is an EVM network (Settlement Router is EVM-only)
-          if (!SupportedEVMNetworks.includes(paymentRequirements.network)) {
-            throw new Error("Settlement Router mode is only supported on EVM networks");
-          }
-
-          try {
-            // Settle using SettlementRouter with whitelist validation
-            const response = await traced(
-              "settle.settlementRouter",
-              async () =>
-                settleWithRouter(
-                  signer,
-                  paymentPayload,
-                  paymentRequirements,
-                  deps.allowedSettlementRouters,
-                  deps.gasCost, // Pass gas cost config for dynamic gas limit
-                  deps.dynamicGasPrice, // Pass dynamic gas price config
-                  deps.gasCost?.nativeTokenPrice, // Pass native token prices for gas metrics
-                  deps.balanceChecker, // Pass balance checker for defensive checks
-                  deps.x402Config, // Pass x402 config for verification
-                  deps.gasEstimation, // Pass gas estimation config for pre-validation
-                ),
-              {
-                network: paymentRequirements.network,
-                router: paymentRequirements.extra?.settlementRouter || "",
-              },
-            );
-
-            const duration = Date.now() - startTime;
-
-            // Record metrics
-            recordMetric("facilitator.settle.total", 1, {
-              network: paymentRequirements.network,
-              mode: "settlementRouter",
-              success: String(response.success),
-            });
-            recordHistogram("facilitator.settle.duration_ms", duration, {
-              network: paymentRequirements.network,
-              mode: "settlementRouter",
-            });
-
-            // Record gas metrics if available
-            if (response.success && response.gasMetrics) {
-              const metrics = response.gasMetrics;
-
-              recordHistogram("facilitator.settlement.gas_used", parseInt(metrics.gasUsed), {
-                network: paymentRequirements.network,
-                hook: metrics.hook,
-              });
-
-              recordHistogram(
-                "facilitator.settlement.gas_cost_usd",
-                parseFloat(metrics.actualGasCostUSD),
-                {
-                  network: paymentRequirements.network,
-                  hook: metrics.hook,
-                },
-              );
-
-              recordHistogram(
-                "facilitator.settlement.facilitator_fee_usd",
-                parseFloat(metrics.facilitatorFeeUSD),
-                {
-                  network: paymentRequirements.network,
-                  hook: metrics.hook,
-                },
-              );
-
-              recordHistogram("facilitator.settlement.profit_usd", parseFloat(metrics.profitUSD), {
-                network: paymentRequirements.network,
-                hook: metrics.hook,
-              });
-
-              recordMetric("facilitator.settlement.profitable", metrics.profitable ? 1 : 0, {
-                network: paymentRequirements.network,
-                hook: metrics.hook,
-              });
-            }
-
-            logger.info(
-              {
-                transaction: response.transaction,
-                success: response.success,
-                payer: response.payer,
-                duration_ms: duration,
-              },
-              "SettlementRouter settlement successful",
-            );
-
-            // Return standard SettleResponse without gas metrics (internal use only)
-            return {
-              success: response.success,
-              transaction: response.transaction,
-              network: response.network,
-              payer: response.payer,
-              errorReason: response.errorReason,
-            };
-          } catch (error) {
-            const duration = Date.now() - startTime;
-
-            logger.error({ error, duration_ms: duration }, "Settlement failed");
-            recordMetric("facilitator.settle.errors", 1, {
-              network: paymentRequirements.network,
-              mode: "settlementRouter",
-              error_type: error instanceof Error ? error.name : "unknown",
-            });
-            throw error;
-          }
-        } else {
-          logger.info(
-            {
-              network: paymentRequirements.network,
-              asset: paymentRequirements.asset,
-              maxAmountRequired: paymentRequirements.maxAmountRequired,
-            },
-            "Standard settlement mode",
-          );
-
-          // Check if standard x402 is allowed on this network
-          if (!isStandardX402Allowed(paymentRequirements.network)) {
-            throw new Error(
-              "Standard x402 settlement is not supported on mainnet. " +
-                "Please use SettlementRouter (x402x) mode with facilitatorFee for security.",
-            );
-          }
-
-          try {
-            // Settle using standard x402 flow
-            const response = await traced(
-              "settle.standard",
-              async () => settle(signer, paymentPayload, paymentRequirements, deps.x402Config),
-              {
-                network: paymentRequirements.network,
-              },
-            );
-
-            const duration = Date.now() - startTime;
-
-            // Record metrics
-            recordMetric("facilitator.settle.total", 1, {
-              network: paymentRequirements.network,
-              mode: "standard",
-              success: String(response.success),
-            });
-            recordHistogram("facilitator.settle.duration_ms", duration, {
-              network: paymentRequirements.network,
-              mode: "standard",
-            });
-
-            logger.info(
-              {
-                transaction: response.transaction,
-                success: response.success,
-                payer: response.payer,
-                duration_ms: duration,
-              },
-              "Standard settlement successful",
-            );
-
-            return response;
-          } catch (error) {
-            const duration = Date.now() - startTime;
-
-            logger.error({ error, duration_ms: duration }, "Standard settlement failed");
-            recordMetric("facilitator.settle.errors", 1, {
-              network: paymentRequirements.network,
-              mode: "standard",
-              error_type: error instanceof Error ? error.name : "unknown",
-            });
-            throw error;
-          }
-        }
-      }, payerAddress);
+      // Route to appropriate implementation based on version
+      const result = await dispatcher.settle({
+        paymentPayload,
+        paymentRequirements,
+        x402Version: body.x402Version,
+      });
 
       res.json(result);
     } catch (error) {
@@ -348,9 +157,13 @@ export function createSettleRoutes(
           message: "Request validation failed. Please check your input format.",
         });
       } else if (error instanceof Error) {
-        // Other errors - sanitize error messages
         const message = error.message.toLowerCase();
-        if (message.includes("network")) {
+        if (message.includes("version") || message.includes("v2")) {
+          res.status(400).json({
+            error: "Version not supported",
+            message: error.message,
+          });
+        } else if (message.includes("network")) {
           res.status(400).json({
             error: "Invalid network",
             message: "The specified network is not supported.",

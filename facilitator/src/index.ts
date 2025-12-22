@@ -185,6 +185,11 @@ async function main() {
         tokenPrice: config.tokenPrice,
         feeClaim: config.feeClaim,
         gasEstimation: config.gasEstimation,
+        v2: config.v2,
+        rpcUrls: config.dynamicGasPrice.rpcUrls,
+        enableV2: config.v2.enabled,
+        v2Signer: config.v2.signer,
+        allowedRouters: config.v2.allowedRouters,
       },
       requestBodyLimit: config.server.requestBodyLimit,
       rateLimitConfig: config.rateLimit,
@@ -203,6 +208,7 @@ async function main() {
             request_body_limit: config.server.requestBodyLimit,
             standard_settlement: true,
             settlement_router: true,
+            v2_enabled: config.v2.enabled,
             security_whitelist: true,
             graceful_shutdown: true,
           },
@@ -220,6 +226,7 @@ async function main() {
       logger.info(`  - Gas price strategy: ${config.dynamicGasPrice.strategy}`);
       logger.info("  - Standard x402 settlement: ✓");
       logger.info("  - SettlementRouter support: ✓");
+      logger.info(`  - x402 v2 support: ${config.v2.enabled ? "✓" : "✗"}`);
       logger.info("  - Security whitelist: ✓");
       logger.info("  - Graceful shutdown: ✓");
       logger.info("");
@@ -236,8 +243,8 @@ async function main() {
       logger.info("  GET  /health     - Health check (liveness probe)");
       logger.info("  GET  /ready      - Readiness check (with account pool status)");
       logger.info("  GET  /supported  - List supported payment kinds");
-      logger.info("  POST /verify     - Verify payment payload");
-      logger.info("  POST /settle     - Settle payment (auto-detects mode)");
+      logger.info(`  POST /verify     - Verify payment payload (supports v1${config.v2.enabled ? " and v2" : ""})`);
+      logger.info(`  POST /settle     - Settle payment (supports v1${config.v2.enabled ? " and v2" : ""})`);
     });
 
     // Register server for graceful shutdown

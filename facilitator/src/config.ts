@@ -76,6 +76,18 @@ export interface FeeClaimConfig {
 }
 
 /**
+ * Version 2 configuration
+ */
+export interface V2Config {
+  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
+  enabled: boolean;
+  /** Facilitator signer address for v2 */
+  signer?: string;
+  /** Allowed routers per network for v2 (CAIP-2 network IDs) */
+  allowedRouters?: Record<string, string[]>;
+}
+
+/**
  * Application configuration
  */
 export interface AppConfig {
@@ -92,6 +104,7 @@ export interface AppConfig {
   tokenPrice: TokenPriceConfig;
   feeClaim: FeeClaimConfig;
   gasEstimation: GasEstimationConfig;
+  v2: V2Config;
 }
 
 /**
@@ -564,6 +577,44 @@ function parseGasEstimationConfig(): GasEstimationConfig {
  *
  * @returns Complete application configuration object
  */
+/**
+ * Parse v2 configuration from environment variables
+ *
+ * @returns V2 configuration object
+ */
+function parseV2Config(): V2Config {
+  const enabled = process.env.FACILITATOR_ENABLE_V2 === "true";
+
+  if (!enabled) {
+    return { enabled: false };
+  }
+
+  // Parse v2 signer (required when v2 is enabled)
+  const signer = process.env.FACILITATOR_V2_SIGNER;
+  if (!signer) {
+    throw new Error("FACILITATOR_V2_SIGNER is required when FACILITATOR_ENABLE_V2=true");
+  }
+
+  // Parse v2 allowed routers (optional)
+  let allowedRouters: Record<string, string[]> | undefined;
+  if (process.env.FACILITATOR_V2_ALLOWED_ROUTERS) {
+    try {
+      allowedRouters = JSON.parse(process.env.FACILITATOR_V2_ALLOWED_ROUTERS);
+      if (typeof allowedRouters !== "object" || allowedRouters === null) {
+        throw new Error("FACILITATOR_V2_ALLOWED_ROUTERS must be a valid JSON object");
+      }
+    } catch (error) {
+      throw new Error(`Invalid FACILITATOR_V2_ALLOWED_ROUTERS JSON: ${error}`);
+    }
+  }
+
+  return {
+    enabled: true,
+    signer,
+    allowedRouters,
+  };
+}
+
 export async function loadConfig(): Promise<AppConfig> {
   return {
     cache: parseCacheConfig(),
@@ -579,5 +630,6 @@ export async function loadConfig(): Promise<AppConfig> {
     tokenPrice: parseTokenPriceConfig(),
     feeClaim: parseFeeClaimConfig(),
     gasEstimation: parseGasEstimationConfig(),
+    v2: parseV2Config(),
   };
 }
