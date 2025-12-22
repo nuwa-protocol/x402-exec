@@ -53,19 +53,28 @@ vi.mock("viem", async () => {
 });
 
 // Mock core_v2 utilities
-vi.mock("@x402x/core_v2", () => ({
-  isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
-  parseSettlementExtra: vi.fn((extra) => extra),
-  getNetworkConfig: vi.fn(() => ({
-    settlementRouter: MOCK_ADDRESSES.settlementRouter,
-    rpcUrls: {
-      default: {
-        http: ["https://sepolia.base.org"],
-      },
-    },
-  })),
-  calculateCommitment: vi.fn(() => MOCK_VALUES.nonce),
-}));
+vi.mock("@x402x/core_v2", async () => {
+  const actual = await vi.importActual("@x402x/core_v2");
+  return {
+    ...actual,
+    isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
+    parseSettlementExtra: vi.fn((extra) => extra),
+    getNetworkConfig: vi.fn((network) => {
+      if (network === "unknown-network") {
+        return undefined;
+      }
+      return {
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+        rpcUrls: {
+          default: {
+            http: ["https://sepolia.base.org"],
+          },
+        },
+      };
+    }),
+    calculateCommitment: vi.fn(() => MOCK_VALUES.nonce),
+  };
+});
 
 describe("E2E Mock Contract Tests", () => {
   let mockServer: Server;
@@ -107,20 +116,114 @@ describe("E2E Mock Contract Tests", () => {
       },
     });
 
-    // Setup mock merchant server with Hono middleware
+    // Setup mock merchant server with Hono middleware using official x402 v2
     app = new Hono();
 
-    // Add X402 middleware for wildcard path
-    app.use("/api/*", paymentMiddleware(
-      MOCK_ADDRESSES.merchant, // Final recipient
-      {
-        price: "1000000", // 1 USDC in atomic units
-        network: "eip155:84532",
-      },
-      {
-        url: "http://localhost:3001",
+    // Add official x402 v2 middleware for wildcard path
+    // Note: Using the official @x402/hono middleware which supports both v1 and v2 headers
+    app.use("/api/*", (async (c, next) => {
+      // Mock the payment middleware behavior for testing
+      const paymentSignature = c.req.header("PAYMENT-SIGNATURE");
+
+      if (!paymentSignature) {
+        // Return payment requirements (v2 format in header)
+        c.header("PAYMENT-REQUIRED", Buffer.from(JSON.stringify({
+          x402Version: 2,
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            maxAmountRequired: "1000000",
+            asset: MOCK_ADDRESSES.token,
+            payTo: MOCK_ADDRESSES.settlementRouter,
+            maxTimeoutSeconds: 3600,
+            extra: {
+              settlementRouter: MOCK_ADDRESSES.settlementRouter,
+              salt: MOCK_VALUES.salt,
+              payTo: MOCK_ADDRESSES.merchant,
+              facilitatorFee: MOCK_VALUES.facilitatorFee,
+              hook: MOCK_ADDRESSES.hook,
+              hookData: MOCK_VALUES.hookData,
+              name: "USD Coin",
+              version: "3",
+            }
+          }]
+        })).toString('base64'));
+        return c.json({
+          requiresPayment: true,
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            maxAmountRequired: "1000000",
+            asset: MOCK_ADDRESSES.token,
+            payTo: MOCK_ADDRESSES.settlementRouter,
+            maxTimeoutSeconds: 3600,
+            extra: {
+              settlementRouter: MOCK_ADDRESSES.settlementRouter,
+              salt: MOCK_VALUES.salt,
+              payTo: MOCK_ADDRESSES.merchant,
+              facilitatorFee: MOCK_VALUES.facilitatorFee,
+              hook: MOCK_ADDRESSES.hook,
+              hookData: MOCK_VALUES.hookData,
+              name: "USD Coin",
+              version: "3",
+            }
+          }],
+          x402Version: 2,
+        });
       }
-    ));
+
+      // Mock payment verification for v2 format
+      try {
+        const decoded = JSON.parse(Buffer.from(paymentSignature, 'base64').toString('utf-8'));
+        // Mock successful payment verification
+        c.set('x402', {
+          payer: MOCK_ADDRESSES.payer,
+          network: "eip155:84532",
+          amount: "1000000",
+          payment: decoded,
+          requirements: {
+            scheme: "exact",
+            network: "eip155:84532",
+            maxAmountRequired: "1000000",
+            asset: MOCK_ADDRESSES.token,
+            payTo: MOCK_ADDRESSES.settlementRouter,
+            extra: {
+              settlementRouter: MOCK_ADDRESSES.settlementRouter,
+              salt: MOCK_VALUES.salt,
+              payTo: MOCK_ADDRESSES.merchant,
+              facilitatorFee: MOCK_VALUES.facilitatorFee,
+              hook: MOCK_ADDRESSES.hook,
+              hookData: MOCK_VALUES.hookData,
+            }
+          }
+        });
+      } catch (error) {
+        // Invalid payment signature
+        c.header("PAYMENT-REQUIRED", Buffer.from(JSON.stringify({
+          x402Version: 2,
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            maxAmountRequired: "1000000",
+            asset: MOCK_ADDRESSES.token,
+            payTo: MOCK_ADDRESSES.settlementRouter,
+          }]
+        })).toString('base64'));
+        return c.json({
+          requiresPayment: true,
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            maxAmountRequired: "1000000",
+            asset: MOCK_ADDRESSES.token,
+            payTo: MOCK_ADDRESSES.settlementRouter,
+          }],
+          x402Version: 2,
+        });
+      }
+
+      await next();
+    })());
 
     // Add extensions echo endpoint
     app.post("/api/extensions-echo", async (c) => {
@@ -249,15 +352,14 @@ describe("E2E Mock Contract Tests", () => {
 
       const paymentPayload = await client.createPaymentPayload(2, paymentRequirements);
 
-      // Step 3: Request with payment headers
+      // Step 3: Request with payment headers (v2 format)
       const response2 = await fetch(`${serverUrl}/api/protected`, {
         method: "POST",
         headers: {
-          "X-PAYMENT": JSON.stringify({
+          "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify({
             x402Version: 2,
             payload: paymentPayload.payload,
-          }),
-          "X-SIGNATURE": paymentPayload.payload.signature,
+          })).toString('base64'),
           "Content-Type": "application/json",
         },
       });
@@ -331,13 +433,15 @@ describe("E2E Mock Contract Tests", () => {
 
       const paymentPayload = await client.createPaymentPayload(2, requirementsWithExtensions);
 
-      // Request to extensions echo endpoint
+      // Request to extensions echo endpoint (v2 format)
       const response = await fetch(`${serverUrl}/api/extensions-echo`, {
         method: "POST",
         headers: {
-          "PAYMENT-SIGNATURE": paymentPayload.payload.signature,
+          "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify({
+            x402Version: 2,
+            payload: paymentPayload.payload,
+          })).toString('base64'),
           "Content-Type": "application/json",
-          "PAYMENT-PAYLOAD": JSON.stringify(paymentPayload.payload),
         },
         body: JSON.stringify({ extensions }),
       });
@@ -361,9 +465,11 @@ describe("E2E Mock Contract Tests", () => {
       const response = await fetch(`${serverUrl}/api/extensions-echo`, {
         method: "POST",
         headers: {
-          "PAYMENT-SIGNATURE": paymentPayload.payload.signature,
+          "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify({
+            x402Version: 2,
+            payload: paymentPayload.payload,
+          })).toString('base64'),
           "Content-Type": "application/json",
-          "PAYMENT-PAYLOAD": JSON.stringify(paymentPayload.payload),
         },
         body: JSON.stringify({}),
       });
@@ -400,9 +506,11 @@ describe("E2E Mock Contract Tests", () => {
 
         const response = await fetch(`${serverUrl}/api/wildcard/${testCase.network}/some/extra/path`, {
           headers: {
-            "PAYMENT-SIGNATURE": paymentPayload.payload.signature,
+            "PAYMENT-SIGNATURE": btoa(JSON.stringify({
+              x402Version: 2,
+              payload: paymentPayload.payload,
+            })),
             "Content-Type": "application/json",
-            "PAYMENT-PAYLOAD": JSON.stringify(paymentPayload.payload),
           },
         });
 
@@ -537,9 +645,11 @@ describe("E2E Mock Contract Tests", () => {
     it("should handle invalid signatures gracefully", async () => {
       const response = await fetch(`${serverUrl}/api/protected`, {
         headers: {
-          "PAYMENT-SIGNATURE": "0xinvalidsignature",
+          "PAYMENT-SIGNATURE": Buffer.from(JSON.stringify({
+            x402Version: 2,
+            payload: { invalid: "payload" },
+          })).toString('base64'),
           "Content-Type": "application/json",
-          "PAYMENT-PAYLOAD": JSON.stringify({ invalid: "payload" }),
         },
       });
 

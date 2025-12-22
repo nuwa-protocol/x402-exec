@@ -62,8 +62,10 @@ export const mockPaymentRequirements = {
   scheme: "exact",
   network: "eip155:84532",
   maxAmountRequired: MOCK_VALUES.paymentAmount,
+  amount: MOCK_VALUES.paymentAmount,
   asset: MOCK_ADDRESSES.token,
   payTo: MOCK_ADDRESSES.settlementRouter,
+  maxTimeoutSeconds: 3600,
   extra: {
     settlementRouter: MOCK_ADDRESSES.settlementRouter,
     salt: MOCK_VALUES.salt,
