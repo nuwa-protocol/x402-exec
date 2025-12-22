@@ -28,7 +28,7 @@
 export { RouterSettlementFacilitator, createRouterSettlementFacilitator } from "./facilitator.js";
 
 // Error classes
-export { FacilitatorValidationError, SettlementRouterError } from "./facilitator.js";
+export { FacilitatorValidationError, SettlementRouterError } from "./types.js";
 
 // SettlementRouter integration utilities
 export {

@@ -58,7 +58,7 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     },
   },
   "eip155:1952": {
-    address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    address: "0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d",
     decimals: 6,
     eip712: {
       name: "USDC_TEST",
@@ -66,7 +66,7 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     },
   },
   "eip155:324705682": {
-    address: "0x5c7e299cf531eb66f2a1df637d37abb78e6200c7",
+    address: "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD",
     decimals: 6,
     eip712: {
       name: "Bridged USDC (SKALE Bridge)",
@@ -82,7 +82,7 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     },
   },
   "eip155:196": {
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    address: "0x74b7f16337b8972027f6196a17a631ac6de26d22",
     decimals: 6,
     eip712: {
       name: "USD Coin",
@@ -90,7 +90,7 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     },
   },
   "eip155:97": {
-    address: "0x55d398326f99059ff775485246999027b3197955",
+    address: "0xdac693b5f14e7ee5923a4830cd2f82ff178f5098",
     decimals: 18,
     eip712: {
       name: "x402 Wrapped USDT",
@@ -98,7 +98,7 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     },
   },
   "eip155:56": {
-    address: "0x55d398326f99059ff775485246999027b3197955",
+    address: "0x2fDb94bAa9D664a1879BEe1f944F5F5d2dad4451",
     decimals: 18,
     eip712: {
       name: "x402 Wrapped USDT",
