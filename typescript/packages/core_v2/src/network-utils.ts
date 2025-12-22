@@ -24,8 +24,12 @@ export interface AssetInfo {
  */
 const NETWORK_IDS: Record<string, Network> = {
   "base-sepolia": "eip155:84532",
-  "skale-base-sepolia": "eip155:1444673419",
+  "x-layer-testnet": "eip155:1952",
+  "skale-base-sepolia": "eip155:324705682",
   "base": "eip155:8453",
+  "x-layer": "eip155:196",
+  "bsc-testnet": "eip155:97",
+  "bsc": "eip155:56",
 };
 
 /**
@@ -33,8 +37,12 @@ const NETWORK_IDS: Record<string, Network> = {
  */
 const NETWORK_NAMES: Record<Network, string> = {
   "eip155:84532": "base-sepolia",
-  "eip155:1444673419": "skale-base-sepolia",
+  "eip155:1952": "x-layer-testnet",
+  "eip155:324705682": "skale-base-sepolia",
   "eip155:8453": "base",
+  "eip155:196": "x-layer",
+  "eip155:97": "bsc-testnet",
+  "eip155:56": "bsc",
 };
 
 /**
@@ -49,11 +57,19 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
       version: "2",
     },
   },
-  "eip155:1444673419": {
+  "eip155:1952": {
+    address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    decimals: 6,
+    eip712: {
+      name: "USDC_TEST",
+      version: "2",
+    },
+  },
+  "eip155:324705682": {
     address: "0x5c7e299cf531eb66f2a1df637d37abb78e6200c7",
     decimals: 6,
     eip712: {
-      name: "USD Coin",
+      name: "Bridged USDC (SKALE Bridge)",
       version: "2",
     },
   },
@@ -63,6 +79,30 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     eip712: {
       name: "USD Coin",
       version: "2",
+    },
+  },
+  "eip155:196": {
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    decimals: 6,
+    eip712: {
+      name: "USD Coin",
+      version: "2",
+    },
+  },
+  "eip155:97": {
+    address: "0x55d398326f99059ff775485246999027b3197955",
+    decimals: 18,
+    eip712: {
+      name: "x402 Wrapped USDT",
+      version: "1",
+    },
+  },
+  "eip155:56": {
+    address: "0x55d398326f99059ff775485246999027b3197955",
+    decimals: 18,
+    eip712: {
+      name: "x402 Wrapped USDT",
+      version: "1",
     },
   },
 };
@@ -206,4 +246,90 @@ export function processPriceToAtomicAmount(
       error: error instanceof Error ? error.message : "Unknown error processing price",
     };
   }
+}
+
+/**
+ * Alias mapping from v1 network names to v2 CAIP-2 identifiers
+ * This provides backward compatibility for v1 network names
+ */
+export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
+  // V1 human-readable names -> V2 CAIP-2 canonical keys
+  "base-sepolia": "eip155:84532",
+  "x-layer-testnet": "eip155:1952",
+  "skale-base-sepolia": "eip155:324705682",
+  "base": "eip155:8453",
+  "x-layer": "eip155:196",
+  "bsc-testnet": "eip155:97",
+  "bsc": "eip155:56",
+};
+
+/**
+ * Get list of all supported networks using v2 CAIP-2 identifiers
+ *
+ * @returns Array of CAIP-2 network identifiers
+ *
+ * @example
+ * ```typescript
+ * const networks = getSupportedNetworksV2();
+ * // => ['eip155:84532', 'eip155:1952', 'eip155:324705682', ...]
+ * ```
+ */
+export function getSupportedNetworksV2(): Network[] {
+  return Object.keys(NETWORK_NAMES) as Network[];
+}
+
+/**
+ * Get the alias mapping from v1 network names to v2 CAIP-2 identifiers
+ *
+ * @returns Record mapping v1 names to v2 CAIP-2 keys
+ *
+ * @example
+ * ```typescript
+ * const aliases = getNetworkAliasesV1ToV2();
+ * // => { 'base-sepolia': 'eip155:84532', 'x-layer-testnet': 'eip155:1952', ... }
+ * ```
+ */
+export function getNetworkAliasesV1ToV2(): Record<string, Network> {
+  return { ...NETWORK_ALIASES_V1_TO_V2 };
+}
+
+/**
+ * Convert any network identifier to its canonical v2 CAIP-2 key
+ *
+ * Handles both v1 human-readable names and v2 CAIP-2 identifiers,
+ * returning the canonical v2 CAIP-2 identifier for all inputs.
+ *
+ * @param network - Network identifier (v1 name or v2 CAIP-2)
+ * @returns Canonical v2 CAIP-2 network identifier
+ * @throws Error if network is not supported
+ *
+ * @example
+ * ```typescript
+ * toCanonicalNetworkKey('base-sepolia'); // 'eip155:84532'
+ * toCanonicalNetworkKey('eip155:84532');  // 'eip155:84532'
+ * toCanonicalNetworkKey('x-layer');      // 'eip155:196'
+ * ```
+ */
+export function toCanonicalNetworkKey(network: string): Network {
+  // If it's already a CAIP-2 identifier, validate it
+  if (network.startsWith('eip155:')) {
+    const canonicalNetwork = network as Network;
+    if (canonicalNetwork in NETWORK_NAMES) {
+      return canonicalNetwork;
+    }
+    throw new Error(
+      `Unsupported CAIP-2 network: ${network}. ` +
+        `Supported networks: ${Object.keys(NETWORK_NAMES).join(", ")}`
+    );
+  }
+
+  // If it's a v1 name, convert it using the alias map
+  const canonicalNetwork = NETWORK_ALIASES_V1_TO_V2[network];
+  if (!canonicalNetwork) {
+    throw new Error(
+      `Unsupported network: ${network}. ` +
+        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+    );
+  }
+  return canonicalNetwork;
 }

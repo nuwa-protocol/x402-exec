@@ -137,5 +137,14 @@ export type {
 } from "./legacy-compat.js";
 
 // Export network utilities (needed by middleware)
-export { processPriceToAtomicAmount, getDefaultAsset, getNetworkId, getNetworkName } from "./network-utils.js";
+export {
+  processPriceToAtomicAmount,
+  getDefaultAsset,
+  getNetworkId,
+  getNetworkName,
+  getSupportedNetworksV2,
+  getNetworkAliasesV1ToV2,
+  toCanonicalNetworkKey,
+  NETWORK_ALIASES_V1_TO_V2
+} from "./network-utils.js";
 

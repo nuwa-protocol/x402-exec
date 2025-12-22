@@ -53,6 +53,28 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "ETH",
     },
   },
+  "x-layer-testnet": {
+    chainId: getNetworkId("x-layer-testnet"),
+    name: "X Layer Testnet",
+    type: "testnet",
+    addressExplorerBaseUrl: "https://www.oklink.com/xlayer-test/address/",
+    txExplorerBaseUrl: "https://www.oklink.com/xlayer-test/tx/",
+    settlementRouter: "0xba9980fb08771e2fd10c17450f52d39bcb9ed576",
+    defaultAsset: getDefaultAssetConfig(getNetworkId("x-layer-testnet")),
+    hooks: {
+      transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
+    },
+    demoHooks: {
+      nftMint: "0x468F666314b070338841422012AB2f6539bfcE48",
+      randomNFT: "0xBA931bB5B2F2DC5354aFAED1d3996B0c6e417518",
+      reward: "0xda8B270Ec442Ff797807b95604E3319e36Aad05d",
+      rewardToken: "0x348AFDE3B4B70dCb02053aF95588a4ab41e95FbC",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "OKB",
+    },
+  },
   "skale-base-sepolia": {
     chainId: getNetworkId("skale-base-sepolia"),
     name: "SKALE Base Sepolia",
@@ -73,6 +95,28 @@ export const networks: Record<string, NetworkConfig> = {
     metadata: {
       gasModel: "legacy",
       nativeToken: "Credits",
+    },
+  },
+  "bsc-testnet": {
+    chainId: getNetworkId("bsc-testnet"),
+    name: "BSC Testnet",
+    type: "testnet",
+    addressExplorerBaseUrl: "https://testnet.bscscan.com/address/",
+    txExplorerBaseUrl: "https://testnet.bscscan.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig(getNetworkId("bsc-testnet")),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      randomNFT: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+      reward: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      rewardToken: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "BNB",
     },
   },
   // Mainnet configurations
@@ -96,6 +140,50 @@ export const networks: Record<string, NetworkConfig> = {
     metadata: {
       gasModel: "eip1559",
       nativeToken: "ETH",
+    },
+  },
+  "x-layer": {
+    chainId: getNetworkId("x-layer"),
+    name: "X Layer Mainnet",
+    type: "mainnet",
+    addressExplorerBaseUrl: "https://www.oklink.com/xlayer/address/",
+    txExplorerBaseUrl: "https://www.oklink.com/xlayer/tx/",
+    settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+    defaultAsset: getDefaultAssetConfig(getNetworkId("x-layer")),
+    hooks: {
+      transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+    },
+    demoHooks: {
+      nftMint: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      randomNFT: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+      reward: "0x4B566FD5eFf76e3BdF20Ca5c3F2FA7cdbb3bD99A",
+      rewardToken: "0x12d41108f9F12064f792418C9BA0ACF6EdcE7790",
+    },
+    metadata: {
+      gasModel: "eip1559",
+      nativeToken: "OKB",
+    },
+  },
+  bsc: {
+    chainId: getNetworkId("bsc"),
+    name: "BSC Mainnet",
+    type: "mainnet",
+    addressExplorerBaseUrl: "https://bscscan.com/address/",
+    txExplorerBaseUrl: "https://bscscan.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig(getNetworkId("bsc")),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      randomNFT: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+      reward: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      rewardToken: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "BNB",
     },
   },
 };

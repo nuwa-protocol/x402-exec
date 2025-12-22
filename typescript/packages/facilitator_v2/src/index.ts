@@ -27,6 +27,9 @@
 // Core facilitator implementation
 export { RouterSettlementFacilitator, createRouterSettlementFacilitator } from "./facilitator.js";
 
+// Error classes
+export { FacilitatorValidationError, SettlementRouterError } from "./facilitator.js";
+
 // SettlementRouter integration utilities
 export {
   createPublicClientForNetwork,
@@ -61,8 +64,6 @@ export type {
   FacilitatorConfig,
   SettlementRouterParams,
   SETTLEMENT_ROUTER_ABI,
-  FacilitatorValidationError,
-  SettlementRouterError,
 } from "./types.js";
 
 // Re-export from core_v2 for convenience
