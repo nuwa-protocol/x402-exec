@@ -227,7 +227,13 @@ export function validateFeeAmount(
   minFee?: string,
   maxFee?: string
 ): void {
-  const feeBigInt = BigInt(fee);
+  let feeBigInt: bigint;
+
+  try {
+    feeBigInt = BigInt(fee);
+  } catch (error) {
+    throw new FacilitatorValidationError(`Invalid fee amount: ${fee}. Must be a valid number.`);
+  }
 
   if (feeBigInt < 0n) {
     throw new FacilitatorValidationError("Fee cannot be negative");
