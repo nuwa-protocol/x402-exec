@@ -489,12 +489,30 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
+      '@types/node-fetch':
+        specifier: ^2.6.13
+        version: 2.6.13
       '@vitest/coverage-v8':
         specifier: ^1.0.0
         version: 1.6.1(vitest@1.6.1)
+      '@x402/hono':
+        specifier: 2.0.0
+        version: 2.0.0(hono@4.11.1)
+      '@x402x/fetch_v2':
+        specifier: workspace:*
+        version: link:../fetch_v2
+      '@x402x/hono_v2':
+        specifier: workspace:*
+        version: link:../hono_v2
       eslint:
         specifier: ^9.0.0
         version: 9.39.1(jiti@2.6.1)
+      hono:
+        specifier: ^4.11.1
+        version: 4.11.1
+      node-fetch:
+        specifier: ^3.3.2
+        version: 3.3.2
       prettier:
         specifier: 3.5.2
         version: 3.5.2
@@ -4309,6 +4327,9 @@ packages:
     resolution: {integrity: sha512-faK2Owokboz53g8ooq2dw3iDJ6/HMTCIa2RvMte5WMTiABy+wA558K+iuyRtlR67Un5q9gEKysSDtqZYbSa0Pg==}
     deprecated: This is a stub types definition. node-cache provides its own type definitions, so you do not need this installed.
 
+  '@types/node-fetch@2.6.13':
+    resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
+
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
 
@@ -6487,6 +6508,10 @@ packages:
 
   hono@4.10.7:
     resolution: {integrity: sha512-icXIITfw/07Q88nLSkB9aiUrd8rYzSweK681Kjo/TSggaGbOX4RRyxxm71v+3PC8C/j+4rlxGeoTRxQDkaJkUw==}
+    engines: {node: '>=16.9.0'}
+
+  hono@4.11.1:
+    resolution: {integrity: sha512-KsFcH0xxHes0J4zaQgWbYwmz3UPOOskdqZmItstUG93+Wk1ePBLkLGwbP9zlmh1BFUiL8Qp+Xfu9P7feJWpGNg==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@4.0.0:
@@ -15057,6 +15082,11 @@ snapshots:
     dependencies:
       node-cache: 5.1.2
 
+  '@types/node-fetch@2.6.13':
+    dependencies:
+      '@types/node': 20.19.25
+      form-data: 4.0.5
+
   '@types/node@12.20.55': {}
 
   '@types/node@16.18.11': {}
@@ -15431,7 +15461,7 @@ snapshots:
       std-env: 3.10.0
       strip-literal: 2.1.1
       test-exclude: 6.0.0
-      vitest: 1.6.1(@edge-runtime/vm@3.2.0)(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.2)
+      vitest: 1.6.1(@edge-runtime/vm@3.2.0)(@types/node@20.19.25)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -15518,7 +15548,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@edge-runtime/vm@3.2.0)(@types/node@24.10.1)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.2)
+      vitest: 1.6.1(@edge-runtime/vm@3.2.0)(@types/node@20.19.25)(@vitest/ui@1.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.2)
 
   '@vitest/utils@1.6.1':
     dependencies:
@@ -17164,6 +17194,13 @@ snapshots:
       '@x402/core': 2.0.0
       '@x402/extensions': 2.0.0
       hono: 4.10.7
+      zod: 3.25.76
+
+  '@x402/hono@2.0.0(hono@4.11.1)':
+    dependencies:
+      '@x402/core': 2.0.0
+      '@x402/extensions': 2.0.0
+      hono: 4.11.1
       zod: 3.25.76
 
   '@x402x/x402@0.6.6-patch.7(@solana/sysvars@5.1.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3))(@tanstack/query-core@5.90.11)(@tanstack/react-query@5.90.11(react@18.3.1))(@types/react@18.3.27)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)':
@@ -19245,6 +19282,8 @@ snapshots:
   highlightjs-vue@1.0.0: {}
 
   hono@4.10.7: {}
+
+  hono@4.11.1: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
