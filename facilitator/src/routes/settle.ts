@@ -13,12 +13,11 @@
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
 import {
-  PaymentRequirementsSchema,
   type PaymentRequirements,
   type PaymentPayload,
-  PaymentPayloadSchema,
   type X402Config,
 } from "x402/types";
+import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
@@ -115,8 +114,13 @@ export function createSettleRoutes(
   router.post("/settle", ...(middlewares as any), async (req: Request, res: Response) => {
     try {
       const body: SettleRequest = req.body;
-      const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
-      const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
+
+      // Basic structure validation - let VersionDispatcher handle detailed validation
+      const paymentRequirements = validateBasicStructure(body.paymentRequirements, 'paymentRequirements') as PaymentRequirements;
+      const paymentPayload = validateBasicStructure(body.paymentPayload, 'paymentPayload') as PaymentPayload;
+
+      // Validate x402Version if provided
+      validateX402Version(body.x402Version);
 
       // Route to appropriate implementation based on version
       const result = await dispatcher.settle({
@@ -150,7 +154,7 @@ export function createSettleRoutes(
       }
 
       // Distinguish between validation errors and other errors
-      if (error instanceof Error && error.name === "ZodError") {
+      if (error instanceof Error && (error.name === "ZodError" || error.name === "ValidationError")) {
         // Input validation error - safe to return details
         res.status(400).json({
           error: "Invalid request payload",
