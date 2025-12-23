@@ -48,10 +48,15 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
   router.get("/supported", async (req: Request, res: Response) => {
     const kinds: SupportedPaymentKind[] = [];
 
-    // Parse optional version filter from query parameter
-    const versionFilter = req.query.x402Version
-      ? parseInt(req.query.x402Version as string)
-      : undefined;
+    // Parse optional version filter from query parameter with validation
+    let versionFilter: number | undefined;
+    const rawVersionFilter = req.query.x402Version;
+    if (typeof rawVersionFilter === "string") {
+      const parsed = Number.parseInt(rawVersionFilter, 10);
+      if (!Number.isNaN(parsed)) {
+        versionFilter = parsed;
+      }
+    }
 
     // Get initialized networks from PoolManager (source of truth)
     const supportedNetworks = deps.poolManager.getSupportedNetworks();
@@ -66,7 +71,7 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
         kinds.push({
           x402Version: 1,
           scheme: "exact",
-          network: humanReadable,
+          network: humanReadable as any, // Type assertion for dynamic network names
         });
       }
     }
@@ -78,7 +83,7 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
         kinds.push({
           x402Version: 2,
           scheme: "exact",
-          network: canonical,
+          network: canonical as any, // Type assertion for CAIP-2 network identifiers
         });
       }
     }
