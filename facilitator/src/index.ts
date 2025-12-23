@@ -185,7 +185,6 @@ async function main() {
         tokenPrice: config.tokenPrice,
         feeClaim: config.feeClaim,
         gasEstimation: config.gasEstimation,
-        v2: config.v2,
         rpcUrls: config.dynamicGasPrice.rpcUrls,
         enableV2: config.v2.enabled,
         v2Signer: config.v2.signer,

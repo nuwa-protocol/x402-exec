@@ -22,28 +22,19 @@ import type { TokenPriceConfig } from "../token-price.js";
 /**
  * All dependencies required by routes
  */
-export interface RoutesDependencies
-  extends HealthRouteDependencies,
-    SupportedRouteDependencies,
-    FeeRouteDependencies,
-    StatsRouteDependencies {
-  // Verify route dependencies
-  poolManager: import("../pool-manager.js").PoolManager;
-  x402Config?: import("x402/types").X402Config;
-  balanceChecker?: import("../balance-check.js").BalanceChecker;
-  rpcUrls?: Record<string, string>;
-  enableV2?: boolean;
-  v2Signer?: string;
-  allowedRouters?: Record<string, string[]>;
-
-  // Settle route dependencies
-  allowedSettlementRouters: Record<string, string[]>;
-  gasCost: GasCostConfig;
-  dynamicGasPrice: DynamicGasPriceConfig;
-  tokenPrice: TokenPriceConfig;
-  gasEstimation: import("../gas-estimation/index.js").GasEstimationConfig;
-  v2: import("../config.js").V2Config;
-}
+export type RoutesDependencies =
+  HealthRouteDependencies &
+  SupportedRouteDependencies &
+  StatsRouteDependencies &
+  VerifyRouteDependencies &
+  SettleRouteDependencies & {
+    // Override optional properties from SettleRouteDependencies to make them required
+    gasCost: GasCostConfig;
+    dynamicGasPrice: DynamicGasPriceConfig;
+    tokenPrice: TokenPriceConfig;
+    gasEstimation: import("../gas-estimation/index.js").GasEstimationConfig;
+    feeClaim: import("../fee-claim.js").FeeClaimConfig;
+  };
 
 /**
  * Rate limiters for specific routes
