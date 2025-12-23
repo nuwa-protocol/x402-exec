@@ -10,7 +10,7 @@
 import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
 import { createRouterSettlementFacilitator } from "@x402x/facilitator_v2";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
-import type { PaymentRequirements as V2PaymentRequirements } from "x402/types";
+
 import type { VerifyResponse, SettleResponse } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
 import type { PoolManager } from "./pool-manager.js";
@@ -168,7 +168,7 @@ export class VersionDispatcher {
 
       return {
         isValid: false,
-        invalidReason: "Verification failed due to internal error" as any,
+        invalidReason: "Verification failed due to internal error" as VerifyResponse["invalidReason"],
       };
     }
   }
@@ -212,7 +212,7 @@ export class VersionDispatcher {
       } else {
         // V2 implementation - always uses router settlement
         mode = "v2_router";
-        result = await this.settleV2(paymentPayload, paymentRequirements as any);
+        result = await this.settleV2(paymentPayload, paymentRequirements as V2PaymentRequirements);
       }
 
       // Record metrics

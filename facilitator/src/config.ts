@@ -599,10 +599,19 @@ function parseV2Config(): V2Config {
   let allowedRouters: Record<string, string[]> | undefined;
   if (process.env.FACILITATOR_V2_ALLOWED_ROUTERS) {
     try {
-      allowedRouters = JSON.parse(process.env.FACILITATOR_V2_ALLOWED_ROUTERS);
-      if (typeof allowedRouters !== "object" || allowedRouters === null) {
-        throw new Error("FACILITATOR_V2_ALLOWED_ROUTERS must be a valid JSON object");
+      const parsed = JSON.parse(process.env.FACILITATOR_V2_ALLOWED_ROUTERS);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+        throw new Error("FACILITATOR_V2_ALLOWED_ROUTERS must be a JSON object mapping router IDs to arrays of chain IDs");
       }
+      for (const [router, chains] of Object.entries(parsed)) {
+        if (!Array.isArray(chains)) {
+          throw new Error(`FACILITATOR_V2_ALLOWED_ROUTERS value for router "${router}" must be an array`);
+        }
+        if (!chains.every((chain) => typeof chain === "string")) {
+          throw new Error(`FACILITATOR_V2_ALLOWED_ROUTERS array for router "${router}" must contain only strings`);
+        }
+      }
+      allowedRouters = parsed as Record<string, string[]>;
     } catch (error) {
       throw new Error(`Invalid FACILITATOR_V2_ALLOWED_ROUTERS JSON: ${error}`);
     }

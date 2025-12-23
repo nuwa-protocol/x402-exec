@@ -79,8 +79,10 @@ export const CANONICAL_TO_HUMAN_READABLE: Record<CanonicalNetwork, string> = Obj
 /**
  * Check if network identifier is already in canonical format (CAIP-2)
  */
+const CAIP2_PATTERN = /^[a-z0-9]{3,8}:[a-zA-Z0-9]{1,32}$/;
+
 export function isCanonicalNetwork(network: string): boolean {
-  return network.startsWith('eip155:');
+  return CAIP2_PATTERN.test(network);
 }
 
 /**
