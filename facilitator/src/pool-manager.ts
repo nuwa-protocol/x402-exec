@@ -102,10 +102,8 @@ export class PoolManager {
     if (!canonicalNetwork) {
       try {
         canonicalNetwork = getCanonicalNetwork(network);
-        if (canonicalNetwork) {
-          // Cache the mapping for future lookups
-          this.networkAliasCache.set(network, canonicalNetwork);
-        }
+        // Cache the mapping for future lookups
+        this.networkAliasCache.set(network, canonicalNetwork);
       } catch (error) {
         logger.warn({ network, error }, "Failed to canonicalize network for pool lookup");
         return undefined;

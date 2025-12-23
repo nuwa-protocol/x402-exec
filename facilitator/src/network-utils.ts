@@ -5,13 +5,15 @@
  * Uses v2 CAIP-2 identifiers as canonical keys for internal consistency.
  */
 
+/// <reference path="./types.d.ts" />
+
 import { toCanonicalNetworkKey, getNetworkName } from "@x402x/core_v2";
-import type { Network } from "x402/types";
+import type { Network as X402Network } from "x402/types";
 
 /**
- * Type alias for network identifiers
+ * Type alias for canonical network identifiers (CAIP-2 format)
  */
-export type Network = string;
+export type CanonicalNetwork = string;
 
 /**
  * Feature flag for enabling v2 support
@@ -25,13 +27,14 @@ export const FACILITATOR_ENABLE_V2 = process.env.FACILITATOR_ENABLE_V2 === "true
  * @returns Canonical v2 CAIP-2 network identifier
  * @throws Error if network is not supported
  */
-export function getCanonicalNetwork(network: string): Network {
+export function getCanonicalNetwork(network: string): CanonicalNetwork {
   try {
     return toCanonicalNetworkKey(network);
   } catch (error) {
+    const supportedNetworks = Object.keys(NETWORK_ALIASES).join(", ");
     throw new Error(
       `Unsupported network: ${network}. ` +
-      `Supported networks: base-sepolia, base, x-layer-testnet, x-layer, bsc-testnet, bsc`
+      `Supported networks: ${supportedNetworks}`
     );
   }
 }
@@ -42,7 +45,7 @@ export function getCanonicalNetwork(network: string): Network {
  * @param canonicalNetwork - Canonical v2 CAIP-2 network identifier
  * @returns Human-readable network name (v1 format)
  */
-export function getNetworkDisplayName(canonicalNetwork: Network): string {
+export function getNetworkDisplayName(canonicalNetwork: CanonicalNetwork): string {
   try {
     return getNetworkName(canonicalNetwork as any);
   } catch (error) {
@@ -55,7 +58,7 @@ export function getNetworkDisplayName(canonicalNetwork: Network): string {
  * Network alias mapping from v1 names to v2 CAIP-2 identifiers
  * This provides the canonicalization mapping
  */
-export const NETWORK_ALIASES: Record<string, Network> = {
+export const NETWORK_ALIASES: Record<string, CanonicalNetwork> = {
   // V1 human-readable names -> V2 CAIP-2 canonical keys
   "base-sepolia": "eip155:84532",
   "x-layer-testnet": "eip155:1952",
@@ -69,7 +72,7 @@ export const NETWORK_ALIASES: Record<string, Network> = {
 /**
  * Reverse mapping from CAIP-2 to human-readable names
  */
-export const CANONICAL_TO_HUMAN_READABLE: Record<Network, string> = Object.fromEntries(
+export const CANONICAL_TO_HUMAN_READABLE: Record<CanonicalNetwork, string> = Object.fromEntries(
   Object.entries(NETWORK_ALIASES).map(([name, canonical]) => [canonical, name])
 );
 
@@ -83,8 +86,8 @@ export function isCanonicalNetwork(network: string): boolean {
 /**
  * Convert network identifier to canonical format with caching
  */
-const canonicalCache = new Map<string, Network>();
-export function getCachedCanonicalNetwork(network: string): Network {
+const canonicalCache = new Map<string, CanonicalNetwork>();
+export function getCachedCanonicalNetwork(network: string): CanonicalNetwork {
   if (canonicalCache.has(network)) {
     return canonicalCache.get(network)!;
   }
@@ -97,7 +100,7 @@ export function getCachedCanonicalNetwork(network: string): Network {
 /**
  * Get all supported canonical networks
  */
-export function getSupportedCanonicalNetworks(): Network[] {
+export function getSupportedCanonicalNetworks(): CanonicalNetwork[] {
   return Object.values(NETWORK_ALIASES);
 }
 
@@ -111,7 +114,7 @@ export function getSupportedHumanReadableNetworks(): string[] {
 /**
  * Network validation for both v1 and v2 formats
  */
-export function validateNetwork(network: string): Network {
+export function validateNetwork(network: string): CanonicalNetwork {
   if (!network || typeof network !== "string") {
     throw new Error("Invalid network: must be a non-empty string");
   }

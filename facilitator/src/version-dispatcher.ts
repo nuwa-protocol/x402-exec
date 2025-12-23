@@ -5,16 +5,18 @@
  * and network format detection.
  */
 
+/// <reference path="./types.d.ts" />
+
 import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
 import { createRouterSettlementFacilitator } from "@x402x/facilitator_v2";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
 import type { PaymentRequirements as V2PaymentRequirements } from "x402/types";
-import { SupportedEVMNetworks } from "x402/types";
 import type { VerifyResponse, SettleResponse } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
 import type { PoolManager } from "./pool-manager.js";
 import type { BalanceChecker } from "./balance-check.js";
 import { determineX402Version, isVersionSupported, getCanonicalNetwork } from "./network-utils.js";
+import { settleWithRouter } from "./settlement.js";
 
 const logger = getLogger();
 
@@ -262,7 +264,8 @@ export class VersionDispatcher {
     const { evm } = await import("x402/types");
     const { createPublicClient, http, publicActions } = await import("viem");
 
-    if (!evm.SupportedEVMNetworks.includes(paymentRequirements.network)) {
+    // Type assertion for dynamic import - SupportedEVMNetworks exists on evm module
+    if (!(evm as any).SupportedEVMNetworks?.includes(paymentRequirements.network)) {
       throw new Error("Invalid network. Only EVM networks are supported.");
     }
 
@@ -294,7 +297,7 @@ export class VersionDispatcher {
     // Convert v2 response to v1 format for API consistency
     return {
       isValid: result.isValid,
-      invalidReason: result.invalidReason,
+      invalidReason: result.invalidReason as any,
       payer: result.payer,
     };
   }
@@ -329,7 +332,6 @@ export class VersionDispatcher {
     return accountPool.execute(async (signer) => {
       if (this.isV1SettlementRouterMode(paymentRequirements)) {
         // SettlementRouter mode for v1
-        const { settleWithRouter } = await import("../settlement.js");
         const response = await settleWithRouter(
           signer,
           paymentPayload,
@@ -337,14 +339,14 @@ export class VersionDispatcher {
           this.deps.allowedSettlementRouters || {}
         );
 
-        // Return standard format
+        // Return standard format - type assertion for v2 -> v1 response conversion
         return {
           success: response.success,
           transaction: response.transaction,
-          network: response.network,
+          network: response.network as any,
           payer: response.payer,
-          errorReason: response.errorReason,
-        };
+          errorReason: response.errorReason as any,
+        } as SettleResponse;
       } else {
         // Standard mode for v1
         return v1Settle(signer, paymentPayload, paymentRequirements, this.deps.x402Config);
@@ -370,10 +372,10 @@ export class VersionDispatcher {
     return {
       success: result.success,
       transaction: result.transaction,
-      network: result.network,
+      network: result.network as any,
       payer: result.payer,
-      errorReason: result.errorReason,
-    };
+      errorReason: result.errorReason as any,
+    } as SettleResponse;
   }
 
   /**

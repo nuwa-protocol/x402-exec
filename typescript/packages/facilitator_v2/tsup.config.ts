@@ -5,7 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
   },
   format: ["cjs", "esm"],
-  dts: false, // Temporarily disable DTS generation to avoid type errors
+  dts: false, // Workspace package - types provided by consuming packages
   splitting: false,
   sourcemap: true,
   clean: true,
