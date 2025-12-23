@@ -10,7 +10,7 @@
 import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
 import { createRouterSettlementFacilitator } from "@x402x/facilitator_v2";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
-
+import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/core_v2";
 import type { VerifyResponse, SettleResponse } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
 import type { PoolManager } from "./pool-manager.js";
