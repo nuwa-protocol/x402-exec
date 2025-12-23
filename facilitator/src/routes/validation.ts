@@ -32,11 +32,24 @@ export function validateBasicStructure<T>(
 /**
  * Validate x402Version if present (1 or 2)
  *
- * @param version - The x402 version to validate
- * @throws {Error} If version is not 1 or 2
+ * @param version - The x402 version to validate (should be number or undefined)
+ * @throws {Error} If version is not a number, not 1 or 2
  */
-export function validateX402Version(version?: number): void {
-  if (version !== undefined && version !== 1 && version !== 2) {
+export function validateX402Version(version?: unknown): void {
+  // Skip validation if undefined (will default to 1 elsewhere)
+  if (version === undefined) {
+    return;
+  }
+
+  // Type check: ensure version is a number
+  if (typeof version !== 'number') {
+    const error = new Error(`Invalid x402Version: expected number, got ${typeof version}. Only versions 1 and 2 are supported.`);
+    error.name = "ValidationError";
+    throw error;
+  }
+
+  // Value check: ensure version is 1 or 2
+  if (version !== 1 && version !== 2) {
     const error = new Error(`Invalid x402Version: ${version}. Only versions 1 and 2 are supported.`);
     error.name = "ValidationError";
     throw error;

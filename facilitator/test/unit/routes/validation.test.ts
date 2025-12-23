@@ -2,7 +2,7 @@
  * Unit Tests for Route Validation Helpers
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { validateBasicStructure, validateX402Version } from "../../../src/routes/validation.js";
 
 describe("validateBasicStructure", () => {
@@ -49,7 +49,7 @@ describe("validateBasicStructure", () => {
   it("should set ValidationError name on thrown error", () => {
     try {
       validateBasicStructure(null, "test");
-      fail("Expected error to be thrown");
+      vi.fail("Expected error to be thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).name).toBe("ValidationError");
@@ -66,7 +66,7 @@ describe("validateX402Version", () => {
     expect(() => validateX402Version(2)).not.toThrow();
   });
 
-  it("should accept undefined (defaults to 1)", () => {
+  it("should accept undefined (defaults to 1 elsewhere)", () => {
     expect(() => validateX402Version(undefined)).not.toThrow();
   });
 
@@ -93,10 +93,39 @@ describe("validateX402Version", () => {
   it("should set ValidationError name on thrown error", () => {
     try {
       validateX402Version(0);
-      fail("Expected error to be thrown");
+      vi.fail("Expected error to be thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).name).toBe("ValidationError");
     }
+  });
+
+  // Type safety tests: ensure non-number types are rejected
+  it("should reject string '1'", () => {
+    expect(() => validateX402Version("1" as unknown)).toThrow(/expected number, got string/);
+  });
+
+  it("should reject string '2'", () => {
+    expect(() => validateX402Version("2" as unknown)).toThrow(/expected number, got string/);
+  });
+
+  it("should reject random string", () => {
+    expect(() => validateX402Version("abc" as unknown)).toThrow(/expected number, got string/);
+  });
+
+  it("should reject object", () => {
+    expect(() => validateX402Version({} as unknown)).toThrow(/expected number, got object/);
+  });
+
+  it("should reject null", () => {
+    expect(() => validateX402Version(null as unknown)).toThrow(/expected number, got object/);
+  });
+
+  it("should reject boolean true", () => {
+    expect(() => validateX402Version(true as unknown)).toThrow(/expected number, got boolean/);
+  });
+
+  it("should reject array", () => {
+    expect(() => validateX402Version([1] as unknown)).toThrow(/expected number, got object/);
   });
 });
