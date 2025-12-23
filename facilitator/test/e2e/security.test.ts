@@ -19,6 +19,7 @@ const mockPoolManager: Partial<PoolManager> = {
   getSvmAccountPools: vi.fn(() => new Map()),
   getEvmAccountCount: vi.fn(() => 0),
   getSvmAccountCount: vi.fn(() => 0),
+  getSupportedNetworks: vi.fn(() => []),
 };
 
 describe("Security Features E2E", () => {

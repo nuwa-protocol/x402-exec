@@ -62,6 +62,15 @@ describe("Network Auto Discovery E2E", () => {
       poolManager: {
         getEvmAccountPools: vi.fn(() => []),
         getEvmAccountCount: vi.fn(() => 1), // Mock 1 account to enable networks
+        getSupportedNetworks: vi.fn(() => [
+          { humanReadable: "base", canonical: "eip155:8453" },
+          { humanReadable: "base-sepolia", canonical: "eip155:84532" },
+          { humanReadable: "x-layer", canonical: "eip155:196" },
+          { humanReadable: "x-layer-testnet", canonical: "eip155:1952" },
+          { humanReadable: "bsc", canonical: "eip155:56" },
+          { humanReadable: "bsc-testnet", canonical: "eip155:97" },
+          { humanReadable: "skale-base-sepolia", canonical: "eip155:324705682" },
+        ]),
       } as any,
       evmAccountPools: [],
       evmAccountCount: 1,

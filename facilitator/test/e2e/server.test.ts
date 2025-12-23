@@ -84,6 +84,9 @@ describe("E2E: Facilitator Server", () => {
         getEvmAccountCount: vi.fn(() => 1),
         getSvmAccountCount: vi.fn(() => 0),
         hasAccounts: vi.fn(() => true),
+        getSupportedNetworks: vi.fn(() => [
+          { humanReadable: "base-sepolia", canonical: "eip155:84532" },
+        ]),
       } as any,
       evmAccountPools: new Map([["base-sepolia", mockPool as any]]),
       svmAccountPools: new Map(),
