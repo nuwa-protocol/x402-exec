@@ -32,16 +32,11 @@ echo ""
 # Step 2: Check if the required files exist in the image
 echo -e "${YELLOW}[2/5] Checking if required packages are included...${NC}"
 
-# Create a temporary container to inspect files
-TEMP_CONTAINER=$(docker create "${IMAGE_NAME}:${IMAGE_TAG}")
-
 # Check for core_v2
-if docker exec "$TEMP_CONTAINER" test -d /app/typescript/packages/core_v2/dist 2>/dev/null || \
-   docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/core_v2/dist" 2>/dev/null; then
+if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/core_v2/dist" 2>/dev/null; then
     echo -e "${GREEN}✓ @x402x/core_v2 package found${NC}"
 else
     echo -e "${RED}✗ @x402x/core_v2 package missing${NC}"
-    docker rm "$TEMP_CONTAINER" 2>/dev/null || true
     echo -e "${RED}Build test failed: Missing v2 packages${NC}"
     exit 1
 fi
@@ -51,12 +46,9 @@ if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/p
     echo -e "${GREEN}✓ @x402x/facilitator_v2 package found${NC}"
 else
     echo -e "${RED}✗ @x402x/facilitator_v2 package missing${NC}"
-    docker rm "$TEMP_CONTAINER" 2>/dev/null || true
     echo -e "${RED}Build test failed: Missing v2 packages${NC}"
     exit 1
 fi
-
-docker rm "$TEMP_CONTAINER" 2>/dev/null || true
 echo ""
 
 # Step 3: Start the container with test configuration
@@ -82,9 +74,9 @@ echo ""
 # Step 4: Wait for the service to be ready and check for import errors
 echo -e "${YELLOW}[4/5] Checking for startup errors...${NC}"
 
-# Wait up to 10 seconds for container to start or fail
+# Wait up to 15 seconds for container to start or fail (aligned with CI)
 WAIT_TIME=0
-MAX_WAIT=10
+MAX_WAIT=15
 SUCCESS=false
 
 while [ $WAIT_TIME -lt $MAX_WAIT ]; do
@@ -161,7 +153,7 @@ echo -e "${YELLOW}Cleaning up test container...${NC}"
 docker stop "${CONTAINER_NAME}" 2>/dev/null || true
 docker rm "${CONTAINER_NAME}" 2>/dev/null || true
 
-# Ask user if they want to keep the test image
+# Ask user if they want to keep the test image (skip in CI)
 echo ""
 echo -e "${BLUE}======================================${NC}"
 echo -e "${GREEN}✓ Build test completed successfully!${NC}"
@@ -169,14 +161,24 @@ echo -e "${BLUE}======================================${NC}"
 echo ""
 echo -e "Test image: ${GREEN}${IMAGE_NAME}:${IMAGE_TAG}${NC}"
 echo ""
-read -p "Do you want to remove the test image? (y/N) " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+# Check if running in CI environment
+if [ -n "${CI}" ] || [ -n "${GITHUB_ACTIONS}" ] || [ -n "${GITLAB_CI}" ] || [ -n "${JENKINS_HOME}" ]; then
+    # In CI: automatically clean up
+    echo "Running in CI environment - automatically removing test image"
     docker rmi "${IMAGE_NAME}:${IMAGE_TAG}" 2>/dev/null || true
     echo -e "${GREEN}✓ Test image removed${NC}"
 else
-    echo -e "${YELLOW}Test image kept: ${IMAGE_NAME}:${IMAGE_TAG}${NC}"
-    echo -e "${YELLOW}You can remove it later with: docker rmi ${IMAGE_NAME}:${IMAGE_TAG}${NC}"
+    # Interactive mode: ask user
+    read -p "Do you want to remove the test image? (y/N) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        docker rmi "${IMAGE_NAME}:${IMAGE_TAG}" 2>/dev/null || true
+        echo -e "${GREEN}✓ Test image removed${NC}"
+    else
+        echo -e "${YELLOW}Test image kept: ${IMAGE_NAME}:${IMAGE_TAG}${NC}"
+        echo -e "${YELLOW}You can remove it later with: docker rmi ${IMAGE_NAME}:${IMAGE_TAG}${NC}"
+    fi
 fi
 
 echo ""

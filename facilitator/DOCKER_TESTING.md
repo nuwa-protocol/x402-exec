@@ -61,7 +61,8 @@ This ensures all pushed images are guaranteed to start correctly.
 
 Minimal configuration for testing:
 - Test private key (safe, no real funds)
-- Disabled features (v2, dynamic pricing)
+- V2 support enabled (matches production)
+- Token price disabled (no external API calls)
 - Basic static configuration
 - Sufficient for startup validation
 
@@ -109,7 +110,7 @@ Run startup test
 1. **Early Detection**: Catch packaging issues before deployment
 2. **Safe Testing**: No real credentials or production data needed
 3. **Automated**: Runs on every PR/push
-4. **Fast**: Complete test in ~30 seconds locally, ~2-3 minutes in CI
+4. **Fast**: Test execution ~30 seconds locally, ~15 seconds in CI (startup validation only); full CI job including image build typically completes in 2-3 minutes
 5. **Reliable**: 100% replicates production environment
 
 ## Future Improvements
