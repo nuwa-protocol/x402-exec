@@ -75,8 +75,6 @@ export function registerRoutes(
     },
     {
       enableV2: deps.enableV2,
-      signer: deps.v2Signer,
-      privateKey: deps.v2PrivateKey,
       allowedRouters: deps.allowedRouters,
       rpcUrls: deps.rpcUrls,
     }

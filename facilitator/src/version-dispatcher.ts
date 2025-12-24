@@ -8,7 +8,6 @@
 /// <reference path="./types.d.ts" />
 
 import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
-import { createRouterSettlementFacilitator } from "@x402x/facilitator_v2";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
 import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/core_v2";
 import type { VerifyResponse, SettleResponse } from "x402/types";
@@ -26,10 +25,6 @@ const logger = getLogger();
 export interface VersionDispatcherConfig {
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enableV2?: boolean;
-  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
-  signer?: string;
-  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY from v1) */
-  privateKey?: string;
   /** Allowed routers per network for v2 */
   allowedRouters?: Record<string, string[]>;
   /** RPC URLs per network for both v1 and v2 */
@@ -68,34 +63,15 @@ export interface SettleRequest {
  * Version dispatcher that routes to appropriate implementation
  */
 export class VersionDispatcher {
-  private v2Facilitator?: ReturnType<typeof createRouterSettlementFacilitator>;
-
   constructor(
     private deps: VersionDispatcherDependencies,
     private config: VersionDispatcherConfig = {}
   ) {
-    // Initialize v2 facilitator if enabled
-    if (this.config.enableV2 && (this.config.signer || this.config.privateKey)) {
+    if (this.config.enableV2) {
       logger.info({
-        hasSigner: !!this.config.signer,
-        signerValue: this.config.signer ? `${this.config.signer.slice(0, 6)}...` : '(empty)',
-        hasPrivateKey: !!this.config.privateKey,
-        privateKeyLength: this.config.privateKey?.length || 0,
         hasAllowedRouters: !!this.config.allowedRouters,
         hasRpcUrls: !!this.config.rpcUrls,
-      }, "Initializing V2 facilitator with config");
-
-      this.v2Facilitator = createRouterSettlementFacilitator({
-        signer: this.config.signer,
-        privateKey: this.config.privateKey,
-        allowedRouters: this.config.allowedRouters,
-        rpcUrls: this.config.rpcUrls,
-      });
-      logger.info("V2 facilitator initialized");
-    }
-
-    if (this.config.enableV2) {
-      logger.info("Version dispatcher: v2 support enabled");
+      }, "Version dispatcher: v2 support enabled (using shared AccountPool)");
     } else {
       logger.info("Version dispatcher: v1 only mode");
     }
@@ -294,17 +270,25 @@ export class VersionDispatcher {
 
   /**
    * V2 verification implementation
+   * Uses direct validation without creating a separate facilitator instance
    */
   private async verifyV2(
     paymentPayload: PaymentPayload,
     paymentRequirements: V2PaymentRequirements
   ): Promise<VerifyResponse> {
-    if (!this.v2Facilitator) {
-      throw new Error("V2 facilitator not initialized");
-    }
+    // Import v2 verification utilities
+    const { createRouterSettlementFacilitator } = await import("@x402x/facilitator_v2");
+    
+    // Create a temporary facilitator for verification (no signer needed for verify)
+    const facilitator = createRouterSettlementFacilitator({
+      allowedRouters: this.config.allowedRouters,
+      rpcUrls: this.config.rpcUrls,
+      // Verification doesn't need signer/privateKey, but we provide a placeholder
+      signer: "0x0000000000000000000000000000000000000000",
+    });
 
     // Verify using v2 implementation
-    const result = await this.v2Facilitator.verify(paymentPayload, paymentRequirements);
+    const result = await facilitator.verify(paymentPayload, paymentRequirements);
 
     // Convert v2 response to v1 format for API consistency
     return {
@@ -368,26 +352,62 @@ export class VersionDispatcher {
 
   /**
    * V2 settlement implementation
+   * Uses AccountPool for queue management and duplicate payer detection
    */
   private async settleV2(
     paymentPayload: PaymentPayload,
     paymentRequirements: V2PaymentRequirements
   ): Promise<SettleResponse> {
-    if (!this.v2Facilitator) {
-      throw new Error("V2 facilitator not initialized");
+    // Get account pool for the network (same as v1)
+    const accountPool = this.deps.poolManager.getPool(paymentRequirements.network);
+    if (!accountPool) {
+      throw new Error(`No account pool available for network: ${paymentRequirements.network}`);
     }
 
-    // Settle using v2 implementation
-    const result = await this.v2Facilitator.settle(paymentPayload, paymentRequirements);
+    // Extract payer address for duplicate detection
+    // V2 paymentPayload has payer field (unlike v1 which has nested structure)
+    const payerAddress = (paymentPayload as any).payer as string | undefined;
 
-    // Convert v2 response to v1 format for API consistency
-    return {
-      success: result.success,
-      transaction: result.transaction,
-      network: result.network as any,
-      payer: result.payer,
-      errorReason: result.errorReason as any,
-    } as SettleResponse;
+    // Execute in account pool (reuses queue, duplicate detection, etc.)
+    return accountPool.execute(async (signer) => {
+      // Import necessary modules dynamically
+      const facilitatorV2 = await import("@x402x/facilitator_v2") as any;
+      
+      // Create public client for the network
+      const publicClient = facilitatorV2.createPublicClientForNetwork(
+        paymentRequirements.network,
+        this.config.rpcUrls
+      );
+
+      // Parse settlement parameters
+      const params = facilitatorV2.parseSettlementRouterParams(paymentRequirements, paymentPayload);
+
+      // Use the signer from AccountPool as WalletClient
+      // The signer from AccountPool is already a viem WalletClient with publicActions
+      const walletClient = signer as any;
+
+      // Execute settlement using the new function
+      const result = await facilitatorV2.executeSettlementWithWalletClient(
+        walletClient,
+        publicClient,
+        paymentRequirements,
+        paymentPayload,
+        {
+          gasMultiplier: 1.2,
+          timeoutMs: 30000,
+          allowedRouters: this.config.allowedRouters,
+        }
+      );
+
+      // Return in v1 format for API consistency
+      return {
+        success: result.success,
+        transaction: result.transaction,
+        network: result.network as any,
+        payer: result.payer,
+        errorReason: result.errorReason as any,
+      } as SettleResponse;
+    }, payerAddress);
   }
 
   /**

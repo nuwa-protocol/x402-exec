@@ -187,8 +187,6 @@ async function main() {
         gasEstimation: config.gasEstimation,
         rpcUrls: config.dynamicGasPrice.rpcUrls,
         enableV2: config.v2.enabled,
-        v2Signer: config.v2.signer,
-        v2PrivateKey: config.v2.privateKey,
         allowedRouters: config.v2.allowedRouters,
       },
       requestBodyLimit: config.server.requestBodyLimit,

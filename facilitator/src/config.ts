@@ -81,10 +81,6 @@ export interface FeeClaimConfig {
 export interface V2Config {
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enabled: boolean;
-  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
-  signer?: string;
-  /** Private key for v2 signing (reuses EVM_PRIVATE_KEY from v1) */
-  privateKey?: string;
   /** Allowed routers per network for v2 (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
 }
@@ -584,26 +580,17 @@ function parseGasEstimationConfig(): GasEstimationConfig {
  *
  * @returns V2 configuration object
  */
+/**
+ * Parse v2 configuration from environment variables
+ * V2 now uses the shared AccountPool (evmPrivateKeys), so no separate keys needed
+ *
+ * @returns V2 configuration object
+ */
 function parseV2Config(): V2Config {
   const enabled = process.env.FACILITATOR_ENABLE_V2 === "true";
 
   if (!enabled) {
     return { enabled: false };
-  }
-
-  // Parse v2 signer (optional, for unlocked account mode)
-  const signer = process.env.FACILITATOR_V2_SIGNER?.trim();
-
-  // Get private key from v1's EVM_PRIVATE_KEY for local signing
-  const privateKey = process.env.EVM_PRIVATE_KEY?.trim();
-
-  // Either signer or privateKey must be provided (and not empty)
-  if (!signer && !privateKey) {
-    throw new Error(
-      "FACILITATOR_V2_SIGNER or EVM_PRIVATE_KEY is required when FACILITATOR_ENABLE_V2=true. " +
-      `Current values: FACILITATOR_V2_SIGNER=${process.env.FACILITATOR_V2_SIGNER ? '(set)' : '(not set)'}, ` +
-      `EVM_PRIVATE_KEY=${process.env.EVM_PRIVATE_KEY ? '(set but may be empty)' : '(not set)'}`
-    );
   }
 
   // Parse v2 allowed routers (optional)
@@ -630,8 +617,6 @@ function parseV2Config(): V2Config {
 
   return {
     enabled: true,
-    signer,
-    privateKey,
     allowedRouters,
   };
 }

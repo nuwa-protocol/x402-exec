@@ -40,6 +40,7 @@ export {
   waitForSettlementReceipt,
   parseSettlementRouterParams,
   settleWithSettlementRouter,
+  executeSettlementWithWalletClient,
 } from "./settlement.js";
 
 // Validation utilities

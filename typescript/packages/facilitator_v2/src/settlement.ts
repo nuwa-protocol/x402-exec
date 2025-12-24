@@ -254,7 +254,69 @@ export function parseSettlementRouterParams(
 }
 
 /**
+ * Execute settlement using provided WalletClient (for AccountPool integration)
+ * This function allows external wallet management by accepting a pre-configured WalletClient
+ */
+export async function executeSettlementWithWalletClient(
+  walletClient: WalletClient,
+  publicClient: PublicClient,
+  paymentRequirements: any,
+  paymentPayload: any,
+  config: {
+    gasLimit?: bigint;
+    gasMultiplier?: number;
+    timeoutMs?: number;
+    allowedRouters?: Record<string, string[]>;
+  } = {}
+): Promise<SettleResponse> {
+  try {
+    // Validate SettlementRouter
+    const networkConfig = getNetworkConfig(paymentRequirements.network);
+    validateSettlementRouter(
+      paymentRequirements.network,
+      paymentRequirements.extra?.settlementRouter,
+      config.allowedRouters,
+      networkConfig
+    );
+
+    // Parse settlement parameters
+    const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
+
+    // Execute settlement with provided wallet client
+    const txHash = await executeSettlementWithRouter(walletClient, params, {
+      gasLimit: config.gasLimit,
+      gasMultiplier: config.gasMultiplier,
+    });
+
+    // Wait for receipt
+    const receipt = await waitForSettlementReceipt(
+      publicClient,
+      txHash,
+      config.timeoutMs || 30000
+    );
+
+    return {
+      success: receipt.success,
+      transaction: txHash,
+      network: paymentRequirements.network,
+      payer: params.from,
+      errorReason: receipt.success ? undefined : "Transaction failed",
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      success: false,
+      transaction: "",
+      network: paymentRequirements.network,
+      payer: paymentPayload.payer,
+      errorReason: errorMessage,
+    };
+  }
+}
+
+/**
  * Full settlement workflow using SettlementRouter
+ * This function creates its own clients based on FacilitatorConfig
  */
 export async function settleWithSettlementRouter(
   paymentRequirements: any,
