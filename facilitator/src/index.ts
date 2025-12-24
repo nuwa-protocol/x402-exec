@@ -250,7 +250,16 @@ async function main() {
     // Register server for graceful shutdown
     shutdownManager.registerServer(server);
   } catch (error) {
-    logger.fatal({ error }, "Failed to initialize application");
+    // Log richer diagnostic info to help identify validation/config errors
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.fatal(
+      {
+        error: err,
+        message: err.message,
+        stack: err.stack,
+      },
+      "Failed to initialize application"
+    );
     process.exit(1);
   }
 }

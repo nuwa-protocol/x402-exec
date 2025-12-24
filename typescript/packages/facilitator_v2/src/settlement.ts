@@ -9,13 +9,13 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  privateKeyToAccount,
   type PublicClient,
   type WalletClient,
   type Chain,
   type Transport,
   type Account,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import type { SettlementRouterParams, SettleResponse, FacilitatorConfig } from "./types.js";
 import { SETTLEMENT_ROUTER_ABI } from "./types.js";
 import {

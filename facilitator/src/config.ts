@@ -592,14 +592,18 @@ function parseV2Config(): V2Config {
   }
 
   // Parse v2 signer (optional, for unlocked account mode)
-  const signer = process.env.FACILITATOR_V2_SIGNER;
+  const signer = process.env.FACILITATOR_V2_SIGNER?.trim();
 
   // Get private key from v1's EVM_PRIVATE_KEY for local signing
-  const privateKey = process.env.EVM_PRIVATE_KEY;
+  const privateKey = process.env.EVM_PRIVATE_KEY?.trim();
 
-  // Either signer or privateKey must be provided
+  // Either signer or privateKey must be provided (and not empty)
   if (!signer && !privateKey) {
-    throw new Error("FACILITATOR_V2_SIGNER or EVM_PRIVATE_KEY is required when FACILITATOR_ENABLE_V2=true");
+    throw new Error(
+      "FACILITATOR_V2_SIGNER or EVM_PRIVATE_KEY is required when FACILITATOR_ENABLE_V2=true. " +
+      `Current values: FACILITATOR_V2_SIGNER=${process.env.FACILITATOR_V2_SIGNER ? '(set)' : '(not set)'}, ` +
+      `EVM_PRIVATE_KEY=${process.env.EVM_PRIVATE_KEY ? '(set but may be empty)' : '(not set)'}`
+    );
   }
 
   // Parse v2 allowed routers (optional)

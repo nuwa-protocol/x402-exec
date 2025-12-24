@@ -16,7 +16,8 @@ import { FacilitatorValidationError, SettlementRouterError } from "./types.js";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
 import { calculateCommitment } from "@x402x/core_v2";
 import { settleWithSettlementRouter, createPublicClientForNetwork, createWalletClientForNetwork, waitForSettlementReceipt } from "./settlement.js";
-import { verifyTypedData, parseErc6492Signature, privateKeyToAccount } from "viem";
+import { verifyTypedData, parseErc6492Signature } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 // EIP-712 authorization types for EIP-3009
 const authorizationTypes = {

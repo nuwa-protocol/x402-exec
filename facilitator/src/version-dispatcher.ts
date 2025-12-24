@@ -76,6 +76,15 @@ export class VersionDispatcher {
   ) {
     // Initialize v2 facilitator if enabled
     if (this.config.enableV2 && (this.config.signer || this.config.privateKey)) {
+      logger.info({
+        hasSigner: !!this.config.signer,
+        signerValue: this.config.signer ? `${this.config.signer.slice(0, 6)}...` : '(empty)',
+        hasPrivateKey: !!this.config.privateKey,
+        privateKeyLength: this.config.privateKey?.length || 0,
+        hasAllowedRouters: !!this.config.allowedRouters,
+        hasRpcUrls: !!this.config.rpcUrls,
+      }, "Initializing V2 facilitator with config");
+
       this.v2Facilitator = createRouterSettlementFacilitator({
         signer: this.config.signer,
         privateKey: this.config.privateKey,

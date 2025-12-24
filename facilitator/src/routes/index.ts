@@ -15,6 +15,7 @@ import { createFeeRoutes, FeeRouteDependencies } from "./fee.js";
 import { createStatsRoutes, type StatsRouteDependencies } from "./stats.js";
 import { createHookValidationMiddleware } from "../middleware/hook-validation.js";
 import { createFeeValidationMiddleware } from "../middleware/fee-validation.js";
+import { createVersionDispatcher } from "../version-dispatcher.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
@@ -64,6 +65,23 @@ export function registerRoutes(
     deps.tokenPrice,
   );
 
+  // Create shared version dispatcher for both verify and settle routes
+  const versionDispatcher = createVersionDispatcher(
+    {
+      poolManager: deps.poolManager,
+      x402Config: deps.x402Config,
+      balanceChecker: deps.balanceChecker,
+      allowedSettlementRouters: deps.allowedSettlementRouters,
+    },
+    {
+      enableV2: deps.enableV2,
+      signer: deps.v2Signer,
+      privateKey: deps.v2PrivateKey,
+      allowedRouters: deps.allowedRouters,
+      rpcUrls: deps.rpcUrls,
+    }
+  );
+
   // Health check routes (no rate limiting)
   const healthRoutes = createHealthRoutes(deps);
   app.use(healthRoutes);
@@ -74,6 +92,7 @@ export function registerRoutes(
     rateLimiters.verifyRateLimiter,
     hookValidation,
     feeValidation,
+    versionDispatcher, // Pass shared dispatcher
   );
   app.use(verifyRoutes);
 
@@ -83,6 +102,7 @@ export function registerRoutes(
     rateLimiters.settleRateLimiter,
     hookValidation,
     feeValidation,
+    versionDispatcher, // Pass shared dispatcher
   );
   app.use(settleRoutes);
 

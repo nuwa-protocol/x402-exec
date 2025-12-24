@@ -52,6 +52,7 @@ export interface VerifyRouteDependencies {
  * @param rateLimiter - Rate limiting middleware
  * @param hookValidation - Hook whitelist validation middleware
  * @param feeValidation - Fee validation middleware
+ * @param dispatcher - Shared version dispatcher (optional, will create new if not provided)
  * @returns Express Router with verify endpoints
  */
 export function createVerifyRoutes(
@@ -59,11 +60,12 @@ export function createVerifyRoutes(
   rateLimiter: RateLimitRequestHandler,
   hookValidation?: RequestHandler,
   feeValidation?: RequestHandler,
+  dispatcher?: ReturnType<typeof createVersionDispatcher>,
 ): Router {
   const router = Router();
 
-  // Create version dispatcher for routing between v1 and v2
-  const dispatcher = createVersionDispatcher(
+  // Use provided dispatcher or create new one
+  const versionDispatcher = dispatcher || createVersionDispatcher(
     {
       poolManager: deps.poolManager,
       x402Config: deps.x402Config,
@@ -114,7 +116,7 @@ export function createVerifyRoutes(
       validateX402Version(body.x402Version);
 
       // Route to appropriate implementation based on version
-      const result = await dispatcher.verify({
+      const result = await versionDispatcher.verify({
         paymentPayload,
         paymentRequirements,
         x402Version: body.x402Version,
