@@ -217,18 +217,18 @@ export function parseMoneyToDecimal(money: string | number): number {
  * 
  * @param price - Price as string or number (in USD, not atomic units)
  * @param network - CAIP-2 network identifier
- * @returns Object with maxAmountRequired as string in atomic units, or error
+ * @returns Object with amount as string in atomic units, or error
  * 
  * @example
  * ```typescript
  * const result = processPriceToAtomicAmount('1.5', 'eip155:84532');
- * // { maxAmountRequired: '1500000' }
+ * // { amount: '1500000' }
  * ```
  */
 export function processPriceToAtomicAmount(
   price: string | number,
   network: Network
-): { maxAmountRequired: string } | { error: string } {
+): { amount: string } | { error: string } {
   try {
     const amount = parseMoneyToDecimal(price);
     const asset = getDefaultAsset(network);
@@ -240,7 +240,7 @@ export function processPriceToAtomicAmount(
     const paddedFractional = fractional.padEnd(decimals, '0').slice(0, decimals);
     const atomicAmount = BigInt(whole) * BigInt(10 ** decimals) + BigInt(paddedFractional);
 
-    return { maxAmountRequired: atomicAmount.toString() };
+    return { amount: atomicAmount.toString() };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Unknown error processing price",

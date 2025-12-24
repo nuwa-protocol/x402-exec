@@ -79,15 +79,26 @@ export const mockPaymentRequirements = {
   },
 };
 
-// Mock payment payload
+// Mock payment payload with standard x402 v2 EVM exact scheme structure
 export const mockPaymentPayload = {
-  scheme: "exact",
-  network: "eip155:84532",
-  payer: MOCK_ADDRESSES.payer,
-  nonce: MOCK_VALUES.nonce,
-  signature: MOCK_VALUES.signature,
-  validAfter: MOCK_VALUES.validAfter,
-  validBefore: MOCK_VALUES.validBefore,
+  x402Version: 2,
+  resource: {
+    url: "https://x402x.dev/test",
+    description: "Test payment",
+    mimeType: "application/json",
+  },
+  accepted: mockPaymentRequirements,
+  payload: {
+    signature: MOCK_VALUES.signature,
+    authorization: {
+      from: MOCK_ADDRESSES.payer,
+      to: MOCK_ADDRESSES.settlementRouter,
+      value: MOCK_VALUES.paymentAmount,
+      validAfter: MOCK_VALUES.validAfter,
+      validBefore: MOCK_VALUES.validBefore,
+      nonce: MOCK_VALUES.nonce,
+    },
+  },
 };
 
 // Mock successful settlement response

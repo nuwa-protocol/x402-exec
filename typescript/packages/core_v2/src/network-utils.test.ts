@@ -61,23 +61,23 @@ describe("parseMoneyToDecimal", () => {
 describe("processPriceToAtomicAmount", () => {
   it("should convert decimal to atomic units correctly", () => {
     const result = processPriceToAtomicAmount("1.5", "eip155:84532");
-    expect(result).toEqual({ maxAmountRequired: "1500000" });
+    expect(result).toEqual({ amount: "1500000" });
   });
 
   it("should handle whole numbers", () => {
     const result = processPriceToAtomicAmount("1", "eip155:84532");
-    expect(result).toEqual({ maxAmountRequired: "1000000" });
+    expect(result).toEqual({ amount: "1000000" });
   });
 
   it("should handle small decimals without precision loss", () => {
     // Test case for floating-point precision issue (0.1 * 10^6 should be exactly 100000)
     const result = processPriceToAtomicAmount("0.1", "eip155:84532");
-    expect(result).toEqual({ maxAmountRequired: "100000" });
+    expect(result).toEqual({ amount: "100000" });
   });
 
   it("should handle dollar sign", () => {
     const result = processPriceToAtomicAmount("$0.5", "eip155:84532");
-    expect(result).toEqual({ maxAmountRequired: "500000" });
+    expect(result).toEqual({ amount: "500000" });
   });
 
   it("should return error for invalid network", () => {

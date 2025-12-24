@@ -32,7 +32,7 @@ function getDefaultAssetConfig(network: Network) {
  */
 export const networks: Record<string, NetworkConfig> = {
   "base-sepolia": {
-    chainId: getNetworkId("base-sepolia"),
+    chainId: parseInt(getNetworkId("base-sepolia").split(":")[1]),
     name: "Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
@@ -54,7 +54,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "x-layer-testnet": {
-    chainId: getNetworkId("x-layer-testnet"),
+    chainId: parseInt(getNetworkId("x-layer-testnet").split(":")[1]),
     name: "X Layer Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer-test/address/",
@@ -76,7 +76,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "skale-base-sepolia": {
-    chainId: getNetworkId("skale-base-sepolia"),
+    chainId: parseInt(getNetworkId("skale-base-sepolia").split(":")[1]),
     name: "SKALE Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/address/",
@@ -98,7 +98,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "bsc-testnet": {
-    chainId: getNetworkId("bsc-testnet"),
+    chainId: parseInt(getNetworkId("bsc-testnet").split(":")[1]),
     name: "BSC Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://testnet.bscscan.com/address/",
@@ -121,7 +121,7 @@ export const networks: Record<string, NetworkConfig> = {
   },
   // Mainnet configurations
   base: {
-    chainId: getNetworkId("base"),
+    chainId: parseInt(getNetworkId("base").split(":")[1]),
     name: "Base Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://basescan.org/address/",
@@ -143,7 +143,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "x-layer": {
-    chainId: getNetworkId("x-layer"),
+    chainId: parseInt(getNetworkId("x-layer").split(":")[1]),
     name: "X Layer Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer/address/",
@@ -165,7 +165,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   bsc: {
-    chainId: getNetworkId("bsc"),
+    chainId: parseInt(getNetworkId("bsc").split(":")[1]),
     name: "BSC Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://bscscan.com/address/",

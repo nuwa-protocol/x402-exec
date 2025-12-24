@@ -56,8 +56,8 @@ export function addSettlementExtra(
   // Preserve existing name/version from requirements.extra if they exist (from x402 official middleware)
   // Only use config values as fallback
   const existingExtra = requirements.extra || {};
-  const name = existingExtra.name || config.defaultAsset.eip712.name;
-  const version = existingExtra.version || config.defaultAsset.eip712.version;
+  const name = (existingExtra.name as string) || config.defaultAsset.eip712.name;
+  const version = (existingExtra.version as string) || config.defaultAsset.eip712.version;
 
   const extra: SettlementExtra = {
     // Asset EIP-712 domain info (preserve existing if available)

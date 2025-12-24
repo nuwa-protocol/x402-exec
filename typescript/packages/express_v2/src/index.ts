@@ -151,7 +151,7 @@ class X402xCustomServerScheme {
       if ("error" in atomicAmountForAsset) {
         throw new Error(atomicAmountForAsset.error);
       }
-      const { maxAmountRequired: baseAmount, asset } = atomicAmountForAsset;
+      const { amount: baseAmount, asset } = atomicAmountForAsset;
 
       const x402xConfig = getNetworkConfig(network);
 
@@ -168,7 +168,7 @@ class X402xCustomServerScheme {
 
       let resolvedFacilitatorFee: string;
       let businessAmount: string;
-      let maxAmountRequired: string;
+      let amount: string;
 
       // Check if we should dynamically query fee
       if (resolvedFacilitatorFeeRaw === undefined || resolvedFacilitatorFeeRaw === "auto") {
@@ -191,33 +191,33 @@ class X402xCustomServerScheme {
         // When using dynamic fee, price is business price only
         // Total = business price + facilitator fee
         businessAmount = baseAmount;
-        maxAmountRequired = (
+        amount = (
           BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)
         ).toString();
       } else if (resolvedFacilitatorFeeRaw === "0" || resolvedFacilitatorFeeRaw === 0) {
         // Explicitly set to 0
         resolvedFacilitatorFee = "0";
         businessAmount = baseAmount;
-        maxAmountRequired = baseAmount;
+        amount = baseAmount;
       } else {
         // Static fee configuration
         const feeResult = processPriceToAtomicAmount(resolvedFacilitatorFeeRaw, network);
         if ("error" in feeResult) {
           throw new Error(`Invalid facilitatorFee: ${feeResult.error}`);
         }
-        resolvedFacilitatorFee = feeResult.maxAmountRequired;
+        resolvedFacilitatorFee = feeResult.amount;
         businessAmount = baseAmount;
         // Total = business price + static facilitator fee
-        maxAmountRequired = (BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)).toString();
+        amount = (BigInt(businessAmount) + BigInt(resolvedFacilitatorFee)).toString();
       }
 
       // Build base PaymentRequirements
       const baseRequirements: PaymentRequirements = {
         scheme: "exact",
         network,
-        maxAmountRequired,
+        amount,
         resource: resource || (resourceUrl as Resource),
-        description: description || `Payment of ${maxAmountRequired} on ${network}`,
+        description: description || `Payment of ${amount} on ${network}`,
         mimeType: mimeType || "application/json",
         payTo: x402xConfig.settlementRouter as Address, // Use SettlementRouter as payTo
         maxTimeoutSeconds: maxTimeoutSeconds || 3600,
@@ -323,7 +323,7 @@ class X402xCustomServerScheme {
     const settlementInfo = requirements.extra as any;
     return {
       payer: payment.payer as Address | SolanaAddress,
-      amount: requirements.maxAmountRequired,
+      amount: requirements.amount,
       network: requirements.network,
       payment,
       requirements,

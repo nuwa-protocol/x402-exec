@@ -53,7 +53,7 @@ export function parseDefaultAssetAmount(amount: string | number, network: Networ
     throw new AmountError(`Invalid amount format: ${result.error}`);
   }
 
-  return result.maxAmountRequired;
+  return result.amount;
 }
 
 /**

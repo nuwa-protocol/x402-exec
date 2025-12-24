@@ -18,6 +18,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import type { SettlementRouterParams, SettleResponse, FacilitatorConfig } from "./types.js";
 import { SETTLEMENT_ROUTER_ABI } from "./types.js";
+import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
 import {
   validateGasLimit,
   validateGasMultiplier,
@@ -261,6 +262,43 @@ export async function waitForSettlementReceipt(
 }
 
 /**
+ * EVM Exact Scheme Authorization structure
+ * Standard x402 v2 authorization format for EIP-3009
+ */
+interface ExactEvmAuthorization {
+  from: string;
+  to: string;
+  value: string;
+  validAfter: string;
+  validBefore: string;
+  nonce: string;
+}
+
+/**
+ * EVM Exact Scheme Payload structure
+ * Standard x402 v2 payload format
+ */
+interface ExactEvmPayload {
+  signature: string;
+  authorization: ExactEvmAuthorization;
+}
+
+/**
+ * Parse EVM exact scheme payload from x402 v2 PaymentPayload
+ * Extracts the standard authorization and signature fields
+ */
+function parseEvmExactPayload(payload: any): ExactEvmPayload {
+  // x402 v2 uses payload.payload for scheme-specific data
+  const evmPayload = payload.payload as ExactEvmPayload;
+  
+  if (!evmPayload || !evmPayload.signature || !evmPayload.authorization) {
+    throw new Error("Invalid EVM exact payload structure");
+  }
+  
+  return evmPayload;
+}
+
+/**
  * Parse settlement parameters from payment requirements and payload
  */
 export function parseSettlementRouterParams(
@@ -271,16 +309,18 @@ export function parseSettlementRouterParams(
     throw new Error("Payment requirements are not in SettlementRouter mode");
   }
 
+  // Parse standard x402 v2 EVM exact payload
+  const evmPayload = parseEvmExactPayload(paymentPayload);
   const extra = parseSettlementExtra(paymentRequirements.extra);
 
   return {
     token: paymentRequirements.asset as Address,
-    from: paymentPayload.payer as Address,
+    from: evmPayload.authorization.from as Address,
     value: paymentRequirements.amount, // V2 uses 'amount', not 'maxAmountRequired'
-    validAfter: paymentPayload.validAfter || "0x0",
-    validBefore: paymentPayload.validBefore || "0xFFFFFFFFFFFFFFFF",
-    nonce: paymentPayload.nonce,
-    signature: paymentPayload.signature,
+    validAfter: evmPayload.authorization.validAfter || "0x0",
+    validBefore: evmPayload.authorization.validBefore || "0xFFFFFFFFFFFFFFFF",
+    nonce: evmPayload.authorization.nonce,
+    signature: evmPayload.signature,
     salt: extra.salt,
     payTo: extra.payTo as Address,
     facilitatorFee: extra.facilitatorFee,
