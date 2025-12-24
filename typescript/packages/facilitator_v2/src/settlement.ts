@@ -9,10 +9,12 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  privateKeyToAccount,
   type PublicClient,
   type WalletClient,
   type Chain,
   type Transport,
+  type Account,
 } from "viem";
 import type { SettlementRouterParams, SettleResponse, FacilitatorConfig } from "./types.js";
 import { SETTLEMENT_ROUTER_ABI } from "./types.js";
@@ -53,12 +55,15 @@ export function createPublicClientForNetwork(
 
 /**
  * Create viem wallet client for a network
+ * If privateKey is provided, uses local signing (works with standard RPC providers)
+ * If only signer address is provided, requires node to have the account unlocked
  */
 export function createWalletClientForNetwork(
   network: string,
   signer: Address,
   rpcUrls?: Record<string, string>,
-  transport?: Transport
+  transport?: Transport,
+  privateKey?: string
 ): WalletClient {
   const networkConfig = getNetworkConfig(network);
 
@@ -69,8 +74,14 @@ export function createWalletClientForNetwork(
     throw new Error(`No RPC URL available for network: ${network}`);
   }
 
+  // Use private key for local signing if provided
+  let account: Account | Address = signer;
+  if (privateKey) {
+    account = privateKeyToAccount(privateKey as Hex);
+  }
+
   return createWalletClient({
-    account: signer,
+    account,
     chain: networkConfig as Chain,
     transport: transport || http(rpcUrl),
   });
@@ -265,8 +276,10 @@ export async function settleWithSettlementRouter(
     );
     const walletClient = createWalletClientForNetwork(
       paymentRequirements.network,
-      config.signer,
-      config.rpcUrls
+      config.signer || "",
+      config.rpcUrls,
+      undefined,
+      config.privateKey
     );
 
     // Execute settlement

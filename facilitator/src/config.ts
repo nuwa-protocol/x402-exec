@@ -81,8 +81,10 @@ export interface FeeClaimConfig {
 export interface V2Config {
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enabled: boolean;
-  /** Facilitator signer address for v2 */
+  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
   signer?: string;
+  /** Private key for v2 signing (reuses EVM_PRIVATE_KEY from v1) */
+  privateKey?: string;
   /** Allowed routers per network for v2 (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
 }
@@ -589,10 +591,13 @@ function parseV2Config(): V2Config {
     return { enabled: false };
   }
 
-  // Parse v2 signer (required when v2 is enabled)
+  // Parse v2 signer (optional, will be derived from privateKey if not provided)
   const signer = process.env.FACILITATOR_V2_SIGNER;
-  if (!signer) {
-    throw new Error("FACILITATOR_V2_SIGNER is required when FACILITATOR_ENABLE_V2=true");
+
+  // Get private key from v1's EVM_PRIVATE_KEY for local signing
+  const privateKey = process.env.EVM_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error("EVM_PRIVATE_KEY is required when FACILITATOR_ENABLE_V2=true for local signing");
   }
 
   // Parse v2 allowed routers (optional)
@@ -620,6 +625,7 @@ function parseV2Config(): V2Config {
   return {
     enabled: true,
     signer,
+    privateKey,
     allowedRouters,
   };
 }

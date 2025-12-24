@@ -42,8 +42,10 @@ export interface SettleResponse {
  * Configuration for RouterSettlementFacilitator
  */
 export interface FacilitatorConfig {
-  /** Signer address for facilitating settlements */
-  signer: Address;
+  /** Signer address for facilitating settlements (optional, will be derived from privateKey if not provided) */
+  signer?: Address;
+  /** Private key for local signing (enables sending transactions on standard RPC providers) */
+  privateKey?: string;
   /** Allowed SettlementRouter addresses per network */
   allowedRouters?: Record<string, string[]>;
   /** Optional RPC URLs per network */

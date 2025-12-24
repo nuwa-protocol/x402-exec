@@ -26,8 +26,10 @@ const logger = getLogger();
 export interface VersionDispatcherConfig {
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enableV2?: boolean;
-  /** Facilitator signer address for v2 */
+  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
   signer?: string;
+  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY from v1) */
+  privateKey?: string;
   /** Allowed routers per network for v2 */
   allowedRouters?: Record<string, string[]>;
   /** RPC URLs per network for both v1 and v2 */
@@ -73,9 +75,10 @@ export class VersionDispatcher {
     private config: VersionDispatcherConfig = {}
   ) {
     // Initialize v2 facilitator if enabled
-    if (this.config.enableV2 && this.config.signer) {
+    if (this.config.enableV2 && (this.config.signer || this.config.privateKey)) {
       this.v2Facilitator = createRouterSettlementFacilitator({
         signer: this.config.signer,
+        privateKey: this.config.privateKey,
         allowedRouters: this.config.allowedRouters,
         rpcUrls: this.config.rpcUrls,
       });
