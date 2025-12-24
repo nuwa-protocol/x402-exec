@@ -66,12 +66,17 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy SDK packages with proper directory structure
 # We need to copy each package's package.json AND dist directory separately
-# to maintain the correct structure: typescript/packages/{core,express,hono,fetch,react}/
+# to maintain the correct structure for all v1 and v2 packages
 COPY --from=builder /app/typescript/packages/core/package.json ./typescript/packages/core/
+COPY --from=builder /app/typescript/packages/core_v2/package.json ./typescript/packages/core_v2/
 COPY --from=builder /app/typescript/packages/express/package.json ./typescript/packages/express/
+COPY --from=builder /app/typescript/packages/express_v2/package.json ./typescript/packages/express_v2/
 COPY --from=builder /app/typescript/packages/hono/package.json ./typescript/packages/hono/
+COPY --from=builder /app/typescript/packages/hono_v2/package.json ./typescript/packages/hono_v2/
 COPY --from=builder /app/typescript/packages/fetch/package.json ./typescript/packages/fetch/
+COPY --from=builder /app/typescript/packages/fetch_v2/package.json ./typescript/packages/fetch_v2/
 COPY --from=builder /app/typescript/packages/react/package.json ./typescript/packages/react/
+COPY --from=builder /app/typescript/packages/facilitator_v2/package.json ./typescript/packages/facilitator_v2/
 
 # Copy facilitator package.json
 COPY facilitator/package.json ./facilitator/
@@ -81,10 +86,15 @@ RUN pnpm install --frozen-lockfile --prod --filter "@x402x/*"
 
 # Copy built SDK packages from builder (with correct directory structure)
 COPY --from=builder /app/typescript/packages/core/dist ./typescript/packages/core/dist
+COPY --from=builder /app/typescript/packages/core_v2/dist ./typescript/packages/core_v2/dist
 COPY --from=builder /app/typescript/packages/express/dist ./typescript/packages/express/dist
+COPY --from=builder /app/typescript/packages/express_v2/dist ./typescript/packages/express_v2/dist
 COPY --from=builder /app/typescript/packages/hono/dist ./typescript/packages/hono/dist
+COPY --from=builder /app/typescript/packages/hono_v2/dist ./typescript/packages/hono_v2/dist
 COPY --from=builder /app/typescript/packages/fetch/dist ./typescript/packages/fetch/dist
+COPY --from=builder /app/typescript/packages/fetch_v2/dist ./typescript/packages/fetch_v2/dist
 COPY --from=builder /app/typescript/packages/react/dist ./typescript/packages/react/dist
+COPY --from=builder /app/typescript/packages/facilitator_v2/dist ./typescript/packages/facilitator_v2/dist
 
 # Copy built facilitator from builder
 COPY --from=builder /app/facilitator/dist ./facilitator/dist

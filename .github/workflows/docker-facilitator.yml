@@ -55,18 +55,99 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image
+      - name: Build and test Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./facilitator/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: false  # Don't push yet, test first
+          tags: facilitator:test
+          load: true  # Load image into Docker for testing
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
+      - name: Test Docker image startup
+        run: |
+          echo "Testing if the Docker image can start successfully..."
+          
+          # Start container with minimal test config
+          docker run -d \
+            --name facilitator-test \
+            --env-file ./facilitator/env.docker-test \
+            -p 3099:3000 \
+            facilitator:test
+          
+          # Wait up to 15 seconds for startup or failure
+          WAIT_TIME=0
+          MAX_WAIT=15
+          SUCCESS=false
+          
+          while [ $WAIT_TIME -lt $MAX_WAIT ]; do
+            # Check if container is still running
+            if ! docker ps -q -f name=facilitator-test | grep -q .; then
+              echo "✗ Container exited unexpectedly"
+              echo "Container logs:"
+              docker logs facilitator-test
+              docker rm facilitator-test 2>/dev/null || true
+              exit 1
+            fi
+            
+            # Check for import errors
+            if docker logs facilitator-test 2>&1 | grep -q "Cannot find package"; then
+              echo "✗ Module import error detected"
+              docker logs facilitator-test
+              docker stop facilitator-test 2>/dev/null || true
+              docker rm facilitator-test 2>/dev/null || true
+              exit 1
+            fi
+            
+            # Check if service started successfully (look for endpoint listings)
+            if docker logs facilitator-test 2>&1 | grep -q "POST /settle"; then
+              SUCCESS=true
+              break
+            fi
+            
+            sleep 1
+            WAIT_TIME=$((WAIT_TIME + 1))
+            echo -n "."
+          done
+          
+          echo ""
+          
+          if [ "$SUCCESS" = false ]; then
+            echo "⚠  Service did not report ready within ${MAX_WAIT} seconds"
+            echo "Logs:"
+            docker logs facilitator-test
+            docker stop facilitator-test 2>/dev/null || true
+            docker rm facilitator-test 2>/dev/null || true
+            exit 1
+          fi
+          
+          echo "✓ Docker image test passed!"
+          docker logs --tail 10 facilitator-test
+          
+          # Cleanup (don't fail on cleanup errors)
+          docker stop facilitator-test 2>/dev/null || true
+          docker rm facilitator-test 2>/dev/null || true
+          
+          # Explicit success exit
+          exit 0
+
+      - name: Push Docker image
+        id: push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./facilitator/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          platforms: linux/amd64
+
       - name: Image digest
         if: github.event_name != 'pull_request'
-        run: echo ${{ steps.build.outputs.digest }}
+        run: echo ${{ steps.push.outputs.digest }}
