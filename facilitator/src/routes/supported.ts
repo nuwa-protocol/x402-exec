@@ -16,8 +16,10 @@ export interface SupportedRouteDependencies {
   poolManager: PoolManager;
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enableV2?: boolean;
-  /** Facilitator signer address for v2 */
+  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
   v2Signer?: string;
+  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY from v1) */
+  v2PrivateKey?: string;
   /** Allowed routers per network for v2 */
   allowedRouters?: Record<string, string[]>;
 }
@@ -29,7 +31,8 @@ export interface SupportedRouteDependencies {
  * @returns true if v2 is available for advertisement
  */
 function isV2Available(deps: SupportedRouteDependencies): boolean {
-  return !!(deps.enableV2 && deps.v2Signer);
+  // V2 is available when enabled AND has either signer or privateKey (for local signing)
+  return !!(deps.enableV2 && (deps.v2Signer || deps.v2PrivateKey));
 }
 
 /**

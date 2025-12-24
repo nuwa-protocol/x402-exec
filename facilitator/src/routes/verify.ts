@@ -37,8 +37,10 @@ export interface VerifyRouteDependencies {
   rpcUrls?: Record<string, string>;
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enableV2?: boolean;
-  /** Facilitator signer address for v2 */
+  /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
   v2Signer?: string;
+  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY from v1) */
+  v2PrivateKey?: string;
   /** Allowed routers per network for v2 */
   allowedRouters?: Record<string, string[]>;
 }
@@ -70,6 +72,7 @@ export function createVerifyRoutes(
     {
       enableV2: deps.enableV2,
       signer: deps.v2Signer,
+      privateKey: deps.v2PrivateKey,
       allowedRouters: deps.allowedRouters,
       rpcUrls: deps.rpcUrls,
     }

@@ -155,15 +155,35 @@ export function validateNetwork(network: string): Network {
  */
 export function validateFacilitatorConfig(config: {
   signer?: string;
+  privateKey?: string;
   allowedRouters?: Record<string, string[]>;
   rpcUrls?: Record<string, string>;
 }): void {
-  if (!config.signer) {
-    throw new FacilitatorValidationError("Missing signer in facilitator configuration");
+  // Either signer or privateKey must be provided
+  if (!config.signer && !config.privateKey) {
+    throw new FacilitatorValidationError("Missing signer or privateKey in facilitator configuration");
   }
 
-  if (!isValidEthereumAddress(config.signer)) {
-    throw new FacilitatorValidationError(`Invalid signer address: ${config.signer}`);
+  // Validate signer if provided
+  if (config.signer) {
+    if (!isValidEthereumAddress(config.signer)) {
+      throw new FacilitatorValidationError(`Invalid signer address: ${config.signer}`);
+    }
+  }
+
+  // Validate private key if provided
+  if (config.privateKey) {
+    // Private key should be a 32-byte hex string (64 hex chars), with optional 0x prefix
+    const privateKey = config.privateKey;
+    const hasPrefix = privateKey.startsWith("0x") || privateKey.startsWith("0X");
+    const hexBody = hasPrefix ? privateKey.slice(2) : privateKey;
+
+    // Validate that it's a valid 64-character hex string (32 bytes)
+    if (!/^[a-fA-F0-9]{64}$/.test(hexBody)) {
+      throw new FacilitatorValidationError(
+        "Invalid private key format: must be 32-byte hex string (64 hex chars, with optional 0x prefix)"
+      );
+    }
   }
 
   if (config.allowedRouters) {

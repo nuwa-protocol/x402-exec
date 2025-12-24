@@ -16,7 +16,7 @@ import { FacilitatorValidationError, SettlementRouterError } from "./types.js";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
 import { calculateCommitment } from "@x402x/core_v2";
 import { settleWithSettlementRouter, createPublicClientForNetwork, createWalletClientForNetwork, waitForSettlementReceipt } from "./settlement.js";
-import { verifyTypedData, parseErc6492Signature } from "viem";
+import { verifyTypedData, parseErc6492Signature, privateKeyToAccount } from "viem";
 
 // EIP-712 authorization types for EIP-3009
 const authorizationTypes = {
@@ -126,10 +126,19 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
 
   /**
    * Get signer addresses for the network
+   * Derives from privateKey if signer address not explicitly provided
    */
   getSigners(network: string): string[] {
     validateNetwork(network);
-    return [this.config.signer];
+    // Use provided signer or derive from private key
+    if (this.config.signer) {
+      return [this.config.signer];
+    }
+    if (this.config.privateKey) {
+      const account = privateKeyToAccount(this.config.privateKey as `0x${string}`);
+      return [account.address];
+    }
+    throw new Error("Either signer or privateKey must be provided in FacilitatorConfig");
   }
 
   /**
@@ -502,7 +511,13 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     payload: PaymentPayload,
     requirements: PaymentRequirements
   ): Promise<SettleResponse> {
-    const walletClient = createWalletClientForNetwork(requirements.network, this.config.signer, this.config.rpcUrls);
+    const walletClient = createWalletClientForNetwork(
+      requirements.network,
+      this.config.signer,
+      this.config.rpcUrls,
+      undefined,
+      this.config.privateKey
+    );
     const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
 
     try {

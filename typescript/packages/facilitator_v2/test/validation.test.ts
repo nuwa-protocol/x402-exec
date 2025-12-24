@@ -230,9 +230,57 @@ describe("validation utilities", () => {
       }).not.toThrow();
     });
 
-    it("should throw for missing signer", () => {
+    it("should throw for missing signer and privateKey", () => {
       expect(() => {
         validateFacilitatorConfig({});
+      }).toThrow(FacilitatorValidationError);
+    });
+
+    it("should accept valid signer without privateKey", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          signer: MOCK_ADDRESSES.facilitator,
+        });
+      }).not.toThrow();
+    });
+
+    it("should accept valid privateKey without signer", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          privateKey: "0x" + "a".repeat(64),
+        });
+      }).not.toThrow();
+    });
+
+    it("should accept privateKey without 0x prefix", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          privateKey: "a".repeat(64),
+        });
+      }).not.toThrow();
+    });
+
+    it("should throw for invalid privateKey format (too short)", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          privateKey: "0x" + "a".repeat(32),
+        });
+      }).toThrow(FacilitatorValidationError);
+    });
+
+    it("should throw for invalid privateKey format (too long)", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          privateKey: "0x" + "a".repeat(128),
+        });
+      }).toThrow(FacilitatorValidationError);
+    });
+
+    it("should throw for invalid privateKey format (non-hex)", () => {
+      expect(() => {
+        validateFacilitatorConfig({
+          privateKey: "0x" + "z".repeat(64),
+        });
       }).toThrow(FacilitatorValidationError);
     });
 
