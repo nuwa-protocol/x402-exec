@@ -160,16 +160,6 @@ export function validateFacilitatorConfig(config: {
   rpcUrls?: Record<string, string>;
 }): void {
   // Debug: log what we received
-  console.log('[validateFacilitatorConfig] Received config:', {
-    hasSigner: !!config.signer,
-    signerType: typeof config.signer,
-    signerValue: config.signer,
-    hasPrivateKey: !!config.privateKey,
-    privateKeyType: typeof config.privateKey,
-    privateKeyLength: config.privateKey?.length,
-    privateKeyPreview: config.privateKey ? `${config.privateKey.slice(0, 6)}...` : '(none)',
-  });
-
   // Either signer or privateKey must be provided
   if (!config.signer && !config.privateKey) {
     throw new FacilitatorValidationError("Missing signer or privateKey in facilitator configuration");

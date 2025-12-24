@@ -260,8 +260,8 @@ export function parseSettlementRouterParams(
 export async function executeSettlementWithWalletClient(
   walletClient: WalletClient,
   publicClient: PublicClient,
-  paymentRequirements: any,
-  paymentPayload: any,
+  paymentRequirements: PaymentRequirements,
+  paymentPayload: PaymentPayload,
   config: {
     gasLimit?: bigint;
     gasMultiplier?: number;
@@ -299,16 +299,27 @@ export async function executeSettlementWithWalletClient(
       success: receipt.success,
       transaction: txHash,
       network: paymentRequirements.network,
-      payer: params.from,
+      payer: params.from, // Use params.from for consistency
       errorReason: receipt.success ? undefined : "Transaction failed",
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Extract payer consistently from params when possible
+    let payer: string | undefined;
+    try {
+      const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
+      payer = params.from;
+    } catch {
+      // Fallback to paymentPayload if params parsing fails
+      payer = (paymentPayload as any).payer;
+    }
+    
     return {
       success: false,
       transaction: "",
       network: paymentRequirements.network,
-      payer: paymentPayload.payer,
+      payer,
       errorReason: errorMessage,
     };
   }

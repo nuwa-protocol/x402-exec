@@ -571,16 +571,6 @@ function parseGasEstimationConfig(): GasEstimationConfig {
 }
 
 /**
- * Load and parse all application configuration
- *
- * @returns Complete application configuration object
- */
-/**
- * Parse v2 configuration from environment variables
- *
- * @returns V2 configuration object
- */
-/**
  * Parse v2 configuration from environment variables
  * V2 now uses the shared AccountPool (evmPrivateKeys), so no separate keys needed
  *

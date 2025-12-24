@@ -280,11 +280,13 @@ export class VersionDispatcher {
     const { createRouterSettlementFacilitator } = await import("@x402x/facilitator_v2");
     
     // Create a temporary facilitator for verification (no signer needed for verify)
+    // Note: Verification only checks signatures and balances on-chain, it doesn't send transactions.
+    // The zero address is used as a placeholder since no actual signing occurs during verification.
+    // This is safe because the facilitator's verify() method doesn't use the signer for any operations.
     const facilitator = createRouterSettlementFacilitator({
       allowedRouters: this.config.allowedRouters,
       rpcUrls: this.config.rpcUrls,
-      // Verification doesn't need signer/privateKey, but we provide a placeholder
-      signer: "0x0000000000000000000000000000000000000000",
+      signer: "0x0000000000000000000000000000000000000000", // Placeholder - not used for verification
     });
 
     // Verify using v2 implementation
@@ -379,12 +381,9 @@ export class VersionDispatcher {
         this.config.rpcUrls
       );
 
-      // Parse settlement parameters
-      const params = facilitatorV2.parseSettlementRouterParams(paymentRequirements, paymentPayload);
-
       // Use the signer from AccountPool as WalletClient
       // The signer from AccountPool is already a viem WalletClient with publicActions
-      const walletClient = signer as any;
+      const walletClient = signer;
 
       // Execute settlement using the new function
       const result = await facilitatorV2.executeSettlementWithWalletClient(

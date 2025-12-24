@@ -16,9 +16,9 @@ Successfully refactored the x402 Facilitator V2 implementation to use the shared
 - Both V1 and V2 use the same shared AccountPool
 - V2 benefits from all AccountPool features:
   - Multi-account parallel processing
-  - Serial queue per account (避免 nonce 冲突)
+  - Serial queue per account (to avoid nonce conflicts)
   - Round-robin account selection
-  - Duplicate payer detection (防止双花)
+  - Duplicate payer detection (to prevent double-spending)
   - Queue depth limits
 
 ## Architecture Changes
