@@ -47,6 +47,26 @@ vi.mock("viem", async () => {
 vi.mock("@x402x/core_v2", () => ({
   isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
   parseSettlementExtra: vi.fn((extra) => extra),
+  toCanonicalNetworkKey: vi.fn((network) => {
+    // For CAIP-2 format, return as-is; for v1 names, convert to CAIP-2
+    if (network.startsWith("eip155:")) {
+      return network;
+    }
+    // Convert common v1 names to CAIP-2
+    const nameToId: Record<string, string> = {
+      "base-sepolia": "eip155:84532",
+      "base": "eip155:8453",
+    };
+    return nameToId[network] || network;
+  }),
+  getNetworkName: vi.fn((network) => {
+    // Convert CAIP-2 to v1 name
+    const idToName: Record<string, string> = {
+      "eip155:84532": "base-sepolia",
+      "eip155:8453": "base",
+    };
+    return idToName[network] || network;
+  }),
   getNetworkConfig: vi.fn((network) => {
     // Return undefined for unknown network to test error handling
     if (network === "unknown-network") {

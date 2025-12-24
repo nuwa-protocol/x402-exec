@@ -143,13 +143,9 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       expect(paymentResult.payload.authorization).toBeDefined();
       expect(paymentResult.payload.signature).toBeDefined();
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
       // Step 3: Verify with facilitator
-      const verification = await facilitator.verify(paymentResult.payload, settlementRequirements);
+      // paymentResult is already a complete PaymentPayload object
+      const verification = await facilitator.verify(paymentResult, settlementRequirements);
 
       expect(verification.isValid).toBe(true);
       expect(verification.payer).toBe(MOCK_ADDRESSES.payer);
@@ -164,13 +160,9 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, mockPaymentRequirements);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
       // Step 2: Execute settlement
-      const settlement = await facilitator.settle(paymentResult.payload, mockPaymentRequirements);
+      // paymentResult is already a complete PaymentPayload object
+      const settlement = await facilitator.settle(paymentResult, mockPaymentRequirements);
 
       expect(settlement.success).toBe(true);
       expect(settlement.transaction).toBeDefined();
@@ -190,12 +182,7 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, mockPaymentRequirements);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
-      const verification = await facilitator.verify(paymentResult.payload, mockPaymentRequirements);
+      const verification = await facilitator.verify(paymentResult, mockPaymentRequirements);
 
       expect(verification.isValid).toBe(false);
       expect(verification.invalidReason).toBeDefined();
@@ -246,22 +233,17 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, settlementRequirements);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
       // Verify payload contains commitment-based nonce
       expect(paymentResult.payload.authorization.nonce).toBe(MOCK_VALUES.nonce);
 
       // Test verification
-      const verification = await facilitator.verify(paymentResult.payload, settlementRequirements);
+      const verification = await facilitator.verify(paymentResult, settlementRequirements);
 
       expect(verification.isValid).toBe(true);
       expect(verification.payer).toBe(MOCK_ADDRESSES.payer);
 
       // Test settlement
-      const settlement = await facilitator.settle(paymentResult.payload, settlementRequirements);
+      const settlement = await facilitator.settle(paymentResult, settlementRequirements);
 
       expect(settlement.success).toBe(true);
       expect(settlement.transaction).toBeDefined();
@@ -287,13 +269,8 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, complexSettlementRequirements);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
       const settlement = await facilitator.settle(
-        paymentResult.payload,
+        paymentResult,
         complexSettlementRequirements,
       );
 
@@ -331,7 +308,7 @@ describe("E2E Mock Contract Tests - Simplified", () => {
         expect(paymentResult.payload.authorization).toBeDefined();
         expect(paymentResult.payload.signature).toBeDefined();
 
-        const verification = await facilitator.verify(paymentResult.payload, requirements);
+        const verification = await facilitator.verify(paymentResult, requirements);
 
         if (network === "eip155:84532") {
           // Only supported network
@@ -367,16 +344,11 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, requirementsWithExtensions);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
       expect(paymentResult.x402Version).toBe(2);
       expect(paymentResult.payload).toBeDefined();
 
       const verification = await facilitator.verify(
-        paymentResult.payload,
+        paymentResult,
         requirementsWithExtensions,
       );
 
@@ -401,12 +373,7 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
       const paymentResult = await client.createPaymentPayload(2, invalidRequirements);
 
-      // Add scheme to payload to match facilitator expectations
-      paymentResult.payload.scheme = "exact";
-      paymentResult.payload.payer = paymentResult.payload.authorization.from;
-      paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
-
-      const settlement = await facilitator.settle(paymentResult.payload, invalidRequirements);
+      const settlement = await facilitator.settle(paymentResult, invalidRequirements);
 
       expect(settlement.success).toBe(false);
       // The actual error might be different depending on where validation fails
@@ -419,32 +386,37 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       const standardRequirements = {
         scheme: "exact",
         network: "eip155:84532",
-        maxAmountRequired: "1000000",
         amount: "1000000",
         asset: MOCK_ADDRESSES.token,
         payTo: MOCK_ADDRESSES.merchant,
         maxTimeoutSeconds: 3600,
-        name: "USD Coin",
-        version: "3",
-        // No extra field = standard mode
+        extra: {
+          name: "USD Coin",
+          version: "3",
+        },
+        // No settlementRouter in extra = standard mode
       };
 
       // Create a mock payload for standard mode (without settlement router)
+      // Using standard x402 v2 PaymentPayload structure
       const mockStandardPayload = {
-        scheme: "exact",
-        network: "eip155:84532",
-        payer: MOCK_ADDRESSES.payer,
-        nonce: MOCK_VALUES.nonce,
-        signature: MOCK_VALUES.signature,
-        validAfter: MOCK_VALUES.validAfter,
-        validBefore: MOCK_VALUES.validBefore,
-        authorization: {
-          from: MOCK_ADDRESSES.payer,
-          to: MOCK_ADDRESSES.merchant,
-          value: "1000000",
-          validAfter: MOCK_VALUES.validAfter,
-          validBefore: MOCK_VALUES.validBefore,
-          nonce: MOCK_VALUES.nonce,
+        x402Version: 2,
+        resource: {
+          url: "https://test.com",
+          description: "Test payment",
+          mimeType: "application/json",
+        },
+        accepted: standardRequirements,
+        payload: {
+          signature: MOCK_VALUES.signature,
+          authorization: {
+            from: MOCK_ADDRESSES.payer,
+            to: MOCK_ADDRESSES.merchant,
+            value: "1000000",
+            validAfter: MOCK_VALUES.validAfter,
+            validBefore: MOCK_VALUES.validBefore,
+            nonce: MOCK_VALUES.nonce,
+          },
         },
       };
 

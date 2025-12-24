@@ -40,6 +40,26 @@ vi.mock("@x402x/core_v2", () => ({
     }
     return extra;
   }),
+  toCanonicalNetworkKey: vi.fn((network) => {
+    // For CAIP-2 format, return as-is; for v1 names, convert to CAIP-2
+    if (network.startsWith("eip155:")) {
+      return network;
+    }
+    // Convert common v1 names to CAIP-2
+    const nameToId: Record<string, string> = {
+      "base-sepolia": "eip155:84532",
+      "base": "eip155:8453",
+    };
+    return nameToId[network] || network;
+  }),
+  getNetworkName: vi.fn((network) => {
+    // Convert CAIP-2 to v1 name
+    const idToName: Record<string, string> = {
+      "eip155:84532": "base-sepolia",
+      "eip155:8453": "base",
+    };
+    return idToName[network] || network;
+  }),
   getNetworkConfig: vi.fn(() => ({
     settlementRouter: MOCK_ADDRESSES.settlementRouter,
     rpcUrls: {
@@ -119,18 +139,18 @@ describe("Integration tests", () => {
     });
 
     it("should reject at verification step for invalid payment", async () => {
-      const invalidPayload = {
-        ...mockPaymentPayload,
+      const invalidRequirements = {
+        ...mockPaymentRequirements,
         scheme: "invalid-scheme",
       };
 
       // Step 1: Verification should fail
-      const verification = await facilitator.verify(invalidPayload, mockPaymentRequirements);
+      const verification = await facilitator.verify(mockPaymentPayload, invalidRequirements);
       expect(verification.isValid).toBe(false);
       expect(verification.invalidReason).toContain("Scheme mismatch");
 
       // Step 2: Settlement should also fail
-      const settlement = await facilitator.settle(invalidPayload, mockPaymentRequirements);
+      const settlement = await facilitator.settle(mockPaymentPayload, invalidRequirements);
       expect(settlement.success).toBe(false);
       expect(settlement.errorReason).toContain("Scheme mismatch");
     });

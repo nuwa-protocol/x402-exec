@@ -43,6 +43,26 @@ vi.mock("@x402x/core_v2", () => ({
     }
     return extra;
   }),
+  toCanonicalNetworkKey: vi.fn((network) => {
+    // For CAIP-2 format, return as-is; for v1 names, convert to CAIP-2
+    if (network.startsWith("eip155:")) {
+      return network;
+    }
+    // Convert common v1 names to CAIP-2
+    const nameToId: Record<string, string> = {
+      "base-sepolia": "eip155:84532",
+      "base": "eip155:8453",
+    };
+    return nameToId[network] || network;
+  }),
+  getNetworkName: vi.fn((network) => {
+    // Convert CAIP-2 to v1 name
+    const idToName: Record<string, string> = {
+      "eip155:84532": "base-sepolia",
+      "eip155:8453": "base",
+    };
+    return idToName[network] || network;
+  }),
   getNetworkConfig: vi.fn((network) => {
     if (network === "invalid-network") {
       return undefined;
@@ -149,28 +169,33 @@ describe("RouterSettlementFacilitator", () => {
     });
 
     it("should reject payment with invalid scheme", async () => {
-      const invalidPayload = {
-        ...mockPaymentPayload,
+      const invalidRequirements = {
+        ...mockPaymentRequirements,
         scheme: "invalid",
       };
 
-      const result = await facilitator.verify(invalidPayload, mockPaymentRequirements);
+      const result = await facilitator.verify(mockPaymentPayload, invalidRequirements);
 
       expect(result.isValid).toBe(false);
       expect(result.invalidReason).toContain("Scheme mismatch");
-      expect(result.payer).toBe(MOCK_ADDRESSES.payer);
     });
 
     it("should reject payment with missing payer", async () => {
       const invalidPayload = {
         ...mockPaymentPayload,
-        payer: undefined,
+        payload: {
+          ...mockPaymentPayload.payload,
+          authorization: {
+            ...mockPaymentPayload.payload.authorization,
+            from: undefined as any,
+          },
+        },
       };
 
       const result = await facilitator.verify(invalidPayload, mockPaymentRequirements);
 
       expect(result.isValid).toBe(false);
-      expect(result.invalidReason).toContain("Missing payer");
+      expect(result.invalidReason).toContain("Invalid authorization structure");
     });
 
     it("should reject payment with invalid network", async () => {
@@ -221,10 +246,15 @@ describe("RouterSettlementFacilitator", () => {
       const standardRequirements = {
         scheme: "exact",
         network: "eip155:84532",
-        maxAmountRequired: "1000000",
+        amount: "1000000",
         asset: MOCK_ADDRESSES.token,
         payTo: MOCK_ADDRESSES.merchant,
-        // No extra field = standard mode
+        maxTimeoutSeconds: 300,
+        extra: {
+          name: "USD Coin",
+          version: "3",
+        },
+        // No settlementRouter in extra = standard mode
       };
 
       const result = await facilitator.verify(mockPaymentPayload, standardRequirements);
@@ -245,16 +275,15 @@ describe("RouterSettlementFacilitator", () => {
     });
 
     it("should fail to settle invalid payment", async () => {
-      const invalidPayload = {
-        ...mockPaymentPayload,
+      const invalidRequirements = {
+        ...mockPaymentRequirements,
         scheme: "invalid",
       };
 
-      const result = await facilitator.settle(invalidPayload, mockPaymentRequirements);
+      const result = await facilitator.settle(mockPaymentPayload, invalidRequirements);
 
       expect(result.success).toBe(false);
       expect(result.errorReason).toContain("Scheme mismatch");
-      expect(result.payer).toBe(MOCK_ADDRESSES.payer);
     });
 
     it("should handle verification failure in settle", async () => {
