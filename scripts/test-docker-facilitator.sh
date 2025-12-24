@@ -101,8 +101,8 @@ while [ $WAIT_TIME -lt $MAX_WAIT ]; do
         exit 1
     fi
     
-    # Check if service started successfully
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Facilitator listening on"; then
+    # Check if service started successfully (look for endpoint listings)
+    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "POST /settle"; then
         SUCCESS=true
         break
     fi

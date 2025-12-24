@@ -79,7 +79,7 @@ Minimal configuration for testing:
 
 2. **Runtime Import Check**: Starts the container and monitors for errors
    - Detects: `Cannot find package` errors
-   - Success: `Facilitator listening on` message
+   - Success: Service endpoint listing appears (`POST /settle`)
 
 3. **Health Check**: Optional HTTP endpoint test
    ```bash
