@@ -6,7 +6,7 @@
  */
 
 import type { Address, Hex } from "viem";
-import { settle as coreSettle } from "@x402x/core";
+import { settle as coreSettle, toCanonicalNetworkKey } from "@x402x/core_v2";
 import type {
   SignedAuthorization,
   SettleResult,
@@ -14,6 +14,28 @@ import type {
   PaymentRequirements,
 } from "../types.js";
 import { FacilitatorError } from "../errors.js";
+
+/**
+ * EVM Exact Scheme Authorization structure
+ * Standard x402 v2 authorization format for EIP-3009
+ */
+interface ExactEvmAuthorization {
+  from: Address;
+  to: Address;
+  value: string;
+  validAfter: string;
+  validBefore: string;
+  nonce: Hex;
+}
+
+/**
+ * EVM Exact Scheme Payload structure
+ * Standard x402 v2 payload format
+ */
+interface ExactEvmPayload {
+  signature: Hex;
+  authorization: ExactEvmAuthorization;
+}
 
 /**
  * Settle signed authorization with facilitator
@@ -48,38 +70,58 @@ export async function settle(
   timeout: number = 30000,
 ): Promise<SettleResult> {
   try {
-    // Construct PaymentPayload
-    const paymentPayload: PaymentPayload = {
-      x402Version: 1,
-      scheme: "exact",
-      network: signed.settlement.network as any, // Network type compatibility
-      payload: {
-        signature: signed.signature,
-        authorization: {
-          from: signed.authorization.from,
-          to: signed.authorization.to,
-          value: signed.authorization.value,
-          validAfter: signed.authorization.validAfter,
-          validBefore: signed.authorization.validBefore,
-          nonce: signed.authorization.nonce,
-        },
+    // Convert network to CAIP-2 format for v2 protocol
+    const canonicalNetwork = toCanonicalNetworkKey(signed.settlement.network);
+
+    // Calculate total amount (business amount + facilitator fee)
+    // This MUST match what was used in commitment calculation
+    const totalAmount = (
+      BigInt(signed.settlement.amount) + BigInt(signed.settlement.facilitatorFee)
+    ).toString();
+
+    // Construct standard x402 v2 PaymentPayload
+    // Using standard EVM exact scheme payload structure
+    const exactEvmPayload: ExactEvmPayload = {
+      signature: signed.signature,
+      authorization: {
+        from: signed.authorization.from,
+        to: signed.authorization.to,
+        value: signed.authorization.value,
+        validAfter: signed.authorization.validAfter,
+        validBefore: signed.authorization.validBefore,
+        nonce: signed.authorization.nonce,
       },
     };
 
+    const paymentPayload: PaymentPayload = {
+      x402Version: 2, // Use v2 protocol
+      resource: {
+        url: "https://x402x.dev/serverless",
+        description: "x402x Serverless Settlement",
+        mimeType: "application/json",
+      },
+      accepted: {
+        scheme: "exact",
+        network: canonicalNetwork as any,
+        asset: signed.settlement.asset as Address,
+        amount: signed.settlement.amount,
+        payTo: signed.settlement.networkConfig.settlementRouter as Address,
+        maxTimeoutSeconds: 300,
+        extra: {},
+      },
+      // Standard EVM exact scheme payload
+      payload: exactEvmPayload as any,
+    };
+
     // Construct PaymentRequirements (for serverless mode verification)
+    // IMPORTANT: Use totalAmount (amount + fee) to match commitment calculation
     const paymentRequirements: PaymentRequirements = {
       scheme: "exact",
-      network: signed.settlement.network as any, // Network type compatibility
-      maxAmountRequired: signed.settlement.amount,
+      network: canonicalNetwork as any, // Use CAIP-2 format for v2
+      amount: totalAmount, // Total amount including facilitator fee
       asset: signed.settlement.asset as Address,
       payTo: signed.settlement.networkConfig.settlementRouter as Address,
       maxTimeoutSeconds: 300, // 5 minutes
-      // Required by x402 protocol (even though not used in serverless mode)
-      // In the future, the x402 v2 will remove the resource field from the payment requirements
-      // (https://github.com/coinbase/x402/pull/446)
-      resource: "https://x402x.dev/serverless", // Placeholder for serverless mode
-      description: "x402x Serverless Settlement",
-      mimeType: "application/json",
       extra: {
         name: signed.settlement.networkConfig.defaultAsset.eip712.name,
         version: signed.settlement.networkConfig.defaultAsset.eip712.version,
@@ -92,10 +134,7 @@ export async function settle(
       },
     };
 
-    // Include payment requirements in payload (for stateless facilitator processing)
-    paymentPayload.paymentRequirements = paymentRequirements;
-
-    // Call core's settle method
+    // Call core's settle method with standard x402 v2 payload structure
     const result = await coreSettle(facilitatorUrl, paymentPayload, paymentRequirements, timeout);
 
     return {

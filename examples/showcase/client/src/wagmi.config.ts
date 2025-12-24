@@ -4,7 +4,7 @@
  */
 
 import { http, createConfig } from "wagmi";
-import { getSupportedNetworks } from "@x402x/core";
+import { getSupportedNetworks } from "@x402x/core_v2";
 import { evm } from "x402/types";
 import { injected, metaMask, coinbaseWallet } from "wagmi/connectors";
 import type { Chain } from "viem";

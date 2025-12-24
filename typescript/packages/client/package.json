@@ -42,7 +42,7 @@
   "author": "Nuwa Protocol",
   "license": "Apache-2.0",
   "dependencies": {
-    "@x402x/core": "workspace:*",
+    "@x402x/core_v2": "workspace:*",
     "viem": "2.40.3",
     "x402": "npm:@x402x/x402@^0.6.6-patch.7"
   },

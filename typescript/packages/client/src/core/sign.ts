@@ -80,14 +80,19 @@ export async function signAuthorization(
       nonce: settlement.commitment, // Use commitment as nonce
     };
 
-    console.log("[x402x/client] EIP-712 Message for signing:", {
-      from: message.from,
-      to: message.to,
-      value: message.value.toString(),
-      validAfter: message.validAfter.toString(),
-      validBefore: message.validBefore.toString(),
-      nonce: message.nonce,
-    });
+    // Debug logging (only in development)
+    // @ts-ignore - console is available in runtime environments
+    if (typeof console !== 'undefined' && console.log) {
+      // @ts-ignore
+      console.log("[x402x/client] EIP-712 Message for signing:", {
+        from: message.from,
+        to: message.to,
+        value: message.value.toString(),
+        validAfter: message.validAfter.toString(),
+        validBefore: message.validBefore.toString(),
+        nonce: message.nonce,
+      });
+    }
 
     // Sign typed data
     const signature = await signTypedData(wallet, {

@@ -8,7 +8,7 @@
  * - Optional UI customization via NETWORK_UI_OVERRIDES
  */
 
-import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/core";
+import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/core_v2";
 import { evm } from "x402/types";
 import type { Chain } from "viem";
 

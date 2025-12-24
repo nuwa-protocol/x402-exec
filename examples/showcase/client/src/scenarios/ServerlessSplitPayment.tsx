@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { TransferHook } from "@x402x/core";
+import { TransferHook } from "@x402x/core_v2";
 import { ServerlessPaymentDialog } from "../components/ServerlessPaymentDialog";
 import { ScenarioCard } from "../components/ScenarioCard";
 import { PaymentButton } from "../components/PaymentButton";
@@ -18,7 +18,7 @@ import { StatusMessage } from "../components/StatusMessage";
 import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
-import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
 import { NETWORKS } from "../config";
 import splitPaymentCode from "../code-examples/split-payment.ts?raw";
 
@@ -28,7 +28,7 @@ const DEFAULT_RECIPIENT =
 
 // Helper function to get amount for a specific network
 const getAmountForNetwork = (network: string): string => {
-  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+  return parseDefaultAssetAmount("0.1", toCanonicalNetworkKey(network)); // 0.1 token in network-specific atomic units
 };
 
 interface Split {
@@ -519,7 +519,7 @@ export function ServerlessSplitPayment() {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, toCanonicalNetworkKey(paymentResult.network))} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>

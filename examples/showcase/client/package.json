@@ -16,7 +16,7 @@
     "@tanstack/react-query": "^5.51.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@x402x/client": "workspace:*",
-    "@x402x/core": "workspace:*",
+    "@x402x/core_v2": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "react": "^18.3.0",

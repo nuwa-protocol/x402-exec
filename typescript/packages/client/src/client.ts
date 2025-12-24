@@ -6,7 +6,7 @@
  */
 
 import type { Address, Hex, TransactionReceipt } from "viem";
-import { calculateFacilitatorFee, type FeeCalculationResult, TransferHook } from "@x402x/core";
+import { calculateFacilitatorFee, type FeeCalculationResult, TransferHook } from "@x402x/core_v2";
 import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
 import { prepareSettlement, DEFAULT_FACILITATOR_URL } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";

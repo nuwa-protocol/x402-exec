@@ -6,8 +6,8 @@
  */
 
 import type { Address, Hex } from "viem";
-import { getNetworkConfig, calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core";
-import { calculateCommitment } from "@x402x/core";
+import { getNetworkConfig, calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core_v2";
+import { calculateCommitment } from "@x402x/core_v2";
 import type { PrepareParams, SettlementData } from "../types.js";
 import { NetworkError, ValidationError, FacilitatorError } from "../errors.js";
 import {
@@ -114,7 +114,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     throw new ValidationError("Wallet client must have an account");
   }
 
-  // 3. Load network configuration
+  // 3. Load network configuration (use original v1 format)
   const networkConfig = params.networkConfig || getNetworkConfig(params.network);
   if (!networkConfig) {
     throw new NetworkError(
@@ -151,9 +151,13 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
       facilitatorFee = feeEstimate.facilitatorFee;
     } catch (error) {
       // If fee query fails, log warning and use 0
-      console.warn(
-        `[x402x] Failed to query facilitator fee, using 0. This may cause settlement to fail. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-      );
+      // @ts-ignore - console is available in runtime environments
+      if (typeof console !== 'undefined' && console.warn) {
+        // @ts-ignore
+        console.warn(
+          `[x402x] Failed to query facilitator fee, using 0. This may cause settlement to fail. Error: ${error instanceof Error ? error.message : "Unknown"}`,
+        );
+      }
       facilitatorFee = "0";
     }
   }
@@ -185,6 +189,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   });
 
   // 9. Return prepared settlement data
+  // Use original network name for API compatibility, but store canonical internally
   return {
     network: params.network,
     networkConfig,

@@ -16,13 +16,13 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksRewardTokenData } from "../hooks/useRewardTokenData";
-import { RewardHook, parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { RewardHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
 import { NETWORKS } from "../config";
 import pointsRewardCode from "../code-examples/points-reward.ts?raw";
 
 // Helper function to get amount for a specific network
 const getAmountForNetwork = (network: string): string => {
-  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+  return parseDefaultAssetAmount("0.1", toCanonicalNetworkKey(network)); // 0.1 token in network-specific atomic units
 };
 
 export function ServerlessPointsReward() {
@@ -366,7 +366,7 @@ export function ServerlessPointsReward() {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, toCanonicalNetworkKey(paymentResult.network))} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>

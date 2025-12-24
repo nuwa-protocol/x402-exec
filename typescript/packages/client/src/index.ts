@@ -66,15 +66,21 @@ export {
   normalizeAddress,
 } from "./core/utils.js";
 
-// Re-export new amount utilities from @x402x/core (recommended)
-export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "@x402x/core";
+// Re-export new amount utilities from @x402x/core_v2 (recommended)
+export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "@x402x/core_v2";
 
 // Export React hooks (optional, requires React peer dependency)
 export { useX402Client } from "./hooks/useX402Client.js";
 export { useExecute } from "./hooks/useExecute.js";
 
 // Re-export core types for convenience
-export type { FeeCalculationResult } from "@x402x/core";
+export type { 
+  FeeCalculationResult, 
+  SettlementExtra, 
+  SettlementExtraCore,
+  PaymentRequirements as PaymentRequirementsV2,
+  PaymentPayload as PaymentPayloadV2,
+} from "@x402x/core_v2";
 
 // Export types
 export type {
@@ -86,8 +92,6 @@ export type {
   SignedAuthorization,
   SettleResult,
   ExecuteStatus,
-  PaymentPayload,
-  PaymentRequirements,
 } from "./types.js";
 
 // Export errors

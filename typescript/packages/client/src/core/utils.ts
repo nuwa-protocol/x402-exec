@@ -18,9 +18,20 @@ import { ValidationError } from "../errors.js";
  * ```
  */
 export function generateSalt(): Hex {
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+  // @ts-ignore - crypto is available in all runtime environments
+  const cryptoObj = typeof globalThis !== 'undefined' && globalThis.crypto 
+    // @ts-ignore
+    ? globalThis.crypto 
+    // @ts-ignore
+    : (typeof crypto !== 'undefined' ? crypto : undefined);
+  
+  if (!cryptoObj || !cryptoObj.getRandomValues) {
+    throw new Error('crypto.getRandomValues is not available');
+  }
+  
+  const randomBytes = cryptoObj.getRandomValues(new Uint8Array(32));
   return `0x${Array.from(randomBytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
+    .map((b) => (b as number).toString(16).padStart(2, "0"))
     .join("")}` as Hex;
 }
 

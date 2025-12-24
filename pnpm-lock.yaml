@@ -36,9 +36,9 @@ importers:
       '@x402x/client':
         specifier: workspace:*
         version: link:../../../typescript/packages/client
-      '@x402x/core':
+      '@x402x/core_v2':
         specifier: workspace:*
-        version: link:../../../typescript/packages/core
+        version: link:../../../typescript/packages/core_v2
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -282,9 +282,9 @@ importers:
 
   typescript/packages/client:
     dependencies:
-      '@x402x/core':
+      '@x402x/core_v2':
         specifier: workspace:*
-        version: link:../core
+        version: link:../core_v2
       react:
         specifier: ^18.0.0
         version: 18.3.1
