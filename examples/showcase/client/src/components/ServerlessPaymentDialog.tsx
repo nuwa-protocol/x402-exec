@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount } from "@x402x/core";
+import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
 import { useX402Client, X402Client } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
@@ -310,13 +310,13 @@ export function ServerlessPaymentDialog({
 
   // Format amount for display using dynamic decimals
   const amountInUsd = selectedNetwork
-    ? formatDefaultAssetAmount(currentAmount, selectedNetwork)
+    ? formatDefaultAssetAmount(currentAmount, toCanonicalNetworkKey(selectedNetwork))
     : (parseFloat(currentAmount) / 1_000_000).toFixed(6); // Fallback for network not selected
 
   const totalAmount = feeInfo && selectedNetwork
     ? formatDefaultAssetAmount(
         (BigInt(currentAmount) + BigInt(feeInfo.facilitatorFee)).toString(),
-        selectedNetwork
+        toCanonicalNetworkKey(selectedNetwork)
       )
     : amountInUsd;
 

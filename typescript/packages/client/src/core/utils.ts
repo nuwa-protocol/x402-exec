@@ -18,7 +18,13 @@ import { ValidationError } from "../errors.js";
  * ```
  */
 export function generateSalt(): Hex {
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+  const cryptoObj = (globalThis as any).crypto as Crypto | undefined;
+
+  if (!cryptoObj || !cryptoObj.getRandomValues) {
+    throw new Error("crypto.getRandomValues is not available");
+  }
+
+  const randomBytes = cryptoObj.getRandomValues(new Uint8Array(32));
   return `0x${Array.from(randomBytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")}` as Hex;

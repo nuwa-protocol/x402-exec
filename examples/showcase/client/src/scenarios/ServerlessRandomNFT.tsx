@@ -16,13 +16,13 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksNFTData } from "../hooks/useNFTData";
-import { NFTMintHook, parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { NFTMintHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
 import { NETWORKS } from "../config";
 import nftMintCode from "../code-examples/nft-mint.ts?raw";
 
 // Helper function to get amount for a specific network
 const getAmountForNetwork = (network: string): string => {
-  return parseDefaultAssetAmount("0.1", network); // 0.1 token in network-specific atomic units
+  return parseDefaultAssetAmount("0.1", toCanonicalNetworkKey(network)); // 0.1 token in network-specific atomic units
 };
 
 export function ServerlessRandomNFT() {
@@ -354,7 +354,7 @@ export function ServerlessRandomNFT() {
               label: "Cost",
               value: paymentResult.facilitatorFee ? (
                 <strong>
-                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, paymentResult.network)} facilitator fee
+                  ${formatDefaultAssetAmount(paymentResult.facilitatorFee, toCanonicalNetworkKey(paymentResult.network))} facilitator fee
                 </strong>
               ) : (
                 <strong>$0.01 facilitator fee</strong>

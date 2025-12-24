@@ -11,7 +11,7 @@ import { PaymentStatus } from "./PaymentStatus";
 import { usePayment } from "../hooks/usePayment";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
 import { useNetworkBalances } from "../hooks/useNetworkBalances";
-import { formatDefaultAssetAmount } from "@x402x/core";
+import { formatDefaultAssetAmount } from "@x402x/core_v2";
 import {
   Network,
   NETWORKS,
