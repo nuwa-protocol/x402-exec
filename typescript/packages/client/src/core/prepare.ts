@@ -114,7 +114,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
     throw new ValidationError("Wallet client must have an account");
   }
 
-  // 3. Load network configuration (use original v1 format)
+  // 3. Load network configuration
   const networkConfig = params.networkConfig || getNetworkConfig(params.network);
   if (!networkConfig) {
     throw new NetworkError(
@@ -151,13 +151,11 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
       facilitatorFee = feeEstimate.facilitatorFee;
     } catch (error) {
       // If fee query fails, log warning and use 0
-      // @ts-ignore - console is available in runtime environments
-      if (typeof console !== 'undefined' && console.warn) {
-        // @ts-ignore
-        console.warn(
-          `[x402x] Failed to query facilitator fee, using 0. This may cause settlement to fail. Error: ${error instanceof Error ? error.message : "Unknown"}`,
-        );
-      }
+      console.warn(
+        `[x402x] Failed to query facilitator fee, using 0. This may cause settlement to fail. Error: ${
+          error instanceof Error ? error.message : "Unknown"
+        }`,
+      );
       facilitatorFee = "0";
     }
   }
@@ -189,7 +187,7 @@ export async function prepareSettlement(params: PrepareParams): Promise<Settleme
   });
 
   // 9. Return prepared settlement data
-  // Use original network name for API compatibility, but store canonical internally
+  // Use original network name for API compatibility; conversion to canonical format happens during settlement
   return {
     network: params.network,
     networkConfig,

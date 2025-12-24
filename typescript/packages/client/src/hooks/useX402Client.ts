@@ -99,11 +99,7 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
       return null;
     }
 
-    // @ts-ignore - console is available in runtime environments  
-    if (typeof console !== 'undefined' && console.warn) {
-      // @ts-ignore
-      console.warn("[x402x] Unable to access wagmi provider:", error);
-    }
+    console.warn("[x402x] Unable to access wagmi provider:", error);
     return null;
   }
 
@@ -115,13 +111,9 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
     // Determine network name
     const network = config?.network || CHAIN_ID_TO_NETWORK[chainId];
     if (!network) {
-      // @ts-ignore - console is available in runtime environments
-      if (typeof console !== 'undefined' && console.warn) {
-        // @ts-ignore
-        console.warn(
-          `[x402x] Unknown chainId ${chainId}. Please provide network name explicitly in config.`,
-        );
-      }
+      console.warn(
+        `[x402x] Unknown chainId ${chainId}. Please provide network name explicitly in config.`,
+      );
       return null;
     }
 
@@ -138,11 +130,7 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
         confirmationTimeout: config?.confirmationTimeout,
       });
     } catch (error) {
-      // @ts-ignore - console is available in runtime environments
-      if (typeof console !== 'undefined' && console.error) {
-        // @ts-ignore
-        console.error("[x402x] Failed to create X402Client:", error);
-      }
+      console.error("[x402x] Failed to create X402Client:", error);
       return null;
     }
   }, [

@@ -102,22 +102,22 @@ export async function settle(
       },
       accepted: {
         scheme: "exact",
-        network: canonicalNetwork as any,
+        network: canonicalNetwork as any, // Type cast required: core_v2 Network type accepts both CAIP-2 and legacy formats
         asset: signed.settlement.asset as Address,
-        amount: signed.settlement.amount,
+        amount: totalAmount, // Use totalAmount to match commitment calculation
         payTo: signed.settlement.networkConfig.settlementRouter as Address,
         maxTimeoutSeconds: 300,
         extra: {},
       },
       // Standard EVM exact scheme payload
-      payload: exactEvmPayload as any,
+      payload: exactEvmPayload as any, // Type cast required: ExactEvmPayload structure matches v2 protocol
     };
 
     // Construct PaymentRequirements (for serverless mode verification)
     // IMPORTANT: Use totalAmount (amount + fee) to match commitment calculation
     const paymentRequirements: PaymentRequirements = {
       scheme: "exact",
-      network: canonicalNetwork as any, // Use CAIP-2 format for v2
+      network: canonicalNetwork as any, // Type cast required: core_v2 Network type accepts CAIP-2 format
       amount: totalAmount, // Total amount including facilitator fee
       asset: signed.settlement.asset as Address,
       payTo: signed.settlement.networkConfig.settlementRouter as Address,
