@@ -60,7 +60,7 @@ export function createPublicClientForNetwork(
  */
 export function createWalletClientForNetwork(
   network: string,
-  signer: Address,
+  signer?: Address,
   rpcUrls?: Record<string, string>,
   transport?: Transport,
   privateKey?: string
@@ -74,10 +74,20 @@ export function createWalletClientForNetwork(
     throw new Error(`No RPC URL available for network: ${network}`);
   }
 
-  // Use private key for local signing if provided
-  let account: Account | Address = signer;
+  // Validate that at least one of signer or privateKey is provided
+  if (!signer && !privateKey) {
+    throw new Error("Either signer or privateKey must be provided to create wallet client");
+  }
+
+  // Use private key for local signing if provided, otherwise use signer address
+  let account: Account | Address;
   if (privateKey) {
     account = privateKeyToAccount(privateKey as Hex);
+  } else if (signer) {
+    account = signer;
+  } else {
+    // This should never happen due to the validation above
+    throw new Error("Failed to create account: neither signer nor privateKey provided");
   }
 
   return createWalletClient({
@@ -276,7 +286,7 @@ export async function settleWithSettlementRouter(
     );
     const walletClient = createWalletClientForNetwork(
       paymentRequirements.network,
-      config.signer || "",
+      config.signer,
       config.rpcUrls,
       undefined,
       config.privateKey

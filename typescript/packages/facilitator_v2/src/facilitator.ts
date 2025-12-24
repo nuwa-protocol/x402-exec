@@ -513,7 +513,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
   ): Promise<SettleResponse> {
     const walletClient = createWalletClientForNetwork(
       requirements.network,
-      this.config.signer || "",
+      this.config.signer,
       this.config.rpcUrls,
       undefined,
       this.config.privateKey

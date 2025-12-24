@@ -173,9 +173,16 @@ export function validateFacilitatorConfig(config: {
 
   // Validate private key if provided
   if (config.privateKey) {
-    // Private key should be a valid hex string (66 characters with 0x prefix for secp256k1)
-    if (!isValidHex(config.privateKey) || config.privateKey.length !== 66) {
-      throw new FacilitatorValidationError(`Invalid private key format: must be 32-byte hex string (66 chars with 0x prefix)`);
+    // Private key should be a 32-byte hex string (64 hex chars), with optional 0x prefix
+    const privateKey = config.privateKey;
+    const hasPrefix = privateKey.startsWith("0x") || privateKey.startsWith("0X");
+    const hexBody = hasPrefix ? privateKey.slice(2) : privateKey;
+
+    // Validate that it's a valid 64-character hex string (32 bytes)
+    if (!/^[a-fA-F0-9]{64}$/.test(hexBody)) {
+      throw new FacilitatorValidationError(
+        "Invalid private key format: must be 32-byte hex string (64 hex chars, with optional 0x prefix)"
+      );
     }
   }
 
