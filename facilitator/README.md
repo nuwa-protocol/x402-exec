@@ -58,22 +58,24 @@ FACILITATOR_V2_STRICT_MODE=false  # Allow both v1 and v2 formats
 
 #### Network Formats
 
-| Network | v1 Format | v2 Format (CAIP-2) |
-|---------|-----------|-------------------|
-| Base Sepolia | `base-sepolia` | `eip155:84532` |
-| Base Mainnet | `base` | `eip155:8453` |
-| X-Layer Testnet | `x-layer-testnet` | `eip155:1952` |
-| X-Layer Mainnet | `x-layer` | `eip155:196` |
-| BSC Testnet | `bsc-testnet` | `eip155:97` |
-| BSC Mainnet | `bsc` | `eip155:56` |
+| Network         | v1 Format         | v2 Format (CAIP-2) |
+| --------------- | ----------------- | ------------------ |
+| Base Sepolia    | `base-sepolia`    | `eip155:84532`     |
+| Base Mainnet    | `base`            | `eip155:8453`      |
+| X-Layer Testnet | `x-layer-testnet` | `eip155:1952`      |
+| X-Layer Mainnet | `x-layer`         | `eip155:196`       |
+| BSC Testnet     | `bsc-testnet`     | `eip155:97`        |
+| BSC Mainnet     | `bsc`             | `eip155:56`        |
 
 #### Version Dispatch Rules
 
 1. **Client Request Format Detection**:
+
    - If `network` matches CAIP-2 pattern (`eip155:*`) → Route to v2 stack
    - If `network` matches v1 pattern (human-readable) → Route to v1 stack
 
 2. **Response Format**:
+
    - `/supported` endpoint returns supported kinds for both versions
    - All other endpoints use the requested version's format
 
@@ -1595,18 +1597,21 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Staging Environment Testing**
 
 1. **Enable Dual-Stack Mode**:
+
    ```env
    FACILITATOR_ENABLE_V2=true
    FACILITATOR_V2_STRICT_MODE=false
    ```
 
 2. **Verify v1 Functionality**:
+
    - Test all existing v1 clients work without changes
    - Verify `/supported` returns both v1 and v2 kinds
    - Test `/verify` and `/settle` with v1 network names
    - Confirm SettlementRouter v1 flows work
 
 3. **Test v2 Functionality**:
+
    - Test `/supported` includes CAIP-2 networks
    - Verify `/verify` and `/settle` with v2 CAIP-2 network identifiers
    - Test SettlementRouter v2 flows
@@ -1621,6 +1626,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Configuration Validation**
 
 5. **Environment Variables**:
+
    ```env
    # Dual-stack configuration
    FACILITATOR_ENABLE_V2=true
@@ -1642,6 +1648,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Client Compatibility**
 
 7. **Update Client SDKs**:
+
    - Update `@x402x/client` to latest version
    - Test v1 client with dual-stack facilitator
    - Test v2 client with dual-stack facilitator
@@ -1657,18 +1664,22 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Blue-Green Deployment**
 
 9. **Deploy with v1 Only**:
+
    ```env
    FACILITATOR_ENABLE_V2=false  # Start with v1 only
    ```
+
    - Deploy new version with v2 code but disabled
    - Monitor v1 functionality for regressions
    - Verify all existing integrations work
 
 10. **Enable Dual-Stack Mode**:
+
     ```env
     FACILITATOR_ENABLE_V2=true
     FACILITATOR_V2_STRICT_MODE=false
     ```
+
     - Update environment to enable v2 support
     - Monitor `/supported` endpoint includes both versions
     - Test v2 functionality with canary clients
@@ -1682,6 +1693,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Validation**
 
 12. **End-to-End Testing**:
+
     - Test complete payment flows for both versions
     - Verify SettlementRouter works for both versions
     - Test error scenarios and recovery
@@ -1698,6 +1710,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 **☐ Monitoring & Maintenance**
 
 14. **Metrics Dashboard**:
+
     - Track v1 vs v2 usage over time
     - Monitor error rates by version
     - Alert on version detection failures
@@ -1712,21 +1725,25 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
 #### Troubleshooting Guide
 
 **Version Detection Issues**:
+
 - Check network format matches expected patterns
 - Verify `FACILITATOR_ENABLE_V2` is set correctly
 - Review logs for version routing errors
 
 **Network Mapping Problems**:
+
 - Validate CAIP-2 identifiers are correct
 - Check SettlementRouter address consistency
 - Test both network formats work
 
 **Performance Degradation**:
+
 - Monitor request latency by version
 - Check for version detection overhead
 - Optimize dual-stack routing if needed
 
 **Rollback Procedure**:
+
 1. Set `FACILITATOR_ENABLE_V2=false` to disable v2
 2. Restart service with v1-only configuration
 3. Verify v1 functionality restored

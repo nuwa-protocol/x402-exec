@@ -12,17 +12,18 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import {
-  type PaymentRequirements,
-  type PaymentPayload,
-} from "x402/types";
+import { type PaymentRequirements, type PaymentPayload } from "x402/types";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
 import type { X402Config } from "x402/types";
-import { createVersionDispatcher, type VerifyRequest, type VersionDispatcherDependencies } from "../version-dispatcher.js";
+import {
+  createVersionDispatcher,
+  type VerifyRequest,
+  type VersionDispatcherDependencies,
+} from "../version-dispatcher.js";
 
 const logger = getLogger();
 
@@ -61,18 +62,20 @@ export function createVerifyRoutes(
   const router = Router();
 
   // Use provided dispatcher or create new one
-  const versionDispatcher = dispatcher || createVersionDispatcher(
-    {
-      poolManager: deps.poolManager,
-      x402Config: deps.x402Config,
-      balanceChecker: deps.balanceChecker,
-    },
-    {
-      enableV2: deps.enableV2,
-      allowedRouters: deps.allowedRouters,
-      rpcUrls: deps.rpcUrls,
-    }
-  );
+  const versionDispatcher =
+    dispatcher ||
+    createVersionDispatcher(
+      {
+        poolManager: deps.poolManager,
+        x402Config: deps.x402Config,
+        balanceChecker: deps.balanceChecker,
+      },
+      {
+        enableV2: deps.enableV2,
+        allowedRouters: deps.allowedRouters,
+        rpcUrls: deps.rpcUrls,
+      },
+    );
 
   /**
    * GET /verify - Returns info about the verify endpoint
@@ -103,8 +106,14 @@ export function createVerifyRoutes(
       const body: VerifyRequest = req.body;
 
       // Basic structure validation - let VersionDispatcher handle detailed validation
-      const paymentRequirements = validateBasicStructure(body.paymentRequirements, 'paymentRequirements') as PaymentRequirements;
-      const paymentPayload = validateBasicStructure(body.paymentPayload, 'paymentPayload') as PaymentPayload;
+      const paymentRequirements = validateBasicStructure(
+        body.paymentRequirements,
+        "paymentRequirements",
+      ) as PaymentRequirements;
+      const paymentPayload = validateBasicStructure(
+        body.paymentPayload,
+        "paymentPayload",
+      ) as PaymentPayload;
 
       // Validate x402Version if provided
       validateX402Version(body.x402Version);
@@ -121,7 +130,10 @@ export function createVerifyRoutes(
       logger.error({ error }, "Verify error");
 
       // Distinguish between validation errors and other errors
-      if (error instanceof Error && (error.name === "ZodError" || error.name === "ValidationError")) {
+      if (
+        error instanceof Error &&
+        (error.name === "ZodError" || error.name === "ValidationError")
+      ) {
         // Input validation error - safe to return details
         res.status(400).json({
           error: "Invalid request payload",

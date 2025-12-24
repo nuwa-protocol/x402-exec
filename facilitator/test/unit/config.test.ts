@@ -7,18 +7,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loadConfig } from "../../src/config.js";
 
-
 // Mock networkChainResolver
 vi.mock("../../src/network-chain-resolver.js", () => ({
   networkChainResolver: {
     isInitialized: vi.fn(() => true),
     initialize: vi.fn(() => Promise.resolve()),
-    getAllRpcUrls: vi.fn(() => Promise.resolve({
-      "base-sepolia": "https://sepolia.base.org",
-      "base": "https://mainnet.base.org",
-      "x-layer-testnet": "https://rpc.xlayer-testnet.xyz",
-      "x-layer": "https://rpc.xlayer.xyz",
-    })),
+    getAllRpcUrls: vi.fn(() =>
+      Promise.resolve({
+        "base-sepolia": "https://sepolia.base.org",
+        base: "https://mainnet.base.org",
+        "x-layer-testnet": "https://rpc.xlayer-testnet.xyz",
+        "x-layer": "https://rpc.xlayer.xyz",
+      }),
+    ),
   },
 }));
 
@@ -44,13 +45,15 @@ vi.mock("@x402x/core", () => ({
         },
       },
     };
-    return configs[network] || {
-      defaultAsset: {
-        address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        symbol: "USDC",
-        decimals: 6,
-      },
-    };
+    return (
+      configs[network] || {
+        defaultAsset: {
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          symbol: "USDC",
+          decimals: 6,
+        },
+      }
+    );
   }),
   isNetworkSupported: vi.fn((network: string) =>
     ["base-sepolia", "base", "x-layer-testnet", "x-layer"].includes(network),

@@ -12,11 +12,7 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import {
-  type PaymentRequirements,
-  type PaymentPayload,
-  type X402Config,
-} from "x402/types";
+import { type PaymentRequirements, type PaymentPayload, type X402Config } from "x402/types";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
@@ -26,7 +22,11 @@ import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { GasEstimationConfig } from "../gas-estimation/index.js";
 import { DuplicatePayerError, QueueOverloadError } from "../errors.js";
-import { createVersionDispatcher, type SettleRequest, type VersionDispatcherDependencies } from "../version-dispatcher.js";
+import {
+  createVersionDispatcher,
+  type SettleRequest,
+  type VersionDispatcherDependencies,
+} from "../version-dispatcher.js";
 
 const logger = getLogger();
 
@@ -69,19 +69,21 @@ export function createSettleRoutes(
   const router = Router();
 
   // Use provided dispatcher or create new one
-  const versionDispatcher = dispatcher || createVersionDispatcher(
-    {
-      poolManager: deps.poolManager,
-      x402Config: deps.x402Config,
-      balanceChecker: deps.balanceChecker,
-      allowedSettlementRouters: deps.allowedSettlementRouters,
-    },
-    {
-      enableV2: deps.enableV2,
-      allowedRouters: deps.allowedRouters,
-      rpcUrls: deps.rpcUrls,
-    }
-  );
+  const versionDispatcher =
+    dispatcher ||
+    createVersionDispatcher(
+      {
+        poolManager: deps.poolManager,
+        x402Config: deps.x402Config,
+        balanceChecker: deps.balanceChecker,
+        allowedSettlementRouters: deps.allowedSettlementRouters,
+      },
+      {
+        enableV2: deps.enableV2,
+        allowedRouters: deps.allowedRouters,
+        rpcUrls: deps.rpcUrls,
+      },
+    );
 
   /**
    * GET /settle - Returns info about the settle endpoint
@@ -115,8 +117,14 @@ export function createSettleRoutes(
       const body: SettleRequest = req.body;
 
       // Basic structure validation - let VersionDispatcher handle detailed validation
-      const paymentRequirements = validateBasicStructure(body.paymentRequirements, 'paymentRequirements') as PaymentRequirements;
-      const paymentPayload = validateBasicStructure(body.paymentPayload, 'paymentPayload') as PaymentPayload;
+      const paymentRequirements = validateBasicStructure(
+        body.paymentRequirements,
+        "paymentRequirements",
+      ) as PaymentRequirements;
+      const paymentPayload = validateBasicStructure(
+        body.paymentPayload,
+        "paymentPayload",
+      ) as PaymentPayload;
 
       // Validate x402Version if provided
       validateX402Version(body.x402Version);
@@ -153,7 +161,10 @@ export function createSettleRoutes(
       }
 
       // Distinguish between validation errors and other errors
-      if (error instanceof Error && (error.name === "ZodError" || error.name === "ValidationError")) {
+      if (
+        error instanceof Error &&
+        (error.name === "ZodError" || error.name === "ValidationError")
+      ) {
         // Input validation error - safe to return details
         res.status(400).json({
           error: "Invalid request payload",

@@ -97,11 +97,10 @@ export function validateHookData(
 
   // For custom hooks, defer validation to gas estimation
   // This allows custom hooks to work while still being validated via estimateGas
-    return {
-      isValid: true,
-    };
+  return {
+    isValid: true,
+  };
 }
-
 
 /**
  * Get validator for a built-in hook (for advanced usage)

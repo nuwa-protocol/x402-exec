@@ -6,7 +6,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SmartGasEstimator } from "../../../src/gas-estimation/strategies/smart.js";
 import { CodeBasedGasEstimator } from "../../../src/gas-estimation/strategies/code-based.js";
 import { SimulationBasedGasEstimator } from "../../../src/gas-estimation/strategies/simulation.js";
-import type { SettlementGasParams, GasEstimationConfig } from "../../../src/gas-estimation/strategies/base.js";
+import type {
+  SettlementGasParams,
+  GasEstimationConfig,
+} from "../../../src/gas-estimation/strategies/base.js";
 import type { Logger } from "pino";
 
 // Mock hook type info
@@ -27,12 +30,12 @@ describe("SmartGasEstimator", () => {
   beforeEach(() => {
     mockCodeEstimator = {
       estimateGas: vi.fn(),
-      strategyName: 'code_calculation',
+      strategyName: "code_calculation",
     } as any;
 
     mockSimulationEstimator = {
       estimateGas: vi.fn(),
-      strategyName: 'rpc_simulation',
+      strategyName: "rpc_simulation",
     } as any;
 
     mockLogger = {
@@ -62,7 +65,8 @@ describe("SmartGasEstimator", () => {
         validBefore: 2000000n,
         nonce: "0x1234567890abcdef",
       },
-      signature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+      signature:
+        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
       salt: "0x1234567890abcdef1234567890abcdef",
       payTo: "0x2222222222222222222222222222222222222222",
       facilitatorFee: 10000n,
@@ -137,7 +141,7 @@ describe("SmartGasEstimator", () => {
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
         { network: mockParams.network, hook: mockParams.hook, hookType: "transfer" },
-        "Using code-based gas estimation (fast path)"
+        "Using code-based gas estimation (fast path)",
       );
     });
 
@@ -148,7 +152,9 @@ describe("SmartGasEstimator", () => {
         strategyUsed: "rpc_simulation" as const,
       };
 
-      vi.spyOn(mockCodeEstimator, "estimateGas").mockRejectedValue(new Error("Code estimation failed"));
+      vi.spyOn(mockCodeEstimator, "estimateGas").mockRejectedValue(
+        new Error("Code estimation failed"),
+      );
       vi.spyOn(mockSimulationEstimator, "estimateGas").mockResolvedValue(simulationResult);
 
       const result = await estimator.estimateGas(mockParams);
@@ -159,7 +165,7 @@ describe("SmartGasEstimator", () => {
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         { error: expect.any(Error), network: mockParams.network, hook: mockParams.hook },
-        "Code-based estimation failed, falling back to simulation"
+        "Code-based estimation failed, falling back to simulation",
       );
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -170,7 +176,7 @@ describe("SmartGasEstimator", () => {
           isBuiltIn: true,
           reason: "code_validation_disabled",
         },
-        "Using simulation-based gas estimation"
+        "Using simulation-based gas estimation",
       );
     });
   });
@@ -212,7 +218,7 @@ describe("SmartGasEstimator", () => {
           isBuiltIn: false,
           reason: "custom_hook",
         },
-        "Using simulation-based gas estimation"
+        "Using simulation-based gas estimation",
       );
     });
   });

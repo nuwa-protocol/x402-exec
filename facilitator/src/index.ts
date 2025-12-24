@@ -241,8 +241,12 @@ async function main() {
       logger.info("  GET  /health     - Health check (liveness probe)");
       logger.info("  GET  /ready      - Readiness check (with account pool status)");
       logger.info("  GET  /supported  - List supported payment kinds");
-      logger.info(`  POST /verify     - Verify payment payload (supports v1${config.v2.enabled ? " and v2" : ""})`);
-      logger.info(`  POST /settle     - Settle payment (supports v1${config.v2.enabled ? " and v2" : ""})`);
+      logger.info(
+        `  POST /verify     - Verify payment payload (supports v1${config.v2.enabled ? " and v2" : ""})`,
+      );
+      logger.info(
+        `  POST /settle     - Settle payment (supports v1${config.v2.enabled ? " and v2" : ""})`,
+      );
     });
 
     // Register server for graceful shutdown
@@ -256,7 +260,7 @@ async function main() {
         message: err.message,
         stack: err.stack,
       },
-      "Failed to initialize application"
+      "Failed to initialize application",
     );
     process.exit(1);
   }

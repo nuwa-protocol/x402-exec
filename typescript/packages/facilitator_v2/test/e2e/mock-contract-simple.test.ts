@@ -6,7 +6,10 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ExactEvmSchemeWithRouterSettlement } from "@x402x/fetch_v2";
-import { createRouterSettlementFacilitator, FacilitatorValidationError } from "@x402x/facilitator_v2";
+import {
+  createRouterSettlementFacilitator,
+  FacilitatorValidationError,
+} from "@x402x/facilitator_v2";
 import { paymentMiddleware } from "@x402x/hono_v2";
 
 // Mock blockchain components
@@ -78,11 +81,13 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
     // Configure mocks for successful operations
     mockPublicClient.readContract.mockImplementation((params) => {
-      if (params.functionName === 'isSettled') {
+      if (params.functionName === "isSettled") {
         return Promise.resolve(false);
       }
-      if (params.functionName === 'balanceOf') {
-        return Promise.resolve(BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+      if (params.functionName === "balanceOf") {
+        return Promise.resolve(
+          BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+        );
       }
       return Promise.resolve(BigInt("1000000000"));
     });
@@ -94,7 +99,9 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       effectiveGasPrice: 1000000000n,
     });
 
-    mockWalletClient.writeContract.mockResolvedValue("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" as `0x${string}`);
+    mockWalletClient.writeContract.mockResolvedValue(
+      "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" as `0x${string}`,
+    );
 
     // Create facilitator
     facilitator = createRouterSettlementFacilitator({
@@ -144,7 +151,6 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       // Step 3: Verify with facilitator
       const verification = await facilitator.verify(paymentResult.payload, settlementRequirements);
 
-      
       expect(verification.isValid).toBe(true);
       expect(verification.payer).toBe(MOCK_ADDRESSES.payer);
     });
@@ -286,7 +292,10 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       paymentResult.payload.payer = paymentResult.payload.authorization.from;
       paymentResult.payload.nonce = paymentResult.payload.authorization.nonce;
 
-      const settlement = await facilitator.settle(paymentResult.payload, complexSettlementRequirements);
+      const settlement = await facilitator.settle(
+        paymentResult.payload,
+        complexSettlementRequirements,
+      );
 
       expect(settlement.success).toBe(true);
     });
@@ -296,9 +305,9 @@ describe("E2E Mock Contract Tests - Simplified", () => {
     it("should support multiple eip155 networks", async () => {
       const testNetworks = [
         "eip155:84532", // Base Sepolia
-        "eip155:8453",  // Base Mainnet
-        "eip155:1",     // Ethereum Mainnet
-        "eip155:137",   // Polygon
+        "eip155:8453", // Base Mainnet
+        "eip155:1", // Ethereum Mainnet
+        "eip155:137", // Polygon
       ];
 
       for (const network of testNetworks) {
@@ -324,7 +333,8 @@ describe("E2E Mock Contract Tests - Simplified", () => {
 
         const verification = await facilitator.verify(paymentResult.payload, requirements);
 
-        if (network === "eip155:84532") { // Only supported network
+        if (network === "eip155:84532") {
+          // Only supported network
           expect(verification.isValid).toBe(true);
           expect(verification.payer).toBe(MOCK_ADDRESSES.payer);
         }
@@ -365,7 +375,10 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       expect(paymentResult.x402Version).toBe(2);
       expect(paymentResult.payload).toBeDefined();
 
-      const verification = await facilitator.verify(paymentResult.payload, requirementsWithExtensions);
+      const verification = await facilitator.verify(
+        paymentResult.payload,
+        requirementsWithExtensions,
+      );
 
       expect(verification.isValid).toBe(true);
     });

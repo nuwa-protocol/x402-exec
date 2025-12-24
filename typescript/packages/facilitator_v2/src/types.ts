@@ -4,7 +4,11 @@
  * Implements SchemeNetworkFacilitator interface for SettlementRouter integration
  */
 
-import type { PaymentRequirements, PaymentPayload, SchemeNetworkFacilitator } from "@x402/core/types";
+import type {
+  PaymentRequirements,
+  PaymentPayload,
+  SchemeNetworkFacilitator,
+} from "@x402/core/types";
 import type { SettlementExtraCore, Network, Address } from "@x402x/core_v2";
 
 // Re-export core types for convenience
@@ -87,10 +91,10 @@ export const SETTLEMENT_ROUTER_ABI = [
       { name: "payTo", type: "address" },
       { name: "facilitatorFee", type: "uint256" },
       { name: "hook", type: "address" },
-      { name: "hookData", type: "bytes" }
+      { name: "hookData", type: "bytes" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -105,10 +109,10 @@ export const SETTLEMENT_ROUTER_ABI = [
       { name: "payTo", type: "address" },
       { name: "facilitatorFee", type: "uint256" },
       { name: "hook", type: "address" },
-      { name: "hookData", type: "bytes" }
+      { name: "hookData", type: "bytes" },
     ],
     outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -116,18 +120,18 @@ export const SETTLEMENT_ROUTER_ABI = [
     inputs: [
       { name: "from", type: "address" },
       { name: "token", type: "address" },
-      { name: "nonce", type: "bytes32" }
+      { name: "nonce", type: "bytes32" },
     ],
     outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "pure"
+    stateMutability: "pure",
   },
   {
     type: "function",
     name: "isSettled",
     inputs: [{ name: "contextKey", type: "bytes32" }],
     outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view"
-  }
+    stateMutability: "view",
+  },
 ] as const;
 
 /**
@@ -141,7 +145,10 @@ export class FacilitatorValidationError extends Error {
 }
 
 export class SettlementRouterError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
     super(message);
     this.name = "SettlementRouterError";
   }

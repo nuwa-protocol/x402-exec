@@ -1,5 +1,5 @@
 // Type declarations for workspace packages that may not have generated types yet
-declare module '@x402x/core_v2' {
+declare module "@x402x/core_v2" {
   export function toCanonicalNetworkKey(network: string): string;
   export function getNetworkName(network: string): string;
   export function getNetworkConfig(network: string): any;
@@ -13,16 +13,22 @@ declare module '@x402x/core_v2' {
   export type PaymentRequirements = any;
 }
 
-declare module '@x402x/facilitator_v2' {
+declare module "@x402x/facilitator_v2" {
   export type RouterSettlementFacilitator = {
     scheme: string;
     caipFamily: string;
-    verify(payload: any, requirements: any): Promise<{
+    verify(
+      payload: any,
+      requirements: any,
+    ): Promise<{
       isValid: boolean;
       invalidReason?: string;
       payer?: string;
     }>;
-    settle(payload: any, requirements: any): Promise<{
+    settle(
+      payload: any,
+      requirements: any,
+    ): Promise<{
       success: boolean;
       transaction: string;
       network: string;

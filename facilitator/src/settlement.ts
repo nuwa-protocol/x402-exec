@@ -17,9 +17,10 @@ import {
   SETTLEMENT_ROUTER_ABI,
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
-  getNetworkConfig,
   calculateCommitment,
 } from "@x402x/core";
+// Import V2 getNetworkConfig for CAIP-2 support
+import { getNetworkConfig } from "@x402x/core_v2";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
 import { getLogger } from "./telemetry.js";
@@ -28,6 +29,7 @@ import type { SettleResponseWithMetrics } from "./settlement-types.js";
 import { calculateEffectiveGasLimit, type GasCostConfig } from "./gas-cost.js";
 import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { BalanceChecker } from "./balance-check.js";
+import { getCanonicalNetwork, getNetworkDisplayName } from "./network-utils.js";
 import { createGasEstimator, type GasEstimationConfig } from "./gas-estimation/index.js";
 
 const logger = getLogger();
@@ -102,7 +104,7 @@ export function validateSettlementRouter(
 /**
  * Validate token address (only USDC is currently supported)
  *
- * @param network - The network name (e.g., "base-sepolia", "x-layer-testnet")
+ * @param network - The network name in V1 format (e.g., "base-sepolia", "x-layer-testnet")
  * @param tokenAddress - The token address to validate
  * @throws SettlementExtraError if token is not supported
  */
@@ -202,10 +204,13 @@ export async function settleWithRouter(
       throw new Error("Settlement Router requires an EVM signer");
     }
 
-    const network = paymentRequirements.network;
+    // 2. Normalize network identifier (V1/V2 -> V1)
+    // This ensures all network-related config lookups use the correct format
+    const canonicalNetwork = getCanonicalNetwork(paymentRequirements.network);
+    const network = getNetworkDisplayName(canonicalNetwork);
     const asset = paymentRequirements.asset;
 
-    // 2. Validate token address (SECURITY: only USDC is currently supported)
+    // 3. Validate token address (SECURITY: only USDC is currently supported)
     validateTokenAddress(network, asset);
 
     // 3. Parse settlement extra parameters
@@ -428,7 +433,7 @@ export async function settleWithRouter(
         // Create gas estimator (can be cached at app level for better performance)
         const gasEstimator = createGasEstimator(
           gasEstimationConfig,
-          logger.child({ module: 'gas-estimation' }),
+          logger.child({ module: "gas-estimation" }),
         );
 
         const hookAmount = BigInt(authorization.value) - BigInt(extra.facilitatorFee);
@@ -524,13 +529,15 @@ export async function settleWithRouter(
           nativeTokenPrice: {},
         };
         const networkConfig = getNetworkConfig(network);
-        effectiveGasLimit = BigInt(calculateEffectiveGasLimit(
-          extra.facilitatorFee,
-          await getGasPrice(network, fallbackGasCostConfig, dynamicGasPriceConfig),
-          nativeTokenPrices?.[network] || 0,
-          networkConfig.defaultAsset.decimals,
-          fallbackGasCostConfig,
-        ));
+        effectiveGasLimit = BigInt(
+          calculateEffectiveGasLimit(
+            extra.facilitatorFee,
+            await getGasPrice(network, fallbackGasCostConfig, dynamicGasPriceConfig),
+            nativeTokenPrices?.[network] || 0,
+            networkConfig.defaultAsset.decimals,
+            fallbackGasCostConfig,
+          ),
+        );
         gasLimitMode = "static_fallback";
       }
     }

@@ -36,7 +36,9 @@ describe("createGasEstimator", () => {
 
       expect(estimator).toBeInstanceOf(CodeBasedGasEstimator);
       expect(estimator.strategyName).toBe("code_calculation");
-      expect(mockLogger.info).toHaveBeenCalledWith("Using code-based gas estimation strategy (forced)");
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "Using code-based gas estimation strategy (forced)",
+      );
     });
 
     it("should create SimulationBasedGasEstimator for 'simulation' strategy", () => {
@@ -52,7 +54,9 @@ describe("createGasEstimator", () => {
 
       expect(estimator).toBeInstanceOf(SimulationBasedGasEstimator);
       expect(estimator.strategyName).toBe("rpc_simulation");
-      expect(mockLogger.info).toHaveBeenCalledWith("Using simulation-based gas estimation strategy (forced)");
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "Using simulation-based gas estimation strategy (forced)",
+      );
     });
 
     it("should create SmartGasEstimator for 'smart' strategy", () => {
@@ -70,7 +74,7 @@ describe("createGasEstimator", () => {
       expect(estimator.strategyName).toBe("smart");
       expect(mockLogger.info).toHaveBeenCalledWith(
         { codeValidationEnabled: true },
-        "Using smart gas estimation strategy (auto-select)"
+        "Using smart gas estimation strategy (auto-select)",
       );
     });
 
@@ -89,7 +93,7 @@ describe("createGasEstimator", () => {
       expect(estimator.strategyName).toBe("smart");
       expect(mockLogger.info).toHaveBeenCalledWith(
         { codeValidationEnabled: false },
-        "Using smart gas estimation strategy (auto-select)"
+        "Using smart gas estimation strategy (auto-select)",
       );
     });
   });
@@ -109,7 +113,7 @@ describe("createGasEstimator", () => {
       expect(estimator).toBeInstanceOf(SmartGasEstimator);
       expect(mockLogger.info).toHaveBeenCalledWith(
         { codeValidationEnabled: false },
-        "Using smart gas estimation strategy (auto-select)"
+        "Using smart gas estimation strategy (auto-select)",
       );
     });
 
@@ -125,7 +129,9 @@ describe("createGasEstimator", () => {
       const estimator = createGasEstimator(config, mockLogger);
 
       expect(estimator).toBeInstanceOf(SimulationBasedGasEstimator);
-      expect(mockLogger.info).toHaveBeenCalledWith("Using simulation-based gas estimation strategy (forced)");
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "Using simulation-based gas estimation strategy (forced)",
+      );
     });
   });
 
@@ -145,7 +151,7 @@ describe("createGasEstimator", () => {
       expect(estimator).toBeInstanceOf(SmartGasEstimator);
       expect(mockLogger.info).toHaveBeenCalledWith(
         { codeValidationEnabled: true },
-        "Using smart gas estimation strategy (auto-select)"
+        "Using smart gas estimation strategy (auto-select)",
       );
     });
   });

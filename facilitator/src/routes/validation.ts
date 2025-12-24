@@ -16,11 +16,8 @@ import type { PaymentRequirements, PaymentPayload } from "x402/types";
  * @returns The data cast to the expected type
  * @throws {Error} If data is missing, not an object, or is an array
  */
-export function validateBasicStructure<T>(
-  data: unknown,
-  fieldName: string
-): T {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+export function validateBasicStructure<T>(data: unknown, fieldName: string): T {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
     const error = new Error(`${fieldName} is required and must be an object`);
     error.name = "ValidationError";
     throw error;
@@ -42,15 +39,19 @@ export function validateX402Version(version?: unknown): void {
   }
 
   // Type check: ensure version is a number
-  if (typeof version !== 'number') {
-    const error = new Error(`Invalid x402Version: expected number, got ${typeof version}. Only versions 1 and 2 are supported.`);
+  if (typeof version !== "number") {
+    const error = new Error(
+      `Invalid x402Version: expected number, got ${typeof version}. Only versions 1 and 2 are supported.`,
+    );
     error.name = "ValidationError";
     throw error;
   }
 
   // Value check: ensure version is 1 or 2
   if (version !== 1 && version !== 2) {
-    const error = new Error(`Invalid x402Version: ${version}. Only versions 1 and 2 are supported.`);
+    const error = new Error(
+      `Invalid x402Version: ${version}. Only versions 1 and 2 are supported.`,
+    );
     error.name = "ValidationError";
     throw error;
   }

@@ -563,7 +563,7 @@ function parseTokenPriceConfig(): TokenPriceConfig {
 function parseGasEstimationConfig(): GasEstimationConfig {
   return {
     enabled: process.env.PREVALIDATION_ENABLED !== "false", // Default: true
-    strategy: (process.env.GAS_ESTIMATION_STRATEGY as 'code' | 'simulation' | 'smart') || "smart", // Default: smart
+    strategy: (process.env.GAS_ESTIMATION_STRATEGY as "code" | "simulation" | "smart") || "smart", // Default: smart
     codeValidationEnabled: process.env.CODE_VALIDATION_ENABLED !== "false", // Default: true
     safetyMultiplier: parseFloat(process.env.GAS_ESTIMATION_SAFETY_MULTIPLIER || "1.2"), // Default: 1.2x
     timeoutMs: parseInt(process.env.GAS_ESTIMATION_TIMEOUT_MS || "5000"), // Default: 5 seconds
@@ -589,14 +589,20 @@ function parseV2Config(): V2Config {
     try {
       const parsed = JSON.parse(process.env.FACILITATOR_V2_ALLOWED_ROUTERS);
       if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-        throw new Error("FACILITATOR_V2_ALLOWED_ROUTERS must be a JSON object mapping router IDs to arrays of chain IDs");
+        throw new Error(
+          "FACILITATOR_V2_ALLOWED_ROUTERS must be a JSON object mapping router IDs to arrays of chain IDs",
+        );
       }
       for (const [router, chains] of Object.entries(parsed)) {
         if (!Array.isArray(chains)) {
-          throw new Error(`FACILITATOR_V2_ALLOWED_ROUTERS value for router "${router}" must be an array`);
+          throw new Error(
+            `FACILITATOR_V2_ALLOWED_ROUTERS value for router "${router}" must be an array`,
+          );
         }
         if (!chains.every((chain) => typeof chain === "string")) {
-          throw new Error(`FACILITATOR_V2_ALLOWED_ROUTERS array for router "${router}" must contain only strings`);
+          throw new Error(
+            `FACILITATOR_V2_ALLOWED_ROUTERS array for router "${router}" must contain only strings`,
+          );
         }
       }
       allowedRouters = parsed as Record<string, string[]>;

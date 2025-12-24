@@ -22,7 +22,8 @@ export const MOCK_VALUES = {
   facilitatorFee: "0x186A0", // 0.1 USDC in hex (100000)
   salt: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
   nonce: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
-  signature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  signature:
+    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
   hookData: "0x",
   validAfter: "0x64", // Current timestamp + 100
   validBefore: "0xFFFFFFFFFFFFFFFF",

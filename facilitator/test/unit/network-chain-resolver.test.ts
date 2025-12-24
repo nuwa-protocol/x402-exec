@@ -16,7 +16,7 @@ vi.mock("@x402x/core", () => ({
     "x-layer",
     "bsc-testnet",
     "bsc",
-    "skale-base-sepolia"
+    "skale-base-sepolia",
   ]),
 }));
 
@@ -74,7 +74,7 @@ vi.mock("x402/types", () => ({
             },
           },
         },
-        "bsc": {
+        bsc: {
           id: 56,
           name: "BSC",
           rpcUrls: {
@@ -168,7 +168,7 @@ describe("NetworkChainResolver", () => {
     it("should use environment variable override", async () => {
       // Clear cache to ensure environment variable is picked up
       networkChainResolver.clearCache();
-      
+
       process.env.BSC_RPC_URL = "https://custom-bsc.example.com";
 
       const chainInfo = await networkChainResolver.resolveNetworkChain("bsc");
@@ -216,7 +216,7 @@ describe("NetworkChainResolver", () => {
       expect(Object.keys(rpcUrls)).toContain("skale-base-sepolia");
 
       // Verify all URLs are valid HTTP/HTTPS URLs
-      Object.values(rpcUrls).forEach(url => {
+      Object.values(rpcUrls).forEach((url) => {
         expect(url).toMatch(/^https?:\/\//);
       });
     });
@@ -255,7 +255,7 @@ describe("NetworkChainResolver", () => {
       const status = await networkChainResolver.getNetworkStatus();
 
       // All networks returned by getSupportedNetworks should be valid
-      Object.values(status).forEach(networkStatus => {
+      Object.values(status).forEach((networkStatus) => {
         if (networkStatus.valid) {
           expect(networkStatus.hasRpcUrl).toBe(true);
           expect(networkStatus.source).toBeDefined();

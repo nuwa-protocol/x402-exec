@@ -23,8 +23,7 @@ import type { TokenPriceConfig } from "../token-price.js";
 /**
  * All dependencies required by routes
  */
-export type RoutesDependencies =
-  HealthRouteDependencies &
+export type RoutesDependencies = HealthRouteDependencies &
   SupportedRouteDependencies &
   StatsRouteDependencies &
   VerifyRouteDependencies &
@@ -77,7 +76,7 @@ export function registerRoutes(
       enableV2: deps.enableV2,
       allowedRouters: deps.allowedRouters,
       rpcUrls: deps.rpcUrls,
-    }
+    },
   );
 
   // Health check routes (no rate limiting)

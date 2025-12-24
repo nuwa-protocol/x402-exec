@@ -116,8 +116,8 @@ describe("pool-manager", () => {
 
         const evmPools = manager.getEvmAccountPools();
         expect(evmPools.size).toBe(2);
-        expect(evmPools.has("eip155:84532")).toBe(true);  // base-sepolia canonical key
-        expect(evmPools.has("eip155:1952")).toBe(true);     // x-layer-testnet canonical key
+        expect(evmPools.has("eip155:84532")).toBe(true); // base-sepolia canonical key
+        expect(evmPools.has("eip155:1952")).toBe(true); // x-layer-testnet canonical key
       });
     });
 

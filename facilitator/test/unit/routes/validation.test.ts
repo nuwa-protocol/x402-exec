@@ -17,27 +17,39 @@ describe("validateBasicStructure", () => {
   });
 
   it("should reject null", () => {
-    expect(() => validateBasicStructure(null, "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure(null, "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should reject undefined", () => {
-    expect(() => validateBasicStructure(undefined, "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure(undefined, "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should reject string values", () => {
-    expect(() => validateBasicStructure("string", "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure("string", "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should reject number values", () => {
-    expect(() => validateBasicStructure(123, "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure(123, "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should reject boolean values", () => {
-    expect(() => validateBasicStructure(true, "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure(true, "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should reject arrays", () => {
-    expect(() => validateBasicStructure([], "test")).toThrow("test is required and must be an object");
+    expect(() => validateBasicStructure([], "test")).toThrow(
+      "test is required and must be an object",
+    );
   });
 
   it("should return the data when valid", () => {
@@ -71,23 +83,33 @@ describe("validateX402Version", () => {
   });
 
   it("should reject version 0", () => {
-    expect(() => validateX402Version(0)).toThrow("Invalid x402Version: 0. Only versions 1 and 2 are supported.");
+    expect(() => validateX402Version(0)).toThrow(
+      "Invalid x402Version: 0. Only versions 1 and 2 are supported.",
+    );
   });
 
   it("should reject version 3", () => {
-    expect(() => validateX402Version(3)).toThrow("Invalid x402Version: 3. Only versions 1 and 2 are supported.");
+    expect(() => validateX402Version(3)).toThrow(
+      "Invalid x402Version: 3. Only versions 1 and 2 are supported.",
+    );
   });
 
   it("should reject version 10", () => {
-    expect(() => validateX402Version(10)).toThrow("Invalid x402Version: 10. Only versions 1 and 2 are supported.");
+    expect(() => validateX402Version(10)).toThrow(
+      "Invalid x402Version: 10. Only versions 1 and 2 are supported.",
+    );
   });
 
   it("should reject negative versions", () => {
-    expect(() => validateX402Version(-1)).toThrow("Invalid x402Version: -1. Only versions 1 and 2 are supported.");
+    expect(() => validateX402Version(-1)).toThrow(
+      "Invalid x402Version: -1. Only versions 1 and 2 are supported.",
+    );
   });
 
   it("should reject fractional versions", () => {
-    expect(() => validateX402Version(1.5)).toThrow("Invalid x402Version: 1.5. Only versions 1 and 2 are supported.");
+    expect(() => validateX402Version(1.5)).toThrow(
+      "Invalid x402Version: 1.5. Only versions 1 and 2 are supported.",
+    );
   });
 
   it("should set ValidationError name on thrown error", () => {

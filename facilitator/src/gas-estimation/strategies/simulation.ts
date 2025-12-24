@@ -21,7 +21,7 @@ import { getHookTypeInfo } from "../../hook-validators/index.js";
 import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";
 
 export class SimulationBasedGasEstimator implements GasEstimationStrategy {
-  readonly strategyName = 'rpc_simulation';
+  readonly strategyName = "rpc_simulation";
 
   async estimateGas(params: SettlementGasParams): Promise<GasEstimationResult> {
     const startTime = Date.now();
@@ -32,7 +32,7 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
       try {
         txData = encodeFunctionData({
           abi: SETTLEMENT_ROUTER_ABI,
-          functionName: 'settleAndExecute',
+          functionName: "settleAndExecute",
           args: [
             params.token as `0x${string}`,
             params.from as `0x${string}`,
@@ -54,8 +54,8 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
         return {
           gasLimit: 0,
           isValid: false,
-          errorReason: `Transaction encoding failed: ${encodingError instanceof Error ? encodingError.message : 'Invalid parameters'}`,
-          strategyUsed: 'rpc_simulation',
+          errorReason: `Transaction encoding failed: ${encodingError instanceof Error ? encodingError.message : "Invalid parameters"}`,
+          strategyUsed: "rpc_simulation",
           metadata: {
             hookType: getHookTypeInfo(params.network, params.hook).hookType,
           },
@@ -65,8 +65,8 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
       // Call estimateGas with timeout
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
-          () => reject(new Error('Gas estimation timeout')),
-          params.gasEstimationConfig.timeoutMs
+          () => reject(new Error("Gas estimation timeout")),
+          params.gasEstimationConfig.timeoutMs,
         );
       });
 
@@ -81,7 +81,7 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
 
       // Apply safety multiplier
       const safeGas = Math.floor(
-        Number(estimatedGas) * params.gasEstimationConfig.safetyMultiplier
+        Number(estimatedGas) * params.gasEstimationConfig.safetyMultiplier,
       );
 
       // Apply max limit constraint
@@ -92,14 +92,13 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
       return {
         gasLimit: constrainedGas,
         isValid: true,
-        strategyUsed: 'rpc_simulation',
+        strategyUsed: "rpc_simulation",
         metadata: {
           rawEstimate: Number(estimatedGas),
           safetyMultiplier: params.gasEstimationConfig.safetyMultiplier,
           hookType: getHookTypeInfo(params.network, params.hook).hookType,
         },
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
       let errorReason: string;
@@ -107,14 +106,14 @@ export class SimulationBasedGasEstimator implements GasEstimationStrategy {
         errorReason = parseEstimateGasError(error);
       } catch (parseError) {
         // If error parsing itself fails, use fallback message
-        errorReason = 'Gas estimation failed - unable to determine cause';
+        errorReason = "Gas estimation failed - unable to determine cause";
       }
 
       return {
         gasLimit: 0,
         isValid: false,
         errorReason,
-        strategyUsed: 'rpc_simulation',
+        strategyUsed: "rpc_simulation",
         metadata: {
           hookType: getHookTypeInfo(params.network, params.hook).hookType,
         },

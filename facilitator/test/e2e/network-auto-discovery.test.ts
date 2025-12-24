@@ -47,7 +47,8 @@ describe("Network Auto Discovery E2E", () => {
     await networkChainResolver.initialize();
 
     // Mock required environment variables for config loading
-    process.env.EVM_PRIVATE_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
+    process.env.EVM_PRIVATE_KEY =
+      "0x0000000000000000000000000000000000000000000000000000000000000001";
 
     // Load configuration
     const config = await loadConfig();
@@ -107,7 +108,7 @@ describe("Network Auto Discovery E2E", () => {
         "x-layer",
         "bsc-testnet",
         "bsc",
-        "skale-base-sepolia"
+        "skale-base-sepolia",
       ];
 
       for (const network of supportedNetworks) {
@@ -130,10 +131,10 @@ describe("Network Auto Discovery E2E", () => {
         "x-layer",
         "bsc-testnet",
         "bsc",
-        "skale-base-sepolia"
+        "skale-base-sepolia",
       ];
 
-      expectedNetworks.forEach(network => {
+      expectedNetworks.forEach((network) => {
         expect(rpcUrls[network]).toBeDefined();
         expect(rpcUrls[network]).toMatch(/^https?:\/\//);
       });
@@ -158,7 +159,8 @@ describe("Network Auto Discovery E2E", () => {
   describe("Configuration Integration", () => {
     it("should load configuration with dynamic gas price config", async () => {
       // Mock required environment variables
-      process.env.EVM_PRIVATE_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
 
       const config = await loadConfig();
 
@@ -174,10 +176,10 @@ describe("Network Auto Discovery E2E", () => {
         "x-layer",
         "bsc-testnet",
         "bsc",
-        "skale-base-sepolia"
+        "skale-base-sepolia",
       ];
 
-      expectedNetworks.forEach(network => {
+      expectedNetworks.forEach((network) => {
         expect(config.dynamicGasPrice.rpcUrls[network]).toBeDefined();
         expect(config.dynamicGasPrice.rpcUrls[network]).toMatch(/^https?:\/\//);
       });
@@ -187,12 +189,15 @@ describe("Network Auto Discovery E2E", () => {
       // Set custom RPC URLs
       process.env.BSC_RPC_URL = "https://custom-bsc.example.com";
       process.env.BSC_TESTNET_RPC_URL = "https://custom-bsc-testnet.example.com";
-      process.env.EVM_PRIVATE_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
+      process.env.EVM_PRIVATE_KEY =
+        "0x0000000000000000000000000000000000000000000000000000000000000001";
 
       const config = await loadConfig();
 
       expect(config.dynamicGasPrice.rpcUrls["bsc"]).toBe("https://custom-bsc.example.com");
-      expect(config.dynamicGasPrice.rpcUrls["bsc-testnet"]).toBe("https://custom-bsc-testnet.example.com");
+      expect(config.dynamicGasPrice.rpcUrls["bsc-testnet"]).toBe(
+        "https://custom-bsc-testnet.example.com",
+      );
 
       // Clear environment variables
       delete process.env.BSC_RPC_URL;
@@ -264,9 +269,7 @@ describe("Network Auto Discovery E2E", () => {
 
   describe("API Endpoints", () => {
     it("should return all supported networks via /supported endpoint", async () => {
-      const response = await request(app)
-        .get("/supported")
-        .expect(200);
+      const response = await request(app).get("/supported").expect(200);
 
       expect(response.body).toHaveProperty("kinds");
       // All networks are EVM networks, so we can directly map to network names

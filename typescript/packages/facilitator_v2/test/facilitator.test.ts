@@ -59,7 +59,6 @@ vi.mock("@x402x/core_v2", () => ({
   calculateCommitment: vi.fn(() => MOCK_VALUES.nonce),
 }));
 
-
 describe("RouterSettlementFacilitator", () => {
   let facilitator: RouterSettlementFacilitator;
 
@@ -70,10 +69,10 @@ describe("RouterSettlementFacilitator", () => {
     // Configure mocks for successful verification
     mockPublicClient.readContract.mockImplementation((params) => {
       // Handle different function calls
-      if (params.functionName === 'isSettled') {
+      if (params.functionName === "isSettled") {
         return Promise.resolve(false);
       }
-      if (params.functionName === 'balanceOf') {
+      if (params.functionName === "balanceOf") {
         return Promise.resolve(BigInt(MOCK_VALUES.usdcBalance));
       }
       // Default fallback
@@ -81,7 +80,9 @@ describe("RouterSettlementFacilitator", () => {
     });
 
     // Configure wallet client for successful settlement
-    mockWalletClient.writeContract.mockResolvedValue(mockSettleResponse.transaction as `0x${string}`);
+    mockWalletClient.writeContract.mockResolvedValue(
+      mockSettleResponse.transaction as `0x${string}`,
+    );
 
     // Configure transaction receipt for successful settlement
     mockPublicClient.waitForTransactionReceipt.mockResolvedValue(mockTransactionReceipt);
@@ -184,7 +185,6 @@ describe("RouterSettlementFacilitator", () => {
       expect(result.invalidReason).toContain("Unsupported network family");
     });
 
-    
     it("should reject payment with invalid settlement router", async () => {
       const invalidRequirements = {
         ...mockPaymentRequirements,
@@ -271,5 +271,4 @@ describe("RouterSettlementFacilitator", () => {
       expect(result.errorReason).toContain("Invalid signature");
     });
   });
-
-  });
+});

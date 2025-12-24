@@ -45,17 +45,14 @@ describe("TransferHookValidator", () => {
     it("should validate valid transfer hook with recipients", async () => {
       // Use proper ABI encoding for (address[] recipients, uint256[] amounts)
       const hookData = encodeAbiParameters(
-        [
-          { type: "address[]" },
-          { type: "uint256[]" },
-        ],
+        [{ type: "address[]" }, { type: "uint256[]" }],
         [
           [
             "0x74215d0c1b2a5e6f8b9c3d4e5f6a7b8c9d0e1f2a",
             "0x84215d0c1b2a5e6f8b9c3d4e5f6a7b8c9d0e1f2b",
           ],
           [100000n, 100000n],
-        ]
+        ],
       );
 
       const result = validator.validate(
@@ -72,17 +69,14 @@ describe("TransferHookValidator", () => {
 
     it("should reject invalid recipient address", async () => {
       const hookData = encodeAbiParameters(
-        [
-          { type: "address[]" },
-          { type: "uint256[]" },
-        ],
+        [{ type: "address[]" }, { type: "uint256[]" }],
         [
           [
             "0x0000000000000000000000000000000000000000", // zero address
             "0x84215d0c1b2a5e6f8b9c3d4e5f6a7b8c9d0e1f2b",
           ],
           [100000n, 100000n],
-        ]
+        ],
       );
 
       const result = validator.validate(
@@ -100,14 +94,11 @@ describe("TransferHookValidator", () => {
 
     it("should reject mismatched array lengths", async () => {
       const hookData = encodeAbiParameters(
-        [
-          { type: "address[]" },
-          { type: "uint256[]" },
-        ],
+        [{ type: "address[]" }, { type: "uint256[]" }],
         [
           ["0x74215d0c1b2a5e6f8b9c3d4e5f6a7b8c9d0e1f2a"], // 1 recipient
           [100000n, 100000n], // 2 amounts (mismatch)
-        ]
+        ],
       );
 
       const result = validator.validate(

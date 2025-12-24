@@ -72,7 +72,7 @@ export interface GasEstimationResult {
   errorReason?: string;
 
   /** Strategy used for this estimation */
-  strategyUsed: 'code_calculation' | 'rpc_simulation';
+  strategyUsed: "code_calculation" | "rpc_simulation";
 
   /** Additional metadata for logging */
   metadata?: {
@@ -95,7 +95,7 @@ export interface GasEstimationConfig {
    * - 'simulation': Force RPC simulation (slower, all hooks, most accurate)
    * - 'smart': Auto-select based on hook type (recommended)
    */
-  strategy: 'code' | 'simulation' | 'smart';
+  strategy: "code" | "simulation" | "smart";
 
   /**
    * Enable code-based validation for built-in hooks (only affects 'smart' strategy)

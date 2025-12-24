@@ -41,7 +41,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $10.00 / $3000 * 1e18 / 10e9 = 333,333 gas
       // Result should be max(150000, min(333333, 5000000)) = 333,333 (dynamic still applies)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(333333);
     });
@@ -58,7 +64,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $0.80 / $3000 * 1e18 / 10e9 = 26,666 gas
       // Result should be max(150000, min(26666, 5000000)) = 150000 (minimum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -73,7 +85,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $8.00 / $3000 * 1e18 / 10e9 = 266,666 gas
       // Result should be max(150000, min(266666, 5000000)) = 266,666 (dynamic)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(266666);
     });
@@ -88,7 +106,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $80.00 / $3000 * 1e18 / 10e9 = 2,666,666 gas
       // Result should be max(150000, min(2666666, 5000000)) = 2,666,666 (no longer hits max)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(2666666);
     });
@@ -102,7 +126,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Available for gas = $10.00 * 0.7 = $7.00 (70% available with 30% margin)
       // Max affordable gas = $7.00 / $3000 * 1e18 / 10e9 = 233,333 gas
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(233333);
     });
@@ -117,7 +147,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $8.00 / $3000 * 1e18 / 100e9 = 26,666 gas
       // Result should be max(150000, min(26666, 500000)) = 150,000 (minimum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -132,7 +168,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $8.00 / $3000 * 1e18 / 1e9 = 2,666,666 gas
       // Result should be max(150000, min(2666666, 5000000)) = 2,666,666 (no longer hits max)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(2666666);
     });
@@ -147,7 +189,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $8.00 / $1500 * 1e18 / 10e9 = 533,333 gas
       // Result should be max(150000, min(533333, 5000000)) = 533,333 (dynamic)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(533333);
     });
@@ -162,7 +210,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $8.00 / $6000 * 1e18 / 10e9 = 133,333 gas
       // Result should be max(150000, min(133333, 5000000)) = 150,000 (minimum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -177,7 +231,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $4.00 / $3000 * 1e18 / 10e9 = 133,333 gas
       // Result should be max(200000, min(133333, 5000000)) = 200,000 (minimum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(200000);
     });
@@ -192,7 +252,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $16.00 / $3000 * 1e18 / 10e9 = 533,333 gas
       // Result should be max(150000, min(533333, 300000)) = 300,000 (maximum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(300000);
     });
@@ -206,7 +272,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Available for gas = $10.00 * 1.0 = $10.00 (100% available)
       // Max affordable gas = $10.00 / $3000 * 1e18 / 10e9 = 333,333 gas
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(333333);
     });
@@ -221,7 +293,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Max affordable gas = $0.08 / $3000 * 1e18 / 10e9 = 2,666 gas
       // Result should be max(150000, min(2666, 5000000)) = 150,000 (minimum)
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -233,7 +311,13 @@ describe("calculateEffectiveGasLimit", () => {
       const nativeTokenPrice = 0; // Invalid: $0
 
       // Should return minimum gas limit as safety fallback
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       // Should fallback to minimum gas limit
       expect(result).toBe(config.minGasLimit);
@@ -246,7 +330,13 @@ describe("calculateEffectiveGasLimit", () => {
       const nativeTokenPrice = -100; // Invalid: negative price
 
       // Should return minimum gas limit as safety fallback
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -258,7 +348,13 @@ describe("calculateEffectiveGasLimit", () => {
       const nativeTokenPrice = NaN; // Invalid: NaN
 
       // Should return minimum gas limit as safety fallback
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -270,7 +366,13 @@ describe("calculateEffectiveGasLimit", () => {
       const nativeTokenPrice = Infinity; // Invalid: Infinity
 
       // Should return minimum gas limit as safety fallback
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(config.minGasLimit);
     });
@@ -287,7 +389,13 @@ describe("calculateEffectiveGasLimit", () => {
       // Available for gas = $5.625 * 0.8 = $4.50
       // Max affordable gas = $4.50 / $3000 * 1e18 / 10e9 = 150,000 gas
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBe(150000);
     });
@@ -300,7 +408,13 @@ describe("calculateEffectiveGasLimit", () => {
       const gasPrice = "10000000000";
       const nativeTokenPrice = 3000;
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBeGreaterThanOrEqual(config.minGasLimit);
     });
@@ -311,7 +425,13 @@ describe("calculateEffectiveGasLimit", () => {
       const gasPrice = "1"; // Very low gas price
       const nativeTokenPrice = 100; // Low token price
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       expect(result).toBeLessThanOrEqual(config.maxGasLimit);
     });
@@ -322,7 +442,13 @@ describe("calculateEffectiveGasLimit", () => {
       const gasPrice = "10000000000"; // 10 gwei
       const nativeTokenPrice = 3000; // ETH = $3000
 
-      const result = calculateEffectiveGasLimit(facilitatorFee, gasPrice, nativeTokenPrice, 6, config);
+      const result = calculateEffectiveGasLimit(
+        facilitatorFee,
+        gasPrice,
+        nativeTokenPrice,
+        6,
+        config,
+      );
 
       // Dynamic calculation gives 266,666 gas
       expect(result).toBeGreaterThan(config.minGasLimit);

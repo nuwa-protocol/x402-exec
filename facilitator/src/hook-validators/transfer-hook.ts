@@ -82,10 +82,10 @@ export class TransferHookValidator implements HookValidator {
 
       // Validate array lengths match
       if (params.recipients.length !== params.amounts.length) {
-      return {
-        isValid: false,
-        errorReason: `Recipients and amounts length mismatch: ${params.recipients.length} vs ${params.amounts.length}`,
-      };
+        return {
+          isValid: false,
+          errorReason: `Recipients and amounts length mismatch: ${params.recipients.length} vs ${params.amounts.length}`,
+        };
       }
 
       // Validate array is not empty
@@ -100,10 +100,10 @@ export class TransferHookValidator implements HookValidator {
       for (let i = 0; i < params.recipients.length; i++) {
         const recipient = params.recipients[i];
         if (!isAddress(recipient)) {
-        return {
-          isValid: false,
-          errorReason: `Invalid recipient address at index ${i}: ${recipient}`,
-        };
+          return {
+            isValid: false,
+            errorReason: `Invalid recipient address at index ${i}: ${recipient}`,
+          };
         }
 
         // Check for zero address (though technically valid, usually indicates error)
@@ -158,5 +158,4 @@ export class TransferHookValidator implements HookValidator {
       };
     }
   }
-
 }

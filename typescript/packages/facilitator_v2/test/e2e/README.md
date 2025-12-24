@@ -6,17 +6,20 @@ This directory contains mock end-to-end contract tests for the x402 v2 technolog
 
 ### ✅ Fully Implemented Features
 
-1. **PAYMENT-* headers validation** ✅
+1. **PAYMENT-\* headers validation** ✅
+
    - PAYMENT-REQUIRED / PAYMENT-SIGNATURE / PAYMENT-RESPONSE header handling
    - Complete payment flow validation (client -> server -> facilitator)
    - Full HTTP server simulation tests implemented in `mock-contract.test.ts`
 
 2. **Extensions echo behavior** ✅
+
    - Custom extension data transmission and echo
    - Proper extension data handling
    - Complete extension data transmission tested at `/api/extensions-echo` endpoint
 
-3. **eip155:* wildcard path support** ✅
+3. **eip155:\* wildcard path support** ✅
+
    - Multi-network wildcard path support
    - Network address resolution and validation
    - Test networks supported: Base Sepolia (84532), Base Mainnet (8453), Ethereum (1)
@@ -71,16 +74,19 @@ pnpm test
 Tests validate the following key behaviors:
 
 1. **Complete Payment Flow**
+
    - Client creates payment payload
    - Server validates payment
    - Facilitator executes settlement
 
 2. **Settlement Router Integration**
+
    - Router address validation
    - Hook execution
    - Facilitator fee handling
 
 3. **Multi-Network Support**
+
    - eip155:84532 (Base Sepolia)
    - eip155:8453 (Base Mainnet)
    - eip155:1 (Ethereum Mainnet)
@@ -105,7 +111,7 @@ Tests validate the following key behaviors:
 - [x] PAYMENT-SIGNATURE header validation
 - [x] PAYMENT-RESPONSE header generation
 - [x] Extensions data echo
-- [x] eip155:* wildcard paths
+- [x] eip155:\* wildcard paths
 - [x] Router settlement parameter propagation
 - [x] Multi-network support
 - [x] Error handling and edge cases

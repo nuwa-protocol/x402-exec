@@ -7,12 +7,14 @@ Successfully refactored the x402 Facilitator V2 implementation to use the shared
 ## Motivation
 
 **Before:**
+
 - V1 used AccountPool with multi-account support (`EVM_PRIVATE_KEY_1`, `EVM_PRIVATE_KEY_2`, etc.)
-- V2 only used a single `EVM_PRIVATE_KEY` 
+- V2 only used a single `EVM_PRIVATE_KEY`
 - V2 had no queue management or duplicate payer detection
 - V2 created its own wallet clients independently
 
 **After:**
+
 - Both V1 and V2 use the same shared AccountPool
 - V2 benefits from all AccountPool features:
   - Multi-account parallel processing
@@ -24,12 +26,14 @@ Successfully refactored the x402 Facilitator V2 implementation to use the shared
 ## Architecture Changes
 
 ### Before
+
 ```
 V1: Request → PoolManager → AccountPool → v1Settle
 V2: Request → RouterSettlementFacilitator (single key) → v2Settle
 ```
 
 ### After
+
 ```
 V1: Request → PoolManager → AccountPool → v1Settle
 V2: Request → PoolManager → AccountPool → v2Settle (new)
@@ -65,7 +69,7 @@ Modified `settleV2()` to execute through AccountPool:
 private async settleV2(...): Promise<SettleResponse> {
   // Get account pool (same as V1)
   const accountPool = this.deps.poolManager.getPool(network);
-  
+
   // Execute in account pool with payer address for duplicate detection
   return accountPool.execute(async (signer) => {
     // Use signer from AccountPool to execute V2 settlement
@@ -75,6 +79,7 @@ private async settleV2(...): Promise<SettleResponse> {
 ```
 
 Key changes:
+
 - Removed separate `v2Facilitator` instance
 - V2 now uses AccountPool.execute() like V1
 - Passes payer address for duplicate detection
@@ -100,6 +105,7 @@ V2 now uses the shared `evmPrivateKeys` configuration.
 ### 4. Updated Application Initialization
 
 **Files:**
+
 - `facilitator/src/index.ts`
 - `facilitator/src/routes/index.ts`
 - `facilitator/src/routes/settle.ts`
@@ -112,6 +118,7 @@ Removed passing of `v2Signer` and `v2PrivateKey` to routes and VersionDispatcher
 **File:** `facilitator/test/unit/version-dispatcher-v2-accountpool.test.ts`
 
 Created 6 test cases to verify:
+
 - ✅ V2 uses AccountPool.execute for settlement
 - ✅ Multiple accounts work in parallel for V2
 - ✅ Payer address passed for duplicate detection
@@ -124,6 +131,7 @@ All tests pass! (352 tests total)
 ## Configuration Changes
 
 ### Before
+
 ```env
 # V1 accounts
 EVM_PRIVATE_KEY_1=0x...
@@ -135,6 +143,7 @@ EVM_PRIVATE_KEY=0x...  # Used only for V2
 ```
 
 ### After
+
 ```env
 # Shared accounts for V1 and V2
 EVM_PRIVATE_KEY_1=0x...
@@ -158,6 +167,7 @@ FACILITATOR_V2_ALLOWED_ROUTERS={"eip155:84532":["0x..."]}
 ## Testing Results
 
 All 352 tests pass:
+
 - 26 test files passed
 - 352 tests passed
 - New V2 AccountPool integration tests: 6/6 passed
@@ -165,18 +175,21 @@ All 352 tests pass:
 ## Files Modified
 
 ### Core Implementation
+
 1. `typescript/packages/facilitator_v2/src/settlement.ts` - Added `executeSettlementWithWalletClient()`
 2. `typescript/packages/facilitator_v2/src/index.ts` - Exported new function
 3. `facilitator/src/version-dispatcher.ts` - Refactored V2 settlement to use AccountPool
 4. `facilitator/src/config.ts` - Simplified V2Config
 
 ### Application Setup
+
 5. `facilitator/src/index.ts` - Removed V2 separate config passing
 6. `facilitator/src/routes/index.ts` - Updated VersionDispatcher creation
 7. `facilitator/src/routes/settle.ts` - Updated SettleRouteDependencies
 8. `facilitator/src/routes/verify.ts` - Updated VerifyRouteDependencies
 
 ### Tests
+
 9. `facilitator/test/unit/version-dispatcher-v2-accountpool.test.ts` - New comprehensive test suite
 
 ## Migration Guide
@@ -192,4 +205,3 @@ No breaking changes for existing deployments:
 ## Conclusion
 
 The refactor successfully unifies V1 and V2 account management, providing V2 with enterprise-grade features from AccountPool while maintaining backward compatibility and improving code maintainability.
-

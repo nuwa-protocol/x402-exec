@@ -33,15 +33,15 @@ export function getCanonicalNetwork(network: string): CanonicalNetwork {
   } catch (error) {
     // Log the original error for debugging
     console.error(`[getCanonicalNetwork] Failed to canonicalize network: ${network}`, error);
-    
+
     // Show both v1 names and v2 CAIP-2 identifiers in error message
     const v1Names = Object.keys(NETWORK_ALIASES).join(", ");
     const v2Identifiers = Object.values(NETWORK_ALIASES).join(", ");
     throw new Error(
       `Unsupported network: ${network}. ` +
-      `Supported v1 names: ${v1Names}. ` +
-      `Supported v2 CAIP-2 identifiers: ${v2Identifiers}. ` +
-      `Original error: ${error instanceof Error ? error.message : String(error)}`
+        `Supported v1 names: ${v1Names}. ` +
+        `Supported v2 CAIP-2 identifiers: ${v2Identifiers}. ` +
+        `Original error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -70,17 +70,17 @@ export const NETWORK_ALIASES: Record<string, CanonicalNetwork> = {
   "base-sepolia": "eip155:84532",
   "x-layer-testnet": "eip155:1952",
   "skale-base-sepolia": "eip155:324705682",
-  "base": "eip155:8453",
+  base: "eip155:8453",
   "x-layer": "eip155:196",
   "bsc-testnet": "eip155:97",
-  "bsc": "eip155:56",
+  bsc: "eip155:56",
 };
 
 /**
  * Reverse mapping from CAIP-2 to human-readable names
  */
 export const CANONICAL_TO_HUMAN_READABLE: Record<CanonicalNetwork, string> = Object.fromEntries(
-  Object.entries(NETWORK_ALIASES).map(([name, canonical]) => [canonical, name])
+  Object.entries(NETWORK_ALIASES).map(([name, canonical]) => [canonical, name]),
 );
 
 /**
@@ -140,7 +140,7 @@ export function validateNetwork(network: string): CanonicalNetwork {
  */
 export function determineX402Version(
   paymentPayload?: { x402Version?: number },
-  body?: { x402Version?: number }
+  body?: { x402Version?: number },
 ): number {
   // Priority: paymentPayload.x402Version > body.x402Version > default to 1
   const version = paymentPayload?.x402Version ?? body?.x402Version ?? 1;

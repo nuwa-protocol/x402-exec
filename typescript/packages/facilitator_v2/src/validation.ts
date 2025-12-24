@@ -43,7 +43,7 @@ export function validateSettlementRouter(
   network: string,
   router: Address,
   allowedRouters?: Record<string, string[]>,
-  networkConfig?: NetworkConfig
+  networkConfig?: NetworkConfig,
 ): Address {
   // Check if address is valid
   if (!isValidEthereumAddress(router)) {
@@ -56,7 +56,7 @@ export function validateSettlementRouter(
     if (networkAllowedRouters.length > 0 && !networkAllowedRouters.includes(router)) {
       throw new FacilitatorValidationError(
         `SettlementRouter ${router} not allowed for network ${network}. ` +
-        `Allowed routers: ${networkAllowedRouters.join(", ")}`
+          `Allowed routers: ${networkAllowedRouters.join(", ")}`,
       );
     }
   }
@@ -64,7 +64,7 @@ export function validateSettlementRouter(
   // Check against network config if available
   if (networkConfig?.settlementRouter && router !== networkConfig.settlementRouter) {
     throw new FacilitatorValidationError(
-      `SettlementRouter ${router} does not match network config expected router ${networkConfig.settlementRouter}`
+      `SettlementRouter ${router} does not match network config expected router ${networkConfig.settlementRouter}`,
     );
   }
 
@@ -162,7 +162,9 @@ export function validateFacilitatorConfig(config: {
   // Debug: log what we received
   // Either signer or privateKey must be provided
   if (!config.signer && !config.privateKey) {
-    throw new FacilitatorValidationError("Missing signer or privateKey in facilitator configuration");
+    throw new FacilitatorValidationError(
+      "Missing signer or privateKey in facilitator configuration",
+    );
   }
 
   // Validate signer if provided
@@ -182,7 +184,7 @@ export function validateFacilitatorConfig(config: {
     // Validate that it's a valid 64-character hex string (32 bytes)
     if (!/^[a-fA-F0-9]{64}$/.test(hexBody)) {
       throw new FacilitatorValidationError(
-        "Invalid private key format: must be 32-byte hex string (64 hex chars, with optional 0x prefix)"
+        "Invalid private key format: must be 32-byte hex string (64 hex chars, with optional 0x prefix)",
       );
     }
   }
@@ -243,11 +245,7 @@ export function validateGasMultiplier(multiplier: number): void {
 /**
  * Validate fee amount against minimum and maximum
  */
-export function validateFeeAmount(
-  fee: string,
-  minFee?: string,
-  maxFee?: string
-): void {
+export function validateFeeAmount(fee: string, minFee?: string, maxFee?: string): void {
   let feeBigInt: bigint;
 
   try {

@@ -21,7 +21,7 @@ import type { GasEstimationStrategy, SettlementGasParams, GasEstimationResult } 
 import { getHookTypeInfo } from "../../hook-validators/index.js";
 
 export class CodeBasedGasEstimator implements GasEstimationStrategy {
-  readonly strategyName = 'code_calculation';
+  readonly strategyName = "code_calculation";
 
   async estimateGas(params: SettlementGasParams): Promise<GasEstimationResult> {
     const hookInfo = getHookTypeInfo(params.network, params.hook);
@@ -30,7 +30,7 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
     if (!hookInfo.isBuiltIn || !hookInfo.validator) {
       throw new Error(
         `CodeBasedGasEstimator does not support hook: ${params.hook}. ` +
-        `Use SimulationBasedGasEstimator or SmartGasEstimator instead.`
+          `Use SimulationBasedGasEstimator or SmartGasEstimator instead.`,
       );
     }
 
@@ -47,14 +47,14 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
         gasLimit: 0,
         isValid: false,
         errorReason: validation.errorReason,
-        strategyUsed: 'code_calculation',
+        strategyUsed: "code_calculation",
         metadata: { hookType: hookInfo.hookType },
       };
     }
 
     // Step 2: Calculate gas overhead (Estimator's responsibility)
     const hookOverhead = this.calculateHookOverhead(
-      hookInfo.hookType as string || "custom",
+      (hookInfo.hookType as string) || "custom",
       params.hookData,
     );
     const totalGas = params.gasCostConfig.minGasLimit + hookOverhead;
@@ -65,7 +65,7 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
     return {
       gasLimit: constrainedGas,
       isValid: true,
-      strategyUsed: 'code_calculation',
+      strategyUsed: "code_calculation",
       metadata: {
         rawEstimate: totalGas,
         hookType: hookInfo.hookType,
@@ -85,7 +85,7 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
    */
   private calculateHookOverhead(hookType: string, hookData: string): number {
     switch (hookType) {
-      case 'transfer':
+      case "transfer":
         return this.calculateTransferHookOverhead(hookData);
 
       // Future built-in hooks can be added here
@@ -110,14 +110,14 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
    */
   private calculateTransferHookOverhead(hookData: string): number {
     // Empty hookData means payTo-only transfer
-    if (!hookData || hookData === '0x' || hookData === '') {
+    if (!hookData || hookData === "0x" || hookData === "") {
       return 15000; // Minimal overhead for simple transfer
     }
 
     try {
       // Decode hookData to determine transfer count
       const decoded = decodeAbiParameters(
-        [{ type: 'address[]' }, { type: 'uint256[]' }],
+        [{ type: "address[]" }, { type: "uint256[]" }],
         hookData as `0x${string}`,
       );
 
@@ -126,14 +126,13 @@ export class CodeBasedGasEstimator implements GasEstimationStrategy {
       // Base overhead + per-transfer overhead
       const baseOverhead = 25000;
       const perTransferOverhead = 30000;
-      return baseOverhead + (perTransferOverhead * recipientCount);
-
+      return baseOverhead + perTransferOverhead * recipientCount;
     } catch (error) {
       // If decoding fails, use conservative estimate
       const baseOverhead = 25000;
       const perTransferOverhead = 30000;
       const averageRecipients = 3;
-      return baseOverhead + (perTransferOverhead * averageRecipients);
+      return baseOverhead + perTransferOverhead * averageRecipients;
     }
   }
 }

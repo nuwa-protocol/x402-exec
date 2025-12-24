@@ -49,7 +49,7 @@ export class NetworkChainResolver {
     // Initialize viem chain mappings for networks that have direct viem support
     this.viemChainMap = {
       "base-sepolia": baseSepolia,
-      "base": base,
+      base: base,
     };
   }
 

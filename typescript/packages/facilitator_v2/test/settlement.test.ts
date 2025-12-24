@@ -63,7 +63,6 @@ vi.mock("@x402x/core_v2", () => ({
   }),
 }));
 
-
 describe("SettlementRouter integration", () => {
   beforeEach(async () => {
     resetAllMocks();
@@ -76,10 +75,10 @@ describe("SettlementRouter integration", () => {
     // Configure mocks for successful operations
     mockPublicClient.readContract.mockImplementation((params) => {
       // Handle different function calls
-      if (params.functionName === 'isSettled') {
+      if (params.functionName === "isSettled") {
         return Promise.resolve(false);
       }
-      if (params.functionName === 'balanceOf') {
+      if (params.functionName === "balanceOf") {
         return Promise.resolve(BigInt(MOCK_VALUES.usdcBalance));
       }
       // Default fallback
@@ -116,10 +115,7 @@ describe("SettlementRouter integration", () => {
 
   describe("createWalletClientForNetwork", () => {
     it("should create wallet client with signer", () => {
-      const client = createWalletClientForNetwork(
-        "eip155:84532",
-        MOCK_ADDRESSES.facilitator
-      );
+      const client = createWalletClientForNetwork("eip155:84532", MOCK_ADDRESSES.facilitator);
 
       expect(client).toBeDefined();
     });
@@ -132,7 +128,7 @@ describe("SettlementRouter integration", () => {
       const client = createWalletClientForNetwork(
         "eip155:84532",
         MOCK_ADDRESSES.facilitator,
-        customRpcUrls
+        customRpcUrls,
       );
 
       expect(client).toBeDefined();
@@ -175,7 +171,7 @@ describe("SettlementRouter integration", () => {
       const isSettled = await checkIfSettled(
         mockPublicClient,
         MOCK_ADDRESSES.settlementRouter,
-        MOCK_VALUES.salt as `0x${string}`
+        MOCK_VALUES.salt as `0x${string}`,
       );
 
       expect(isSettled).toBe(false);
@@ -185,7 +181,7 @@ describe("SettlementRouter integration", () => {
           address: MOCK_ADDRESSES.settlementRouter,
           functionName: "isSettled",
           args: [MOCK_VALUES.salt],
-        })
+        }),
       );
     });
 
@@ -193,7 +189,11 @@ describe("SettlementRouter integration", () => {
       mockPublicClient.readContract.mockRejectedValue(new Error("Contract error"));
 
       await expect(
-        checkIfSettled(mockPublicClient, MOCK_ADDRESSES.settlementRouter, MOCK_VALUES.salt as `0x${string}`)
+        checkIfSettled(
+          mockPublicClient,
+          MOCK_ADDRESSES.settlementRouter,
+          MOCK_VALUES.salt as `0x${string}`,
+        ),
       ).rejects.toThrow("Failed to check settlement status");
     });
   });
@@ -202,7 +202,7 @@ describe("SettlementRouter integration", () => {
     it("should wait for transaction receipt", async () => {
       const receipt = await waitForSettlementReceipt(
         mockPublicClient,
-        mockSettleResponse.transaction as `0x${string}`
+        mockSettleResponse.transaction as `0x${string}`,
       );
 
       expect(receipt).toEqual({
@@ -222,7 +222,7 @@ describe("SettlementRouter integration", () => {
       await waitForSettlementReceipt(
         mockPublicClient,
         mockSettleResponse.transaction as `0x${string}`,
-        60000
+        60000,
       );
 
       expect(mockPublicClient.waitForTransactionReceipt).toHaveBeenCalledWith({
@@ -235,7 +235,7 @@ describe("SettlementRouter integration", () => {
       mockPublicClient.waitForTransactionReceipt.mockRejectedValue(new Error("Receipt error"));
 
       await expect(
-        waitForSettlementReceipt(mockPublicClient, mockSettleResponse.transaction as `0x${string}`)
+        waitForSettlementReceipt(mockPublicClient, mockSettleResponse.transaction as `0x${string}`),
       ).rejects.toThrow("Failed to get transaction receipt");
     });
   });
@@ -280,7 +280,7 @@ describe("SettlementRouter integration", () => {
             MOCK_VALUES.hookData,
           ],
           gas: expect.any(BigInt),
-        })
+        }),
       );
     });
 
@@ -308,7 +308,7 @@ describe("SettlementRouter integration", () => {
       expect(mockWalletClient.writeContract).toHaveBeenCalledWith(
         expect.objectContaining({
           gas: 500000n,
-        })
+        }),
       );
     });
 
@@ -332,7 +332,7 @@ describe("SettlementRouter integration", () => {
       };
 
       await expect(executeSettlementWithRouter(mockWalletClient, params)).rejects.toThrow(
-        "SettlementRouter execution failed: Execution failed"
+        "SettlementRouter execution failed: Execution failed",
       );
     });
   });
@@ -391,7 +391,7 @@ describe("SettlementRouter integration", () => {
       const result = await settleWithSettlementRouter(
         mockPaymentRequirements,
         mockPaymentPayload,
-        config
+        config,
       );
 
       expect(result.success).toBe(true);
@@ -412,7 +412,7 @@ describe("SettlementRouter integration", () => {
       const result = await settleWithSettlementRouter(
         invalidRequirements,
         mockPaymentPayload,
-        config
+        config,
       );
 
       expect(result.success).toBe(false);
@@ -430,7 +430,7 @@ describe("SettlementRouter integration", () => {
       const result = await settleWithSettlementRouter(
         mockPaymentRequirements,
         mockPaymentPayload,
-        strictConfig
+        strictConfig,
       );
 
       expect(result.success).toBe(false);

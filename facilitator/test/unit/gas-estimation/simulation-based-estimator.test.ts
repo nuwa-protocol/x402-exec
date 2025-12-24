@@ -46,7 +46,8 @@ describe("SimulationBasedGasEstimator", () => {
         validBefore: 2000000n,
         nonce: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       },
-      signature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+      signature:
+        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
       salt: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       payTo: "0x2222222222222222222222222222222222222222",
       facilitatorFee: 10000n,
@@ -155,9 +156,10 @@ describe("SimulationBasedGasEstimator", () => {
 
     it("should handle timeout errors", async () => {
       mockWalletClient.estimateGas.mockImplementation(
-        () => new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("timeout")), 6000); // Longer than timeoutMs
-        })
+        () =>
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("timeout")), 6000); // Longer than timeoutMs
+          }),
       );
 
       vi.mocked(parseEstimateGasError).mockReturnValue("Gas estimation timeout");

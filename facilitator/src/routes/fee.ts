@@ -136,7 +136,6 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
         hookAllowed: String(feeCalculation.hookAllowed),
       });
 
-
       // Calculate fee validity period (60 seconds recommended)
       const validitySeconds = 60;
       const calculatedAt = new Date().toISOString();

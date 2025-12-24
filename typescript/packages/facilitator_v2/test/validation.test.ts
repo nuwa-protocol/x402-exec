@@ -52,13 +52,19 @@ describe("validation utilities", () => {
   describe("isValid32ByteHex", () => {
     it("should return true for valid 32-byte hex", () => {
       expect(isValid32ByteHex(MOCK_VALUES.salt)).toBe(true);
-      expect(isValid32ByteHex("0x1111111111111111111111111111111111111111111111111111111111111111")).toBe(true);
+      expect(
+        isValid32ByteHex("0x1111111111111111111111111111111111111111111111111111111111111111"),
+      ).toBe(true);
     });
 
     it("should return false for invalid 32-byte hex", () => {
       expect(isValid32ByteHex("0x1234")).toBe(false);
-      expect(isValid32ByteHex("0x111111111111111111111111111111111111111111111111111111111111111")).toBe(false); // 63 chars
-      expect(isValid32ByteHex("0x111111111111111111111111111111111111111111111111111111111111111111")).toBe(false); // 65 chars
+      expect(
+        isValid32ByteHex("0x111111111111111111111111111111111111111111111111111111111111111"),
+      ).toBe(false); // 63 chars
+      expect(
+        isValid32ByteHex("0x111111111111111111111111111111111111111111111111111111111111111111"),
+      ).toBe(false); // 65 chars
     });
   });
 
@@ -81,7 +87,7 @@ describe("validation utilities", () => {
         "eip155:84532",
         MOCK_ADDRESSES.settlementRouter,
         { "eip155:84532": [MOCK_ADDRESSES.settlementRouter] },
-        mockNetworkConfig
+        mockNetworkConfig,
       );
       expect(result).toBe(MOCK_ADDRESSES.settlementRouter);
     });
@@ -92,7 +98,7 @@ describe("validation utilities", () => {
           "eip155:84532",
           "invalid-router",
           { "eip155:84532": [MOCK_ADDRESSES.settlementRouter] },
-          mockNetworkConfig
+          mockNetworkConfig,
         );
       }).toThrow(FacilitatorValidationError);
     });
@@ -103,7 +109,7 @@ describe("validation utilities", () => {
           "eip155:84532",
           MOCK_ADDRESSES.hook,
           { "eip155:84532": [MOCK_ADDRESSES.settlementRouter] },
-          mockNetworkConfig
+          mockNetworkConfig,
         );
       }).toThrow(FacilitatorValidationError);
     });
@@ -119,7 +125,7 @@ describe("validation utilities", () => {
           "eip155:84532",
           MOCK_ADDRESSES.settlementRouter,
           undefined,
-          differentNetworkConfig
+          differentNetworkConfig,
         );
       }).toThrow(FacilitatorValidationError);
     });

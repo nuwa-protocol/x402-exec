@@ -4,7 +4,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CodeBasedGasEstimator } from "../../../src/gas-estimation/strategies/code-based.js";
-import type { SettlementGasParams, GasEstimationConfig } from "../../../src/gas-estimation/strategies/base.js";
+import type {
+  SettlementGasParams,
+  GasEstimationConfig,
+} from "../../../src/gas-estimation/strategies/base.js";
 
 // Mock hook validators
 const mockTransferValidator = {
@@ -43,7 +46,8 @@ describe("CodeBasedGasEstimator", () => {
         validBefore: 2000000n,
         nonce: "0x1234567890abcdef",
       },
-      signature: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
+      signature:
+        "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12",
       salt: "0x1234567890abcdef1234567890abcdef",
       payTo: "0x2222222222222222222222222222222222222222",
       facilitatorFee: 10000n,
@@ -169,7 +173,7 @@ describe("CodeBasedGasEstimator", () => {
       });
 
       await expect(estimator.estimateGas(mockParams)).rejects.toThrow(
-        "CodeBasedGasEstimator does not support hook: 0x1234567890123456789012345678901234567890"
+        "CodeBasedGasEstimator does not support hook: 0x1234567890123456789012345678901234567890",
       );
     });
   });
@@ -202,7 +206,7 @@ describe("CodeBasedGasEstimator", () => {
       });
 
       await expect(estimator.estimateGas(mockParams)).rejects.toThrow(
-        "CodeBasedGasEstimator does not support hook: 0x1234567890123456789012345678901234567890"
+        "CodeBasedGasEstimator does not support hook: 0x1234567890123456789012345678901234567890",
       );
     });
   });

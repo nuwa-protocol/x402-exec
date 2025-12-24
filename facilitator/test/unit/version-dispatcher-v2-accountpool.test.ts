@@ -139,7 +139,7 @@ describe("V2 AccountPool Integration", () => {
           account: { address: `0xfacilitator${executeCallCount}` },
           writeContract: vi.fn(async () => "0xtxhash"),
         };
-        
+
         // For the test to work, we need to return the mocked result
         // The actual implementation will call executeSettlementWithWalletClient
         // but we'll just return a mocked success response
@@ -180,7 +180,7 @@ describe("V2 AccountPool Integration", () => {
         rpcUrls: {
           "eip155:84532": "https://rpc.example.com",
         },
-      }
+      },
     );
   });
 
@@ -221,7 +221,7 @@ describe("V2 AccountPool Integration", () => {
       expect(mockAccountPool.execute).toHaveBeenCalledTimes(1);
       expect(mockAccountPool.execute).toHaveBeenCalledWith(
         expect.any(Function),
-        "0xpayer" // payer address for duplicate detection
+        "0xpayer", // payer address for duplicate detection
       );
     });
 
@@ -249,11 +249,7 @@ describe("V2 AccountPool Integration", () => {
       });
 
       // Simulate 3 parallel settlements with different payers
-      const settlements = [
-        createPaymentData("1"),
-        createPaymentData("2"),
-        createPaymentData("3"),
-      ];
+      const settlements = [createPaymentData("1"), createPaymentData("2"), createPaymentData("3")];
 
       await Promise.all(
         settlements.map((data) =>
@@ -261,8 +257,8 @@ describe("V2 AccountPool Integration", () => {
             paymentPayload: data.paymentPayload as any,
             paymentRequirements: data.paymentRequirements as any,
             x402Version: 2,
-          })
-        )
+          }),
+        ),
       );
 
       // Verify AccountPool.execute was called 3 times (one for each settlement)
@@ -335,7 +331,7 @@ describe("V2 AccountPool Integration", () => {
           paymentPayload: paymentPayload as any,
           paymentRequirements: paymentRequirements as any,
           x402Version: 2,
-        })
+        }),
       ).rejects.toThrow("Account pool error");
     });
 
@@ -430,4 +426,3 @@ describe("V2 AccountPool Integration", () => {
     });
   });
 });
-

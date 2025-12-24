@@ -81,7 +81,9 @@ export class PoolManager {
     logger.info(
       {
         evmAccounts: this.evmPrivateKeys.length,
-        evmNetworks: Array.from(this.evmAccountPools.keys()).map(canonical => getNetworkDisplayName(canonical)),
+        evmNetworks: Array.from(this.evmAccountPools.keys()).map((canonical) =>
+          getNetworkDisplayName(canonical),
+        ),
         canonicalNetworks: Array.from(this.evmAccountPools.keys()),
         strategy: this.accountPoolConfig.strategy,
       },
@@ -125,7 +127,7 @@ export class PoolManager {
    * Get supported networks with both human-readable and canonical names
    */
   getSupportedNetworks(): { humanReadable: string; canonical: string }[] {
-    return Array.from(this.evmAccountPools.keys()).map(canonical => ({
+    return Array.from(this.evmAccountPools.keys()).map((canonical) => ({
       canonical,
       humanReadable: getNetworkDisplayName(canonical),
     }));

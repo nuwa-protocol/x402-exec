@@ -65,13 +65,16 @@ export interface SettleRequest {
 export class VersionDispatcher {
   constructor(
     private deps: VersionDispatcherDependencies,
-    private config: VersionDispatcherConfig = {}
+    private config: VersionDispatcherConfig = {},
   ) {
     if (this.config.enableV2) {
-      logger.info({
-        hasAllowedRouters: !!this.config.allowedRouters,
-        hasRpcUrls: !!this.config.rpcUrls,
-      }, "Version dispatcher: v2 support enabled (using shared AccountPool)");
+      logger.info(
+        {
+          hasAllowedRouters: !!this.config.allowedRouters,
+          hasRpcUrls: !!this.config.rpcUrls,
+        },
+        "Version dispatcher: v2 support enabled (using shared AccountPool)",
+      );
     } else {
       logger.info("Version dispatcher: v1 only mode");
     }
@@ -90,9 +93,10 @@ export class VersionDispatcher {
 
       // Check if version is supported
       if (!isVersionSupported(version)) {
-        const error = version === 2
-          ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
-          : `Unsupported x402Version: ${version}`;
+        const error =
+          version === 2
+            ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
+            : `Unsupported x402Version: ${version}`;
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.verify.version_not_supported", 1, { version: String(version) });
@@ -136,17 +140,19 @@ export class VersionDispatcher {
         mode,
       });
 
-      logger.info({
-        version,
-        mode,
-        network: canonicalNetwork,
-        isValid: result.isValid,
-        payer: result.payer,
-        duration_ms: duration,
-      }, "Verification completed");
+      logger.info(
+        {
+          version,
+          mode,
+          network: canonicalNetwork,
+          isValid: result.isValid,
+          payer: result.payer,
+          duration_ms: duration,
+        },
+        "Verification completed",
+      );
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error({ error, duration_ms: duration }, "Verification failed");
@@ -156,7 +162,8 @@ export class VersionDispatcher {
 
       return {
         isValid: false,
-        invalidReason: "Verification failed due to internal error" as VerifyResponse["invalidReason"],
+        invalidReason:
+          "Verification failed due to internal error" as VerifyResponse["invalidReason"],
       };
     }
   }
@@ -174,9 +181,10 @@ export class VersionDispatcher {
 
       // Check if version is supported
       if (!isVersionSupported(version)) {
-        const error = version === 2
-          ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
-          : `Unsupported x402Version: ${version}`;
+        const error =
+          version === 2
+            ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
+            : `Unsupported x402Version: ${version}`;
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.settle.version_not_supported", 1, { version: String(version) });
@@ -217,18 +225,20 @@ export class VersionDispatcher {
         mode,
       });
 
-      logger.info({
-        version,
-        mode,
-        network: canonicalNetwork,
-        success: result.success,
-        transaction: result.transaction,
-        payer: result.payer,
-        duration_ms: duration,
-      }, "Settlement completed");
+      logger.info(
+        {
+          version,
+          mode,
+          network: canonicalNetwork,
+          success: result.success,
+          transaction: result.transaction,
+          payer: result.payer,
+          duration_ms: duration,
+        },
+        "Settlement completed",
+      );
 
       return result;
-
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error({ error, duration_ms: duration }, "Settlement failed");
@@ -246,7 +256,7 @@ export class VersionDispatcher {
    */
   private async verifyV1(
     paymentPayload: PaymentPayload,
-    paymentRequirements: PaymentRequirements
+    paymentRequirements: PaymentRequirements,
   ): Promise<VerifyResponse> {
     // Create client (same as current v1 implementation)
     const { evm } = await import("x402/types");
@@ -258,7 +268,8 @@ export class VersionDispatcher {
     }
 
     const chain = evm.getChainFromNetwork(paymentRequirements.network);
-    const rpcUrl = this.config.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
+    const rpcUrl =
+      this.config.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
     const client = createPublicClient({
       chain,
       transport: http(rpcUrl),
@@ -274,11 +285,11 @@ export class VersionDispatcher {
    */
   private async verifyV2(
     paymentPayload: PaymentPayload,
-    paymentRequirements: V2PaymentRequirements
+    paymentRequirements: V2PaymentRequirements,
   ): Promise<VerifyResponse> {
     // Import v2 verification utilities
     const { createRouterSettlementFacilitator } = await import("@x402x/facilitator_v2");
-    
+
     // Create a temporary facilitator for verification (no signer needed for verify)
     // Note: Verification only checks signatures and balances on-chain, it doesn't send transactions.
     // The zero address is used as a placeholder since no actual signing occurs during verification.
@@ -305,7 +316,7 @@ export class VersionDispatcher {
    */
   private async settleV1(
     paymentPayload: PaymentPayload,
-    paymentRequirements: PaymentRequirements
+    paymentRequirements: PaymentRequirements,
   ): Promise<SettleResponse> {
     // Get account pool for v1 settlement
     const accountPool = this.deps.poolManager.getPool(paymentRequirements.network);
@@ -334,7 +345,7 @@ export class VersionDispatcher {
           signer,
           paymentPayload,
           paymentRequirements,
-          this.deps.allowedSettlementRouters || {}
+          this.deps.allowedSettlementRouters || {},
         );
 
         // Return standard format - type assertion for v2 -> v1 response conversion
@@ -358,7 +369,7 @@ export class VersionDispatcher {
    */
   private async settleV2(
     paymentPayload: PaymentPayload,
-    paymentRequirements: V2PaymentRequirements
+    paymentRequirements: V2PaymentRequirements,
   ): Promise<SettleResponse> {
     // Get account pool for the network (same as v1)
     const accountPool = this.deps.poolManager.getPool(paymentRequirements.network);
@@ -373,12 +384,12 @@ export class VersionDispatcher {
     // Execute in account pool (reuses queue, duplicate detection, etc.)
     return accountPool.execute(async (signer) => {
       // Import necessary modules dynamically
-      const facilitatorV2 = await import("@x402x/facilitator_v2") as any;
-      
+      const facilitatorV2 = (await import("@x402x/facilitator_v2")) as any;
+
       // Create public client for the network
       const publicClient = facilitatorV2.createPublicClientForNetwork(
         paymentRequirements.network,
-        this.config.rpcUrls
+        this.config.rpcUrls,
       );
 
       // Use the signer from AccountPool as WalletClient
@@ -395,8 +406,21 @@ export class VersionDispatcher {
           gasMultiplier: 1.2,
           timeoutMs: 30000,
           allowedRouters: this.config.allowedRouters,
-        }
+        },
       );
+
+      // Log V2 settlement result for debugging
+      if (!result.success) {
+        logger.error(
+          {
+            network: paymentRequirements.network,
+            payer: result.payer,
+            errorReason: result.errorReason,
+            transaction: result.transaction,
+          },
+          "V2 settlement failed",
+        );
+      }
 
       // Return in v1 format for API consistency
       return {
@@ -413,7 +437,7 @@ export class VersionDispatcher {
    * Check if v1 payment requirements indicate SettlementRouter mode
    */
   private isV1SettlementRouterMode(paymentRequirements: PaymentRequirements): boolean {
-    return !!(paymentRequirements.extra?.settlementRouter);
+    return !!paymentRequirements.extra?.settlementRouter;
   }
 }
 
@@ -422,7 +446,7 @@ export class VersionDispatcher {
  */
 export function createVersionDispatcher(
   deps: VersionDispatcherDependencies,
-  config: VersionDispatcherConfig = {}
+  config: VersionDispatcherConfig = {},
 ): VersionDispatcher {
   return new VersionDispatcher(deps, config);
 }

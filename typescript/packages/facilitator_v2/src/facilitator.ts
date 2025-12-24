@@ -4,7 +4,11 @@
  * Implements SchemeNetworkFacilitator interface using SettlementRouter for atomic settlement
  */
 
-import type { PaymentPayload, PaymentRequirements, SchemeNetworkFacilitator } from "@x402/core/types";
+import type {
+  PaymentPayload,
+  PaymentRequirements,
+  SchemeNetworkFacilitator,
+} from "@x402/core/types";
 import type {
   VerifyResponse,
   SettleResponse,
@@ -15,7 +19,12 @@ import type {
 import { FacilitatorValidationError, SettlementRouterError } from "./types.js";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
 import { calculateCommitment } from "@x402x/core_v2";
-import { settleWithSettlementRouter, createPublicClientForNetwork, createWalletClientForNetwork, waitForSettlementReceipt } from "./settlement.js";
+import {
+  settleWithSettlementRouter,
+  createPublicClientForNetwork,
+  createWalletClientForNetwork,
+  waitForSettlementReceipt,
+} from "./settlement.js";
 import { verifyTypedData, parseErc6492Signature } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -147,7 +156,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   async verify(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<VerifyResponse> {
     try {
       // Basic validations
@@ -184,7 +193,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   async settle(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<SettleResponse> {
     try {
       // Pre-verify payment
@@ -228,14 +237,14 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     // Validate scheme match
     if (payload.scheme !== this.scheme) {
       throw new FacilitatorValidationError(
-        `Scheme mismatch: expected ${this.scheme}, got ${payload.scheme}`
+        `Scheme mismatch: expected ${this.scheme}, got ${payload.scheme}`,
       );
     }
 
     // Validate CAIP family
     if (!requirements.network.startsWith("eip155:")) {
       throw new FacilitatorValidationError(
-        `Unsupported network family: ${requirements.network}. Only EVM networks (eip155:*) are supported`
+        `Unsupported network family: ${requirements.network}. Only EVM networks (eip155:*) are supported`,
       );
     }
 
@@ -270,7 +279,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   private async verifySettlementRouter(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<VerifyResponse> {
     // Parse and validate settlement extra
     const settlementExtra = validateSettlementExtra(requirements.extra);
@@ -281,14 +290,14 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       requirements.network,
       settlementExtra.settlementRouter,
       this.config.allowedRouters,
-      networkConfig
+      networkConfig,
     );
 
     // Validate facilitator fee against configuration
     validateFeeAmount(
       settlementExtra.facilitatorFee,
       this.config.feeConfig?.minFee,
-      this.config.feeConfig?.maxFee
+      this.config.feeConfig?.maxFee,
     );
 
     // Create public client for balance checks and commitment verification
@@ -385,14 +394,15 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
             name: "balanceOf",
             inputs: [{ name: "account", type: "address" }],
             outputs: [{ name: "", type: "uint256" }],
-            stateMutability: "view"
-          }
+            stateMutability: "view",
+          },
         ],
         functionName: "balanceOf",
         args: [payload.payer],
       });
 
-      const totalRequired = BigInt(requirements.maxAmountRequired) + BigInt(settlementExtra.facilitatorFee);
+      const totalRequired =
+        BigInt(requirements.maxAmountRequired) + BigInt(settlementExtra.facilitatorFee);
       if (balance < totalRequired) {
         return {
           isValid: false,
@@ -419,7 +429,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   private async verifyStandard(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<VerifyResponse> {
     // Create viem public client
     const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
@@ -497,7 +507,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   private async settleWithRouter(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<SettleResponse> {
     return await settleWithSettlementRouter(requirements, payload, this.config, {
       gasMultiplier: this.config.gasConfig?.gasMultiplier,
@@ -510,14 +520,14 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
    */
   private async settleStandard(
     payload: PaymentPayload,
-    requirements: PaymentRequirements
+    requirements: PaymentRequirements,
   ): Promise<SettleResponse> {
     const walletClient = createWalletClientForNetwork(
       requirements.network,
       this.config.signer,
       this.config.rpcUrls,
       undefined,
-      this.config.privateKey
+      this.config.privateKey,
     );
     const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
 
@@ -566,6 +576,8 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
 /**
  * Factory function to create RouterSettlementFacilitator instance
  */
-export function createRouterSettlementFacilitator(config: FacilitatorConfig): RouterSettlementFacilitator {
+export function createRouterSettlementFacilitator(
+  config: FacilitatorConfig,
+): RouterSettlementFacilitator {
   return new RouterSettlementFacilitator(config);
 }

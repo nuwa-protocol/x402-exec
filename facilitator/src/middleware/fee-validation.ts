@@ -9,7 +9,8 @@ import type { PaymentRequirements } from "x402/types";
 import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { isSettlementMode, validateTokenAddress } from "../settlement.js";
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig } from "@x402x/core_v2";
+import { getCanonicalNetwork, getNetworkDisplayName } from "../network-utils.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
 
@@ -46,7 +47,9 @@ export function createFeeValidationMiddleware(
       }
 
       // Validate token address (only USDC is currently supported)
-      const network = paymentRequirements.network;
+      // Normalize network identifier (V1/V2 -> V1) before validation
+      const canonicalNetwork = getCanonicalNetwork(paymentRequirements.network);
+      const network = getNetworkDisplayName(canonicalNetwork);
       const asset = paymentRequirements.asset;
 
       try {
