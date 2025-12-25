@@ -49,6 +49,7 @@ interface PaymentResponse {
   accepts?: PaymentRequirements[];
   error?: string;
   x402Version?: number;
+  extensions?: Record<string, any>; // Add extensions field for v2
 }
 
 export interface DebugInfo {
@@ -223,10 +224,21 @@ export function usePayment() {
       // Store payment requirements for debugging
       setDebugInfo((prev) => ({ ...prev, paymentRequirements: paymentReq }));
 
-      // Step 3: Extract settlement parameters from extra field
+      // Step 3: Extract settlement parameters
+      // For v2 with x402x extension: salt comes from extensions, other params from extra
+      // For v1 or simple v2: all params from extra
+      let salt: string | undefined;
+      
+      // Try to extract salt from x402x-router-settlement extension (v2)
+      if (x402Version === 2 && paymentResponse.extensions?.["x402x-router-settlement"]?.info?.salt) {
+        salt = paymentResponse.extensions["x402x-router-settlement"].info.salt;
+        console.log("[Payment] Step 3: Extracted salt from x402x extension:", salt);
+      }
+
+      // Extract other settlement parameters from extra field
       const {
         settlementRouter,
-        salt,
+        salt: extraSalt, // Fallback salt from extra (v1 compatibility)
         payTo: finalPayTo,
         facilitatorFee,
         hook,
@@ -235,17 +247,20 @@ export function usePayment() {
         version,
       } = paymentReq.extra || {};
 
+      // Use extension salt if available, otherwise fall back to extra salt
+      const finalSalt = salt || extraSalt;
+
       // Check if this is a complex settlement (with router/hook) or simple direct payment
       const isComplexSettlement = !!settlementRouter;
 
-      if (isComplexSettlement && (!salt || !finalPayTo || !hook || !hookData)) {
+      if (isComplexSettlement && (!finalSalt || !finalPayTo || !hook || !hookData)) {
         throw new Error("Missing required settlement parameters in payment requirements");
       }
 
       console.log("[Payment] Step 3: Settlement parameters", {
         isComplexSettlement,
         settlementRouter,
-        salt,
+        salt: finalSalt,
         finalPayTo,
         facilitatorFee,
         hook,
@@ -297,7 +312,7 @@ export function usePayment() {
           value,
           validAfter,
           validBefore,
-          salt: salt!,
+          salt: finalSalt!,
           payTo: finalPayTo!,
           facilitatorFee: facilitatorFee || "0",
           hook: hook!,
