@@ -136,10 +136,10 @@ describe("SettlementRouter integration", () => {
       expect(client).toBeDefined();
     });
 
-    it("should throw error for network without RPC URL", () => {
+    it("should throw error for network without config", () => {
       expect(() => {
         createPublicClientForNetwork("unknown-network");
-      }).toThrow("No RPC URL available for network: unknown-network");
+      }).toThrow("Network configuration not found for network: unknown-network");
     });
   });
 

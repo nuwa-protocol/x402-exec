@@ -58,7 +58,13 @@ function networkConfigToChain(networkConfig: NetworkConfig, rpcUrl: string): Cha
     blockExplorers: {
       default: {
         name: "Explorer",
-        url: networkConfig.addressExplorerBaseUrl.replace("/address/", ""),
+        url: (() => {
+          const addressSuffix = "/address/";
+          const baseUrl = networkConfig.addressExplorerBaseUrl;
+          return baseUrl.endsWith(addressSuffix)
+            ? baseUrl.slice(0, -addressSuffix.length)
+            : baseUrl;
+        })(),
       },
     },
     testnet: networkConfig.type === "testnet",
@@ -79,6 +85,10 @@ export function createPublicClientForNetwork(
   const canonicalNetwork = toCanonicalNetworkKey(network);
   const v1NetworkName = getNetworkName(canonicalNetwork);
   const networkConfig = getNetworkConfig(v1NetworkName);
+
+  if (!networkConfig) {
+    throw new Error(`Network configuration not found for network: ${network}`);
+  }
 
   // Use provided RPC URL or require it to be provided
   const rpcUrl =
@@ -182,13 +192,12 @@ export async function checkIfSettled(
   contextKey: Hex,
 ): Promise<boolean> {
   try {
-    // Use type assertion because TypeScript can't properly infer the ABI function
-    const isSettled = (await publicClient.readContract({
+    const isSettled = await publicClient.readContract({
       address: router,
-      abi: SETTLEMENT_ROUTER_ABI as any,
+      abi: SETTLEMENT_ROUTER_ABI,
       functionName: "isSettled",
       args: [contextKey],
-    })) as unknown as boolean;
+    });
     return isSettled;
   } catch (error) {
     throw new Error(

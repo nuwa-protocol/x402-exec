@@ -64,9 +64,15 @@ interface ExactEvmPayload {
 /**
  * Parse EVM exact scheme payload from x402 v2 PaymentPayload
  * Extracts the standard authorization and signature fields
+ * 
+ * @remarks
+ * The type assertion is safe here because we validate the structure immediately after casting.
+ * PaymentPayload.payload is typed as Record<string, unknown> to support multiple schemes,
+ * but for EVM exact scheme, it follows the ExactEvmPayload structure.
  */
 function parseEvmExactPayload(payload: PaymentPayload): ExactEvmPayload {
   // x402 v2 uses payload.payload for scheme-specific data
+  // Type assertion is followed by runtime validation
   const evmPayload = payload.payload as unknown as ExactEvmPayload;
   
   if (!evmPayload.signature) {

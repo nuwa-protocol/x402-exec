@@ -287,9 +287,6 @@ describe("RouterSettlementFacilitator", () => {
     it("should settle valid SettlementRouter payment", async () => {
       const result = await facilitator.settle(mockPaymentPayload, mockPaymentRequirements);
 
-      if (!result.success) {
-        console.log("[TEST] Settlement failed with error:", result.errorReason);
-      }
       expect(result.success).toBe(true);
       expect(result.transaction).toBe(mockSettleResponse.transaction);
       expect(result.network).toBe("eip155:84532");

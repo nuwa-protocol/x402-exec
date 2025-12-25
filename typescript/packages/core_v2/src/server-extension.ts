@@ -7,7 +7,7 @@
 
 import type { ResourceServerExtension } from "@x402/core/types";
 import type { x402ResourceServer } from "@x402/core/server";
-import { getRouterSettlementExtensionKey, createRouterSettlementExtension } from "./extensions.js";
+import { createRouterSettlementExtension } from "./extensions.js";
 
 /**
  * Extension key constant

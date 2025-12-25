@@ -6,7 +6,7 @@
  */
 
 import type { x402ResourceServer } from "@x402/core/server";
-import type { PaymentRequirements } from "@x402/core/types";
+import type { PaymentRequirements, SchemeNetworkFacilitator } from "@x402/core/types";
 import type { FacilitatorConfig } from "./facilitator-types.js";
 import { registerRouterSettlement as registerExtension } from "./server-extension.js";
 import { createRouterSettlementExtension, getRouterSettlementExtensionKey } from "./extensions.js";
@@ -65,16 +65,21 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  * });
  * ```
  */
-export function createX402xFacilitator(config: FacilitatorConfig) {
+export async function createX402xFacilitator(
+  config: FacilitatorConfig,
+): Promise<SchemeNetworkFacilitator> {
   // Dynamic import to avoid hard dependency
+  // Using Function constructor to avoid static analysis during build
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createRouterSettlementFacilitator } = require("@x402x/facilitator_v2");
-    return createRouterSettlementFacilitator(config);
+    const importFn = new Function('specifier', 'return import(specifier)');
+    const facilitatorModule = await importFn('@x402x/facilitator_v2') as {
+      createRouterSettlementFacilitator: (config: FacilitatorConfig) => SchemeNetworkFacilitator;
+    };
+    return facilitatorModule.createRouterSettlementFacilitator(config);
   } catch (error) {
     throw new Error(
       "createX402xFacilitator requires @x402x/facilitator_v2 to be installed. " +
-        "Please run: pnpm install @x402x/facilitator_v2",
+        "Please install it using your package manager.",
     );
   }
 }
@@ -144,6 +149,9 @@ export function withRouterSettlement(
 
   // Get network configuration
   const networkConfig = getNetworkConfig(requirements.network);
+  if (!networkConfig) {
+    throw new Error(`Network configuration not found for network: ${requirements.network}`);
+  }
 
   // Generate salt if not provided
   const salt = options.salt || generateSalt();

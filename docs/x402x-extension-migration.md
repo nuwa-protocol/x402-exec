@@ -62,16 +62,23 @@
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    x402x Extensions                             │
+│                    x402x Core Libraries                         │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │                   @x402x/extensions                      │   │
+│  │                   @x402x/core_v2                         │   │
 │  │  ┌──────────────────┐  ┌──────────────────────────────┐ │   │
-│  │  │ router-settlement │  │ SchemeNetworkFacilitator     │ │   │
-│  │  │ extension         │  │ (verify/settle with Router)  │ │   │
+│  │  │ router-settlement │  │ ResourceServerExtension      │ │   │
+│  │  │ extension         │  │ implementation               │ │   │
 │  │  └──────────────────┘  └──────────────────────────────┘ │   │
 │  │  ┌──────────────────┐  ┌──────────────────────────────┐ │   │
-│  │  │ Built-in Hooks   │  │ Network Configs              │ │   │
-│  │  │ (Transfer, NFT)  │  │ (SettlementRouter addresses) │ │   │
+│  │  │ Helper Functions │  │ Network Configs              │ │   │
+│  │  │ (registration)   │  │ (SettlementRouter addresses) │ │   │
+│  │  └──────────────────┘  └──────────────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                @x402x/facilitator_v2                     │   │
+│  │  ┌──────────────────┐  ┌──────────────────────────────┐ │   │
+│  │  │ SchemeNetwork    │  │ Settlement Router            │ │   │
+│  │  │ Facilitator      │  │ Integration                  │ │   │
 │  │  └──────────────────┘  └──────────────────────────────┘ │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -339,4 +346,5 @@ typescript/packages/
 - `deps/x402_upstream_main/typescript/packages/extensions/` - 官方扩展包示例
 - `deps/x402_upstream_main/typescript/packages/core/src/types/extensions.ts` - 扩展接口定义
 - `deps/x402_upstream_main/typescript/packages/http/hono/src/index.ts` - 官方 Hono middleware
+
 
