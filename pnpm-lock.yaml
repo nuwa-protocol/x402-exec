@@ -359,9 +359,6 @@ importers:
       '@x402/evm':
         specifier: 2.0.0
         version: 2.0.0(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@x402x/facilitator_v2':
-        specifier: workspace:*
-        version: link:../facilitator_v2
       viem:
         specifier: 2.40.3
         version: 2.40.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.13)
