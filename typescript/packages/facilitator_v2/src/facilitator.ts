@@ -8,14 +8,13 @@ import type {
   PaymentPayload,
   PaymentRequirements,
   SchemeNetworkFacilitator,
+  SettleResponse as X402SettleResponse,
 } from "@x402/core/types";
 import type {
-  VerifyResponse,
-  SettleResponse,
-  FacilitatorConfig,
   Address,
   Network,
 } from "./types.js";
+import type { FacilitatorConfig, VerifyResponse } from "@x402x/core_v2";
 import { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
 import { calculateCommitment } from "@x402x/core_v2";
@@ -68,7 +67,7 @@ interface ExactEvmPayload {
  */
 function parseEvmExactPayload(payload: PaymentPayload): ExactEvmPayload {
   // x402 v2 uses payload.payload for scheme-specific data
-  const evmPayload = payload.payload as ExactEvmPayload;
+  const evmPayload = payload.payload as unknown as ExactEvmPayload;
   
   if (!evmPayload.signature) {
     throw new FacilitatorValidationError("Missing signature in EVM exact payload");
@@ -217,11 +216,20 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
         return await this.verifyStandard(payload, requirements);
       }
     } catch (error) {
+      // Extract payer from payload if possible
+      let payer: string | undefined;
+      try {
+        const evmPayload = parseEvmExactPayload(payload);
+        payer = evmPayload.authorization.from;
+      } catch {
+        payer = undefined;
+      }
+
       if (error instanceof FacilitatorValidationError || error instanceof SettlementRouterError) {
         return {
           isValid: false,
           invalidReason: error.message,
-          payer: payload.payer,
+          payer: payer || "",
         };
       }
 
@@ -229,7 +237,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       return {
         isValid: false,
         invalidReason: `Verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-        payer: payload.payer,
+        payer: payer || "",
       };
     }
   }
@@ -240,7 +248,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
   async settle(
     payload: PaymentPayload,
     requirements: PaymentRequirements,
-  ): Promise<SettleResponse> {
+  ): Promise<X402SettleResponse> {
     try {
       // Pre-verify payment
       const verification = await this.verify(payload, requirements);
@@ -249,7 +257,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
           success: false,
           transaction: "",
           network: requirements.network,
-          payer: payload.payer,
+          payer: verification.payer,
           errorReason: verification.invalidReason || "Payment verification failed",
         };
       }
@@ -263,11 +271,20 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
         return await this.settleStandard(payload, requirements);
       }
     } catch (error) {
+      // Extract payer from payload if possible
+      let payer: string | undefined;
+      try {
+        const evmPayload = parseEvmExactPayload(payload);
+        payer = evmPayload.authorization.from;
+      } catch {
+        payer = undefined;
+      }
+
       return {
         success: false,
         transaction: "",
         network: requirements.network,
-        payer: payload.payer,
+        payer: payer || "",
         errorReason: error instanceof Error ? error.message : "Unknown settlement error",
       };
     }
@@ -328,7 +345,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     const networkConfig = getNetworkConfig(requirements.network);
     validateSettlementRouter(
       requirements.network,
-      settlementExtra.settlementRouter,
+      settlementExtra.settlementRouter as Address,
       this.config.allowedRouters,
       networkConfig,
     );
@@ -343,6 +360,11 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
     // Create public client for balance checks and commitment verification
     const publicClient = createPublicClientForNetwork(requirements.network, this.config.rpcUrls);
 
+    // Get EIP-712 domain info from requirements.extra (SettlementExtra includes name and version)
+    const extraWithDomain = requirements.extra as any;
+    const eip712Name = extraWithDomain?.name || "USD Coin";
+    const eip712Version = extraWithDomain?.version || "2";
+
     // Signature verification using EIP-712 typed data
     try {
       // Parse signature (handle ERC-6492 for smart wallets)
@@ -351,20 +373,20 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       // Build EIP-712 typed data for verification
       const typedData = {
         types: authorizationTypes,
-        primaryType: "TransferWithAuthorization",
+        primaryType: "TransferWithAuthorization" as const,
         domain: {
-          name: settlementExtra.name,
-          version: settlementExtra.version,
+          name: eip712Name,
+          version: eip712Version,
           chainId: parseInt(requirements.network.split(":")[1]),
-          verifyingContract: requirements.asset,
+          verifyingContract: requirements.asset as Address,
         },
         message: {
-          from: payer,
-          to: evmPayload.authorization.to,
+          from: payer as Address,
+          to: evmPayload.authorization.to as Address,
           value: BigInt(evmPayload.authorization.value),
           validAfter: BigInt(evmPayload.authorization.validAfter || "0x0"),
           validBefore: BigInt(evmPayload.authorization.validBefore || "0xFFFFFFFFFFFFFFFF"),
-          nonce: evmPayload.authorization.nonce,
+          nonce: evmPayload.authorization.nonce as `0x${string}`,
         },
       };
 
@@ -482,23 +504,28 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       // Parse signature (handle ERC-6492 if needed)
       const parsedSignature = parseErc6492Signature(evmPayload.signature as `0x${string}`);
 
+      // Get EIP-712 domain info
+      const extraAny = requirements.extra as any;
+      const domainName = (extraAny?.name || "USD Coin") as string;
+      const domainVersion = (extraAny?.version || "3") as string;
+
       // Build EIP-712 typed data for verification
       const typedData = {
         types: authorizationTypes,
-        primaryType: "TransferWithAuthorization",
+        primaryType: "TransferWithAuthorization" as const,
         domain: {
-          name: requirements.extra?.name || "USD Coin",
-          version: requirements.extra?.version || "3",
+          name: domainName,
+          version: domainVersion,
           chainId: parseInt(requirements.network.split(":")[1]),
-          verifyingContract: requirements.asset,
+          verifyingContract: requirements.asset as Address,
         },
         message: {
-          from: payer,
-          to: requirements.payTo,
+          from: payer as Address,
+          to: requirements.payTo as Address,
           value: BigInt(requirements.amount),
           validAfter: BigInt(evmPayload.authorization.validAfter || "0x0"),
           validBefore: BigInt(evmPayload.authorization.validBefore || "0xFFFFFFFFFFFFFFFF"),
-          nonce: evmPayload.authorization.nonce,
+          nonce: evmPayload.authorization.nonce as `0x${string}`,
         },
       };
 
@@ -552,7 +579,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
   private async settleWithRouter(
     payload: PaymentPayload,
     requirements: PaymentRequirements,
-  ): Promise<SettleResponse> {
+  ): Promise<X402SettleResponse> {
     return await settleWithSettlementRouter(requirements, payload, this.config, {
       gasMultiplier: this.config.gasConfig?.gasMultiplier,
       timeoutMs: this.config.timeouts?.settle,
@@ -565,7 +592,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
   private async settleStandard(
     payload: PaymentPayload,
     requirements: PaymentRequirements,
-  ): Promise<SettleResponse> {
+  ): Promise<X402SettleResponse> {
     // Parse EVM exact payload
     const evmPayload = parseEvmExactPayload(payload);
     const payer = evmPayload.authorization.from;
@@ -597,6 +624,8 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
           evmPayload.authorization.nonce as `0x${string}`,
           parsedSignature.signature,
         ],
+        chain: walletClient.chain,
+        account: walletClient.account ?? null,
       });
 
       // Wait for receipt

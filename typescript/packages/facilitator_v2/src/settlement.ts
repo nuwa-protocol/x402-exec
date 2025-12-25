@@ -16,9 +16,9 @@ import {
   type Account,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { SettlementRouterParams, SettleResponse, FacilitatorConfig } from "./types.js";
+import type { FacilitatorConfig, SettlementRouterParams } from "@x402x/core_v2";
 import { SETTLEMENT_ROUTER_ABI } from "@x402x/core_v2";
-import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
+import type { PaymentRequirements, PaymentPayload, SettleResponse } from "@x402/core/types";
 import {
   validateGasLimit,
   validateGasMultiplier,
@@ -35,6 +35,37 @@ import {
 } from "@x402x/core_v2";
 
 /**
+ * Convert NetworkConfig to viem Chain
+ * 
+ * @param networkConfig - Network configuration
+ * @param rpcUrl - RPC URL for the network
+ * @returns viem Chain object
+ */
+function networkConfigToChain(networkConfig: NetworkConfig, rpcUrl: string): Chain {
+  return {
+    id: networkConfig.chainId,
+    name: networkConfig.name,
+    nativeCurrency: {
+      name: networkConfig.metadata?.nativeToken || "ETH",
+      symbol: networkConfig.metadata?.nativeToken || "ETH",
+      decimals: 18,
+    },
+    rpcUrls: {
+      default: {
+        http: [rpcUrl],
+      },
+    },
+    blockExplorers: {
+      default: {
+        name: "Explorer",
+        url: networkConfig.addressExplorerBaseUrl.replace("/address/", ""),
+      },
+    },
+    testnet: networkConfig.type === "testnet",
+  };
+}
+
+/**
  * Create viem public client for a network
  *
  * @param network - Network identifier (V1 name or V2 CAIP-2 format)
@@ -49,20 +80,20 @@ export function createPublicClientForNetwork(
   const v1NetworkName = getNetworkName(canonicalNetwork);
   const networkConfig = getNetworkConfig(v1NetworkName);
 
-  // Use provided RPC URL or fallback to network config
-  // Try both the original network key and the normalized V1 name
+  // Use provided RPC URL or require it to be provided
   const rpcUrl =
     rpcUrls?.[network] ||
     rpcUrls?.[v1NetworkName] ||
-    rpcUrls?.[canonicalNetwork] ||
-    networkConfig?.rpcUrls?.default?.http?.[0];
+    rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
-    throw new Error(`No RPC URL available for network: ${network}`);
+    throw new Error(`No RPC URL available for network: ${network}. Please provide RPC URL in config.`);
   }
 
+  const chain = networkConfigToChain(networkConfig, rpcUrl);
+
   return createPublicClient({
-    chain: networkConfig as Chain,
+    chain,
     transport: http(rpcUrl),
   });
 }
@@ -79,13 +110,19 @@ export function createWalletClientForNetwork(
   transport?: Transport,
   privateKey?: string,
 ): WalletClient {
-  const networkConfig = getNetworkConfig(network);
+  // Normalize network identifier: any format -> CAIP-2 -> V1 name
+  const canonicalNetwork = toCanonicalNetworkKey(network);
+  const v1NetworkName = getNetworkName(canonicalNetwork);
+  const networkConfig = getNetworkConfig(v1NetworkName);
 
-  // Use provided RPC URL or fallback to network config
-  const rpcUrl = rpcUrls?.[network] || networkConfig?.rpcUrls?.default?.http?.[0];
+  // Use provided RPC URL or require it to be provided
+  const rpcUrl =
+    rpcUrls?.[network] ||
+    rpcUrls?.[v1NetworkName] ||
+    rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
-    throw new Error(`No RPC URL available for network: ${network}`);
+    throw new Error(`No RPC URL available for network: ${network}. Please provide RPC URL in config.`);
   }
 
   // Validate that at least one of signer or privateKey is provided
@@ -104,9 +141,11 @@ export function createWalletClientForNetwork(
     throw new Error("Failed to create account: neither signer nor privateKey provided");
   }
 
+  const chain = networkConfigToChain(networkConfig, rpcUrl);
+
   return createWalletClient({
     account,
-    chain: networkConfig as Chain,
+    chain,
     transport: transport || http(rpcUrl),
   });
 }
@@ -143,12 +182,13 @@ export async function checkIfSettled(
   contextKey: Hex,
 ): Promise<boolean> {
   try {
-    const isSettled = await publicClient.readContract({
+    // Use type assertion because TypeScript can't properly infer the ABI function
+    const isSettled = (await publicClient.readContract({
       address: router,
-      abi: SETTLEMENT_ROUTER_ABI,
+      abi: SETTLEMENT_ROUTER_ABI as any,
       functionName: "isSettled",
       args: [contextKey],
-    });
+    })) as unknown as boolean;
     return isSettled;
   } catch (error) {
     throw new Error(
@@ -353,9 +393,14 @@ export async function executeSettlementWithWalletClient(
     const v1NetworkName = getNetworkName(canonicalNetwork);
     const networkConfig = getNetworkConfig(v1NetworkName);
 
+    const settlementRouter = paymentRequirements.extra?.settlementRouter as string | undefined;
+    if (!settlementRouter) {
+      throw new Error("Missing settlementRouter in payment requirements");
+    }
+
     validateSettlementRouter(
       paymentRequirements.network,
-      paymentRequirements.extra?.settlementRouter,
+      settlementRouter as Address,
       config.allowedRouters,
       networkConfig,
     );
@@ -382,15 +427,6 @@ export async function executeSettlementWithWalletClient(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-    // Log detailed error for debugging
-    console.error("[executeSettlementWithWalletClient] Settlement failed:", {
-      error: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-      network: paymentRequirements.network,
-      asset: paymentRequirements.asset,
-      payloadPayer: (paymentPayload as any).payer,
-    });
-
     // Extract payer consistently from params when possible
     let payer: string | undefined;
     try {
@@ -398,9 +434,23 @@ export async function executeSettlementWithWalletClient(
       payer = params.from;
     } catch (parseError) {
       console.error("[executeSettlementWithWalletClient] Failed to parse params:", parseError);
-      // Fallback to paymentPayload if params parsing fails
-      payer = (paymentPayload as any).payer;
+      // Try to extract from payload directly as fallback
+      try {
+        const evmPayload = parseEvmExactPayload(paymentPayload);
+        payer = evmPayload.authorization.from;
+      } catch {
+        payer = undefined;
+      }
     }
+
+    // Log detailed error for debugging
+    console.error("[executeSettlementWithWalletClient] Settlement failed:", {
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      network: paymentRequirements.network,
+      asset: paymentRequirements.asset,
+      payer,
+    });
 
     return {
       success: false,
@@ -471,11 +521,21 @@ export async function settleWithSettlementRouter(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Extract payer from payload
+    let payer: string | undefined;
+    try {
+      const evmPayload = parseEvmExactPayload(paymentPayload);
+      payer = evmPayload.authorization.from;
+    } catch {
+      payer = undefined;
+    }
+    
     return {
       success: false,
       transaction: "",
       network: paymentRequirements.network,
-      payer: paymentPayload.payer,
+      payer,
       errorReason: errorMessage,
     };
   }

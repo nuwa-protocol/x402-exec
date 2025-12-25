@@ -5,6 +5,8 @@
  * implementations that handle payment verification and settlement.
  */
 
+import type { Network } from "@x402/core/types";
+
 /**
  * Ethereum address type
  */
@@ -30,8 +32,8 @@ export interface SettleResponse {
   success: boolean;
   /** Transaction hash of the settlement */
   transaction: string;
-  /** Network the settlement was executed on */
-  network: string;
+  /** Network the settlement was executed on (CAIP-2 format) */
+  network: Network;
   /** Payer address */
   payer?: string;
   /** Error reason if settlement failed */
