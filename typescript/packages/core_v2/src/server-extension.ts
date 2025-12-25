@@ -127,9 +127,9 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  * 
  * Helper function to create properly formatted extension declarations
  * for use in route configurations. The extension enables dynamic salt
- * generation per request.
+ * generation per request and includes all settlement parameters.
  * 
- * @param params - Extension parameters
+ * @param params - Extension parameters including settlement info
  * @returns Extension declaration object
  * 
  * @example
@@ -138,7 +138,12 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  *   "GET /api/data": {
  *     accepts: { scheme: "exact", price: "$0.01", network: "eip155:84532", payTo: "0x..." },
  *     extensions: createExtensionDeclaration({ 
- *       description: "Router settlement with dynamic salt" 
+ *       description: "Router settlement with dynamic salt",
+ *       settlementRouter: "0x...",
+ *       hook: "0x...",
+ *       hookData: "0x",
+ *       finalPayTo: "0x...",
+ *       facilitatorFee: "0"
  *     })
  *   }
  * };
@@ -147,12 +152,14 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
 export function createExtensionDeclaration(params?: {
   description?: string;
   schema?: Record<string, unknown>;
+  settlementRouter?: string;
+  hook?: string;
+  hookData?: string;
+  finalPayTo?: string;
+  facilitatorFee?: string;
 }): Record<string, unknown> {
   return {
-    [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
-      ...params,
-      description: params?.description || "Router settlement with atomic fee distribution",
-    }),
+    [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension(params),
   };
 }
 
