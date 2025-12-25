@@ -16,7 +16,7 @@ import type {
   Address,
   Network,
 } from "./types.js";
-import { FacilitatorValidationError, SettlementRouterError } from "./types.js";
+import { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
 import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
 import { calculateCommitment } from "@x402x/core_v2";
 import {

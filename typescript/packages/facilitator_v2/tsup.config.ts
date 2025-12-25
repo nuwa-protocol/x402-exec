@@ -5,7 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
   },
   format: ["cjs", "esm"],
-  dts: false, // Workspace package - types provided by consuming packages
+  dts: true, // Re-enable to identify and fix type issues
   splitting: false,
   sourcemap: true,
   clean: true,

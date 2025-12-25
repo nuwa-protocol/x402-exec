@@ -27,8 +27,8 @@
 // Core facilitator implementation
 export { RouterSettlementFacilitator, createRouterSettlementFacilitator } from "./facilitator.js";
 
-// Error classes
-export { FacilitatorValidationError, SettlementRouterError } from "./types.js";
+// Error classes (re-exported from core_v2)
+export { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
 
 // SettlementRouter integration utilities
 export {
@@ -58,7 +58,7 @@ export {
   validateFeeAmount,
 } from "./validation.js";
 
-// Type definitions
+// Type definitions (re-exported from core_v2 for convenience)
 export type {
   VerifyResponse,
   SettleResponse,

@@ -17,7 +17,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { SettlementRouterParams, SettleResponse, FacilitatorConfig } from "./types.js";
-import { SETTLEMENT_ROUTER_ABI } from "./types.js";
+import { SETTLEMENT_ROUTER_ABI } from "@x402x/core_v2";
 import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
 import {
   validateGasLimit,
