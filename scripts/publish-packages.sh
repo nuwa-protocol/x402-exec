@@ -105,7 +105,7 @@ done
 # Version management
 generate_version() {
     local type=$1
-    local base_version=$(node -p "require('./typescript/packages/core/package.json').version")
+    local base_version=$(node -p "require('./typescript/packages/extensions/package.json').version")
 
     # Parse version components
     local major=$(echo $base_version | cut -d. -f1)
@@ -154,7 +154,7 @@ if [ ! -d "typescript/packages" ]; then
 fi
 
 # Package list in dependency order (important!)
-PACKAGES=("core" "fetch" "express" "hono" "client" "react")
+PACKAGES=("extensions" "client" "facilitator-sdk")
 
 # Generate version if needed
 if [[ $VERSION_TYPE =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
