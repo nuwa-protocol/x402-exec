@@ -32,21 +32,21 @@ echo ""
 # Step 2: Check if the required files exist in the image
 echo -e "${YELLOW}[2/5] Checking if required packages are included...${NC}"
 
-# Check for core_v2
-if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/core_v2/dist" 2>/dev/null; then
-    echo -e "${GREEN}✓ @x402x/core_v2 package found${NC}"
+# Check for extensions
+if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/extensions/dist" 2>/dev/null; then
+    echo -e "${GREEN}✓ @x402x/extensions package found${NC}"
 else
-    echo -e "${RED}✗ @x402x/core_v2 package missing${NC}"
-    echo -e "${RED}Build test failed: Missing v2 packages${NC}"
+    echo -e "${RED}✗ @x402x/extensions package missing${NC}"
+    echo -e "${RED}Build test failed: Missing required packages${NC}"
     exit 1
 fi
 
-# Check for facilitator_v2
-if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/facilitator_v2/dist" 2>/dev/null; then
-    echo -e "${GREEN}✓ @x402x/facilitator_v2 package found${NC}"
+# Check for facilitator-sdk
+if docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" sh -c "test -d /app/typescript/packages/facilitator-sdk/dist" 2>/dev/null; then
+    echo -e "${GREEN}✓ @x402x/facilitator-sdk package found${NC}"
 else
-    echo -e "${RED}✗ @x402x/facilitator_v2 package missing${NC}"
-    echo -e "${RED}Build test failed: Missing v2 packages${NC}"
+    echo -e "${RED}✗ @x402x/facilitator-sdk package missing${NC}"
+    echo -e "${RED}Build test failed: Missing required packages${NC}"
     exit 1
 fi
 echo ""
@@ -91,8 +91,8 @@ while [ $WAIT_TIME -lt $MAX_WAIT ]; do
     fi
     
     # Check logs for the specific import error
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Cannot find package '@x402x/core_v2'"; then
-        echo -e "${RED}✗ Import error detected: Cannot find package '@x402x/core_v2'${NC}"
+    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Cannot find package '@x402x/extensions'"; then
+        echo -e "${RED}✗ Import error detected: Cannot find package '@x402x/extensions'${NC}"
         echo ""
         echo -e "${YELLOW}Container logs:${NC}"
         docker logs "${CONTAINER_NAME}"
