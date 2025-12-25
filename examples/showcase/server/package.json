@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
-    "@x402/core": "2.0.0",
-    "@x402/hono": "2.0.0",
-    "@x402/evm": "2.0.0",
+    "@x402/core": "2.1.0",
+    "@x402/hono": "2.1.0",
+    "@x402/evm": "2.1.0",
     "@x402x/extensions": "workspace:*",
     "@x402x/facilitator-sdk": "workspace:*",
     "dotenv": "^16.4.5",
