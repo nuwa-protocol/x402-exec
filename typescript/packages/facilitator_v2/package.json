@@ -47,8 +47,6 @@
     "@types/node-fetch": "^2.6.13",
     "@vitest/coverage-v8": "^1.0.0",
     "@x402/hono": "2.0.0",
-    "@x402x/fetch_v2": "workspace:*",
-    "@x402x/hono_v2": "workspace:*",
     "eslint": "^9.0.0",
     "hono": "^4.11.1",
     "node-fetch": "^3.3.2",
