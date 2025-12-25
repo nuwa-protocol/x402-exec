@@ -9,8 +9,18 @@
  */
 
 import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/core_v2";
-import { evm } from "x402/types";
 import type { Chain } from "viem";
+import * as allChains from "viem/chains";
+
+// Helper function to get viem chain from network identifier
+function getChainFromNetwork(network: string): Chain {
+  const chainId = parseInt(network.split(":")[1]);
+  const chain = Object.values(allChains).find((c) => c.id === chainId);
+  if (!chain) {
+    throw new Error(`Unsupported network: ${network}`);
+  }
+  return chain;
+}
 
 /**
  * Supported network identifiers (auto-generated from @x402x/core)
@@ -102,8 +112,8 @@ export function getNetworkConfig(network: string): NetworkConfig {
   // Get core network config
   const coreConfig = getCoreNetworkConfig(network);
 
-  // Get chain from x402
-  const chain = evm.getChainFromNetwork(network) as Chain;
+  // Get chain from viem
+  const chain = getChainFromNetwork(network);
 
   // Get optional UI overrides
   const uiOverride = NETWORK_UI_OVERRIDES[network] || {};

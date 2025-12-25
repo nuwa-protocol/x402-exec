@@ -5,13 +5,23 @@
 
 import { http, createConfig } from "wagmi";
 import { getSupportedNetworks } from "@x402x/core_v2";
-import { evm } from "x402/types";
 import { injected, metaMask, coinbaseWallet } from "wagmi/connectors";
 import type { Chain } from "viem";
+import * as allChains from "viem/chains";
+
+// Helper function to get viem chain from network identifier
+function getChainFromNetwork(network: string): Chain {
+  const chainId = parseInt(network.split(":")[1]);
+  const chain = Object.values(allChains).find((c) => c.id === chainId);
+  if (!chain) {
+    throw new Error(`Unsupported network: ${network}`);
+  }
+  return chain;
+}
 
 // Auto-generate chains array from @x402x/core
 const supportedNetworks = getSupportedNetworks();
-const chains = supportedNetworks.map((network) => evm.getChainFromNetwork(network) as Chain);
+const chains = supportedNetworks.map((network) => getChainFromNetwork(network));
 
 // Auto-generate transports for all chains
 const transports = chains.reduce(
