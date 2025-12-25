@@ -230,16 +230,32 @@ export function isNetworkSupported(network: string): boolean {
 }
 
 /**
- * Get list of all supported networks
+ * Get list of all supported network names (human-readable identifiers)
+ *
+ * Returns user-friendly network names like "base-sepolia", "base", etc.
+ * Use this for UI display, configuration, and user-facing operations.
  *
  * @returns Array of supported network names
  *
  * @example
  * ```typescript
- * const networks = getSupportedNetworks();
- * // => ['base-sepolia', 'skale-base-sepolia']
+ * const networks = getSupportedNetworkNames();
+ * // => ['base-sepolia', 'base', 'x-layer-testnet', ...]
+ * 
+ * // For UI dropdown
+ * <select>
+ *   {networks.map(name => <option key={name}>{name}</option>)}
+ * </select>
  * ```
  */
-export function getSupportedNetworks(): string[] {
+export function getSupportedNetworkNames(): string[] {
   return Object.keys(networks);
+}
+
+/**
+ * @deprecated Use getSupportedNetworkNames() instead for clarity
+ * Get list of all supported networks
+ */
+export function getSupportedNetworks(): string[] {
+  return getSupportedNetworkNames();
 }

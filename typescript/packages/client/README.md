@@ -683,7 +683,7 @@ function Component() {
 
 ## Related Packages
 
-- [@x402x/extensions](../core) - Core utilities and commitment calculation
+- [@x402x/extensions](../extensions) - Core utilities and network configuration
 - [@x402x/facilitator](../../facilitator) - Facilitator server implementation
 - [x402](https://github.com/coinbase/x402) - Base x402 protocol
 
