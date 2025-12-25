@@ -67,6 +67,14 @@ export {
   getSupportedNetworkNames,
 } from "./networks.js";
 
+// Export chain configurations
+export {
+  getChain,
+  getChainById,
+  getCustomChains,
+  isCustomChain,
+} from "./chains.js";
+
 // Export builtin hooks
 export { TransferHook, NFTMintHook, RewardHook } from "./hooks/index.js";
 
