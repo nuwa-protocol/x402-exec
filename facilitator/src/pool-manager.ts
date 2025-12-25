@@ -146,6 +146,23 @@ export class PoolManager {
   hasAccounts(): boolean {
     return this.evmPrivateKeys.length > 0;
   }
+
+  /**
+   * Get the facilitator signer address for v2 advertisement
+   * Returns the address of the first EVM account from any initialized pool
+   * 
+   * @returns The facilitator signer address, or undefined if no pools exist
+   */
+  getFacilitatorSignerAddress(): string | undefined {
+    // Get first pool
+    const firstPool = this.evmAccountPools.values().next().value as AccountPool | undefined;
+    if (!firstPool) {
+      return undefined;
+    }
+
+    // Get first account address from the pool
+    return firstPool.getFirstAccountAddress();
+  }
 }
 
 /**

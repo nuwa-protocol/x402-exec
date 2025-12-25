@@ -8,7 +8,7 @@
  */
 
 import type { Address } from "viem";
-import { TransferHook } from "@x402x/core";
+import { TransferHook } from "@x402x/core_v2";
 
 export interface ContentItem {
   id: string;

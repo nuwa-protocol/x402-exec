@@ -49,7 +49,11 @@ export {
   toJsonSafe,
 } from "./middleware-utils.js";
 
-export type { RouteConfig, RoutesConfig, RoutePattern } from "./middleware-utils.js";
+export type { 
+  RouteConfig as LegacyRouteConfig,
+  RoutesConfig, 
+  RoutePattern 
+} from "./middleware-utils.js";
 
 // Export commitment utilities
 export { calculateCommitment, generateSalt, validateCommitmentParams } from "./commitment.js";
@@ -88,6 +92,16 @@ export {
   createExtensionDeclaration,
   ROUTER_SETTLEMENT_KEY,
 } from "./server-extension.js";
+
+// Export settlement routes helpers
+export {
+  createSettlementRouteConfig,
+  registerSettlementHooks,
+  type SettlementRouteConfig,
+  type SettlementPaymentOption,
+  type SettlementOptions,
+  type SettlementHooksConfig,
+} from "./settlement-routes.js";
 
 // Export helper functions
 export {

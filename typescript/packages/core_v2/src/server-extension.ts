@@ -8,6 +8,7 @@
 import type { ResourceServerExtension } from "@x402/core/types";
 import type { x402ResourceServer } from "@x402/core/server";
 import { createRouterSettlementExtension } from "./extensions.js";
+import { generateSalt } from "./commitment.js";
 
 /**
  * Extension key constant
@@ -20,7 +21,7 @@ export const ROUTER_SETTLEMENT_KEY = "x402x-router-settlement";
  * @param ctx - The context to check
  * @returns True if context is an HTTPRequestContext
  */
-function isHTTPRequestContext(ctx: unknown): ctx is { method?: string; adapter?: string } {
+function isHTTPRequestContext(ctx: unknown): ctx is { method?: string; adapter?: unknown } {
   return ctx !== null && typeof ctx === "object" && "method" in ctx;
 }
 
@@ -33,6 +34,11 @@ interface RouterSettlementDeclaration {
     [key: string]: unknown;
     schemaVersion?: number;
     description?: string;
+    /** Dynamic fields that need to be generated per-request */
+    dynamic?: {
+      salt?: boolean;
+      [key: string]: unknown;
+    };
   };
   schema?: Record<string, unknown>;
 }
@@ -42,6 +48,9 @@ interface RouterSettlementDeclaration {
  * 
  * This extension enriches PaymentRequired responses with router settlement
  * information, enabling clients to use the SettlementRouter for atomic payments.
+ * 
+ * The extension dynamically generates per-request values like salt to ensure
+ * each payment authorization is unique and cannot be replayed.
  * 
  * @example
  * ```typescript
@@ -59,19 +68,24 @@ export const routerSettlementServerExtension: ResourceServerExtension = {
     // Cast to typed declaration
     const extension = declaration as RouterSettlementDeclaration;
 
-    // Basic enrichment - ensure proper structure
+    // Generate dynamic salt for this request
+    const salt = generateSalt();
+
+    // Basic enrichment - ensure proper structure with dynamic salt
     const enriched: RouterSettlementDeclaration = {
       ...extension,
       info: {
         schemaVersion: 1,
         ...(extension.info || {}),
+        // Add the generated salt to the info
+        salt,
       },
     };
 
     // If HTTP context is available, we could add additional metadata
     if (isHTTPRequestContext(transportContext)) {
       // Future: could add HTTP-specific metadata here
-      // For now, just pass through
+      // For now, the salt generation is the main dynamic enhancement
     }
 
     return enriched;
@@ -82,6 +96,7 @@ export const routerSettlementServerExtension: ResourceServerExtension = {
  * Register router settlement extension with an x402ResourceServer
  * 
  * Convenience function to register the routerSettlementServerExtension.
+ * Also registers necessary hooks for handling settlement parameters.
  * 
  * @param server - x402ResourceServer instance
  * @returns The server instance for chaining
@@ -98,14 +113,21 @@ export const routerSettlementServerExtension: ResourceServerExtension = {
  * ```
  */
 export function registerRouterSettlement(server: x402ResourceServer): x402ResourceServer {
-  return server.registerExtension(routerSettlementServerExtension);
+  // Register the extension for enriching PaymentRequired responses
+  server.registerExtension(routerSettlementServerExtension);
+  
+  // Note: Hooks for verify/settle are registered separately via 
+  // registerSettlementHooks if needed for custom validation logic
+  
+  return server;
 }
 
 /**
  * Create extension declaration for routes
  * 
  * Helper function to create properly formatted extension declarations
- * for use in route configurations.
+ * for use in route configurations. The extension enables dynamic salt
+ * generation per request.
  * 
  * @param params - Extension parameters
  * @returns Extension declaration object
@@ -115,9 +137,9 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  * const routes = {
  *   "GET /api/data": {
  *     accepts: { scheme: "exact", price: "$0.01", network: "eip155:84532", payTo: "0x..." },
- *     extensions: {
- *       ...createExtensionDeclaration({ description: "Router settlement enabled" })
- *     }
+ *     extensions: createExtensionDeclaration({ 
+ *       description: "Router settlement with dynamic salt" 
+ *     })
  *   }
  * };
  * ```
@@ -127,7 +149,10 @@ export function createExtensionDeclaration(params?: {
   schema?: Record<string, unknown>;
 }): Record<string, unknown> {
   return {
-    [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension(params),
+    [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
+      ...params,
+      description: params?.description || "Router settlement with atomic fee distribution",
+    }),
   };
 }
 

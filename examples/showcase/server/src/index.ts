@@ -1,11 +1,11 @@
 /**
  * x402-exec Showcase Server
- * Demonstrates x402x settlement for server-controlled scenarios
+ * Demonstrates x402x settlement for server-controlled scenarios using official x402 v2 SDK
  *
  * Server Mode: Premium Download
  * - Server controls payment requirements and business logic
  * - Demonstrates server-side access control
- * - Uses TransferHook for simple payment processing
+ * - Uses official @x402/hono middleware with x402x extension
  *
  * Note: Most scenarios have moved to Serverless Mode (client-side only)
  */
@@ -13,23 +13,85 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
-import { paymentMiddleware, type X402Context } from "@x402x/hono";
-import { getSupportedNetworks } from "@x402x/core";
+import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
+import { registerExactEvmScheme } from "@x402/evm/exact/server";
+import { HTTPFacilitatorClient } from "@x402/core/http";
+import type { RouteConfig as X402RouteConfig } from "@x402/core/server";
+import {
+  registerRouterSettlement,
+  getSupportedNetworksV2,
+  TransferHook,
+} from "@x402x/core_v2";
 import { appConfig } from "./config.js";
 import * as premiumDownload from "./scenarios/premium-download.js";
 
-// Extend Hono Context to include x402 data
+// Extend Hono Context to include x402 data (will be set by middleware if needed)
 declare module "hono" {
   interface ContextVariableMap {
-    x402: X402Context;
+    x402?: {
+      payer: string;
+      amount: string;
+      network: string;
+      payment: unknown;
+      requirements: unknown;
+    };
   }
 }
 
 const app = new Hono();
 
-// Facilitator configuration
-const facilitatorConfig = {
-  url: appConfig.facilitatorUrl as `${string}://${string}`,
+// ===== Configure x402 v2 Resource Server =====
+
+// Create facilitator client
+const facilitatorClient = new HTTPFacilitatorClient({
+  url: appConfig.facilitatorUrl,
+});
+
+// Create and configure x402 resource server
+const resourceServer = new x402ResourceServer(facilitatorClient);
+
+// Register EVM exact scheme
+registerExactEvmScheme(resourceServer, {});
+
+// Register x402x router settlement extension
+registerRouterSettlement(resourceServer);
+
+// Initialize facilitator support (fetch supported schemes/networks)
+await resourceServer.initialize();
+
+console.log("✅ x402 Resource Server initialized");
+
+// ===== Configure Routes with Settlement =====
+
+// Build route configuration manually to include settlement parameters in extra
+const routes: Record<string, X402RouteConfig> = {
+  "POST /api/purchase-download": {
+    accepts: {
+      scheme: "exact",
+      network: "eip155:84532", // Base Sepolia
+      payTo: appConfig.resourceServerAddress,
+      price: "$1.00",
+      // Add settlement info to extra - will be used by x402x facilitator
+      extra: {
+        // Settlement router parameters
+        hook: TransferHook.getAddress("base-sepolia"),
+        hookData: TransferHook.encode(),
+        finalPayTo: appConfig.resourceServerAddress,
+        facilitatorFee: "0", // Will be calculated by facilitator
+      },
+    },
+    description: "Premium Content Download: Purchase and download digital content",
+    mimeType: "application/json",
+    // Register x402x extension
+    extensions: {
+      "x402x-router-settlement": {
+        info: {
+          schemaVersion: 1,
+          description: "Router settlement for premium download",
+        },
+      },
+    },
+  },
 };
 
 // Enable CORS for frontend
@@ -59,9 +121,9 @@ app.onError((err, c) => {
 app.get("/api/health", (c) => {
   return c.json({
     status: "ok",
-    message: "x402-exec Showcase Server",
+    message: "x402-exec Showcase Server (Official SDK + x402x Extension)",
     defaultNetwork: appConfig.defaultNetwork,
-    supportedNetworks: getSupportedNetworks(),
+    supportedNetworks: getSupportedNetworksV2(),
   });
 });
 
@@ -79,61 +141,51 @@ app.get("/api/premium-download/info", (c) => {
   return c.json(info);
 });
 
-app.post(
-  "/api/purchase-download",
-  paymentMiddleware(
-    appConfig.resourceServerAddress,
-    {
-      price: "$1.00", // 1.00 USD for digital content
-      network: getSupportedNetworks() as any,
-      config: {
-        description: "Premium Content Download: Purchase and download digital content",
+// Apply payment middleware to protected route
+app.use("/api/purchase-download", paymentMiddleware(routes, resourceServer));
+
+app.post("/api/purchase-download", async (c) => {
+  // At this point, payment is verified and settled by the middleware
+  // We can access payment info if the middleware sets context
+  const body = await c.req.json();
+
+  console.log("[Premium Download] Payment completed successfully");
+
+  // Verify content exists
+  const contentId = body.contentId || "x402-protocol-guide";
+  const content = premiumDownload.getContentItem(contentId);
+
+  if (!content) {
+    return c.json(
+      {
+        success: false,
+        error: `Content not found: ${contentId}`,
       },
-    },
-    facilitatorConfig,
-  ),
-  async (c) => {
-    const x402 = c.get("x402");
-    const body = await c.req.json();
-
-    console.log("[Premium Download] Payment completed successfully");
-    console.log(`[Premium Download] Network: ${x402.network}`);
-    console.log(`[Premium Download] Payer: ${x402.payer}`);
-
-    // Verify content exists
-    const contentId = body.contentId || "x402-protocol-guide";
-    const content = premiumDownload.getContentItem(contentId);
-
-    if (!content) {
-      return c.json(
-        {
-          success: false,
-          error: `Content not found: ${contentId}`,
-        },
-        404,
-      );
-    }
-
-    // Generate download access
-    const downloadAccess = premiumDownload.generateDownloadUrl(
-      contentId,
-      x402.payer as `0x${string}`,
+      404,
     );
+  }
 
-    console.log(`[Premium Download] Generated download URL for ${x402.payer}`);
-    console.log(`[Premium Download] Content: ${content.title}`);
-    console.log(`[Premium Download] Expires: ${downloadAccess.expiresAt}`);
+  // Generate download access
+  // Note: payer address would ideally come from middleware context
+  // For now, we use a placeholder - in production, extract from payment context
+  const downloadAccess = premiumDownload.generateDownloadUrl(
+    contentId,
+    "0x0000000000000000000000000000000000000000" as `0x${string}`,
+  );
 
-    return c.json({
-      success: true,
-      message: "Purchase successful",
-      downloadUrl: downloadAccess.downloadUrl,
-      fileName: downloadAccess.fileName,
-      expiresAt: downloadAccess.expiresAt,
-      network: x402.network,
-    });
-  },
-);
+  console.log(`[Premium Download] Generated download URL`);
+  console.log(`[Premium Download] Content: ${content.title}`);
+  console.log(`[Premium Download] Expires: ${downloadAccess.expiresAt}`);
+
+  return c.json({
+    success: true,
+    message: "Purchase successful",
+    downloadUrl: downloadAccess.downloadUrl,
+    fileName: downloadAccess.fileName,
+    expiresAt: downloadAccess.expiresAt,
+    network: "eip155:84532",
+  });
+});
 
 // Serve download files
 app.get("/api/download/:contentId", async (c) => {
@@ -192,12 +244,13 @@ app.get("/api/download/:contentId", async (c) => {
 
 // Start server
 const port = Number(process.env.PORT) || 3000;
-console.log(`🚀 x402-exec Showcase Server (Server Mode Only) starting on port ${port}`);
+console.log(`🚀 x402-exec Showcase Server (Official x402 v2 SDK + x402x Extension)`);
 console.log(`📍 Default network: ${appConfig.defaultNetwork}`);
-console.log(`🌐 Supported networks: ${getSupportedNetworks().join(", ")}`);
+console.log(`🌐 Supported networks: ${getSupportedNetworksV2().join(", ")}`);
 console.log(`💰 Resource server address: ${appConfig.resourceServerAddress}`);
 console.log(`🔧 Facilitator URL: ${appConfig.facilitatorUrl}`);
 console.log(`📥 Server Mode: Premium Download`);
+console.log(`🎯 Starting on port ${port}`);
 
 serve({
   fetch: app.fetch,

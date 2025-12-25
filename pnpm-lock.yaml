@@ -109,12 +109,21 @@ importers:
       '@hono/node-server':
         specifier: ^1.12.0
         version: 1.19.6(hono@4.10.7)
-      '@x402x/core':
+      '@x402/core':
+        specifier: 2.0.0
+        version: 2.0.0
+      '@x402/evm':
+        specifier: 2.0.0
+        version: 2.0.0(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@x402/hono':
+        specifier: 2.0.0
+        version: 2.0.0(hono@4.10.7)
+      '@x402x/core_v2':
         specifier: workspace:*
-        version: link:../../../typescript/packages/core
-      '@x402x/hono':
+        version: link:../../../typescript/packages/core_v2
+      '@x402x/facilitator_v2':
         specifier: workspace:*
-        version: link:../../../typescript/packages/hono
+        version: link:../../../typescript/packages/facilitator_v2
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -127,9 +136,6 @@ importers:
       viem:
         specifier: 2.40.3
         version: 2.40.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.13)
-      x402:
-        specifier: npm:@x402x/x402@^0.6.6-patch.7
-        version: '@x402x/x402@0.6.6-patch.7(@solana/sysvars@5.1.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3))(@tanstack/react-query@5.90.11(react@19.2.1))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(react@19.2.1)(typescript@5.9.3)(utf-8-validate@5.0.10)'
     devDependencies:
       '@types/node':
         specifier: ^20.14.0
