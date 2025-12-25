@@ -1,6 +1,6 @@
-# @x402x/facilitator_v2
+# @x402x/facilitator-sdk
 
-SchemeNetworkFacilitator implementation for x402x settlement framework - v2 with official x402 and SettlementRouter support.
+SchemeNetworkFacilitator SDK for x402x - enables router settlement with official x402 protocol.
 
 ## Overview
 

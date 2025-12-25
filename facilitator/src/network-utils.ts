@@ -7,7 +7,7 @@
 
 /// <reference path="./types.d.ts" />
 
-import { toCanonicalNetworkKey, getNetworkName } from "@x402x/core_v2";
+import { toCanonicalNetworkKey, getNetworkName } from "@x402x/extensions";
 import type { Network as X402Network } from "x402/types";
 
 /**

@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
+import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
 import { useX402Client, X402Client } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";

@@ -14,10 +14,10 @@ import type {
   Address,
   Network,
 } from "./types.js";
-import type { FacilitatorConfig, VerifyResponse } from "@x402x/core_v2";
-import { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
-import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
-import { calculateCommitment } from "@x402x/core_v2";
+import type { FacilitatorConfig, VerifyResponse } from "@x402x/extensions";
+import { FacilitatorValidationError, SettlementRouterError } from "@x402x/extensions";
+import { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/extensions";
+import { calculateCommitment } from "@x402x/extensions";
 import {
   settleWithSettlementRouter,
   createPublicClientForNetwork,
@@ -418,7 +418,7 @@ export class RouterSettlementFacilitator implements SchemeNetworkFacilitator {
       };
     }
 
-    // Commitment verification using @x402x/core_v2
+    // Commitment verification using @x402x/extensions
     try {
       const chainId = parseInt(requirements.network.split(":")[1]);
       const calculatedCommitment = calculateCommitment({

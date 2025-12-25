@@ -1,12 +1,12 @@
 /**
  * Commitment calculation utility for X402 Settlement
- * Simplified using @x402x/core_v2
+ * Simplified using @x402x/extensions
  */
 
-// Re-export from @x402x/core_v2 for backward compatibility
+// Re-export from @x402x/extensions for backward compatibility
 export {
   type CommitmentParams,
   calculateCommitment,
   generateSalt,
   validateCommitmentParams,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";

@@ -9,7 +9,7 @@
 
 import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
-import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/core_v2";
+import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/extensions";
 import type { VerifyResponse, SettleResponse } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
 import type { PoolManager } from "./pool-manager.js";
@@ -288,7 +288,7 @@ export class VersionDispatcher {
     paymentRequirements: V2PaymentRequirements,
   ): Promise<VerifyResponse> {
     // Import v2 verification utilities
-    const { createRouterSettlementFacilitator } = await import("@x402x/facilitator_v2");
+    const { createRouterSettlementFacilitator } = await import("@x402x/facilitator-sdk");
 
     // Create a temporary facilitator for verification (no signer needed for verify)
     // Note: Verification only checks signatures and balances on-chain, it doesn't send transactions.
@@ -384,7 +384,7 @@ export class VersionDispatcher {
     // Execute in account pool (reuses queue, duplicate detection, etc.)
     return accountPool.execute(async (signer) => {
       // Import necessary modules dynamically
-      const facilitatorV2 = (await import("@x402x/facilitator_v2")) as any;
+      const facilitatorV2 = (await import("@x402x/facilitator-sdk")) as any;
 
       // Create public client for the network
       const publicClient = facilitatorV2.createPublicClientForNetwork(

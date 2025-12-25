@@ -6,8 +6,8 @@
  */
 
 import type { Address, Hex } from "viem";
-import { getNetworkConfig, calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/core_v2";
-import { calculateCommitment } from "@x402x/core_v2";
+import { getNetworkConfig, calculateFacilitatorFee, type FeeCalculationResult } from "@x402x/extensions";
+import { calculateCommitment } from "@x402x/extensions";
 import type { PrepareParams, SettlementData } from "../types.js";
 import { NetworkError, ValidationError, FacilitatorError } from "../errors.js";
 import {

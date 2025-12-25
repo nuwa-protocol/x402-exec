@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPublicClient, http, formatUnits, type Address } from "viem";
 import { NETWORKS, type Network } from "../config";
-import { getNetworkConfig } from "@x402x/core_v2";
+import { getNetworkConfig } from "@x402x/extensions";
 
 const ERC20_ABI = [
   {

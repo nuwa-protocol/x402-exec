@@ -32,8 +32,8 @@ vi.mock("viem", async () => {
 });
 
 // Mock core_v2 utilities for integration tests
-vi.mock("@x402x/core_v2", async () => {
-  const actual = await vi.importActual("@x402x/core_v2");
+vi.mock("@x402x/extensions", async () => {
+  const actual = await vi.importActual("@x402x/extensions");
   return {
     ...actual,
     isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
@@ -258,7 +258,7 @@ describe("Integration tests", () => {
   describe("error recovery", () => {
     it("should handle network config missing gracefully", async () => {
       // Mock getNetworkConfig to return undefined
-      const { getNetworkConfig } = await import("@x402x/core_v2");
+      const { getNetworkConfig } = await import("@x402x/extensions");
       vi.mocked(getNetworkConfig).mockReturnValue(undefined);
 
       const verification = await facilitator.verify(mockPaymentPayload, mockPaymentRequirements);

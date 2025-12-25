@@ -55,7 +55,7 @@ interface RouterSettlementDeclaration {
  * @example
  * ```typescript
  * import { x402ResourceServer } from "@x402/core/server";
- * import { routerSettlementServerExtension } from "@x402x/core_v2";
+ * import { routerSettlementServerExtension } from "@x402x/extensions";
  * 
  * const server = new x402ResourceServer(facilitatorClient);
  * server.registerExtension(routerSettlementServerExtension);
@@ -105,7 +105,7 @@ export const routerSettlementServerExtension: ResourceServerExtension = {
  * ```typescript
  * import { x402ResourceServer } from "@x402/core/server";
  * import { registerExactEvmScheme } from "@x402/evm/exact/server/register";
- * import { registerRouterSettlement } from "@x402x/core_v2";
+ * import { registerRouterSettlement } from "@x402x/extensions";
  * 
  * const server = new x402ResourceServer(facilitatorClient);
  * registerExactEvmScheme(server, {});

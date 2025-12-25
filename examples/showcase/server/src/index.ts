@@ -22,7 +22,7 @@ import {
   getSupportedNetworksV2,
   TransferHook,
   createSettlementRouteConfig,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";
 import { appConfig } from "./config.js";
 import * as premiumDownload from "./scenarios/premium-download.js";
 

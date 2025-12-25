@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { TransferHook } from "@x402x/core_v2";
+import { TransferHook } from "@x402x/extensions";
 import { ServerlessPaymentDialog } from "../components/ServerlessPaymentDialog";
 import { ScenarioCard } from "../components/ScenarioCard";
 import { PaymentButton } from "../components/PaymentButton";
@@ -18,7 +18,7 @@ import { StatusMessage } from "../components/StatusMessage";
 import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
-import { parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
+import { parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
 import { NETWORKS } from "../config";
 import splitPaymentCode from "../code-examples/split-payment.ts?raw";
 

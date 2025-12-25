@@ -24,7 +24,7 @@ import type { SettlementExtra } from "./types.js";
  * ```typescript
  * import { x402ResourceServer } from "@x402/core/server";
  * import { registerExactEvmScheme } from "@x402/evm/exact/server/register";
- * import { registerRouterSettlement } from "@x402x/core_v2";
+ * import { registerRouterSettlement } from "@x402x/extensions";
  * 
  * const server = new x402ResourceServer(facilitatorClient);
  * registerExactEvmScheme(server, {});
@@ -40,7 +40,7 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  * 
  * Factory function to create a RouterSettlementFacilitator instance.
  * 
- * Note: This requires @x402x/facilitator_v2 to be installed separately.
+ * Note: This requires @x402x/facilitator-sdk to be installed separately.
  * 
  * @param config - Facilitator configuration
  * @returns RouterSettlementFacilitator instance
@@ -48,11 +48,11 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  * @example
  * ```typescript
  * // First install the dependency:
- * // pnpm install @x402x/facilitator_v2
+ * // pnpm install @x402x/facilitator-sdk
  * 
- * import { createX402xFacilitator } from "@x402x/core_v2";
+ * import { createX402xFacilitator } from "@x402x/extensions";
  * // Or import directly:
- * // import { createRouterSettlementFacilitator } from "@x402x/facilitator_v2";
+ * // import { createRouterSettlementFacilitator } from "@x402x/facilitator-sdk";
  * 
  * const facilitator = createX402xFacilitator({
  *   privateKey: process.env.FACILITATOR_PRIVATE_KEY,
@@ -72,13 +72,13 @@ export async function createX402xFacilitator(
   // Using Function constructor to avoid static analysis during build
   try {
     const importFn = new Function('specifier', 'return import(specifier)');
-    const facilitatorModule = await importFn('@x402x/facilitator_v2') as {
+    const facilitatorModule = await importFn('@x402x/facilitator-sdk') as {
       createRouterSettlementFacilitator: (config: FacilitatorConfig) => SchemeNetworkFacilitator;
     };
     return facilitatorModule.createRouterSettlementFacilitator(config);
   } catch (error) {
     throw new Error(
-      "createX402xFacilitator requires @x402x/facilitator_v2 to be installed. " +
+      "createX402xFacilitator requires @x402x/facilitator-sdk to be installed. " +
         "Please install it using your package manager.",
     );
   }
@@ -116,7 +116,7 @@ export interface WithRouterSettlementOptions {
  * 
  * @example
  * ```typescript
- * import { withRouterSettlement, TransferHook } from "@x402x/core_v2";
+ * import { withRouterSettlement, TransferHook } from "@x402x/extensions";
  * 
  * const baseRequirements = {
  *   scheme: "exact",

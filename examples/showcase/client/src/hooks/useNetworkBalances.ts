@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { createPublicClient, http, Address, formatUnits } from "viem";
-import { getNetworkConfig } from "@x402x/core_v2";
+import { getNetworkConfig } from "@x402x/extensions";
 import { NETWORKS, Network } from "../config";
 
 // ERC-20 ABI for balanceOf

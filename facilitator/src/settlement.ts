@@ -20,7 +20,7 @@ import {
   calculateCommitment,
 } from "@x402x/core";
 // Import V2 getNetworkConfig for CAIP-2 support
-import { getNetworkConfig } from "@x402x/core_v2";
+import { getNetworkConfig } from "@x402x/extensions";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
 import { getLogger } from "./telemetry.js";

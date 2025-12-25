@@ -1636,7 +1636,7 @@ This checklist helps you safely roll out v2 support while maintaining v1 compati
    BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
    X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0xba9980fb08771e2fd10c17450f52d39bcb9ed576
 
-   # v2-specific (new) - optional, uses defaults from @x402x/core_v2
+   # v2-specific (new) - optional, uses defaults from @x402x/extensions
    # FACILITATOR_V2_ROUTERS_eip155:84532=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
    ```
 

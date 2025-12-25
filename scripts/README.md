@@ -178,8 +178,8 @@ Tests the Facilitator Docker image to ensure it builds and starts correctly.
 #### What It Tests
 
 1. **Static File Check**: Verifies v2 packages exist in the image
-   - `@x402x/core_v2`
-   - `@x402x/facilitator_v2`
+   - `@x402x/extensions`
+   - `@x402x/facilitator-sdk`
 
 2. **Runtime Import Check**: Starts container and monitors for:
    - ❌ Module import errors

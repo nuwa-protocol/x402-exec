@@ -3,8 +3,8 @@
  */
 
 import type { Address, Hex, WalletClient, TransactionReceipt } from "viem";
-import type { NetworkConfig } from "@x402x/core_v2";
-import type { PaymentRequirements, PaymentPayload } from "@x402x/core_v2";
+import type { NetworkConfig } from "@x402x/extensions";
+import type { PaymentRequirements, PaymentPayload } from "@x402x/extensions";
 
 /**
  * Execute status enum

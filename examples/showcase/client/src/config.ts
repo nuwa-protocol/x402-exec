@@ -8,7 +8,7 @@
  * - Optional UI customization via NETWORK_UI_OVERRIDES
  */
 
-import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/core_v2";
+import { getSupportedNetworks, getNetworkConfig as getCoreNetworkConfig } from "@x402x/extensions";
 import type { Chain } from "viem";
 import * as allChains from "viem/chains";
 

@@ -1,7 +1,7 @@
 {
-  "name": "@x402x/core_v2",
+  "name": "@x402x/extensions",
   "version": "0.1.0",
-  "description": "Core utilities for x402x settlement framework - v2 with official x402",
+  "description": "x402x extensions for x402 protocol - core utilities for router settlement",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

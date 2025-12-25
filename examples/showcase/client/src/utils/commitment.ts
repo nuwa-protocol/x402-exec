@@ -4,4 +4,4 @@
  */
 
 // Re-export from @x402x/core for backward compatibility
-export { type CommitmentParams, calculateCommitment, validateCommitmentParams } from "@x402x/core_v2";
+export { type CommitmentParams, calculateCommitment, validateCommitmentParams } from "@x402x/extensions";

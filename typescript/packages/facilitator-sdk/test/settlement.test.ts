@@ -44,8 +44,8 @@ vi.mock("viem", async () => {
 });
 
 // Mock core_v2 utilities
-vi.mock("@x402x/core_v2", async () => {
-  const actual = await vi.importActual("@x402x/core_v2");
+vi.mock("@x402x/extensions", async () => {
+  const actual = await vi.importActual("@x402x/extensions");
   return {
     ...actual,
     isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),

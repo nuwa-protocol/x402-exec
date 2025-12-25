@@ -16,7 +16,7 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksRewardTokenData } from "../hooks/useRewardTokenData";
-import { RewardHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
+import { RewardHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
 import { NETWORKS } from "../config";
 import pointsRewardCode from "../code-examples/points-reward.ts?raw";
 
