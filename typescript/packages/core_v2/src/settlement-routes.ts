@@ -110,7 +110,7 @@ export function createSettlementRouteConfig(
   // Store network config and settlement params for extension
   // We need to get these from the first option to pass to the extension
   const firstOption = acceptsArray[0];
-  const firstNetwork = typeof firstOption.network === "string" ? firstOption.network : firstOption.network;
+  const firstNetwork = firstOption.network;
   const networkConfig = getNetworkConfig(firstNetwork);
   if (!networkConfig) {
     throw new Error(`Network configuration not found for: ${firstNetwork}`);
@@ -250,7 +250,7 @@ export function registerSettlementHooks(
       
       // Validate that required settlement fields are present
       const requiredFields = ['settlementRouter', 'hook', 'hookData'];
-      const payToField = settlementParams.finalPayTo ? 'finalPayTo' : 'payTo';
+      const payToField = 'finalPayTo' in settlementParams ? 'finalPayTo' : 'payTo';
       const missingFields = requiredFields.filter(field => !settlementParams[field]);
       if (!settlementParams[payToField]) {
         missingFields.push(payToField);

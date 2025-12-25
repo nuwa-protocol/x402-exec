@@ -7,6 +7,7 @@ This directory contains tools for testing the Facilitator Docker image to ensure
 ## Problem Solved
 
 Previously, Docker images could build successfully but fail at runtime with errors like:
+
 ```
 Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@x402x/core_v2'
 ```
@@ -18,6 +19,7 @@ This happens when the Dockerfile doesn't properly include all required packages 
 ### 1. Fixed Dockerfile
 
 Updated `Dockerfile` to include all v2 packages:
+
 - `@x402x/core_v2`
 - `@x402x/express_v2`
 - `@x402x/hono_v2`
@@ -29,6 +31,7 @@ Updated `Dockerfile` to include all v2 packages:
 **File**: `scripts/test-docker-facilitator.sh`
 
 A comprehensive test script that:
+
 1. Builds the Docker image
 2. Checks if required packages are included
 3. Starts a container with test configuration
@@ -36,6 +39,7 @@ A comprehensive test script that:
 5. Verifies the service starts successfully
 
 **Usage**:
+
 ```bash
 # From project root
 ./scripts/test-docker-facilitator.sh
@@ -48,6 +52,7 @@ The script uses `env.docker-test` for safe testing (no real credentials needed).
 **File**: `.github/workflows/docker-facilitator.yml`
 
 Added automated testing to the CI pipeline:
+
 1. Build image (don't push yet)
 2. Start container with test config
 3. Verify successful startup
@@ -60,6 +65,7 @@ This ensures all pushed images are guaranteed to start correctly.
 **File**: `env.docker-test`
 
 Minimal configuration for testing:
+
 - Test private key (safe, no real funds)
 - V2 support enabled (matches production)
 - Token price disabled (no external API calls)
@@ -73,11 +79,13 @@ Minimal configuration for testing:
 ### Three-Layer Verification
 
 1. **Static File Check**: Verifies required files exist in the image
+
    ```bash
    test -d /app/typescript/packages/core_v2/dist
    ```
 
 2. **Runtime Import Check**: Starts the container and monitors for errors
+
    - Detects: `Cannot find package` errors
    - Success: Service endpoint listing appears (`POST /settle`)
 
@@ -116,8 +124,8 @@ Run startup test
 ## Future Improvements
 
 Potential enhancements:
+
 - Add health check assertions
 - Test multiple configurations
 - Validate environment variable handling
 - Add smoke tests for critical endpoints
-

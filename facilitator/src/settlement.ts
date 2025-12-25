@@ -155,7 +155,7 @@ export function validateTokenAddress(network: string, tokenAddress: string): voi
  */
 function parseSettlementParams(
   paymentPayload: PaymentPayload,
-  paymentRequirements: PaymentRequirements
+  paymentRequirements: PaymentRequirements,
 ): {
   settlementRouter: string;
   salt: string;
@@ -167,11 +167,14 @@ function parseSettlementParams(
   // Try v2 standard: extract from PaymentPayload.extensions
   // Use type assertion as v1 PaymentPayload doesn't have extensions field
   const payloadWithExtensions = paymentPayload as any;
-  if (payloadWithExtensions.extensions && "x402x-router-settlement" in payloadWithExtensions.extensions) {
+  if (
+    payloadWithExtensions.extensions &&
+    "x402x-router-settlement" in payloadWithExtensions.extensions
+  ) {
     const extension = payloadWithExtensions.extensions["x402x-router-settlement"] as any;
     if (extension?.info) {
       const info = extension.info;
-      
+
       // Validate all required fields are present
       if (info.settlementRouter && info.salt && info.hook && info.hookData) {
         // Use finalPayTo or payTo
@@ -203,12 +206,16 @@ function parseSettlementParams(
  * Use {@link parseSettlementParams} instead for full v2 support with automatic
  * fallback to v1 format.
  *
- * Uses @x402x/core's parseSettlementExtra for validation.
+ * @internal This function is kept for documentation purposes and backward compatibility.
+ * Not actively used in the codebase.
+ *
+ * Uses parseSettlementExtraCore (imported from @x402x/core) for validation.
  *
  * @param extra - Extra field from PaymentRequirements
  * @returns Parsed settlement extra parameters
  * @throws SettlementExtraError if parameters are invalid
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function parseSettlementExtra(extra: unknown): {
   settlementRouter: string;
   salt: string;
@@ -246,6 +253,7 @@ function parseSettlementExtra(extra: unknown): {
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
  * @param balanceChecker - Optional balance checker for defensive balance validation
  * @param x402Config - Optional x402 configuration for verification
+ * @param gasEstimationConfig - Optional gas estimation configuration for smart gas limit calculation
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
  */

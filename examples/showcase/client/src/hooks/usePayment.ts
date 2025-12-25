@@ -280,8 +280,9 @@ export function usePayment() {
       // Check if this is a complex settlement (with router/hook) or simple direct payment
       const isComplexSettlement = !!settlementRouter;
 
-      if (isComplexSettlement && (!salt || !finalPayTo || !hook || !hookData)) {
+      if (isComplexSettlement && (!settlementRouter || !salt || !finalPayTo || !hook || !hookData)) {
         console.error("[Payment] Missing settlement parameters:", {
+          hasSettlementRouter: !!settlementRouter,
           hasSalt: !!salt,
           hasFinalPayTo: !!finalPayTo,
           hasHook: !!hook,

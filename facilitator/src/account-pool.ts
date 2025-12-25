@@ -408,7 +408,7 @@ export class AccountPool {
   /**
    * Get the address of the first account in the pool
    * Used for v2 facilitator advertisement
-   * 
+   *
    * @returns The address of the first account, or undefined if pool is empty
    */
   getFirstAccountAddress(): string | undefined {
