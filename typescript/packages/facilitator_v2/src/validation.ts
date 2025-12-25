@@ -4,9 +4,8 @@
  * Provides parameter validation and security checks for SettlementRouter integration
  */
 
-import type { SettlementExtraCore, NetworkConfig } from "@x402x/core_v2";
-import type { Address, Network } from "./types.js";
-import { FacilitatorValidationError } from "./types.js";
+import type { SettlementExtraCore, NetworkConfig, Address, Network } from "@x402x/core_v2";
+import { FacilitatorValidationError } from "@x402x/core_v2";
 
 /**
  * Check if an Ethereum address is valid

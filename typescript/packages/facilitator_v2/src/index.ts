@@ -27,8 +27,8 @@
 // Core facilitator implementation
 export { RouterSettlementFacilitator, createRouterSettlementFacilitator } from "./facilitator.js";
 
-// Error classes
-export { FacilitatorValidationError, SettlementRouterError } from "./types.js";
+// Error classes (re-exported from core_v2)
+export { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
 
 // SettlementRouter integration utilities
 export {
@@ -58,27 +58,22 @@ export {
   validateFeeAmount,
 } from "./validation.js";
 
-// Type definitions
+// Type definitions (re-exported from core_v2 for convenience)
 export type {
-  VerifyResponse,
-  SettleResponse,
   FacilitatorConfig,
   SettlementRouterParams,
-  SETTLEMENT_ROUTER_ABI,
-} from "./types.js";
-
-// Re-export from core_v2 for convenience
-export type {
-  PaymentRequirements,
-  PaymentPayload,
-  Network,
+  VerifyResponse,
   Address,
-  SettlementExtraCore,
+  Network,
   NetworkConfig,
+  SettlementExtraCore,
 } from "@x402x/core_v2";
 
+// Re-export ABI
+export { SETTLEMENT_ROUTER_ABI } from "@x402x/core_v2";
+
 // Re-export from @x402/core for convenience
-export type { SchemeNetworkFacilitator } from "@x402/core/types";
+export type { SchemeNetworkFacilitator, SettleResponse, PaymentRequirements, PaymentPayload } from "@x402/core/types";
 
 // Re-export utilities from core_v2 for convenience
 export { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";

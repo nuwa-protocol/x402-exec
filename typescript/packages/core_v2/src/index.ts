@@ -37,7 +37,6 @@ export type {
   Network,
   Money,
   Resource,
-  FacilitatorConfig,
 } from "./types.js";
 
 export { SettlementExtraError } from "./types.js";
@@ -83,6 +82,22 @@ export type {
   RouterSettlementExtensionInfo,
 } from "./extensions.js";
 
+// Export server extension for x402 v2 resource servers
+export {
+  routerSettlementServerExtension,
+  createExtensionDeclaration,
+  ROUTER_SETTLEMENT_KEY,
+} from "./server-extension.js";
+
+// Export helper functions
+export {
+  registerRouterSettlement,
+  createX402xFacilitator,
+  withRouterSettlement,
+  isRouterSettlement,
+  type WithRouterSettlementOptions,
+} from "./helpers.js";
+
 // Export validation helpers
 export {
   validateSettlementExtra,
@@ -112,6 +127,17 @@ export type { FeeCalculationResult, VerifyResponse, SettleResponse } from "./fac
 
 // Export ABI
 export { SETTLEMENT_ROUTER_ABI } from "./abi.js";
+
+// Export facilitator types
+export {
+  type Address,
+  type FacilitatorConfig,
+  type VerifyResponse as FacilitatorVerifyResponse,
+  type SettleResponse as FacilitatorSettleResponse,
+  type SettlementRouterParams,
+  FacilitatorValidationError,
+  SettlementRouterError,
+} from "./facilitator-types.js";
 
 // Export legacy compatibility shims for v1-style middleware
 export {
