@@ -79,7 +79,7 @@ export interface SettlementHooksConfig {
  * 
  * @example
  * ```typescript
- * import { createSettlementRouteConfig, TransferHook } from "@x402x/core_v2";
+ * import { createSettlementRouteConfig, TransferHook } from "@x402x/extensions";
  * 
  * const routes = {
  *   "POST /api/purchase": createSettlementRouteConfig({
@@ -177,7 +177,7 @@ export function createSettlementRouteConfig(
  * 
  * @example
  * ```typescript
- * import { registerSettlementHooks } from "@x402x/core_v2";
+ * import { registerSettlementHooks } from "@x402x/extensions";
  * 
  * registerSettlementHooks(server, {
  *   enableSaltExtraction: true,

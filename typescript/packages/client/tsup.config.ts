@@ -9,5 +9,5 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   minify: false,
-  external: ["react", "wagmi", "viem", "x402", "@x402x/core_v2"],
+  external: ["react", "wagmi", "viem", "x402", "@x402x/extensions"],
 });

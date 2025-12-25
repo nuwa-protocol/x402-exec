@@ -1,5 +1,5 @@
 // Type declarations for workspace packages that may not have generated types yet
-declare module "@x402x/core_v2" {
+declare module "@x402x/extensions" {
   export function toCanonicalNetworkKey(network: string): string;
   export function getNetworkName(network: string): string;
   export function getNetworkConfig(network: string): any;

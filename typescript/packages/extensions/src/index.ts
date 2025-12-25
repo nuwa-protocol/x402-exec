@@ -63,8 +63,17 @@ export {
   networks,
   getNetworkConfig,
   isNetworkSupported,
-  getSupportedNetworks,
+  getSupportedNetworks, // @deprecated - use getSupportedNetworkNames
+  getSupportedNetworkNames,
 } from "./networks.js";
+
+// Export chain configurations
+export {
+  getChain,
+  getChainById,
+  getCustomChains,
+  isCustomChain,
+} from "./chains.js";
 
 // Export builtin hooks
 export { TransferHook, NFTMintHook, RewardHook } from "./hooks/index.js";
@@ -182,7 +191,8 @@ export {
   getDefaultAsset,
   getNetworkId,
   getNetworkName,
-  getSupportedNetworksV2,
+  getSupportedNetworksV2, // @deprecated - use getSupportedNetworkIds
+  getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
   toCanonicalNetworkKey,
   NETWORK_ALIASES_V1_TO_V2

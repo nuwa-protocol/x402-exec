@@ -131,7 +131,7 @@ import { Hono } from "hono";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { registerExactEvmScheme } from "@x402/evm/exact/server/register";
 import { HTTPFacilitatorClient } from "@x402/core/http";
-import { registerRouterSettlement, createSettlementRouteConfig, TransferHook } from "@x402x/core_v2";
+import { registerRouterSettlement, createSettlementRouteConfig, TransferHook } from "@x402x/extensions";
 
 // 1. Initialize x402 Resource Server with facilitator
 const facilitatorClient = new HTTPFacilitatorClient({ url: "http://localhost:3001" });
@@ -228,7 +228,7 @@ cd examples/showcase/client && pnpm build
 - `examples/showcase/client/src/hooks/usePayment.ts` - 主要支付处理逻辑
 - `examples/showcase/client/src/code-examples/premium-download-server.ts` - Server 示例代码
 - `examples/showcase/client/src/code-examples/premium-download-client.ts` - Client 示例代码
-- `examples/showcase/client/src/utils/commitment.ts` - Commitment 计算工具（已更新到使用 `@x402x/core_v2`）
+- `examples/showcase/client/src/utils/commitment.ts` - Commitment 计算工具（已更新到使用 `@x402x/extensions`）
 
 ## 下一步
 

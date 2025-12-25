@@ -44,7 +44,7 @@ Client → Facilitator → Smart Contract (Hook)
 ### After (@x402x/client)
 
 ```typescript
-import { parseDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount } from "@x402x/extensions";
 
 const atomicAmount = parseDefaultAssetAmount("1", network); // '1000000'
 const client = new X402Client({ wallet, network, facilitatorUrl });
@@ -64,18 +64,18 @@ const result = await client.execute({
 ### Installation
 
 ```bash
-npm install @x402x/client @x402x/core
+npm install @x402x/client @x402x/extensions
 # or
-pnpm add @x402x/client @x402x/core
+pnpm add @x402x/client @x402x/extensions
 # or
-yarn add @x402x/client @x402x/core
+yarn add @x402x/client @x402x/extensions
 ```
 
 ### Basic Usage (React + wagmi)
 
 ```typescript
 import { X402Client } from '@x402x/client';
-import { TransferHook, parseDefaultAssetAmount } from '@x402x/core';
+import { TransferHook, parseDefaultAssetAmount } from '@x402x/extensions';
 import { useWalletClient } from 'wagmi';
 import { publicActions } from 'viem';
 
@@ -119,10 +119,10 @@ The `amount` parameter in `client.execute()` and `prepareSettlement()` **must be
 
 ### Converting USD Amounts to Atomic Units
 
-Use `parseDefaultAssetAmount()` from `@x402x/core` to convert USD amounts:
+Use `parseDefaultAssetAmount()` from `@x402x/extensions` to convert USD amounts:
 
 ```typescript
-import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/extensions";
 
 // Convert USD to atomic units
 const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000' (1 USDC)
@@ -143,7 +143,7 @@ const displayAmount = formatDefaultAssetAmount("1000000", "base-sepolia"); // '1
 
 ```typescript
 import { X402Client } from "@x402x/client";
-import { parseDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount } from "@x402x/extensions";
 
 const client = new X402Client({ wallet, network: "base-sepolia" });
 
@@ -195,7 +195,7 @@ const client = new X402Client({
 });
 
 // Convert USD amount to atomic units
-import { parseDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount } from "@x402x/extensions";
 const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
 
 const result = await client.execute({
@@ -240,7 +240,7 @@ Provides automatic state management for settlements.
 
 ```typescript
 import { useExecute } from '@x402x/client';
-import { parseDefaultAssetAmount } from '@x402x/core';
+import { parseDefaultAssetAmount } from '@x402x/extensions';
 
 function PayButton() {
   // Uses default facilitator at https://facilitator.x402x.dev/
@@ -285,7 +285,7 @@ Understanding the x402 protocol terminology used in this SDK:
 **Verify** (from x402 protocol) - Validate a payment payload without executing it on-chain. This is useful for pre-validation before actual settlement.
 
 - In x402 protocol: `POST /verify` endpoint
-- In @x402x/core: `verify()` function
+- In @x402x/extensions: `verify()` function
 - Use case: Check if payment is valid before committing resources
 
 ### settle
@@ -293,7 +293,7 @@ Understanding the x402 protocol terminology used in this SDK:
 **Settle** (from x402 protocol) - Execute a payment on-chain by submitting it to the blockchain. This is the actual payment execution step.
 
 - In x402 protocol: `POST /settle` endpoint
-- In @x402x/core: `settle()` function
+- In @x402x/extensions: `settle()` function
 - In @x402x/client: `settle()` function (convenience wrapper)
 - Use case: Submit signed payment for blockchain execution
 
@@ -333,7 +333,7 @@ Prepares settlement data for signing.
 
 ```typescript
 import { prepareSettlement } from "@x402x/client";
-import { parseDefaultAssetAmount } from "@x402x/core";
+import { parseDefaultAssetAmount } from "@x402x/extensions";
 
 // Convert USD amount to atomic units
 const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
@@ -377,7 +377,7 @@ const result = await settle("https://facilitator.x402x.dev", signed);
 
 ```typescript
 import { X402Client } from "@x402x/client";
-import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
 const client = new X402Client({
@@ -404,7 +404,7 @@ TransferHook supports distributing funds to multiple recipients by percentage:
 
 ```typescript
 import { X402Client } from "@x402x/client";
-import { TransferHook, parseDefaultAssetAmount, type Split } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount, type Split } from "@x402x/extensions";
 
 const client = new X402Client({
   wallet: walletClient,
@@ -449,7 +449,7 @@ console.log("Distributed transfer:", result.txHash);
 
 ```typescript
 import { useExecute } from '@x402x/client';
-import { NFTMintHook, parseDefaultAssetAmount } from '@x402x/core';
+import { NFTMintHook, parseDefaultAssetAmount } from '@x402x/extensions';
 
 function MintNFT() {
   // Uses default facilitator
@@ -484,7 +484,7 @@ function MintNFT() {
 
 ```typescript
 import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
-import { calculateFacilitatorFee, TransferHook, parseDefaultAssetAmount } from "@x402x/core";
+import { calculateFacilitatorFee, TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 // 1. Query minimum fee
 const hookData = TransferHook.encode([
@@ -527,7 +527,7 @@ console.log("Transaction:", result.transaction);
 ```typescript
 import { ref } from "vue";
 import { X402Client } from "@x402x/client";
-import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 export function usePayment() {
   const status = ref("idle");
@@ -660,7 +660,7 @@ function Component() {
 ```typescript
 // 10 lines with @x402x/client (no facilitatorUrl needed!)
 import { useExecute } from "@x402x/client";
-import { TransferHook, parseDefaultAssetAmount } from "@x402x/core";
+import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 function Component() {
   // Uses default facilitator automatically
@@ -683,7 +683,7 @@ function Component() {
 
 ## Related Packages
 
-- [@x402x/core](../core) - Core utilities and commitment calculation
+- [@x402x/extensions](../extensions) - Core utilities and network configuration
 - [@x402x/facilitator](../../facilitator) - Facilitator server implementation
 - [x402](https://github.com/coinbase/x402) - Base x402 protocol
 

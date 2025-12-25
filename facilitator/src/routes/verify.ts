@@ -7,7 +7,7 @@
  *
  * Routes requests to appropriate implementation based on x402Version:
  * - v1: Uses legacy x402/facilitator implementation
- * - v2: Uses @x402x/facilitator_v2 with SettlementRouter
+ * - v2: Uses @x402x/facilitator-sdk with SettlementRouter
  */
 
 import { Router, Request, Response } from "express";

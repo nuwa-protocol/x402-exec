@@ -1,5 +1,5 @@
 /**
- * @x402x/facilitator_v2 - SchemeNetworkFacilitator implementation with SettlementRouter support
+ * @x402x/facilitator-sdk - SchemeNetworkFacilitator implementation with SettlementRouter support
  *
  * This package provides a complete implementation of the SchemeNetworkFacilitator interface
  * for atomic settlement using SettlementRouter contracts. It supports both router-settlement
@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { RouterSettlementFacilitator, createRouterSettlementFacilitator } from '@x402x/facilitator_v2';
+ * import { RouterSettlementFacilitator, createRouterSettlementFacilitator } from '@x402x/facilitator-sdk';
  *
  * const facilitator = createRouterSettlementFacilitator({
  *   signer: '0x1234567890123456789012345678901234567890',
@@ -28,7 +28,7 @@
 export { RouterSettlementFacilitator, createRouterSettlementFacilitator } from "./facilitator.js";
 
 // Error classes (re-exported from core_v2)
-export { FacilitatorValidationError, SettlementRouterError } from "@x402x/core_v2";
+export { FacilitatorValidationError, SettlementRouterError } from "@x402x/extensions";
 
 // SettlementRouter integration utilities
 export {
@@ -67,13 +67,13 @@ export type {
   Network,
   NetworkConfig,
   SettlementExtraCore,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";
 
 // Re-export ABI
-export { SETTLEMENT_ROUTER_ABI } from "@x402x/core_v2";
+export { SETTLEMENT_ROUTER_ABI } from "@x402x/extensions";
 
 // Re-export from @x402/core for convenience
 export type { SchemeNetworkFacilitator, SettleResponse, PaymentRequirements, PaymentPayload } from "@x402/core/types";
 
 // Re-export utilities from core_v2 for convenience
-export { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/core_v2";
+export { isSettlementMode, parseSettlementExtra, getNetworkConfig } from "@x402x/extensions";

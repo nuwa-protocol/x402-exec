@@ -264,18 +264,34 @@ export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
 };
 
 /**
- * Get list of all supported networks using v2 CAIP-2 identifiers
+ * Get list of all supported network IDs (CAIP-2 identifiers)
+ *
+ * Returns protocol-level CAIP-2 network identifiers like "eip155:84532".
+ * Use this for x402 v2 protocol operations and facilitator configuration.
  *
  * @returns Array of CAIP-2 network identifiers
  *
  * @example
  * ```typescript
- * const networks = getSupportedNetworksV2();
- * // => ['eip155:84532', 'eip155:1952', 'eip155:324705682', ...]
+ * const networkIds = getSupportedNetworkIds();
+ * // => ['eip155:84532', 'eip155:8453', 'eip155:1952', ...]
+ * 
+ * // For x402 v2 protocol
+ * const facilitator = createFacilitator({
+ *   networks: getSupportedNetworkIds()
+ * });
  * ```
  */
-export function getSupportedNetworksV2(): Network[] {
+export function getSupportedNetworkIds(): Network[] {
   return Object.keys(NETWORK_NAMES) as Network[];
+}
+
+/**
+ * @deprecated Use getSupportedNetworkIds() instead for clarity
+ * Get list of all supported networks using v2 CAIP-2 identifiers
+ */
+export function getSupportedNetworksV2(): Network[] {
+  return getSupportedNetworkIds();
 }
 
 /**

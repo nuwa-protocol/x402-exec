@@ -12,7 +12,7 @@ import { VersionDispatcher } from "../../src/version-dispatcher.js";
 import type { PoolManager } from "../../src/pool-manager.js";
 import type { AccountPool } from "../../src/account-pool.js";
 
-// Mock the @x402x/facilitator_v2 module
+// Mock the @x402x/facilitator-sdk module
 const mockExecuteSettlementWithWalletClient = vi.fn(async () => ({
   success: true,
   transaction: "0xtxhash",
@@ -40,7 +40,7 @@ const mockParseSettlementRouterParams = vi.fn(() => ({
   settlementRouter: "0xrouter",
 }));
 
-vi.mock("@x402x/facilitator_v2", () => ({
+vi.mock("@x402x/facilitator-sdk", () => ({
   createRouterSettlementFacilitator: vi.fn(() => ({
     verify: vi.fn(async () => ({
       isValid: true,
@@ -58,8 +58,8 @@ vi.mock("@x402x/facilitator_v2", () => ({
   parseSettlementRouterParams: mockParseSettlementRouterParams,
 }));
 
-// Mock @x402x/core_v2
-vi.mock("@x402x/core_v2", () => ({
+// Mock @x402x/extensions
+vi.mock("@x402x/extensions", () => ({
   getNetworkConfig: vi.fn(() => ({
     chainId: 84532,
     rpcUrls: { default: { http: ["https://rpc.example.com"] } },

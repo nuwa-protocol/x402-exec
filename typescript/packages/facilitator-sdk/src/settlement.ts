@@ -1,5 +1,5 @@
 /**
- * SettlementRouter integration utilities for @x402x/facilitator_v2
+ * SettlementRouter integration utilities for @x402x/facilitator-sdk
  *
  * Provides direct viem integration with SettlementRouter contracts
  */
@@ -16,8 +16,8 @@ import {
   type Account,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { FacilitatorConfig, SettlementRouterParams } from "@x402x/core_v2";
-import { SETTLEMENT_ROUTER_ABI } from "@x402x/core_v2";
+import type { FacilitatorConfig, SettlementRouterParams } from "@x402x/extensions";
+import { SETTLEMENT_ROUTER_ABI } from "@x402x/extensions";
 import type { PaymentRequirements, PaymentPayload, SettleResponse } from "@x402/core/types";
 import {
   validateGasLimit,
@@ -32,7 +32,7 @@ import {
   toCanonicalNetworkKey,
   getNetworkName,
   type NetworkConfig,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";
 
 /**
  * Convert NetworkConfig to viem Chain

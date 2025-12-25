@@ -1,7 +1,7 @@
 {
-  "name": "@x402x/facilitator_v2",
+  "name": "@x402x/facilitator-sdk",
   "version": "0.1.0",
-  "description": "SchemeNetworkFacilitator implementation for x402x settlement framework - v2 with official x402 and SettlementRouter support",
+  "description": "SchemeNetworkFacilitator SDK for x402x - enables router settlement with official x402 protocol",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -39,7 +39,7 @@
   "dependencies": {
     "@x402/core": "2.0.0",
     "@x402/evm": "2.0.0",
-    "@x402x/core_v2": "workspace:*",
+    "@x402x/extensions": "workspace:*",
     "viem": "2.40.3"
   },
   "devDependencies": {

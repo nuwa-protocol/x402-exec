@@ -1,11 +1,11 @@
 /**
- * Validation utilities for @x402x/facilitator_v2
+ * Validation utilities for @x402x/facilitator-sdk
  *
  * Provides parameter validation and security checks for SettlementRouter integration
  */
 
-import type { SettlementExtraCore, NetworkConfig, Address, Network } from "@x402x/core_v2";
-import { FacilitatorValidationError } from "@x402x/core_v2";
+import type { SettlementExtraCore, NetworkConfig, Address, Network } from "@x402x/extensions";
+import { FacilitatorValidationError } from "@x402x/extensions";
 
 /**
  * Check if an Ethereum address is valid

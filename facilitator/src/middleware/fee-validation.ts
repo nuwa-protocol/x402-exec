@@ -9,7 +9,7 @@ import type { PaymentRequirements } from "x402/types";
 import { getLogger } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
 import { isSettlementMode, validateTokenAddress } from "../settlement.js";
-import { getNetworkConfig } from "@x402x/core_v2";
+import { getNetworkConfig } from "@x402x/extensions";
 import { getCanonicalNetwork, getNetworkDisplayName } from "../network-utils.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";

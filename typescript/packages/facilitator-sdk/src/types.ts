@@ -1,7 +1,7 @@
 /**
- * Type definitions for @x402x/facilitator_v2
+ * Type definitions for @x402x/facilitator-sdk
  *
- * Re-exports types from @x402x/core_v2 for backward compatibility
+ * Re-exports types from @x402x/extensions for backward compatibility
  */
 
 import type {
@@ -20,13 +20,13 @@ export type {
   Address,
   SettlementExtraCore,
   NetworkConfig,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";
 
 export {
   SETTLEMENT_ROUTER_ABI,
   FacilitatorValidationError,
   SettlementRouterError,
-} from "@x402x/core_v2";
+} from "@x402x/extensions";
 
 // Re-export official types for convenience
 export type { PaymentRequirements, PaymentPayload, SchemeNetworkFacilitator };

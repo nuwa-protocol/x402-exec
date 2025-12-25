@@ -35,7 +35,7 @@
 因此我们选择在 x402x 层面同样明确边界：v1 与 v2 代码拆分到不同 workspace 包里，避免混用。
 
 ### 决策（已确认）
-1) `@x402x/core_v2` re-export 官方 v2 类型（来自 `@x402/core/types`）。
+1) `@x402x/extensions` re-export 官方 v2 类型（来自 `@x402/core/types`）。
 2) v2 相关包不发布到 npm（workspace-only，`private: true`）。
 3) showcase/facilitator 以及现有对外包先不变更；等 v2 能力完成后再统一切换。
 4) CI 参与测试（允许 v2 包在迁移期也纳入 `pnpm -r --filter "@x402x/*" test` 的矩阵）。
@@ -46,9 +46,9 @@
   - `@x402x/fetch` / `@x402x/hono` / `@x402x/express` 继续依赖 `@x402x/core` + `x402` patch。
   - showcase/facilitator 继续依赖现有 v1 产物，不修改协议头/行为。
 - v2 workspace-only（新增）
-  - `@x402x/core_v2`：只依赖 `@x402/*`（至少 `@x402/core`）+ `viem`；严禁依赖 `x402` patch。
-  - `@x402x/fetch_v2`：薄封装 `@x402/fetch` + 自定义 scheme client，依赖 `@x402x/core_v2`。
-  - `@x402x/hono_v2` / `@x402x/express_v2`：薄封装 `@x402/hono` / `@x402/express` + 自定义 scheme server，依赖 `@x402x/core_v2`。
+  - `@x402x/extensions`：只依赖 `@x402/*`（至少 `@x402/core`）+ `viem`；严禁依赖 `x402` patch。
+  - `@x402x/fetch_v2`：薄封装 `@x402/fetch` + 自定义 scheme client，依赖 `@x402x/extensions`。
+  - `@x402x/hono_v2` / `@x402x/express_v2`：薄封装 `@x402/hono` / `@x402/express` + 自定义 scheme server，依赖 `@x402x/extensions`。
   -（可选）facilitator v2 实现亦可按同样方式拆分为内部包，待最终切换时接入。
 
 ### 防呆规则（强制执行）
@@ -62,7 +62,7 @@
 - v1 迁移期保持：现有 `X-PAYMENT` / `X-PAYMENT-RESPONSE`（showcase/facilitator/对外包不变更）。
 
 ## 迁移步骤（摘要）
-0) 新增 `@x402x/core_v2`（workspace-only），re-export `@x402/core/types`，并迁移/实现 v2 扩展 helper（`x402x-router-settlement`）与 `extra` 结构化工具。
+0) 新增 `@x402x/extensions`（workspace-only），re-export `@x402/core/types`，并迁移/实现 v2 扩展 helper（`x402x-router-settlement`）与 `extra` 结构化工具。
 1) 新增 `@x402x/fetch_v2`：薄封装 `@x402/fetch`，注册自定义 x402x exact EVM scheme client（router settlement 走 commitment+EIP-712，非 router 委托官方）。
 2) 新增 `@x402x/hono_v2` / `@x402x/express_v2`：薄封装官方 middleware，并通过 scheme server 在 `enhancePaymentRequirements` 注入扩展 + `extra`，支持通配 `eip155:*`。
 3) 新增/完善 v2 facilitator 结算机制（`SchemeNetworkFacilitator.verify/settle` 对接 SettlementRouter，原子分账）。

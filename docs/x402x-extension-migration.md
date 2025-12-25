@@ -1,6 +1,22 @@
 # x402x Extension Migration Plan
 
 > 将 x402x 从 wrapper SDK 模式迁移到 x402 v2 扩展模式的多阶段交付需求文档
+> 
+> **状态**: ✅ 已完成 (2025-12-25)
+
+## 实施总结
+
+迁移已完成，最终包结构：
+
+| 包名 | 用途 | 状态 |
+|------|------|------|
+| `@x402x/extensions` | x402 v2 核心扩展工具库 | ✅ 已发布 |
+| `@x402x/client` | Serverless 客户端 SDK | ✅ 已发布 |
+| `@x402x/facilitator-sdk` | SchemeNetworkFacilitator 实现 | ✅ 完成 (workspace-only) |
+
+所有 v1 包和 v2 wrapper 包已废弃，用户现在直接使用官方 `@x402/*` SDK + `@x402x/extensions` 扩展。
+
+---
 
 ## 1. 背景与目标
 
@@ -18,7 +34,7 @@
 
 3. **包结构混乱**
    - v1 包：`@x402x/core`, `@x402x/hono`, `@x402x/express`, `@x402x/fetch`
-   - v2 包：`@x402x/core_v2`, `@x402x/hono_v2`, `@x402x/express_v2`, `@x402x/fetch_v2`, `@x402x/facilitator_v2`
+   - v2 包：`@x402x/extensions`, `@x402x/hono_v2`, `@x402x/express_v2`, `@x402x/fetch_v2`, `@x402x/facilitator-sdk`
    - 命名不一致，语义不清晰
 
 ### 1.2 目标状态
@@ -64,7 +80,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                    x402x Core Libraries                         │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │                   @x402x/core_v2                         │   │
+│  │                   @x402x/extensions                         │   │
 │  │  ┌──────────────────┐  ┌──────────────────────────────┐ │   │
 │  │  │ router-settlement │  │ ResourceServerExtension      │ │   │
 │  │  │ extension         │  │ implementation               │ │   │
@@ -75,7 +91,7 @@
 │  │  └──────────────────┘  └──────────────────────────────┘ │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │                @x402x/facilitator_v2                     │   │
+│  │                @x402x/facilitator-sdk                     │   │
 │  │  ┌──────────────────┐  ┌──────────────────────────────┐ │   │
 │  │  │ SchemeNetwork    │  │ Settlement Router            │ │   │
 │  │  │ Facilitator      │  │ Integration                  │ │   │
@@ -102,7 +118,7 @@ class x402ResourceServer {
 }
 ```
 
-x402x 需要实现的接口：
+x402x 实现的接口（在 `@x402x/extensions` 中）：
 
 ```typescript
 // @x402x/extensions
@@ -122,13 +138,13 @@ export function createX402xFacilitator(config: X402xFacilitatorConfig): SchemeNe
 
 ### 3.1 阶段概览
 
-| 阶段 | 名称 | 目标 | 预计工时 |
-|------|------|------|----------|
-| M1 | 创建扩展包 | 创建 `@x402x/extensions`，实现核心扩展接口 | 2-3 天 |
-| M2 | 迁移 Showcase | 将 showcase 迁移到官方 SDK + 扩展模式 | 1-2 天 |
-| M3 | 废弃 v2 wrapper | 删除 `hono_v2`/`express_v2`/`fetch_v2` 包 | 1 天 |
-| M4 | 废弃 v1 包 | 删除 v1 包和 patch 依赖，保留 facilitator v1 支持 | 1-2 天 |
-| M5 | 文档与清理 | 更新文档，清理 submodule | 1 天 |
+| 阶段 | 名称 | 目标 | 状态 |
+|------|------|------|------|
+| M1 | 创建扩展包 | 创建 `@x402x/extensions`，实现核心扩展接口 | ✅ 已完成 |
+| M2 | 迁移 Showcase | 将 showcase 迁移到官方 SDK + 扩展模式 | ✅ 已完成 |
+| M3 | 废弃 v2 wrapper | 删除 `hono_v2`/`express_v2`/`fetch_v2` 包 | ✅ 已完成 |
+| M4 | 废弃 v1 包 | 删除 v1 包和 patch 依赖，保留 facilitator v1 支持 | ✅ 已完成 |
+| M5 | 文档与清理 | 更新文档，清理 submodule | ✅ 已完成 |
 
 ### 3.2 依赖关系
 
@@ -332,13 +348,13 @@ typescript/packages/
 └── react/          # v1 react hooks
 ```
 
-### 6.2 目标包结构
+### 6.2 目标包结构（已实现）
 
 ```
 typescript/packages/
-├── extensions/     # x402x 扩展包 (新)
-└── (可选保留用于 facilitator v1 支持)
-    └── core/       # v1 核心，仅 facilitator 内部使用
+├── extensions/         # @x402x/extensions - x402x 扩展包
+├── client/             # @x402x/client - Serverless 客户端
+└── facilitator-sdk/    # @x402x/facilitator-sdk - SDK (workspace-only)
 ```
 
 ### 6.3 相关文件参考

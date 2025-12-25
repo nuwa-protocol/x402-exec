@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { registerExactEvmScheme } from "@x402/evm/exact/server/register";
 import { HTTPFacilitatorClient } from "@x402/core/http";
-import { registerRouterSettlement, createSettlementRouteConfig, TransferHook } from "@x402x/core_v2";
+import { registerRouterSettlement, createSettlementRouteConfig, TransferHook } from "@x402x/extensions";
 
 const app = new Hono();
 

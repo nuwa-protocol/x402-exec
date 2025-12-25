@@ -9,7 +9,7 @@ This directory contains tools for testing the Facilitator Docker image to ensure
 Previously, Docker images could build successfully but fail at runtime with errors like:
 
 ```
-Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@x402x/core_v2'
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@x402x/extensions'
 ```
 
 This happens when the Dockerfile doesn't properly include all required packages in the production image.
@@ -18,13 +18,10 @@ This happens when the Dockerfile doesn't properly include all required packages 
 
 ### 1. Fixed Dockerfile
 
-Updated `Dockerfile` to include all v2 packages:
+Updated `Dockerfile` to include all required packages:
 
-- `@x402x/core_v2`
-- `@x402x/express_v2`
-- `@x402x/hono_v2`
-- `@x402x/fetch_v2`
-- `@x402x/facilitator_v2`
+- `@x402x/extensions`
+- `@x402x/facilitator-sdk`
 
 ### 2. Local Testing Script
 
@@ -81,7 +78,7 @@ Minimal configuration for testing:
 1. **Static File Check**: Verifies required files exist in the image
 
    ```bash
-   test -d /app/typescript/packages/core_v2/dist
+   test -d /app/typescript/packages/extensions/dist
    ```
 
 2. **Runtime Import Check**: Starts the container and monitors for errors

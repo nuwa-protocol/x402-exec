@@ -16,7 +16,7 @@ import { TransactionResult } from "../components/TransactionResult";
 import { CodeBlock } from "../components/CodeBlock";
 import { usePaymentFlow } from "../hooks/usePaymentFlow";
 import { useAllNetworksNFTData } from "../hooks/useNFTData";
-import { NFTMintHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/core_v2";
+import { NFTMintHook, parseDefaultAssetAmount, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
 import { NETWORKS } from "../config";
 import nftMintCode from "../code-examples/nft-mint.ts?raw";
 
