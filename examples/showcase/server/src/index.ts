@@ -21,6 +21,7 @@ import {
   registerRouterSettlement,
   getSupportedNetworksV2,
   TransferHook,
+  createSettlementRouteConfig,
 } from "@x402x/core_v2";
 import { appConfig } from "./config.js";
 import * as premiumDownload from "./scenarios/premium-download.js";
@@ -63,35 +64,28 @@ console.log("✅ x402 Resource Server initialized");
 
 // ===== Configure Routes with Settlement =====
 
-// Build route configuration manually to include settlement parameters in extra
+// Use createSettlementRouteConfig to build route configuration following v2 standard
+// Settlement params are now in extensions, not extra
 const routes: Record<string, X402RouteConfig> = {
-  "POST /api/purchase-download": {
-    accepts: {
-      scheme: "exact",
-      network: "eip155:84532", // Base Sepolia
-      payTo: appConfig.resourceServerAddress,
-      price: "$1.00",
-      // Add settlement info to extra - will be used by x402x facilitator
-      extra: {
-        // Settlement router parameters
-        hook: TransferHook.getAddress("base-sepolia"),
-        hookData: TransferHook.encode(),
-        finalPayTo: appConfig.resourceServerAddress,
-        facilitatorFee: "0", // Will be calculated by facilitator
+  "POST /api/purchase-download": createSettlementRouteConfig(
+    {
+      accepts: {
+        scheme: "exact",
+        network: "eip155:84532" as `${string}:${string}`, // Base Sepolia - ensure type is correct
+        payTo: appConfig.resourceServerAddress, // Will be overridden to settlementRouter
+        price: "$1.00",
       },
+      description: "Premium Content Download: Purchase and download digital content",
+      mimeType: "application/json",
     },
-    description: "Premium Content Download: Purchase and download digital content",
-    mimeType: "application/json",
-    // Register x402x extension
-    extensions: {
-      "x402x-router-settlement": {
-        info: {
-          schemaVersion: 1,
-          description: "Router settlement for premium download",
-        },
-      },
-    },
-  },
+    {
+      hook: TransferHook.getAddress("base-sepolia"),
+      hookData: TransferHook.encode(),
+      finalPayTo: appConfig.resourceServerAddress,
+      facilitatorFee: "0", // Will be calculated by facilitator
+      description: "Router settlement for premium download",
+    }
+  ) as X402RouteConfig, // Cast to ensure type compatibility
 };
 
 // Enable CORS for frontend

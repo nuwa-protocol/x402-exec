@@ -138,14 +138,84 @@ export function validateTokenAddress(network: string, tokenAddress: string): voi
 }
 
 /**
- * Parse and validate settlement extra parameters
+ * Parse and validate settlement parameters
  *
- * Uses @x402x/core's parseSettlementExtra for validation.
+ * Extracts settlement parameters following the v2 standard protocol design:
+ * - PRIMARY: Reads from PaymentPayload.extensions["x402x-router-settlement"].info (v2 standard)
+ * - FALLBACK: Reads from PaymentRequirements.extra (v1 compatibility)
+ *
+ * This unified function handles both v2 and v1 payment formats, ensuring backward compatibility
+ * while following the new x402 v2 specification where extensions contain protocol-level
+ * functionality and extra contains scheme-specific parameters.
+ *
+ * @param paymentPayload - The payment payload (may contain extensions in v2 format)
+ * @param paymentRequirements - The payment requirements (contains extra for v1 fallback)
+ * @returns Parsed settlement parameters with all required fields
+ * @throws SettlementExtraError if parameters are invalid or missing
+ */
+function parseSettlementParams(
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements,
+): {
+  settlementRouter: string;
+  salt: string;
+  payTo: string;
+  facilitatorFee: string;
+  hook: string;
+  hookData: string;
+} {
+  // Try v2 standard: extract from PaymentPayload.extensions
+  // Use type assertion as v1 PaymentPayload doesn't have extensions field
+  const payloadWithExtensions = paymentPayload as any;
+  if (
+    payloadWithExtensions.extensions &&
+    "x402x-router-settlement" in payloadWithExtensions.extensions
+  ) {
+    const extension = payloadWithExtensions.extensions["x402x-router-settlement"] as any;
+    if (extension?.info) {
+      const info = extension.info;
+
+      // Validate all required fields are present
+      if (info.settlementRouter && info.salt && info.hook && info.hookData) {
+        // Use finalPayTo or payTo
+        const payTo = info.finalPayTo || info.payTo;
+        if (payTo) {
+          logger.debug("Using settlement params from PaymentPayload.extensions (v2 standard)");
+          return {
+            settlementRouter: info.settlementRouter,
+            salt: info.salt,
+            payTo,
+            facilitatorFee: info.facilitatorFee || "0",
+            hook: info.hook,
+            hookData: info.hookData,
+          };
+        }
+      }
+    }
+  }
+
+  // Fallback: v1/old format from PaymentRequirements.extra
+  logger.debug("Falling back to settlement params from PaymentRequirements.extra (v1 compat)");
+  return parseSettlementExtraCore(paymentRequirements.extra);
+}
+
+/**
+ * Parse and validate settlement extra parameters (LEGACY)
+ *
+ * @deprecated This function only reads from PaymentRequirements.extra (v1 format).
+ * Use {@link parseSettlementParams} instead for full v2 support with automatic
+ * fallback to v1 format.
+ *
+ * @internal This function is kept for documentation purposes and backward compatibility.
+ * Not actively used in the codebase.
+ *
+ * Uses parseSettlementExtraCore (imported from @x402x/core) for validation.
  *
  * @param extra - Extra field from PaymentRequirements
  * @returns Parsed settlement extra parameters
  * @throws SettlementExtraError if parameters are invalid
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function parseSettlementExtra(extra: unknown): {
   settlementRouter: string;
   salt: string;
@@ -183,6 +253,7 @@ function parseSettlementExtra(extra: unknown): {
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
  * @param balanceChecker - Optional balance checker for defensive balance validation
  * @param x402Config - Optional x402 configuration for verification
+ * @param gasEstimationConfig - Optional gas estimation configuration for smart gas limit calculation
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
  */
@@ -213,23 +284,23 @@ export async function settleWithRouter(
     // 3. Validate token address (SECURITY: only USDC is currently supported)
     validateTokenAddress(network, asset);
 
-    // 3. Parse settlement extra parameters
-    const extra = parseSettlementExtra(paymentRequirements.extra);
+    // 4. Parse settlement parameters (v2: from extensions, v1: from extra)
+    const settlementParams = parseSettlementParams(paymentPayload, paymentRequirements);
 
     logger.debug(
       {
         network,
         asset,
-        router: extra.settlementRouter,
-        facilitatorFee: extra.facilitatorFee,
+        router: settlementParams.settlementRouter,
+        facilitatorFee: settlementParams.facilitatorFee,
       },
       "Starting settlement with router",
     );
 
-    // 4. Validate SettlementRouter address against whitelist (SECURITY)
-    validateSettlementRouter(network, extra.settlementRouter, allowedRouters);
+    // 5. Validate SettlementRouter address against whitelist (SECURITY)
+    validateSettlementRouter(network, settlementParams.settlementRouter, allowedRouters);
 
-    // 5. Parse authorization and signature from payload
+    // 6. Parse authorization and signature from payload
     const payload = paymentPayload.payload;
 
     // Type guard: ensure this is an EVM payload with authorization and signature
@@ -323,17 +394,17 @@ export async function settleWithRouter(
     // This prevents parameter tampering attacks where settlement parameters are modified after signing
     const expectedCommitment = calculateCommitment({
       chainId: chain.id,
-      hub: extra.settlementRouter,
+      hub: settlementParams.settlementRouter,
       asset: asset,
       from: authorization.from,
       value: authorization.value,
       validAfter: authorization.validAfter,
       validBefore: authorization.validBefore,
-      salt: extra.salt,
-      payTo: extra.payTo,
-      facilitatorFee: extra.facilitatorFee,
-      hook: extra.hook,
-      hookData: extra.hookData,
+      salt: settlementParams.salt,
+      payTo: settlementParams.payTo,
+      facilitatorFee: settlementParams.facilitatorFee,
+      hook: settlementParams.hook,
+      hookData: settlementParams.hookData,
     });
 
     if (authorization.nonce.toLowerCase() !== expectedCommitment.toLowerCase()) {
@@ -344,11 +415,11 @@ export async function settleWithRouter(
           expectedCommitment,
           actualNonce: authorization.nonce,
           chainId: chain.id,
-          settlementRouter: extra.settlementRouter,
-          salt: extra.salt,
-          payTo: extra.payTo,
-          facilitatorFee: extra.facilitatorFee,
-          hook: extra.hook,
+          settlementRouter: settlementParams.settlementRouter,
+          salt: settlementParams.salt,
+          payTo: settlementParams.payTo,
+          facilitatorFee: settlementParams.facilitatorFee,
+          hook: settlementParams.hook,
         },
         "Commitment mismatch detected - preventing wasted gas transaction",
       );
@@ -385,7 +456,7 @@ export async function settleWithRouter(
         // Calculate effective gas limit with triple constraints
         const networkConfig = getNetworkConfig(network);
         const calculatedLimit = calculateEffectiveGasLimit(
-          extra.facilitatorFee,
+          settlementParams.facilitatorFee,
           gasPrice,
           nativePrice,
           networkConfig.defaultAsset.decimals,
@@ -398,7 +469,7 @@ export async function settleWithRouter(
         logger.debug(
           {
             network,
-            facilitatorFee: extra.facilitatorFee,
+            facilitatorFee: settlementParams.facilitatorFee,
             gasPrice,
             nativePrice,
             effectiveGasLimit: calculatedLimit,
@@ -436,13 +507,13 @@ export async function settleWithRouter(
           logger.child({ module: "gas-estimation" }),
         );
 
-        const hookAmount = BigInt(authorization.value) - BigInt(extra.facilitatorFee);
+        const hookAmount = BigInt(authorization.value) - BigInt(settlementParams.facilitatorFee);
 
         const estimation = await gasEstimator.estimateGas({
           network,
-          hook: extra.hook,
-          hookData: extra.hookData,
-          settlementRouter: extra.settlementRouter,
+          hook: settlementParams.hook,
+          hookData: settlementParams.hookData,
+          settlementRouter: settlementParams.settlementRouter,
           token: asset,
           from: authorization.from,
           value: BigInt(authorization.value),
@@ -452,9 +523,9 @@ export async function settleWithRouter(
             nonce: authorization.nonce,
           },
           signature,
-          salt: extra.salt,
-          payTo: extra.payTo,
-          facilitatorFee: BigInt(extra.facilitatorFee),
+          salt: settlementParams.salt,
+          payTo: settlementParams.payTo,
+          facilitatorFee: BigInt(settlementParams.facilitatorFee),
           hookAmount,
           walletClient,
           gasCostConfig: gasCostConfig || {
@@ -477,7 +548,7 @@ export async function settleWithRouter(
           logger.warn(
             {
               network,
-              hook: extra.hook,
+              hook: settlementParams.hook,
               strategy: estimation.strategyUsed,
               errorReason: estimation.errorReason,
               payer: authorization.from,
@@ -501,7 +572,7 @@ export async function settleWithRouter(
         logger.debug(
           {
             network,
-            hook: extra.hook,
+            hook: settlementParams.hook,
             strategy: estimation.strategyUsed,
             gasLimit: estimation.gasLimit,
             mode: gasLimitMode,
@@ -511,7 +582,7 @@ export async function settleWithRouter(
         );
       } catch (error) {
         logger.warn(
-          { error, network, hook: extra.hook },
+          { error, network, hook: settlementParams.hook },
           "Error during settlement pre-validation, falling back to static gas limit",
         );
         // Fallback to static gas limit if pre-validation itself fails
@@ -531,7 +602,7 @@ export async function settleWithRouter(
         const networkConfig = getNetworkConfig(network);
         effectiveGasLimit = BigInt(
           calculateEffectiveGasLimit(
-            extra.facilitatorFee,
+            settlementParams.facilitatorFee,
             await getGasPrice(network, fallbackGasCostConfig, dynamicGasPriceConfig),
             nativeTokenPrices?.[network] || 0,
             networkConfig.defaultAsset.decimals,
@@ -606,7 +677,7 @@ export async function settleWithRouter(
     }
 
     const tx = await walletClient.writeContract({
-      address: extra.settlementRouter as Address,
+      address: settlementParams.settlementRouter as Address,
       abi: SETTLEMENT_ROUTER_ABI,
       functionName: "settleAndExecute",
       args: [
@@ -617,11 +688,11 @@ export async function settleWithRouter(
         BigInt(authorization.validBefore),
         authorization.nonce as Hex,
         signature,
-        extra.salt as Hex,
-        extra.payTo as Address,
-        BigInt(extra.facilitatorFee),
-        extra.hook as Address,
-        extra.hookData as Hex,
+        settlementParams.salt as Hex,
+        settlementParams.payTo as Address,
+        BigInt(settlementParams.facilitatorFee),
+        settlementParams.hook as Address,
+        settlementParams.hookData as Hex,
       ],
       // Add gas limit if configured (for security against malicious hooks)
       ...(effectiveGasLimit ? { gas: effectiveGasLimit } : {}),
@@ -645,8 +716,8 @@ export async function settleWithRouter(
     const networkConfig = getNetworkConfig(network);
     const gasMetrics = calculateGasMetrics(
       receipt,
-      extra.facilitatorFee,
-      extra.hook,
+      settlementParams.facilitatorFee,
+      settlementParams.hook,
       network,
       nativePrice.toString(),
       networkConfig.defaultAsset.decimals,
@@ -658,7 +729,7 @@ export async function settleWithRouter(
         transaction: tx,
         payer: authorization.from,
         network,
-        hook: extra.hook,
+        hook: settlementParams.hook,
         gasLimit: {
           value: effectiveGasLimit?.toString(),
           mode: gasLimitMode,

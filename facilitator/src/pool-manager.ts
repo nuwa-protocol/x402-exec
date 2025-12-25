@@ -150,7 +150,7 @@ export class PoolManager {
   /**
    * Get the facilitator signer address for v2 advertisement
    * Returns the address of the first EVM account from any initialized pool
-   * 
+   *
    * @returns The facilitator signer address, or undefined if no pools exist
    */
   getFacilitatorSignerAddress(): string | undefined {
