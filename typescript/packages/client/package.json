@@ -1,6 +1,6 @@
 {
   "name": "@x402x/client",
-  "version": "0.3.0",
+  "version": "2.0.0",
   "description": "Client SDK for x402x Serverless Mode - execute on-chain contracts directly via facilitator",
   "type": "module",
   "main": "./dist/index.cjs",

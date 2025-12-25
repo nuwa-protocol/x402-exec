@@ -1,6 +1,6 @@
 {
   "name": "@x402x/facilitator-sdk",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "SchemeNetworkFacilitator SDK for x402x - enables router settlement with official x402 protocol",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -37,8 +37,8 @@
   "author": "Nuwa Protocol",
   "license": "Apache-2.0",
   "dependencies": {
-    "@x402/core": "2.0.0",
-    "@x402/evm": "2.0.0",
+    "@x402/core": "2.1.0",
+    "@x402/evm": "2.1.0",
     "@x402x/extensions": "workspace:*",
     "viem": "2.40.3"
   },
@@ -46,7 +46,7 @@
     "@types/node": "^20.0.0",
     "@types/node-fetch": "^2.6.13",
     "@vitest/coverage-v8": "^1.0.0",
-    "@x402/hono": "2.0.0",
+    "@x402/hono": "2.1.0",
     "eslint": "^9.0.0",
     "hono": "^4.11.1",
     "node-fetch": "^3.3.2",
@@ -54,6 +54,5 @@
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^1.0.0"
-  },
-  "private": true
+  }
 }
