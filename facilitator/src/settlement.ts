@@ -140,13 +140,18 @@ export function validateTokenAddress(network: string, tokenAddress: string): voi
 /**
  * Parse and validate settlement parameters
  *
- * NEW: Tries to extract from PaymentPayload.extensions first (v2 standard),
- * then falls back to PaymentRequirements.extra (v1 compatibility).
+ * Extracts settlement parameters following the v2 standard protocol design:
+ * - PRIMARY: Reads from PaymentPayload.extensions["x402x-router-settlement"].info (v2 standard)
+ * - FALLBACK: Reads from PaymentRequirements.extra (v1 compatibility)
  *
- * @param paymentPayload - The payment payload (may contain extensions)
- * @param paymentRequirements - The payment requirements (may contain extra)
- * @returns Parsed settlement parameters
- * @throws SettlementExtraError if parameters are invalid
+ * This unified function handles both v2 and v1 payment formats, ensuring backward compatibility
+ * while following the new x402 v2 specification where extensions contain protocol-level
+ * functionality and extra contains scheme-specific parameters.
+ *
+ * @param paymentPayload - The payment payload (may contain extensions in v2 format)
+ * @param paymentRequirements - The payment requirements (contains extra for v1 fallback)
+ * @returns Parsed settlement parameters with all required fields
+ * @throws SettlementExtraError if parameters are invalid or missing
  */
 function parseSettlementParams(
   paymentPayload: PaymentPayload,
@@ -192,10 +197,13 @@ function parseSettlementParams(
 }
 
 /**
- * Parse and validate settlement extra parameters (legacy)
+ * Parse and validate settlement extra parameters (LEGACY)
+ *
+ * @deprecated This function only reads from PaymentRequirements.extra (v1 format).
+ * Use {@link parseSettlementParams} instead for full v2 support with automatic
+ * fallback to v1 format.
  *
  * Uses @x402x/core's parseSettlementExtra for validation.
- * DEPRECATED: Use parseSettlementParams instead for v2 support.
  *
  * @param extra - Extra field from PaymentRequirements
  * @returns Parsed settlement extra parameters
