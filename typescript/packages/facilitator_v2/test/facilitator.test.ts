@@ -35,49 +35,65 @@ vi.mock("viem", async () => {
 });
 
 // Mock core_v2 utilities
-vi.mock("@x402x/core_v2", () => ({
-  isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
-  parseSettlementExtra: vi.fn((extra) => {
-    if (!extra?.settlementRouter) {
-      throw new Error("Missing settlementRouter");
-    }
-    return extra;
-  }),
-  toCanonicalNetworkKey: vi.fn((network) => {
-    // For CAIP-2 format, return as-is; for v1 names, convert to CAIP-2
-    if (network.startsWith("eip155:")) {
-      return network;
-    }
-    // Convert common v1 names to CAIP-2
-    const nameToId: Record<string, string> = {
-      "base-sepolia": "eip155:84532",
-      "base": "eip155:8453",
-    };
-    return nameToId[network] || network;
-  }),
-  getNetworkName: vi.fn((network) => {
-    // Convert CAIP-2 to v1 name
-    const idToName: Record<string, string> = {
-      "eip155:84532": "base-sepolia",
-      "eip155:8453": "base",
-    };
-    return idToName[network] || network;
-  }),
-  getNetworkConfig: vi.fn((network) => {
-    if (network === "invalid-network") {
-      return undefined;
-    }
-    return {
-      settlementRouter: MOCK_ADDRESSES.settlementRouter,
-      rpcUrls: {
-        default: {
-          http: ["https://sepolia.base.org"],
+vi.mock("@x402x/core_v2", async () => {
+  const actual = await vi.importActual("@x402x/core_v2");
+  return {
+    ...actual,
+    isSettlementMode: vi.fn((requirements) => !!requirements.extra?.settlementRouter),
+    parseSettlementExtra: vi.fn((extra) => {
+      if (!extra?.settlementRouter) {
+        throw new Error("Missing settlementRouter");
+      }
+      return extra;
+    }),
+    toCanonicalNetworkKey: vi.fn((network) => {
+      // For CAIP-2 format, return as-is; for v1 names, convert to CAIP-2
+      if (network.startsWith("eip155:")) {
+        return network;
+      }
+      // Convert common v1 names to CAIP-2
+      const nameToId: Record<string, string> = {
+        "base-sepolia": "eip155:84532",
+        "base": "eip155:8453",
+      };
+      return nameToId[network] || network;
+    }),
+    getNetworkName: vi.fn((network) => {
+      // Convert CAIP-2 to v1 name
+      const idToName: Record<string, string> = {
+        "eip155:84532": "base-sepolia",
+        "eip155:8453": "base",
+      };
+      return idToName[network] || network;
+    }),
+    getNetworkConfig: vi.fn((network) => {
+      if (network === "invalid-network") {
+        return undefined;
+      }
+      return {
+        chainId: 84532,
+        name: "base-sepolia",
+        type: "testnet" as const,
+        addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
+        txExplorerBaseUrl: "https://sepolia.basescan.org/tx/",
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+        defaultAsset: {
+          address: MOCK_ADDRESSES.token,
+          decimals: 6,
+          eip712: {
+            name: "USD Coin",
+            version: "3",
+          },
         },
-      },
-    };
-  }),
-  calculateCommitment: vi.fn(() => MOCK_VALUES.nonce),
-}));
+        hooks: {
+          transfer: "0x0000000000000000000000000000000000000000",
+          exchange: "0x0000000000000000000000000000000000000000",
+        },
+      };
+    }),
+    calculateCommitment: vi.fn(() => MOCK_VALUES.nonce),
+  };
+});
 
 describe("RouterSettlementFacilitator", () => {
   let facilitator: RouterSettlementFacilitator;
@@ -111,6 +127,9 @@ describe("RouterSettlementFacilitator", () => {
       signer: MOCK_ADDRESSES.facilitator,
       allowedRouters: {
         "eip155:84532": [MOCK_ADDRESSES.settlementRouter],
+      },
+      rpcUrls: {
+        "eip155:84532": "https://sepolia.base.org",
       },
     });
   });
@@ -268,6 +287,9 @@ describe("RouterSettlementFacilitator", () => {
     it("should settle valid SettlementRouter payment", async () => {
       const result = await facilitator.settle(mockPaymentPayload, mockPaymentRequirements);
 
+      if (!result.success) {
+        console.log("[TEST] Settlement failed with error:", result.errorReason);
+      }
       expect(result.success).toBe(true);
       expect(result.transaction).toBe(mockSettleResponse.transaction);
       expect(result.network).toBe("eip155:84532");

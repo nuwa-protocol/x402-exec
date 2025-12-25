@@ -135,7 +135,6 @@ export {
   type VerifyResponse as FacilitatorVerifyResponse,
   type SettleResponse as FacilitatorSettleResponse,
   type SettlementRouterParams,
-  SETTLEMENT_ROUTER_ABI as SETTLEMENT_ROUTER_ABI_V2,
   FacilitatorValidationError,
   SettlementRouterError,
 } from "./facilitator-types.js";

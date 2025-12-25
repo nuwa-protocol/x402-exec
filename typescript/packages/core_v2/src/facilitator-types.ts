@@ -89,69 +89,6 @@ export interface SettlementRouterParams {
 }
 
 /**
- * SettlementRouter contract ABI
- * Minimal ABI for the settleAndExecute function
- */
-export const SETTLEMENT_ROUTER_ABI = [
-  {
-    type: "function",
-    name: "settleAndExecute",
-    inputs: [
-      { name: "token", type: "address" },
-      { name: "from", type: "address" },
-      { name: "value", type: "uint256" },
-      { name: "validAfter", type: "uint256" },
-      { name: "validBefore", type: "uint256" },
-      { name: "nonce", type: "bytes32" },
-      { name: "signature", type: "bytes" },
-      { name: "salt", type: "bytes32" },
-      { name: "payTo", type: "address" },
-      { name: "facilitatorFee", type: "uint256" },
-      { name: "hook", type: "address" },
-      { name: "hookData", type: "bytes" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "calculateCommitment",
-    inputs: [
-      { name: "token", type: "address" },
-      { name: "from", type: "address" },
-      { name: "value", type: "uint256" },
-      { name: "validAfter", type: "uint256" },
-      { name: "validBefore", type: "uint256" },
-      { name: "salt", type: "bytes32" },
-      { name: "payTo", type: "address" },
-      { name: "facilitatorFee", type: "uint256" },
-      { name: "hook", type: "address" },
-      { name: "hookData", type: "bytes" },
-    ],
-    outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "calculateContextKey",
-    inputs: [
-      { name: "from", type: "address" },
-      { name: "token", type: "address" },
-      { name: "nonce", type: "bytes32" },
-    ],
-    outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "pure",
-  },
-  {
-    type: "function",
-    name: "isSettled",
-    inputs: [{ name: "contextKey", type: "bytes32" }],
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view",
-  },
-] as const;
-
-/**
  * Error types for facilitator operations
  */
 export class FacilitatorValidationError extends Error {

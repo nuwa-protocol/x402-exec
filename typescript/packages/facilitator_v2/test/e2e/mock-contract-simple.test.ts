@@ -52,12 +52,12 @@ vi.mock("@x402x/core_v2", async () => {
         return undefined;
       }
       return {
+        chainId: 84532,
+        name: "base-sepolia",
+        type: "testnet" as const,
+        addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
+        txExplorerBaseUrl: "https://sepolia.basescan.org/tx/",
         settlementRouter: MOCK_ADDRESSES.settlementRouter,
-        rpcUrls: {
-          default: {
-            http: ["https://sepolia.base.org"],
-          },
-        },
         defaultAsset: {
           address: MOCK_ADDRESSES.token,
           decimals: 6,
@@ -65,6 +65,10 @@ vi.mock("@x402x/core_v2", async () => {
             name: "USD Coin",
             version: "3",
           },
+        },
+        hooks: {
+          transfer: "0x0000000000000000000000000000000000000000",
+          exchange: "0x0000000000000000000000000000000000000000",
         },
       };
     }),
@@ -108,6 +112,9 @@ describe("E2E Mock Contract Tests - Simplified", () => {
       signer: MOCK_ADDRESSES.facilitator,
       allowedRouters: {
         "eip155:84532": [MOCK_ADDRESSES.settlementRouter],
+      },
+      rpcUrls: {
+        "eip155:84532": "https://sepolia.base.org",
       },
     });
   });
