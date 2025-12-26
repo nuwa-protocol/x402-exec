@@ -93,7 +93,7 @@ export function createPublicClientForNetwork(
   // Use provided RPC URL or require it to be provided
   const rpcUrl =
     rpcUrls?.[network] ||
-    rpcUrls?.[v1NetworkName] ||
+    rpcUrls?.[v1NetworkAlias] ||
     rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
@@ -128,7 +128,7 @@ export function createWalletClientForNetwork(
   // Use provided RPC URL or require it to be provided
   const rpcUrl =
     rpcUrls?.[network] ||
-    rpcUrls?.[v1NetworkName] ||
+    rpcUrls?.[v1NetworkAlias] ||
     rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
@@ -399,8 +399,8 @@ export async function executeSettlementWithWalletClient(
     // Validate SettlementRouter
     // Normalize network identifier: any format -> CAIP-2 -> V1 name
     const canonicalNetwork = toCanonicalNetworkKey(paymentRequirements.network);
-    const v1NetworkName = getNetworkName(canonicalNetwork);
-    const networkConfig = getNetworkConfig(v1NetworkName);
+    const v1NetworkAlias = getNetworkAlias(canonicalNetwork);
+    const networkConfig = getNetworkConfig(v1NetworkAlias);
 
     const settlementRouter = paymentRequirements.extra?.settlementRouter as string | undefined;
     if (!settlementRouter) {
