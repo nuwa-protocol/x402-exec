@@ -23,7 +23,7 @@ vi.mock("../../src/network-chain-resolver.js", () => ({
   },
 }));
 
-// Mock @x402x/core to return test networks
+// Mock @x402x/extensions to return test networks / configs (facilitator config now uses extensions)
 vi.mock("@x402x/extensions", () => ({
   // config.ts now uses getSupportedNetworkIds (CAIP-2)
   getSupportedNetworkIds: vi.fn(() => ["eip155:84532", "eip155:8453", "eip155:1952", "eip155:196"]),
