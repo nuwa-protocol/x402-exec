@@ -173,3 +173,10 @@ export {
   NETWORK_ALIASES,
 } from "./network-utils.js";
 
+// Export client-side modules (for use with official x402 SDK)
+export {
+  ExactEvmSchemeWithRouterSettlement,
+  injectX402xExtensionHandler,
+  registerX402xScheme,  // High-level API (recommended)
+  type ClientEvmSigner,
+} from "./client/index.js";

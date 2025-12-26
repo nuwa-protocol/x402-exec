@@ -120,7 +120,17 @@ export function createSettlementRouteConfig(
   const hook = settlementOptions.hook || TransferHook.getAddress(firstNetwork);
   const hookData = settlementOptions.hookData || TransferHook.encode();
 
-  // Enhance each payment option - only add EIP-712 domain info to extra
+  // Prepare settlement extension info that will be shared across requirements
+  const settlementExtension = createExtensionDeclaration({
+    description: settlementOptions.description || "Router settlement with atomic fee distribution",
+    settlementRouter: networkConfig.settlementRouter,
+    hook,
+    hookData,
+    finalPayTo: settlementOptions.finalPayTo,
+    facilitatorFee: settlementOptions.facilitatorFee || "0",
+  });
+
+  // Enhance each payment option
   const enhancedAccepts = acceptsArray.map((option) => {
     const network = typeof option.network === "string" ? option.network : option.network;
     const optionNetworkConfig = getNetworkConfig(network);
@@ -128,34 +138,30 @@ export function createSettlementRouteConfig(
       throw new Error(`Network configuration not found for: ${network}`);
     }
 
-    // Only keep EIP-712 domain parameters in extra (scheme-specific)
+    // Include both EIP-712 domain info and settlement extension in extra
+    // This allows the scheme to access all necessary parameters
     const enhancedOption: SettlementPaymentOption = {
       ...option,
       // Override payTo to use settlementRouter as the immediate recipient
       payTo: optionNetworkConfig.settlementRouter,
-      // Only include EIP-712 domain info in extra
+      // Include both EIP-712 domain info (for signing) and settlement extension (for commitment)
       extra: {
         ...(option.extra || {}),
+        // EIP-712 domain parameters (scheme-specific for signing)
         name: optionNetworkConfig.defaultAsset.eip712.name,
         version: optionNetworkConfig.defaultAsset.eip712.version,
+        // Settlement extension parameters (scheme-specific for commitment calculation)
+        "x402x-router-settlement": settlementExtension["x402x-router-settlement"],
       },
     };
 
     return enhancedOption;
   });
 
-  // Add settlement extension to the route with all settlement parameters
+  // Also add settlement extension to the route level for protocol-level visibility
   const extensions = {
     ...(baseConfig.extensions || {}),
-    ...createExtensionDeclaration({
-      description: settlementOptions.description || "Router settlement with atomic fee distribution",
-      // Pass settlement parameters to be included in extension info
-      settlementRouter: networkConfig.settlementRouter,
-      hook,
-      hookData,
-      finalPayTo: settlementOptions.finalPayTo,
-      facilitatorFee: settlementOptions.facilitatorFee || "0",
-    }),
+    ...settlementExtension,
   };
 
   return {

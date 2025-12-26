@@ -15,6 +15,8 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@tanstack/react-query": "^5.51.0",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@x402/core": "2.1.0",
+    "@x402/fetch": "^2.1.0",
     "@x402x/client": "workspace:*",
     "@x402x/extensions": "workspace:*",
     "class-variance-authority": "^0.7.1",

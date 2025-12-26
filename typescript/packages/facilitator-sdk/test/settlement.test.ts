@@ -371,7 +371,7 @@ describe("SettlementRouter integration", () => {
   });
 
   describe("parseSettlementRouterParams", () => {
-    it("should parse settlement router parameters", () => {
+    it("should parse settlement router parameters from legacy extra field", () => {
       const params = parseSettlementRouterParams(mockPaymentRequirements, mockPaymentPayload);
 
       expect(params).toEqual({
@@ -391,15 +391,169 @@ describe("SettlementRouter integration", () => {
       });
     });
 
-    it("should throw error for non-settlement mode", () => {
-      const standardRequirements = {
+    it("should parse settlement router parameters from v2 extensions", () => {
+      // v2 payload with extensions
+      const v2Payload = {
+        ...mockPaymentPayload,
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              salt: MOCK_VALUES.salt,
+              settlementRouter: MOCK_ADDRESSES.settlementRouter,
+              hook: MOCK_ADDRESSES.hook,
+              hookData: MOCK_VALUES.hookData,
+              finalPayTo: MOCK_ADDRESSES.merchant,
+              facilitatorFee: MOCK_VALUES.facilitatorFee,
+            },
+          },
+        },
+      };
+
+      // Requirements without extra (v2 mode)
+      const v2Requirements = {
+        ...mockPaymentRequirements,
+        extra: undefined,
+      };
+
+      const params = parseSettlementRouterParams(v2Requirements, v2Payload);
+
+      expect(params).toEqual({
+        token: MOCK_ADDRESSES.token,
+        from: MOCK_ADDRESSES.payer,
+        value: MOCK_VALUES.paymentAmount,
+        validAfter: MOCK_VALUES.validAfter,
+        validBefore: MOCK_VALUES.validBefore,
+        nonce: MOCK_VALUES.nonce,
+        signature: MOCK_VALUES.signature,
+        salt: MOCK_VALUES.salt,
+        payTo: MOCK_ADDRESSES.merchant,
+        facilitatorFee: MOCK_VALUES.facilitatorFee,
+        hook: MOCK_ADDRESSES.hook,
+        hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+      });
+    });
+
+    it("should prefer v2 extensions over legacy extra when both present", () => {
+      const differentMerchant = "0x9999999999999999999999999999999999999999";
+      const differentFee = "0x30D40"; // 200000 in hex
+
+      // Payload with extensions (should be preferred)
+      const payloadWithBoth = {
+        ...mockPaymentPayload,
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              salt: MOCK_VALUES.salt,
+              settlementRouter: MOCK_ADDRESSES.settlementRouter,
+              hook: MOCK_ADDRESSES.hook,
+              hookData: MOCK_VALUES.hookData,
+              finalPayTo: differentMerchant, // Different from extra
+              facilitatorFee: differentFee, // Different from extra
+            },
+          },
+        },
+      };
+
+      const params = parseSettlementRouterParams(mockPaymentRequirements, payloadWithBoth);
+
+      // Should use values from extensions, not extra
+      expect(params.payTo).toBe(differentMerchant);
+      expect(params.facilitatorFee).toBe(differentFee);
+    });
+
+    it("should throw error when neither extensions nor extra provide settlement params", () => {
+      const payloadNoExtensions = {
+        ...mockPaymentPayload,
+        extensions: undefined,
+      };
+
+      const requirementsNoExtra = {
         ...mockPaymentRequirements,
         extra: {}, // No settlementRouter
       };
 
       expect(() => {
-        parseSettlementRouterParams(standardRequirements, mockPaymentPayload);
-      }).toThrow("Payment requirements are not in SettlementRouter mode");
+        parseSettlementRouterParams(requirementsNoExtra, payloadNoExtensions);
+      }).toThrow(/x402x router settlement parameters not found/);
+    });
+
+    it("should throw error when extensions are malformed", () => {
+      const payloadMalformed = {
+        ...mockPaymentPayload,
+        extensions: {
+          "x402x-router-settlement": {
+            // Missing 'info' field
+            schema: {},
+          },
+        },
+      };
+
+      const requirementsNoExtra = {
+        ...mockPaymentRequirements,
+        extra: {},
+      };
+
+      expect(() => {
+        parseSettlementRouterParams(requirementsNoExtra, payloadMalformed);
+      }).toThrow(/x402x router settlement parameters not found/);
+    });
+
+    it("should throw error when extensions.info is missing required fields", () => {
+      const payloadIncompleteInfo = {
+        ...mockPaymentPayload,
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              salt: MOCK_VALUES.salt,
+              // Missing settlementRouter, hook, hookData, finalPayTo, facilitatorFee
+            },
+          },
+        },
+      };
+
+      const requirementsNoExtra = {
+        ...mockPaymentRequirements,
+        extra: {},
+      };
+
+      expect(() => {
+        parseSettlementRouterParams(requirementsNoExtra, payloadIncompleteInfo);
+      }).toThrow(/x402x router settlement parameters not found/);
+    });
+
+    it("should handle v2 extensions with all required fields", () => {
+      const customValues = {
+        salt: "0xfedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafed",
+        settlementRouter: "0x3333333333333333333333333333333333333333",
+        hook: "0x4444444444444444444444444444444444444444",
+        hookData: "0xabcd1234",
+        finalPayTo: "0x5555555555555555555555555555555555555555",
+        facilitatorFee: "0x61A8", // 25000 in hex
+      };
+
+      const v2Payload = {
+        ...mockPaymentPayload,
+        extensions: {
+          "x402x-router-settlement": {
+            info: customValues,
+          },
+        },
+      };
+
+      const v2Requirements = {
+        ...mockPaymentRequirements,
+        extra: undefined,
+      };
+
+      const params = parseSettlementRouterParams(v2Requirements, v2Payload);
+
+      expect(params.salt).toBe(customValues.salt);
+      expect(params.settlementRouter).toBe(customValues.settlementRouter);
+      expect(params.hook).toBe(customValues.hook);
+      expect(params.hookData).toBe(customValues.hookData);
+      expect(params.payTo).toBe(customValues.finalPayTo);
+      expect(params.facilitatorFee).toBe(customValues.facilitatorFee);
     });
   });
 

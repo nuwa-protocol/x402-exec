@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getServerUrl } from "../config";
-import { PaymentDialog } from "../components/PaymentDialog";
+import { PaymentDialogV2 } from "../components/PaymentDialogV2";
 import { ScenarioCard } from "../components/ScenarioCard";
 import { StatusMessage } from "../components/StatusMessage";
 import { CodeBlock } from "../components/CodeBlock";
@@ -263,7 +263,7 @@ export function PremiumDownload() {
       )}
 
       {/* Payment Dialog */}
-      <PaymentDialog
+      <PaymentDialogV2
         isOpen={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
         amount="$0.10"

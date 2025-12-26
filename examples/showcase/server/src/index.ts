@@ -16,6 +16,7 @@ import { cors } from "hono/cors";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { registerExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/http";
+import { decodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@x402/core/http";
 import type { RouteConfig as X402RouteConfig } from "@x402/core/server";
 import {
   registerRouterSettlement,
@@ -89,11 +90,27 @@ const routes: Record<string, X402RouteConfig> = {
 };
 
 // Enable CORS for frontend
+// IMPORTANT: Must expose x402 protocol headers for client access
+// AND allow x402 request headers from client
 app.use(
   "/*",
   cors({
     origin: "*",
     credentials: false,
+    // Allow x402 headers in requests from client
+    allowHeaders: [
+      "Content-Type",
+      "PAYMENT-SIGNATURE",              // v2: Payment authorization from client
+      "payment-signature",              // v2: lowercase variant
+      "X-PAYMENT",                      // v1: Legacy payment header
+    ],
+    // Expose x402 headers in responses so clients can read them
+    exposeHeaders: [
+      "PAYMENT-REQUIRED",       // v2: Payment requirements
+      "PAYMENT-RESPONSE",       // v2: Settlement confirmation
+      "X-PAYMENT-REQUIRED",     // v1: Legacy payment requirements
+      "X-PAYMENT-RESPONSE",     // v1: Legacy settlement confirmation
+    ],
   }),
 );
 
@@ -133,6 +150,51 @@ app.get("/api/scenarios", (c) => {
 app.get("/api/premium-download/info", (c) => {
   const info = premiumDownload.getScenarioInfo();
   return c.json(info);
+});
+
+// Debug: print accept / accepted for troubleshooting deepEqual matching (enable with DEBUG_X402=1)
+app.use("/api/purchase-download", async (c, next) => {
+  if (process.env.DEBUG_X402 !== "1") {
+    return next();
+  }
+
+  const header =
+    c.req.header("PAYMENT-SIGNATURE") ||
+    c.req.header("payment-signature") ||
+    c.req.header("X-PAYMENT") ||
+    c.req.header("x-payment");
+
+  if (header) {
+    try {
+      const payload = decodePaymentSignatureHeader(header);
+      console.log("[DEBUG_X402] received paymentPayload.accepted:", payload.accepted);
+    } catch (e) {
+      console.warn(
+        "[DEBUG_X402] failed to decode payment signature header",
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  } else {
+    console.log("[DEBUG_X402] no payment header on request");
+  }
+
+  await next();
+
+  if (c.res?.status === 402) {
+    const prh = c.res.headers.get("PAYMENT-REQUIRED") || c.res.headers.get("payment-required");
+    if (prh) {
+      try {
+        const paymentRequired = decodePaymentRequiredHeader(prh);
+        console.log("[DEBUG_X402] paymentRequired.error:", paymentRequired.error);
+        console.log("[DEBUG_X402] paymentRequired.accepts:", paymentRequired.accepts);
+      } catch (e) {
+        console.warn(
+          "[DEBUG_X402] failed to decode PAYMENT-REQUIRED header",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    }
+  }
 });
 
 // Apply payment middleware to protected route
