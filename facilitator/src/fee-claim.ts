@@ -7,9 +7,10 @@
 import type { PoolManager } from "./pool-manager.js";
 import { isEvmSignerWallet } from "x402/types";
 import { getLogger } from "./telemetry.js";
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";
 import type { Address, Hex } from "viem";
+import { getConfigForNetwork, normalizeNetwork } from "./network-id.js";
 
 const logger = getLogger();
 
@@ -109,10 +110,15 @@ export async function getPendingFees(
         continue;
       }
 
-      // Get SettlementRouter address for this network
-      const routerAddress = allowedRouters[network]?.[0]; // Use first router in whitelist
+      // Get SettlementRouter address for this network (with v1/v2 fallback)
+      const lookup = getConfigForNetwork(allowedRouters, network);
+      const routerAddress = lookup.value?.[0]; // Use first router in whitelist
       if (!routerAddress) {
-        logger.warn({ network }, "No SettlementRouter configured for network, skipping");
+        const normalized = normalizeNetwork(network);
+        logger.warn(
+          { network, canonical: normalized.canonical, alias: normalized.aliasV1 },
+          "No SettlementRouter configured for network, skipping"
+        );
         continue;
       }
 

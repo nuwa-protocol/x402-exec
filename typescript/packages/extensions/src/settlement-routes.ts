@@ -10,11 +10,19 @@
 
 import type { x402ResourceServer } from "@x402/core/server";
 import type { PaymentRequirements } from "@x402/core/types";
+import { decodePaymentSignatureHeader } from "@x402/core/http";
 import { createExtensionDeclaration } from "./server-extension.js";
 import { getNetworkConfig } from "./networks.js";
 import { generateSalt } from "./commitment.js";
 import { TransferHook } from "./hooks/index.js";
 import { ROUTER_SETTLEMENT_KEY } from "./server-extension.js";
+import { calculateFacilitatorFee } from "./facilitator.js";
+
+/**
+ * Default facilitator URL
+ * Can be overridden in SettlementOptions.facilitatorUrl
+ */
+export const DEFAULT_FACILITATOR_URL = "https://facilitator.x402x.dev";
 
 /**
  * Route configuration from @x402/core
@@ -61,12 +69,22 @@ export interface SettlementOptions {
   hook?: string;
   /** Encoded hook data (optional, defaults to TransferHook.encode()) */
   hookData?: string;
-  /** Facilitator fee amount (optional, will be dynamically calculated by facilitator if not provided) */
+  /** 
+   * Facilitator fee amount (optional).
+   * - If not provided, will be dynamically calculated by calling facilitator /calculate-fee endpoint
+   * - If provided, will be used as fixed fee for all networks
+   */
   facilitatorFee?: string;
   /** Final recipient address (optional, defaults to original option.payTo before settlementRouter override) */
   finalPayTo?: string;
   /** Optional description for the extension */
   description?: string;
+  /**
+   * Facilitator service URL for dynamic fee calculation (optional)
+   * Defaults to https://facilitator.x402x.dev
+   * Only used when facilitatorFee is not explicitly provided
+   */
+  facilitatorUrl?: string;
 }
 
 /**
@@ -85,17 +103,19 @@ export interface SettlementHooksConfig {
  * This helper wraps the standard x402 RouteConfig and adds settlement-specific
  * configuration including hooks, settlement router address, and dynamic extensions.
  * 
- * Key Design (v2 + x402x):
+ * Key Design (v2 + x402x + dynamic fee):
+ * - Uses DynamicPrice to enable probe-quote-replay flow:
+ *   - First request (no payment): generates salt + queries facilitator fee → returns AssetAmount
+ *   - Retry (with payment): decodes paymentPayload.accepted and replays it → ensures deepEqual match
  * - Converts Money price to AssetAmount using x402x default asset config per network
- * - Generates unique salt per request per option
  * - Embeds EIP-712 domain + x402x settlement info into price.extra
  * - This bypasses official SDK's hardcoded getDefaultAsset() and allows x402x to define assets for all networks
  * 
  * @param baseConfig - Base route configuration (accepts can use Money price like "$1.00")
  * @param settlementOptions - Settlement-specific options (all fields optional with sensible defaults)
- * @returns Enhanced route configuration with AssetAmount prices containing full x402x context
+ * @returns Enhanced route configuration with dynamic AssetAmount prices containing full x402x context
  * 
- * @example Minimal usage (all defaults)
+ * @example Minimal usage (all defaults, dynamic fee from facilitator)
  * ```typescript
  * const routes = {
  *   "POST /api/purchase": createSettlementRouteConfig({
@@ -107,20 +127,30 @@ export interface SettlementHooksConfig {
  *     })),
  *     description: "Purchase endpoint",
  *   })
+ *   // settlementOptions omitted: uses DEFAULT_FACILITATOR_URL for fee query
  * };
  * ```
  * 
- * @example With custom options
+ * @example With custom facilitator URL
  * ```typescript
  * const routes = {
  *   "POST /api/purchase": createSettlementRouteConfig({
  *     accepts: [...],
  *     description: "Purchase endpoint",
  *   }, {
- *     finalPayTo: customMerchantAddress, // Override the finalPayTo
- *     facilitatorFee: "1000", // Fixed fee in token's smallest unit
- *     hook: customHookAddress,
- *     hookData: customHookData,
+ *     facilitatorUrl: "https://custom-facilitator.example.com",
+ *   })
+ * };
+ * ```
+ * 
+ * @example With fixed facilitator fee (no dynamic query)
+ * ```typescript
+ * const routes = {
+ *   "POST /api/purchase": createSettlementRouteConfig({
+ *     accepts: [...],
+ *     description: "Purchase endpoint",
+ *   }, {
+ *     facilitatorFee: "1000", // Fixed fee, skips dynamic calculation
  *   })
  * };
  * ```
@@ -155,28 +185,64 @@ export function createSettlementRouteConfig(
     const hook = settlementOptions?.hook || TransferHook.getAddress(network);
     const hookData = settlementOptions?.hookData || TransferHook.encode();
 
-    // Generate unique salt for this option (will be regenerated per request via dynamic function)
-    const salt = generateSalt();
+    // Determine facilitator URL (use provided or default)
+    const facilitatorUrl = settlementOptions?.facilitatorUrl || DEFAULT_FACILITATOR_URL;
 
-    // Create network-specific settlement extension with salt
-    const settlementExtension = createExtensionDeclaration({
-      description: settlementOptions?.description || "Router settlement with atomic fee distribution",
-      settlementRouter: optionNetworkConfig.settlementRouter,
-      hook,
-      hookData,
-      finalPayTo,
-      // Only include facilitatorFee if explicitly provided (undefined = let facilitator calculate)
-      facilitatorFee: settlementOptions?.facilitatorFee,
-      salt, // Include salt in the extension
-    });
+    // Check if facilitatorFee is explicitly provided (fixed fee mode)
+    const hasFixedFee = settlementOptions?.facilitatorFee !== undefined;
 
-    // Convert Money price to AssetAmount with x402x default asset
-    // This bypasses the official SDK's hardcoded getDefaultAsset() method
-    const convertPriceToAssetAmount = (moneyPrice: string | number): AssetAmount => {
+    // Create DynamicPrice function that handles both probe and retry scenarios
+    const dynamicPrice = async (context: any): Promise<AssetAmount> => {
+      // Check if this is a retry request (has payment header)
+      const httpContext = context as { paymentHeader?: string; method?: string; adapter?: unknown };
+      const isRetry = !!httpContext.paymentHeader;
+
+      if (isRetry) {
+        // === RETRY PATH: Replay accepted from client ===
+        console.log("[x402x-settlement] Retry request detected, replaying accepted");
+        
+        try {
+          const paymentPayload = decodePaymentSignatureHeader(httpContext.paymentHeader!);
+          const accepted = paymentPayload.accepted;
+          
+          // Verify this is for the same network/scheme
+          if (accepted.network === network && accepted.scheme === option.scheme) {
+            console.log("[x402x-settlement] Replaying accepted for network:", network);
+            
+            // Return exactly what client sent (ensures deepEqual match)
+            return {
+              asset: accepted.asset,
+              amount: accepted.amount,
+              extra: accepted.extra,
+            };
+          } else {
+            console.warn("[x402x-settlement] Network/scheme mismatch in retry, falling back to probe");
+          }
+        } catch (error) {
+          console.error("[x402x-settlement] Failed to decode payment header, falling back to probe:", error);
+        }
+      }
+
+      // === PROBE PATH: Generate salt + query fee ===
+      console.log("[x402x-settlement] Probe request, generating new salt and querying fee");
+
+      // Parse the base price
+      const basePrice = typeof option.price === 'function' 
+        ? await option.price(context)
+        : option.price;
+      
+      let moneyPrice: string | number;
+      if (typeof basePrice === 'object' && basePrice !== null && 'asset' in basePrice) {
+        // Already an AssetAmount (shouldn't happen in normal flow, but handle it)
+        return basePrice as AssetAmount;
+      } else {
+        moneyPrice = basePrice;
+      }
+
       // Parse the money amount (e.g., "$1.00" -> 1.0)
       const amountStr = typeof moneyPrice === 'number' 
         ? moneyPrice.toString() 
-        : moneyPrice.replace(/[^0-9.]/g, '');
+        : moneyPrice.toString().replace(/[^0-9.]/g, '');
       const amountFloat = parseFloat(amountStr);
       
       if (isNaN(amountFloat)) {
@@ -186,8 +252,46 @@ export function createSettlementRouteConfig(
       // Get x402x default asset config for this network
       const { address, decimals, eip712 } = optionNetworkConfig.defaultAsset;
 
-      // Convert to atomic units using x402x decimals (not hardcoded 6)
+      // Convert to atomic units using x402x decimals
       const atomicAmount = BigInt(Math.floor(amountFloat * (10 ** decimals))).toString();
+
+      // Generate fresh salt for this request
+      const salt = generateSalt();
+
+      // Query facilitator fee (if not fixed)
+      let facilitatorFee: string;
+      if (hasFixedFee) {
+        facilitatorFee = settlementOptions!.facilitatorFee!;
+        console.log("[x402x-settlement] Using fixed facilitatorFee:", facilitatorFee);
+      } else {
+        console.log("[x402x-settlement] Querying facilitator for fee:", { network, hook, hookData });
+        try {
+          const feeResult = await calculateFacilitatorFee(facilitatorUrl, network, hook, hookData);
+          
+          if (!feeResult.hookAllowed) {
+            throw new Error(`Hook not allowed by facilitator: ${hook} on network ${network}`);
+          }
+          
+          facilitatorFee = feeResult.facilitatorFee;
+          console.log("[x402x-settlement] Got facilitatorFee from facilitator:", facilitatorFee);
+        } catch (error) {
+          console.error("[x402x-settlement] Failed to query facilitator fee:", error);
+          throw new Error(
+            `Failed to calculate facilitator fee for network ${network}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+
+      // Create network-specific settlement extension with fresh salt and queried/fixed fee
+      const settlementExtension = createExtensionDeclaration({
+        description: settlementOptions?.description || "Router settlement with atomic fee distribution",
+        settlementRouter: optionNetworkConfig.settlementRouter,
+        hook,
+        hookData,
+        finalPayTo,
+        facilitatorFee,
+        salt,
+      });
 
       // Return AssetAmount with all context embedded in extra
       return {
@@ -197,50 +301,20 @@ export function createSettlementRouteConfig(
           // EIP-712 domain parameters (scheme-specific for signing)
           name: eip712.name,
           version: eip712.version,
-          // Network-specific settlement extension parameters (per-option x402x declaration with salt)
+          // Network-specific settlement extension parameters (per-option x402x declaration with salt + fee)
           [ROUTER_SETTLEMENT_KEY]: settlementExtension[ROUTER_SETTLEMENT_KEY],
         },
       };
     };
 
-    // Handle both static and dynamic price
-    let enhancedPrice: AssetAmount | ((context: unknown) => AssetAmount | Promise<AssetAmount>);
-    
-    if (typeof option.price === 'function') {
-      // Wrap dynamic price function to convert result to AssetAmount
-      const priceFunc = option.price; // Type narrowing
-      enhancedPrice = async (context: unknown) => {
-        const resolvedPrice = await priceFunc(context);
-        // If already an AssetAmount, use it; otherwise convert Money to AssetAmount
-        if (typeof resolvedPrice === 'object' && resolvedPrice !== null && 'asset' in resolvedPrice) {
-          return resolvedPrice as AssetAmount;
-        }
-        return convertPriceToAssetAmount(resolvedPrice);
-      };
-    } else if (typeof option.price === 'object' && option.price !== null && 'asset' in option.price) {
-      // Already an AssetAmount, merge our extra fields
-      enhancedPrice = {
-        ...option.price,
-        extra: {
-          ...(option.price.extra || {}),
-          name: optionNetworkConfig.defaultAsset.eip712.name,
-          version: optionNetworkConfig.defaultAsset.eip712.version,
-          [ROUTER_SETTLEMENT_KEY]: settlementExtension[ROUTER_SETTLEMENT_KEY],
-        },
-      };
-    } else {
-      // Static Money price, convert to AssetAmount
-      enhancedPrice = convertPriceToAssetAmount(option.price);
-    }
-
-    // Build enhanced option with AssetAmount price
+    // Build enhanced option with DynamicPrice
     const enhancedOption: SettlementPaymentOption = {
       ...option,
       // Override payTo to use settlementRouter as the immediate recipient
       payTo: optionNetworkConfig.settlementRouter,
-      // Use AssetAmount with x402x default asset (bypasses official SDK's getDefaultAsset)
-      price: enhancedPrice,
-      // Keep option.extra for any user-provided context (but primary data is now in price.extra)
+      // Use DynamicPrice that queries fee on probe and replays on retry
+      price: dynamicPrice,
+      // Keep option.extra for any user-provided context (primary data is now in price.extra via dynamic function)
       extra: option.extra,
     };
 

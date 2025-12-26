@@ -108,7 +108,15 @@ export function registerRoutes(
   app.use(feeRoutes);
 
   // Supported payment kinds routes (no rate limiting)
-  const supportedRoutes = createSupportedRoutes(deps);
+  // Create /supported routes
+  const supportedRoutes = createSupportedRoutes({
+    poolManager: deps.poolManager,
+    enableV2: deps.enableV2,
+    v2Signer: deps.v2Signer,
+    v2PrivateKey: deps.v2PrivateKey,
+    allowedRouters: deps.allowedSettlementRouters, // Pass for availability check
+    rpcUrls: deps.dynamicGasPrice.rpcUrls, // Pass for availability check
+  });
   app.use(supportedRoutes);
 
   // Stats routes (no rate limiting)

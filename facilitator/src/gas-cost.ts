@@ -6,9 +6,10 @@
  */
 
 import { getLogger } from "./telemetry.js";
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import { getTokenPrice, type TokenPriceConfig } from "./token-price.js";
+import { getConfigForNetwork, normalizeNetwork } from "./network-id.js";
 
 const logger = getLogger();
 
@@ -61,7 +62,7 @@ export interface FeeCalculationResult {
 /**
  * Check if a hook is in the whitelist
  *
- * @param network - Network name
+ * @param network - Network identifier (v1 or v2)
  * @param hook - Hook address
  * @param config - Gas cost configuration
  * @returns True if hook is allowed
@@ -72,8 +73,9 @@ export function isHookAllowed(network: string, hook: string, config: GasCostConf
     return true;
   }
 
-  // Get allowed hooks for the network
-  const allowedHooks = config.allowedHooks[network] || [];
+  // Get allowed hooks for the network (with v1/v2 fallback)
+  const lookup = getConfigForNetwork(config.allowedHooks, network);
+  const allowedHooks = lookup.value || [];
 
   // Check if hook is in whitelist (case-insensitive)
   const hookLower = hook.toLowerCase();
@@ -191,9 +193,14 @@ export async function convertNativeToUsd(
   config: GasCostConfig,
   tokenPriceConfig?: TokenPriceConfig,
 ): Promise<string> {
-  const staticPrice = config.nativeTokenPrice[network];
-  if (!staticPrice) {
-    throw new Error(`No native token price configured for network ${network}`);
+  const lookup = getConfigForNetwork(config.nativeTokenPrice, network);
+  const staticPrice = lookup.value;
+  if (staticPrice === undefined) {
+    const normalized = normalizeNetwork(network);
+    throw new Error(
+      `No native token price configured for network ${network} ` +
+        `(canonical: ${normalized.canonical}, alias: ${normalized.aliasV1})`,
+    );
   }
 
   // Get price (dynamic or static)

@@ -10,6 +10,7 @@ import { AccountPool } from "./account-pool.js";
 import type { AccountPoolConfig, NetworkConfig } from "./config.js";
 import { getLogger } from "./telemetry.js";
 import { getCanonicalNetwork, getNetworkDisplayName } from "./network-utils.js";
+import { getConfigForNetwork, normalizeNetwork, hasNetworkConfig } from "./network-id.js";
 
 const logger = getLogger();
 
@@ -49,8 +50,9 @@ export class PoolManager {
           const canonicalNetwork = getCanonicalNetwork(network);
           const displayName = getNetworkDisplayName(canonicalNetwork);
 
-          // Get RPC URL for this network (try both original and canonical names)
-          const rpcUrl = this.rpcUrls[network] || this.rpcUrls[canonicalNetwork];
+          // Get RPC URL for this network (with v1/v2 fallback)
+          const rpcLookup = getConfigForNetwork(this.rpcUrls, network);
+          const rpcUrl = rpcLookup.value;
 
           const pool = await AccountPool.create(this.evmPrivateKeys, network, {
             strategy: this.accountPoolConfig.strategy,

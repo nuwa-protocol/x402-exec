@@ -15,10 +15,10 @@
 
 import pLimit from "p-limit";
 import type { Signer } from "x402/types";
-import { evm } from "x402/types";
 import { createWalletClient, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
+import { getChain as getX402xChain } from "@x402x/extensions";
 import { getLogger, recordMetric } from "./telemetry.js";
 import { QueueOverloadError, DuplicatePayerError } from "./errors.js";
 import { DEFAULTS } from "./defaults.js";
@@ -124,11 +124,14 @@ export class AccountPool {
       "Initializing account pool",
     );
 
-    // Get chain definition from x402 evm module
-    const chain = evm.getChainFromNetwork(network);
+    // Get chain definition from x402x (supports CAIP-2 networks like eip155:56)
+    const chain = getX402xChain(network);
 
     // Determine RPC URL: config > chain default
     const rpcUrl = finalConfig.rpcUrl || chain.rpcUrls?.default?.http?.[0];
+    if (!rpcUrl) {
+      throw new Error(`No RPC URL configured for network ${network}`);
+    }
 
     logger.info(
       {

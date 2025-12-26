@@ -11,7 +11,9 @@
 
 import { config as loadEnv } from "dotenv";
 import type { X402Config } from "x402/types";
-import { getSupportedNetworks, getNetworkConfig, isNetworkSupported } from "@x402x/core";
+import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds } from "@x402x/extensions";
+// Alias for backward compatibility
+const getSupportedNetworks = getSupportedNetworkIds;
 import type { GasCostConfig } from "./gas-cost.js";
 import type { DynamicGasPriceConfig } from "./dynamic-gas-price.js";
 import type { TokenPriceConfig } from "./token-price.js";

@@ -64,6 +64,7 @@ export {
   getNetworkConfig,
   isNetworkSupported,
   getSupportedNetworkAliases,
+  getSupportedNetworks, // Returns CAIP-2 format networks for v2 compatibility
 } from "./networks.js";
 
 // Export chain configurations

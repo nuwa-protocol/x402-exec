@@ -87,6 +87,10 @@ const routes: Record<string, X402RouteConfig> = {
     })),
     description: "Premium Content Download: Purchase and download digital content",
     mimeType: "application/json",
+  }, {
+    // Pass facilitatorUrl to enable dynamic fee calculation during 402 negotiation
+    // Falls back to DEFAULT_FACILITATOR_URL if not configured
+    facilitatorUrl: appConfig.facilitatorUrl,
   }) as X402RouteConfig, // Cast to ensure type compatibility
 };
 
@@ -174,6 +178,11 @@ app.use("/api/purchase-download", async (c, next) => {
       if (payload.extensions?.["x402x-router-settlement"]) {
         console.log("[DEBUG_X402] x402x-router-settlement extension:", JSON.stringify(payload.extensions["x402x-router-settlement"], null, 2));
       }
+      // Extract and display facilitatorFee from accepted.extra
+      const acceptedExtra = payload.accepted.extra as any;
+      if (acceptedExtra?.["x402x-router-settlement"]?.info?.facilitatorFee) {
+        console.log("[DEBUG_X402] ✅ Replay: facilitatorFee from accepted:", acceptedExtra["x402x-router-settlement"].info.facilitatorFee);
+      }
     } catch (e) {
       console.warn(
         "[DEBUG_X402] failed to decode payment signature header",
@@ -197,6 +206,12 @@ app.use("/api/purchase-download", async (c, next) => {
         if (paymentRequired.accepts.length > 0) {
           console.log("[DEBUG_X402] First accept option:", JSON.stringify(paymentRequired.accepts[0], null, 2));
           console.log("[DEBUG_X402] All accept networks:", paymentRequired.accepts.map(a => a.network).join(", "));
+          
+          // Display facilitatorFee from first accept option (probe response)
+          const firstAcceptExtra = paymentRequired.accepts[0].extra as any;
+          if (firstAcceptExtra?.["x402x-router-settlement"]?.info?.facilitatorFee) {
+            console.log("[DEBUG_X402] ✅ Probe: facilitatorFee from first accept:", firstAcceptExtra["x402x-router-settlement"].info.facilitatorFee);
+          }
         }
       } catch (e) {
         console.warn(
