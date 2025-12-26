@@ -41,9 +41,17 @@ function getDefaultAssetConfig(network: Network) {
  * ```
  */
 function normalizeToCAIP2(network: string | Network): Network {
-  // Already CAIP-2 format
+  // Already CAIP-2 format - validate it's supported
   if (network.startsWith('eip155:')) {
-    return network as Network;
+    const caip2 = network as Network;
+    // Check if this CAIP-2 identifier is in our supported networks
+    if (!(caip2 in networks)) {
+      throw new Error(
+        `Unsupported CAIP-2 network: ${network}. ` +
+        `Supported networks: ${Object.keys(networks).join(", ")}`
+      );
+    }
+    return caip2;
   }
   // Convert from human-readable name using alias mapping
   const caip2 = NETWORK_ALIASES_V1_TO_V2[network];

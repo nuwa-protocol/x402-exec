@@ -8,7 +8,7 @@
 import { defineChain, type Chain } from "viem";
 import * as allChains from "viem/chains";
 import type { Network } from "@x402/core/types";
-import { NETWORK_ALIASES_V1_TO_V2 } from "./network-utils.js";
+import { NETWORK_ALIASES_V1_TO_V2, NETWORK_ALIASES } from "./network-utils.js";
 
 /**
  * Custom chain definitions for networks not in viem's standard list
@@ -86,8 +86,16 @@ const customChains: Record<number, Chain> = {
 export function getChain(network: string | Network): Chain {
   let chainId: number;
   
-  // If already CAIP-2 format, extract chainId directly
+  // If already CAIP-2 format, validate it's supported before extracting chainId
   if (network.startsWith('eip155:')) {
+    const caip2 = network as Network;
+    // Validate that this CAIP-2 identifier is in our supported networks
+    if (!(caip2 in NETWORK_ALIASES)) {
+      throw new Error(
+        `Unsupported CAIP-2 network: ${network}. ` +
+        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`
+      );
+    }
     chainId = parseInt(network.split(":")[1]);
   } else {
     // Convert name to CAIP-2, then extract chainId
