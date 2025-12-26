@@ -6,7 +6,7 @@
  */
 
 import type { Network } from "@x402/core/types";
-import { getDefaultAsset, NETWORK_ALIASES_V1_TO_V2, getNetworkName } from "./network-utils.js";
+import { getDefaultAsset, NETWORK_ALIASES_V1_TO_V2, getNetworkAlias } from "./network-utils.js";
 import type { NetworkConfig } from "./types.js";
 
 /**
@@ -285,51 +285,29 @@ export function isNetworkSupported(network: string | Network): boolean {
 }
 
 /**
- * Get list of all supported network names (human-readable)
+ * Get list of all supported network aliases (v1 configuration names)
  *
- * Returns user-friendly network names like "base-sepolia", "base", etc.
+ * Returns user-friendly network aliases like "base-sepolia", "base", etc.
+ * These aliases are used for configuration files and backward compatibility.
  * Use this for UI display, configuration, and user-facing operations.
  * 
- * This function provides backward compatibility by returning human-readable names
+ * This function provides backward compatibility by returning v1 aliases
  * even though the internal storage uses CAIP-2 format.
  *
- * @returns Array of human-readable network names
+ * @returns Array of v1 network aliases
  *
  * @example
  * ```typescript
- * const networkNames = getSupportedNetworkNames();
+ * const aliases = getSupportedNetworkAliases();
  * // => ['base-sepolia', 'base', 'x-layer-testnet', ...]
  * 
  * // For UI dropdown
  * <select>
- *   {networkNames.map(name => <option key={name}>{name}</option>)}
+ *   {aliases.map(alias => <option key={alias}>{alias}</option>)}
  * </select>
  * ```
  */
-export function getSupportedNetworkNames(): string[] {
-  // Convert CAIP-2 keys to human-readable names using reverse mapping
-  return Object.keys(networks).map(caip2 => getNetworkName(caip2 as Network));
-}
-
-/**
- * Get list of all supported networks in CAIP-2 format
- *
- * Returns CAIP-2 network identifiers like "eip155:84532", "eip155:8453", etc.
- * Use this for protocol-level operations and when CAIP-2 format is required.
- *
- * @returns Array of CAIP-2 network identifiers
- *
- * @example
- * ```typescript
- * const networks = getSupportedNetworks();
- * // => ['eip155:84532', 'eip155:8453', 'eip155:1952', ...]
- * 
- * // For protocol operations
- * const facilitator = createFacilitator({
- *   networks: getSupportedNetworks()
- * });
- * ```
- */
-export function getSupportedNetworks(): Network[] {
-  return Object.keys(networks) as Network[];
+export function getSupportedNetworkAliases(): string[] {
+  // Convert CAIP-2 keys to v1 aliases using reverse mapping
+  return Object.keys(networks).map(caip2 => getNetworkAlias(caip2 as Network));
 }

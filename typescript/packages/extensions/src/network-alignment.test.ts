@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
-  getSupportedNetworksV2,
+  getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
   toCanonicalNetworkKey,
   NETWORK_ALIASES_V1_TO_V2,
@@ -44,7 +44,7 @@ describe("Network Alignment (v1 ↔ v2)", () => {
 
     it("should include all CAIP-2 networks in v2 supported list", () => {
       const v2Aliases = getNetworkAliasesV1ToV2();
-      const v2Networks = getSupportedNetworksV2();
+      const v2Networks = getSupportedNetworkIds();
 
       // All CAIP-2 identifiers from aliases should be in the supported list
       Object.values(v2Aliases).forEach((caip2Network) => {
@@ -59,7 +59,7 @@ describe("Network Alignment (v1 ↔ v2)", () => {
     it("should have no duplicate or missing network mappings", () => {
       const v1Networks = EXPECTED_V1_NETWORKS;
       const v2Aliases = getNetworkAliasesV1ToV2();
-      const v2Networks = getSupportedNetworksV2();
+      const v2Networks = getSupportedNetworkIds();
 
       // Check for duplicates in v1 networks
       const v1NetworkSet = new Set(v1Networks);
@@ -77,8 +77,8 @@ describe("Network Alignment (v1 ↔ v2)", () => {
   });
 
   describe("API function behavior", () => {
-    it("getSupportedNetworksV2 should return all CAIP-2 networks", () => {
-      const v2Networks = getSupportedNetworksV2();
+    it("getSupportedNetworkIds should return all CAIP-2 networks", () => {
+      const v2Networks = getSupportedNetworkIds();
 
       expect(Array.isArray(v2Networks)).toBe(true);
       expect(v2Networks.length).toBeGreaterThan(0);

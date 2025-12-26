@@ -1,7 +1,7 @@
 // Type declarations for workspace packages that may not have generated types yet
 declare module "@x402x/extensions" {
   export function toCanonicalNetworkKey(network: string): string;
-  export function getNetworkName(network: string): string;
+  export function getNetworkAlias(network: string): string;
   export function getNetworkConfig(network: string): any;
   export function calculateCommitment(params: any): string;
   export function isSettlementMode(pr: any): boolean;

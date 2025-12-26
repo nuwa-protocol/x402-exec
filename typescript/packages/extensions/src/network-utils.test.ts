@@ -4,23 +4,23 @@
 
 import { describe, it, expect } from "vitest";
 import {
-  getNetworkId,
+  toCanonicalNetworkKey,
   getDefaultAsset,
   processPriceToAtomicAmount,
   parseMoneyToDecimal,
 } from "./network-utils";
 
-describe("getNetworkId", () => {
+describe("toCanonicalNetworkKey", () => {
   it("should return correct CAIP-2 network ID for base-sepolia", () => {
-    expect(getNetworkId("base-sepolia")).toBe("eip155:84532");
+    expect(toCanonicalNetworkKey("base-sepolia")).toBe("eip155:84532");
   });
 
   it("should return correct CAIP-2 network ID for base", () => {
-    expect(getNetworkId("base")).toBe("eip155:8453");
+    expect(toCanonicalNetworkKey("base")).toBe("eip155:8453");
   });
 
   it("should throw error for unsupported network", () => {
-    expect(() => getNetworkId("unknown-network")).toThrow("Unsupported network");
+    expect(() => toCanonicalNetworkKey("unknown-network")).toThrow("Unsupported network");
   });
 });
 

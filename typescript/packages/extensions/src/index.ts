@@ -63,8 +63,7 @@ export {
   networks,
   getNetworkConfig,
   isNetworkSupported,
-  getSupportedNetworks, // @deprecated - use getSupportedNetworkNames
-  getSupportedNetworkNames,
+  getSupportedNetworkAliases,
 } from "./networks.js";
 
 // Export chain configurations
@@ -162,41 +161,15 @@ export {
   SettlementRouterError,
 } from "./facilitator-types.js";
 
-// Export legacy compatibility shims for v1-style middleware
-export {
-  SupportedEVMNetworks,
-  moneySchema,
-  settleResponseHeader,
-  evm,
-  exact,
-  ChainIdToNetwork,
-  isMultiNetworkSigner,
-  isSvmSignerWallet,
-  createPaymentHeader,
-  selectPaymentRequirements,
-  decodeXPaymentResponse,
-  useFacilitator,
-  createSigner,
-} from "./legacy-compat.js";
-
-export type {
-  MultiNetworkSigner,
-  X402Config,
-  PaymentRequirementsSelector,
-} from "./legacy-compat.js";
-
 // Export network utilities (needed by middleware)
 export {
   processPriceToAtomicAmount,
   getDefaultAsset,
-  getNetworkId,
-  getNetworkName,
-  getSupportedNetworksV2, // @deprecated - use getSupportedNetworkIds
   getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
   toCanonicalNetworkKey,
+  getNetworkAlias,
   NETWORK_ALIASES_V1_TO_V2,
-  NETWORK_NAMES,
-  NETWORK_IDS
+  NETWORK_ALIASES,
 } from "./network-utils.js";
 

@@ -8,13 +8,13 @@
  * - Optional UI customization via NETWORK_UI_OVERRIDES
  */
 
-import { getSupportedNetworkNames, getNetworkConfig as getCoreNetworkConfig, getChain } from "@x402x/extensions";
+import { getSupportedNetworkAliases, getNetworkConfig as getCoreNetworkConfig, getChain } from "@x402x/extensions";
 import type { Chain } from "viem";
 
 /**
  * Supported network identifiers (auto-generated from @x402x/extensions)
  */
-export type Network = ReturnType<typeof getSupportedNetworkNames>[number];
+export type Network = ReturnType<typeof getSupportedNetworkAliases>[number];
 
 /**
  * Optional UI configuration for specific networks
@@ -126,7 +126,7 @@ export function getNetworkConfig(network: string): NetworkConfig {
  * All supported networks configurations (auto-generated)
  * Automatically includes all networks from @x402x/extensions
  */
-export const NETWORKS = getSupportedNetworkNames().reduce(
+export const NETWORKS = getSupportedNetworkAliases().reduce(
   (acc, network) => {
     acc[network] = getNetworkConfig(network);
     return acc;

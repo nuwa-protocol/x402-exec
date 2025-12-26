@@ -7,7 +7,7 @@
 
 /// <reference path="./types.d.ts" />
 
-import { toCanonicalNetworkKey, getNetworkName } from "@x402x/extensions";
+import { toCanonicalNetworkKey, getNetworkAlias } from "@x402x/extensions";
 import type { Network as X402Network } from "x402/types";
 
 /**
@@ -54,7 +54,7 @@ export function getCanonicalNetwork(network: string): CanonicalNetwork {
  */
 export function getNetworkDisplayName(canonicalNetwork: CanonicalNetwork): string {
   try {
-    return getNetworkName(canonicalNetwork as any);
+    return getNetworkAlias(canonicalNetwork as any);
   } catch (error) {
     // Fallback to canonical key if name lookup fails
     return canonicalNetwork;
