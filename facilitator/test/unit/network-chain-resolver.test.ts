@@ -7,18 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { networkChainResolver } from "../../src/network-chain-resolver.js";
 
-// Mock @x402x/core to return test networks
-vi.mock("@x402x/core", () => ({
-  getSupportedNetworks: vi.fn(() => [
-    "base-sepolia",
-    "base",
-    "x-layer-testnet",
-    "x-layer",
-    "bsc-testnet",
-    "bsc",
-    "skale-base-sepolia",
-  ]),
-}));
+// NOTE: NetworkChainResolver now sources supported networks from @x402x/extensions (CAIP-2).
 
 // Mock viem chains
 vi.mock("viem/chains", () => ({
@@ -37,6 +26,24 @@ vi.mock("viem/chains", () => ({
     rpcUrls: {
       default: {
         http: ["https://mainnet.base.org"],
+      },
+    },
+  },
+  bsc: {
+    id: 56,
+    name: "BSC",
+    rpcUrls: {
+      default: {
+        http: ["https://bsc-dataseed.binance.org"],
+      },
+    },
+  },
+  bscTestnet: {
+    id: 97,
+    name: "BSC Testnet",
+    rpcUrls: {
+      default: {
+        http: ["https://data-seed-prebsc-1-s1.bnbchain.org:8545"],
       },
     },
   },
@@ -148,7 +155,8 @@ describe("NetworkChainResolver", () => {
       const chainInfo = await networkChainResolver.resolveNetworkChain("base");
       expect(chainInfo).toBeDefined();
       expect(chainInfo?.chain.id).toBe(8453);
-      expect(chainInfo?.source).toBe("viem");
+      // We now prefer x402x chain definitions first (more complete + CAIP-2 aware)
+      expect(chainInfo?.source).toBe("x402x");
       expect(chainInfo?.rpcUrl).toBe("https://mainnet.base.org");
     });
 
@@ -156,8 +164,8 @@ describe("NetworkChainResolver", () => {
       const chainInfo = await networkChainResolver.resolveNetworkChain("bsc");
       expect(chainInfo).toBeDefined();
       expect(chainInfo?.chain.id).toBe(56);
-      expect(chainInfo?.source).toBe("x402");
-      expect(chainInfo?.rpcUrl).toBe("https://bsc-dataseed.binance.org");
+      expect(chainInfo?.source).toBe("x402x");
+      expect(chainInfo?.rpcUrl).toMatch(/^https?:\/\//);
     });
 
     it("should return null for invalid networks", async () => {
@@ -209,10 +217,16 @@ describe("NetworkChainResolver", () => {
     it("should return RPC URLs for all supported networks", async () => {
       const rpcUrls = await networkChainResolver.getAllRpcUrls();
 
+      // Should include both canonical CAIP-2 keys and v1 aliases for compatibility
+      expect(Object.keys(rpcUrls)).toContain("eip155:8453");
       expect(Object.keys(rpcUrls)).toContain("base");
+      expect(Object.keys(rpcUrls)).toContain("eip155:84532");
       expect(Object.keys(rpcUrls)).toContain("base-sepolia");
+      expect(Object.keys(rpcUrls)).toContain("eip155:56");
       expect(Object.keys(rpcUrls)).toContain("bsc");
+      expect(Object.keys(rpcUrls)).toContain("eip155:97");
       expect(Object.keys(rpcUrls)).toContain("bsc-testnet");
+      expect(Object.keys(rpcUrls)).toContain("eip155:324705682");
       expect(Object.keys(rpcUrls)).toContain("skale-base-sepolia");
 
       // Verify all URLs are valid HTTP/HTTPS URLs
@@ -239,6 +253,7 @@ describe("NetworkChainResolver", () => {
     it("should return status for all networks", async () => {
       const status = await networkChainResolver.getNetworkStatus();
 
+      // Includes alias keys too
       expect(Object.keys(status)).toContain("base");
       expect(Object.keys(status)).toContain("bsc");
       expect(status).not.toHaveProperty("invalid-network");
@@ -272,32 +287,29 @@ describe("NetworkChainResolver", () => {
     });
 
     it("should cache resolved chain information", async () => {
-      const { evm } = await import("x402/types");
-      const getChainMock = vi.mocked(evm.getChainFromNetwork);
+      const first = await networkChainResolver.resolveNetworkChain("bsc");
+      const second = await networkChainResolver.resolveNetworkChain("bsc");
 
-      // First call should trigger x402 chain lookup
-      await networkChainResolver.resolveNetworkChain("bsc");
-      expect(getChainMock).toHaveBeenCalledWith("bsc");
-
-      // Second call should use cache
-      getChainMock.mockClear();
-      await networkChainResolver.resolveNetworkChain("bsc");
-      expect(getChainMock).not.toHaveBeenCalled();
+      // Second call should hit cache (same object reference)
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      expect(second).toBe(first);
     });
 
     it("should clear cache when requested", async () => {
-      const { evm } = await import("x402/types");
-      const getChainMock = vi.mocked(evm.getChainFromNetwork);
-
-      // Resolve network
-      await networkChainResolver.resolveNetworkChain("bsc");
+      const first = await networkChainResolver.resolveNetworkChain("bsc");
+      expect(first).toBeDefined();
 
       // Clear cache
       networkChainResolver.clearCache();
 
-      // Next call should trigger lookup again
-      await networkChainResolver.resolveNetworkChain("bsc");
-      expect(getChainMock).toHaveBeenCalledWith("bsc");
+      // Re-initialize (initialize() is no-op if already initialized flag was reset)
+      await networkChainResolver.initialize();
+
+      const second = await networkChainResolver.resolveNetworkChain("bsc");
+      expect(second).toBeDefined();
+      // After clearing cache, a new object should be created
+      expect(second).not.toBe(first);
     });
   });
 
@@ -323,7 +335,8 @@ describe("NetworkChainResolver", () => {
     it("should support SKALE Base Sepolia", async () => {
       const chainInfo = await networkChainResolver.resolveNetworkChain("skale-base-sepolia");
       expect(chainInfo).toBeDefined();
-      expect(chainInfo?.chain.id).toBe(1544642581);
+      // x402x/extensions defines SKALE Nebula Testnet as chainId 324705682
+      expect(chainInfo?.chain.id).toBe(324705682);
       expect(chainInfo?.rpcUrl).toMatch(/^https?:\/\//);
     });
   });

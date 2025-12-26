@@ -24,8 +24,33 @@ vi.mock("../../src/network-chain-resolver.js", () => ({
 }));
 
 // Mock @x402x/core to return test networks
-vi.mock("@x402x/core", () => ({
-  getSupportedNetworks: vi.fn(() => ["base-sepolia", "base", "x-layer-testnet", "x-layer"]),
+vi.mock("@x402x/extensions", () => ({
+  // config.ts now uses getSupportedNetworkIds (CAIP-2)
+  getSupportedNetworkIds: vi.fn(() => ["eip155:84532", "eip155:8453", "eip155:1952", "eip155:196"]),
+  // Minimal alias helpers needed by facilitator/network-id.ts
+  toCanonicalNetworkKey: vi.fn((network: string) => {
+    const map: Record<string, string> = {
+      "base-sepolia": "eip155:84532",
+      base: "eip155:8453",
+      "x-layer-testnet": "eip155:1952",
+      "x-layer": "eip155:196",
+      "eip155:84532": "eip155:84532",
+      "eip155:8453": "eip155:8453",
+      "eip155:1952": "eip155:1952",
+      "eip155:196": "eip155:196",
+    };
+    if (!map[network]) throw new Error(`Unsupported network: ${network}`);
+    return map[network];
+  }),
+  getNetworkAlias: vi.fn((network: string) => {
+    const map: Record<string, string> = {
+      "eip155:84532": "base-sepolia",
+      "eip155:8453": "base",
+      "eip155:1952": "x-layer-testnet",
+      "eip155:196": "x-layer",
+    };
+    return map[network] || network;
+  }),
   getNetworkConfig: vi.fn((network: string) => {
     const configs: Record<string, any> = {
       "base-sepolia": {
@@ -36,7 +61,23 @@ vi.mock("@x402x/core", () => ({
           decimals: 6,
         },
       },
+      "eip155:84532": {
+        settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+        defaultAsset: {
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          symbol: "USDC",
+          decimals: 6,
+        },
+      },
       "x-layer-testnet": {
+        settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
+        defaultAsset: {
+          address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          symbol: "USDC",
+          decimals: 6,
+        },
+      },
+      "eip155:1952": {
         settlementRouter: "0x1ae0e196dc18355af3a19985faf67354213f833d",
         defaultAsset: {
           address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
@@ -56,7 +97,7 @@ vi.mock("@x402x/core", () => ({
     );
   }),
   isNetworkSupported: vi.fn((network: string) =>
-    ["base-sepolia", "base", "x-layer-testnet", "x-layer"].includes(network),
+    ["base-sepolia", "base", "x-layer-testnet", "x-layer", "eip155:84532", "eip155:8453", "eip155:1952", "eip155:196"].includes(network),
   ),
 }));
 
@@ -66,6 +107,13 @@ describe("config", () => {
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
+    // Clear private key envs to make tests deterministic
+    delete process.env.EVM_PRIVATE_KEY;
+    for (let i = 1; i <= 20; i++) {
+      delete process.env[`EVM_PRIVATE_KEY_${i}`];
+    }
+    delete process.env.BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS;
+    delete process.env.BASE_SETTLEMENT_ROUTER_ADDRESS;
   });
 
   afterEach(() => {
@@ -258,10 +306,17 @@ describe("config", () => {
       const config = await loadConfig();
 
       expect(config.allowedSettlementRouters).toBeDefined();
+      // Allow both canonical key and alias key
       expect(config.allowedSettlementRouters["base-sepolia"]).toContain(
         "0x32431D4511e061F1133520461B07eC42afF157D6",
       );
+      expect(config.allowedSettlementRouters["eip155:84532"]).toContain(
+        "0x32431D4511e061F1133520461B07eC42afF157D6",
+      );
       expect(config.allowedSettlementRouters["x-layer-testnet"]).toContain(
+        "0x1ae0e196dc18355af3a19985faf67354213f833d",
+      );
+      expect(config.allowedSettlementRouters["eip155:1952"]).toContain(
         "0x1ae0e196dc18355af3a19985faf67354213f833d",
       );
     });
@@ -274,6 +329,7 @@ describe("config", () => {
       const config = await loadConfig();
 
       expect(config.allowedSettlementRouters["base-sepolia"]).toContain("0xcustom");
+      expect(config.allowedSettlementRouters["eip155:84532"]).toContain("0xcustom");
     });
 
     it("should filter empty router addresses", async () => {
@@ -296,10 +352,11 @@ describe("config", () => {
 
       const config = await loadConfig();
 
-      expect(config.network.evmNetworks).toContain("base-sepolia");
-      expect(config.network.evmNetworks).toContain("base");
-      expect(config.network.evmNetworks).toContain("x-layer-testnet");
-      expect(config.network.evmNetworks).toContain("x-layer");
+      // config.network.evmNetworks is now CAIP-2 canonical
+      expect(config.network.evmNetworks).toContain("eip155:84532");
+      expect(config.network.evmNetworks).toContain("eip155:8453");
+      expect(config.network.evmNetworks).toContain("eip155:1952");
+      expect(config.network.evmNetworks).toContain("eip155:196");
     });
   });
 });

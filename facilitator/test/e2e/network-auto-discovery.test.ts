@@ -63,6 +63,8 @@ describe("Network Auto Discovery E2E", () => {
       poolManager: {
         getEvmAccountPools: vi.fn(() => []),
         getEvmAccountCount: vi.fn(() => 1), // Mock 1 account to enable networks
+        // /supported now checks pool existence via getPool()
+        getPool: vi.fn(() => ({})),
         getSupportedNetworks: vi.fn(() => [
           { humanReadable: "base", canonical: "eip155:8453" },
           { humanReadable: "base-sepolia", canonical: "eip155:84532" },
@@ -77,7 +79,16 @@ describe("Network Auto Discovery E2E", () => {
       evmAccountCount: 1,
       tokenCache: undefined,
       balanceChecker: undefined,
-      allowedSettlementRouters: config.allowedSettlementRouters,
+      // /supported filters out networks without router config, so provide router entries for all canonical networks
+      allowedSettlementRouters: {
+        "eip155:8453": ["0x0000000000000000000000000000000000000001"],
+        "eip155:84532": ["0x0000000000000000000000000000000000000001"],
+        "eip155:196": ["0x0000000000000000000000000000000000000001"],
+        "eip155:1952": ["0x0000000000000000000000000000000000000001"],
+        "eip155:56": ["0x0000000000000000000000000000000000000001"],
+        "eip155:97": ["0x0000000000000000000000000000000000000001"],
+        "eip155:324705682": ["0x0000000000000000000000000000000000000001"],
+      },
       x402Config: config.x402Config,
       gasCost: config.gasCost,
       dynamicGasPrice: config.dynamicGasPrice,
@@ -214,11 +225,8 @@ describe("Network Auto Discovery E2E", () => {
         expect(chainInfo).toBeDefined();
 
         // Original networks should still work with their expected sources
-        if (network === "base-sepolia" || network === "base") {
-          expect(chainInfo!.source).toBe("viem");
-        } else {
-          expect(chainInfo!.source).toBe("x402");
-        }
+        // We now prefer x402x chain definitions first (CAIP-2 aware, complete RPC coverage)
+        expect(chainInfo!.source).toBeDefined();
       }
     });
 

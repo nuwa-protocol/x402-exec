@@ -20,6 +20,7 @@ import type { TokenPriceConfig } from "./token-price.js";
 import { networkChainResolver } from "./network-chain-resolver.js";
 import { DEFAULTS } from "./defaults.js";
 import { GasEstimationConfig } from "./gas-estimation/index.js";
+import { normalizeNetwork } from "./network-id.js";
 
 // Load environment variables
 loadEnv();
@@ -238,7 +239,14 @@ function parseAllowedSettlementRouters(): Record<string, string[]> {
       }
     }
 
-    routers[network] = addresses.filter(Boolean);
+    const filtered = addresses.filter(Boolean);
+    routers[network] = filtered;
+    // Also store under v1 alias for backward compatibility
+    try {
+      routers[normalizeNetwork(network).aliasV1] = filtered;
+    } catch {
+      // ignore
+    }
   }
 
   return routers;
@@ -252,7 +260,16 @@ function parseAllowedSettlementRouters(): Record<string, string[]> {
  * @returns Environment variable name for the network
  */
 function networkToEnvVar(network: string): string {
-  return `${network.toUpperCase().replace(/-/g, "_")}_SETTLEMENT_ROUTER_ADDRESS`;
+  // Use v1 alias for env var names to stay compatible with existing deployments.
+  // If network is CAIP-2 (eip155:84532), normalizeNetwork() returns aliasV1 (base-sepolia).
+  const base = (() => {
+    try {
+      return normalizeNetwork(network).aliasV1;
+    } catch {
+      return network;
+    }
+  })();
+  return `${base.toUpperCase().replace(/[-:]/g, "_")}_SETTLEMENT_ROUTER_ADDRESS`;
 }
 
 /**
@@ -328,7 +345,14 @@ function parseAllowedHooks(): Record<string, string[]> {
     const addresses: string[] = [];
 
     // Try to get from environment variable
-    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_ALLOWED_HOOKS`;
+    const envKeyBase = (() => {
+      try {
+        return normalizeNetwork(network).aliasV1;
+      } catch {
+        return network;
+      }
+    })();
+    const envVarName = `${envKeyBase.toUpperCase().replace(/[-:]/g, "_")}_ALLOWED_HOOKS`;
     const envValue = process.env[envVarName];
 
     if (envValue) {
@@ -353,7 +377,14 @@ function parseAllowedHooks(): Record<string, string[]> {
       }
     }
 
-    hooks[network] = addresses.filter(Boolean);
+    const filtered = addresses.filter(Boolean);
+    hooks[network] = filtered;
+    // Also store under v1 alias for backward compatibility
+    try {
+      hooks[normalizeNetwork(network).aliasV1] = filtered;
+    } catch {
+      // ignore
+    }
   }
 
   return hooks;
@@ -468,7 +499,14 @@ async function parseDynamicGasPriceConfig(): Promise<DynamicGasPriceConfig> {
   // - Otherwise, use hybrid (dynamic with static fallback)
   let hasExplicitGasPrice = false;
   for (const network of supportedNetworks) {
-    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_TARGET_GAS_PRICE`;
+    const envKeyBase = (() => {
+      try {
+        return normalizeNetwork(network).aliasV1;
+      } catch {
+        return network;
+      }
+    })();
+    const envVarName = `${envKeyBase.toUpperCase().replace(/[-:]/g, "_")}_TARGET_GAS_PRICE`;
     if (process.env[envVarName]) {
       hasExplicitGasPrice = true;
       break;
@@ -541,10 +579,23 @@ function parseTokenPriceConfig(): TokenPriceConfig {
   // Parse custom coin IDs
   const coinIds: Record<string, string> = {};
   for (const network of supportedNetworks) {
-    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_COIN_ID`;
+    const envKeyBase = (() => {
+      try {
+        return normalizeNetwork(network).aliasV1;
+      } catch {
+        return network;
+      }
+    })();
+    const envVarName = `${envKeyBase.toUpperCase().replace(/[-:]/g, "_")}_COIN_ID`;
     const coinId = process.env[envVarName];
     if (coinId) {
       coinIds[network] = coinId;
+      // Also store under v1 alias for backward compatibility
+      try {
+        coinIds[normalizeNetwork(network).aliasV1] = coinId;
+      } catch {
+        // ignore
+      }
     }
   }
 

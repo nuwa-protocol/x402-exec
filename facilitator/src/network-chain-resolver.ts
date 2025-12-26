@@ -16,6 +16,7 @@ const getSupportedNetworks = getSupportedNetworkIds;
 import { baseSepolia, base } from "viem/chains";
 import type { Chain } from "viem";
 import { getLogger } from "./telemetry.js";
+import { normalizeNetwork } from "./network-id.js";
 
 /**
  * Chain information interface
@@ -203,7 +204,15 @@ export class NetworkChainResolver {
     for (const network of supportedNetworks) {
       const rpcUrl = await this.getRpcUrl(network);
       if (rpcUrl) {
+        // Store under canonical key
         rpcUrls[network] = rpcUrl;
+        // Also store under v1 alias for backward compatibility (e.g., "base-sepolia", "bsc")
+        try {
+          const normalized = normalizeNetwork(network);
+          rpcUrls[normalized.aliasV1] = rpcUrl;
+        } catch {
+          // ignore
+        }
       }
     }
 
@@ -228,6 +237,14 @@ export class NetworkChainResolver {
         source: chainInfo?.source,
         error: chainInfo ? undefined : "Network not found",
       };
+
+      // Also expose status under v1 alias for backward compatibility
+      try {
+        const normalized = normalizeNetwork(network);
+        status[normalized.aliasV1] = status[network];
+      } catch {
+        // ignore
+      }
     }
 
     return status;
@@ -281,8 +298,26 @@ export class NetworkChainResolver {
    * Get RPC URL from environment variable
    */
   private getEnvironmentRpcUrl(network: string): string | undefined {
-    const envVarName = `${network.toUpperCase().replace(/-/g, "_")}_RPC_URL`;
-    return process.env[envVarName];
+    // Backward compatible env var lookup:
+    // - Accept v1 aliases: BASE_SEPOLIA_RPC_URL, BSC_RPC_URL, etc.
+    // - Accept CAIP-2 canonical: EIP155_84532_RPC_URL, EIP155_56_RPC_URL, etc.
+    //
+    // NOTE: raw CAIP-2 contains ":", which is not valid in env var names, so we normalize.
+    const direct = `${network.toUpperCase().replace(/[-:]/g, "_")}_RPC_URL`;
+    if (process.env[direct]) return process.env[direct];
+
+    try {
+      const normalized = normalizeNetwork(network);
+      const aliasKey = `${normalized.aliasV1.toUpperCase().replace(/[-:]/g, "_")}_RPC_URL`;
+      if (process.env[aliasKey]) return process.env[aliasKey];
+
+      const canonicalKey = `${normalized.canonical.toUpperCase().replace(/[-:]/g, "_")}_RPC_URL`;
+      if (process.env[canonicalKey]) return process.env[canonicalKey];
+    } catch {
+      // ignore
+    }
+
+    return undefined;
   }
 }
 
