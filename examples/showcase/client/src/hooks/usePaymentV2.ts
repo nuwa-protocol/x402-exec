@@ -3,14 +3,17 @@
  * 
  * This implementation uses the official @x402/core client with
  * ExactEvmSchemeWithRouterSettlement for x402x router settlement support.
+ * 
+ * V2 Negotiation: Uses paymentRequirementsSelector to match UI-selected network/option.
+ * Network Mapping: Uses x402x getNetworkConfig for CAIP-2 → chainId conversion.
  */
 
 import { useState, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { registerX402xScheme } from "@x402x/extensions";
+import { registerX402xScheme, getNetworkConfig } from "@x402x/extensions";
 import { wrapFetchWithPayment } from "@x402/fetch";
 import { x402Client } from "@x402/core/client";
-import { buildApiUrl, type Network } from "../config";
+import { buildApiUrl, getNetworkByChainId } from "../config";
 import { useNetworkSwitch } from "./useNetworkSwitch";
 
 export type PaymentStatus =
@@ -23,10 +26,13 @@ export type PaymentStatus =
   | "error";
 
 /**
- * Simple hook for x402x payments using official SDK
+ * Hook for x402x payments using official SDK with v2 negotiation
  * 
- * This provides a cleaner implementation by delegating the complex
- * payment logic to the official x402 SDK and our custom scheme.
+ * This provides a payment flow that:
+ * 1. Accepts a preferred network from UI
+ * 2. Uses paymentRequirementsSelector to pick the matching accept option
+ * 3. Switches to the correct network if needed
+ * 4. Delegates payment to the official x402 SDK
  */
 export function usePaymentV2() {
   const [status, setStatus] = useState<PaymentStatus>("idle");
@@ -41,11 +47,11 @@ export function usePaymentV2() {
    * Make a payment using the x402x scheme with official SDK
    * 
    * @param endpoint - API endpoint (e.g., "/api/purchase-download")
-   * @param network - Network identifier (e.g., "base-sepolia")
+   * @param preferredNetwork - Preferred network (CAIP-2 format, e.g., "eip155:84532")
    * @param body - Request body
    * @returns Payment result
    */
-  const pay = async (endpoint: string, network: Network, body?: any) => {
+  const pay = async (endpoint: string, preferredNetwork: string, body?: any) => {
     if (!isConnected || !address || !walletClient) {
       const errorMsg = "Wallet not connected. Please connect your wallet and try again.";
       setError(errorMsg);
@@ -53,14 +59,48 @@ export function usePaymentV2() {
       throw new Error(errorMsg);
     }
 
-    // Switch to target network
-    console.log("[Payment] Switching to network:", network);
-    const switched = await switchToNetwork(network);
-    if (!switched) {
-      const errorMsg = `Failed to switch to ${network}. Please switch manually and try again.`;
+    // Extract chainId from CAIP-2 and switch network
+    const chainIdStr = preferredNetwork.split(":")[1];
+    if (!chainIdStr) {
+      const errorMsg = "Invalid network format";
       setError(errorMsg);
       setStatus("error");
       throw new Error(errorMsg);
+    }
+
+    const targetChainId = parseInt(chainIdStr, 10);
+    console.log("[Payment] Target chainId:", targetChainId, "current:", walletClient.chain?.id);
+
+    // Switch to target network if needed
+    if (walletClient.chain?.id !== targetChainId) {
+      console.log("[Payment] Switching to chainId:", targetChainId);
+      
+      // Use local config to map chainId to v1 network name for switchToNetwork
+      // (switchToNetwork still expects v1 network names, but we derive it from chainId)
+      const networkV1 = getNetworkByChainId(targetChainId);
+      if (!networkV1) {
+        // Verify network exists in x402x config before failing
+        const x402xConfig = getNetworkConfig(preferredNetwork);
+        if (!x402xConfig) {
+          const errorMsg = `Network ${preferredNetwork} not supported by x402x`;
+          setError(errorMsg);
+          setStatus("error");
+          throw new Error(errorMsg);
+        }
+        
+        const errorMsg = `ChainId ${targetChainId} not configured in local wallet switch mapping. Please add it to config.ts`;
+        setError(errorMsg);
+        setStatus("error");
+        throw new Error(errorMsg);
+      }
+
+      const switched = await switchToNetwork(networkV1 as any);
+      if (!switched) {
+        const errorMsg = `Failed to switch to network ${networkV1} (chainId ${targetChainId}). Please switch manually and try again.`;
+        setError(errorMsg);
+        setStatus("error");
+        throw new Error(errorMsg);
+      }
     }
 
     setStatus("preparing");
@@ -69,7 +109,7 @@ export function usePaymentV2() {
 
     try {
       const fullUrl = buildApiUrl(endpoint);
-      const requestBody = { ...body, network };
+      const requestBody = { ...body, network: preferredNetwork };
 
       console.log("[Payment] Setting up x402Client with x402x router settlement");
 
@@ -81,25 +121,34 @@ export function usePaymentV2() {
         },
       };
 
-      // One-line setup for x402x! 🎉
-      const v2NetworkId = `eip155:${walletClient.chain!.id}` as `${string}:${string}`;
-      const client = new x402Client();
+      // Setup x402 client with custom selector
+      const v2NetworkId = preferredNetwork as `${string}:${string}`;
+      const client = new x402Client((_x402Version, accepts) => {
+        // Custom selector: prefer the network that matches UI selection
+        console.log("[Payment] Selector called with", accepts.length, "options");
+        const match = accepts.find((a) => a.network === preferredNetwork);
+        if (match) {
+          console.log("[Payment] Matched accept option:", match.network);
+          return match;
+        }
+        // Fallback to first option
+        console.warn("[Payment] No exact match, using first option");
+        return accepts[0];
+      });
+
       registerX402xScheme(client, v2NetworkId, signer);
 
-      // Debug: print the exact accepted requirements that will be embedded in PAYMENT-SIGNATURE (v2 matching is deepEqual)
+      // Debug: print the exact accepted requirements
       client.onAfterPaymentCreation(async ({ paymentPayload }) => {
         console.log("[Payment] paymentPayload.accepted:", paymentPayload.accepted);
+        console.log("[Payment] paymentPayload.extensions:", paymentPayload.extensions);
       });
 
       // Wrap fetch with automatic 402 payment handling
-      // Add debug wrapper to see what's happening
       const fetchWithDebug = async (input: URL | RequestInfo, init?: RequestInit) => {
         console.log("[Payment] Making fetch request to:", input);
-        console.log("[Payment] Request headers:", init?.headers);
 
         // Workaround: upstream @x402/fetch incorrectly adds Access-Control-Expose-Headers as a REQUEST header.
-        // That causes browser preflight failures unless the server whitelists it.
-        // Strip it client-side so we don't need server-side CORS hacks.
         if (init?.headers) {
           const h = new Headers(init.headers);
           h.delete("Access-Control-Expose-Headers");
@@ -125,11 +174,6 @@ export function usePaymentV2() {
       console.log("[Payment] Making request with automatic 402 handling to:", fullUrl);
       setStatus("signing");
 
-      // Make the request - the wrapper will automatically:
-      // 1. Detect 402 response
-      // 2. Parse payment requirements from headers
-      // 3. Call our scheme to create payment payload
-      // 4. Retry request with PAYMENT-SIGNATURE header
       const response = await fetchWithPayment(fullUrl, {
         method: "POST",
         headers: {
@@ -148,17 +192,14 @@ export function usePaymentV2() {
           const decodePaymentRequired = (raw: string) => {
             const trimmed = raw.trim();
 
-            // Some proxies/frameworks may return raw JSON (not base64). Handle both.
             if (trimmed.startsWith("{")) {
               return JSON.parse(trimmed) as { error?: string };
             }
 
-            // PAYMENT-REQUIRED is base64-encoded JSON (may be base64url and/or missing padding).
             const base64 = trimmed.replace(/-/g, "+").replace(/_/g, "/");
             const padLen = (4 - (base64.length % 4)) % 4;
             const padded = base64 + "=".repeat(padLen);
 
-            // atob returns a binary string; decode as UTF-8 to support non-ascii JSON.
             const binary = atob(padded);
             const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
             const decoded = new TextDecoder().decode(bytes);
@@ -177,7 +218,6 @@ export function usePaymentV2() {
             throw new Error("Payment required (failed to parse PAYMENT-REQUIRED header)");
           }
 
-          // Parsed successfully: surface server-provided reason (if any)
           throw new Error(parsed.error || "Payment required");
         }
         throw new Error("Payment required");
@@ -219,4 +259,3 @@ export function usePaymentV2() {
     reset,
   };
 }
-

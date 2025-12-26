@@ -174,7 +174,8 @@ export function calculateGasLimit(
   const baseGas = 200000n; // Conservative estimate
 
   // Add gas for hook execution (if any)
-  const hookGas = facilitatorFee !== "0x0" ? 100000n : 0n;
+  // Treat both "0" and "0x0" (and any numeric zero) as no-fee.
+  const hookGas = BigInt(facilitatorFee) === 0n ? 0n : 100000n;
 
   // Calculate total with multiplier
   const totalGas = ((baseGas + hookGas) * BigInt(Math.ceil(gasMultiplier * 100))) / 100n;
@@ -383,11 +384,14 @@ function parseRouterSettlementFromExtensions(extensions: Record<string, unknown>
     typeof info.settlementRouter !== "string" ||
     typeof info.hook !== "string" ||
     typeof info.hookData !== "string" ||
-    typeof info.finalPayTo !== "string" ||
-    typeof info.facilitatorFee !== "string"
+    typeof info.finalPayTo !== "string"
   ) {
     return undefined;
   }
+
+  // facilitatorFee is optional; default to "0" when omitted
+  const facilitatorFee =
+    typeof (info as any).facilitatorFee === "string" ? (info as any).facilitatorFee : "0";
 
   return {
     salt: info.salt,
@@ -395,7 +399,7 @@ function parseRouterSettlementFromExtensions(extensions: Record<string, unknown>
     hook: info.hook,
     hookData: info.hookData,
     finalPayTo: info.finalPayTo,
-    facilitatorFee: info.facilitatorFee,
+    facilitatorFee,
   };
 }
 

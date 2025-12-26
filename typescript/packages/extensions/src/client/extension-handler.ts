@@ -19,12 +19,16 @@ import { ExactEvmSchemeWithRouterSettlement, type ClientEvmSigner } from "./exac
 /**
  * Injects x402x extension handler into x402Client (Low-level API).
  *
- * IMPORTANT (x402 v2): The server matches v2 payments by deep-equality between
- * `paymentPayload.accepted` and one of the server's `accepts[]` requirements.
- * Therefore, we MUST NOT mutate `selectedRequirements` in this hook.
- *
- * Instead, this hook lets you capture root-level extension data (from
- * `paymentRequired.extensions`) and pass it into your scheme instance via a callback.
+ * IMPORTANT (x402 v2 + x402x multi-network):
+ * - Server returns per-option x402x info in `accepts[i].extra["x402x-router-settlement"]`
+ * - x402Client only passes `PaymentRequirements` to scheme (no root extensions)
+ * - Facilitator v2 reads from `paymentPayload.extensions["x402x-router-settlement"]`
+ * 
+ * Solution: Copy the selected option's x402x info from `selectedRequirements.extra`
+ * into `paymentRequired.extensions` so it gets included in `paymentPayload.extensions`.
+ * 
+ * This does NOT mutate `selectedRequirements` (which becomes `paymentPayload.accepted`),
+ * so v2 deepEqual matching still works.
  * 
  * @param client - x402Client instance to inject handler into
  * @param onRouterSettlementExtension - Callback to receive the per-request extension object
@@ -51,14 +55,42 @@ export function injectX402xExtensionHandler(
   return client.onBeforePaymentCreation(async (context) => {
     const { paymentRequired, selectedRequirements } = context;
     
-    // If the server provides the extension at root level, forward it to the callback.
-    // DO NOT mutate `selectedRequirements` (v2 matching requires exact deepEqual).
-    if (onRouterSettlementExtension) {
-      onRouterSettlementExtension(paymentRequired.extensions?.[ROUTER_SETTLEMENT_KEY]);
+    // Debug: show what we received
+    console.log("[x402x-handler] onBeforePaymentCreation called");
+    console.log("[x402x-handler] selectedRequirements.network:", selectedRequirements.network);
+    console.log("[x402x-handler] selectedRequirements.extra keys:", Object.keys(selectedRequirements.extra || {}));
+    
+    // Key insight: Per-option x402x info is in selectedRequirements.extra[x402x-router-settlement].
+    // We need to copy it into paymentRequired.extensions[x402x-router-settlement] so that:
+    // 1. x402Client copies it into paymentPayload.extensions (v2 standard)
+    // 2. Facilitator v2 can read it from paymentPayload.extensions
+    // 3. We DON'T mutate selectedRequirements (which becomes paymentPayload.accepted)
+    
+    const perOptionExtension = selectedRequirements.extra?.[ROUTER_SETTLEMENT_KEY];
+    
+    if (perOptionExtension) {
+      // Initialize extensions object if it doesn't exist
+      if (!paymentRequired.extensions) {
+        (paymentRequired as any).extensions = {};
+      }
+      
+      // Copy the per-option x402x info into root extensions
+      // This will be copied into paymentPayload.extensions by x402Client
+      (paymentRequired.extensions as any)[ROUTER_SETTLEMENT_KEY] = perOptionExtension;
+      
+      console.log("[x402x-handler] ✅ Copied per-option x402x info into PaymentRequired.extensions");
+      console.log("[x402x-handler] Extension info:", JSON.stringify(perOptionExtension, null, 2));
+    } else {
+      // Fallback: if no per-option info, use root-level extension (legacy behavior)
+      console.warn("[x402x-handler] ⚠️ No per-option x402x info found in selectedRequirements.extra");
+      console.warn("[x402x-handler] This may cause facilitator errors. Check server-side createSettlementRouteConfig.");
     }
 
-    // Keep TypeScript happy about unused var; also a breadcrumb for future debugging.
-    void selectedRequirements;
+    // Forward extension to callback (for schemes that need direct access)
+    if (onRouterSettlementExtension) {
+      const extensionToUse = perOptionExtension || paymentRequired.extensions?.[ROUTER_SETTLEMENT_KEY];
+      onRouterSettlementExtension(extensionToUse);
+    }
   });
 }
 

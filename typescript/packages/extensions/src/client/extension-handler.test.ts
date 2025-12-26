@@ -87,7 +87,7 @@ describe("x402x Extension Handler", () => {
       // Hook should be registered successfully
     });
 
-    it("should forward root-level extension to callback without mutating accepted", async () => {
+    it("should copy per-option x402x info from selectedRequirements.extra to paymentRequired.extensions", async () => {
       const client = new x402Client();
       let forwarded: unknown | undefined;
 
@@ -101,6 +101,72 @@ describe("x402x Extension Handler", () => {
       const hook = hooks?.[0];
       expect(typeof hook).toBe("function");
 
+      // v2 multi-network scenario: per-option x402x info in selectedRequirements.extra
+      const ctx = {
+        paymentRequired: {
+          extensions: {}, // Initially empty or has other extensions
+        },
+        selectedRequirements: {
+          extra: {
+            name: "USDC",
+            version: "2",
+            [ROUTER_SETTLEMENT_KEY]: { 
+              info: { 
+                settlementRouter: "0xROUTER",
+                salt: "0xSALT",
+                hook: "0xHOOK",
+                hookData: "0x",
+                finalPayTo: "0xMERCHANT",
+                facilitatorFee: "0",
+              },
+            },
+          },
+        },
+      };
+
+      await hook?.(ctx);
+
+      // Should copy per-option x402x info into paymentRequired.extensions
+      expect(ctx.paymentRequired.extensions[ROUTER_SETTLEMENT_KEY]).toEqual({
+        info: {
+          settlementRouter: "0xROUTER",
+          salt: "0xSALT",
+          hook: "0xHOOK",
+          hookData: "0x",
+          finalPayTo: "0xMERCHANT",
+          facilitatorFee: "0",
+        },
+      });
+
+      // Should forward the extension to callback
+      expect(forwarded).toEqual({
+        info: {
+          settlementRouter: "0xROUTER",
+          salt: "0xSALT",
+          hook: "0xHOOK",
+          hookData: "0x",
+          finalPayTo: "0xMERCHANT",
+          facilitatorFee: "0",
+        },
+      });
+
+      // Ensure we didn't mutate selectedRequirements itself (which becomes paymentPayload.accepted)
+      expect(ctx.selectedRequirements.extra[ROUTER_SETTLEMENT_KEY]).toBeDefined();
+    });
+
+    it("should use root-level extension as fallback when no per-option info", async () => {
+      const client = new x402Client();
+      let forwarded: unknown | undefined;
+
+      injectX402xExtensionHandler(client, (ext) => {
+        forwarded = ext;
+      });
+
+      const hooks = (client as unknown as { beforePaymentCreationHooks?: Array<(ctx: any) => any> })
+        .beforePaymentCreationHooks;
+      const hook = hooks?.[0];
+
+      // Legacy scenario: only root-level extension, no per-option info
       const ctx = {
         paymentRequired: {
           extensions: {
@@ -108,15 +174,19 @@ describe("x402x Extension Handler", () => {
           },
         },
         selectedRequirements: {
-          extra: { name: "USDC", version: "2" },
+          extra: { name: "USDC", version: "2" }, // No x402x info here
         },
       };
 
       await hook?.(ctx);
 
+      // Should forward root-level extension to callback
       expect(forwarded).toEqual({ info: { settlementRouter: "0x0" } });
-      // Ensure we didn't mutate accepted requirements
-      expect(ctx.selectedRequirements.extra[ROUTER_SETTLEMENT_KEY]).toBeUndefined();
+      
+      // Root extension should remain unchanged
+      expect(ctx.paymentRequired.extensions[ROUTER_SETTLEMENT_KEY]).toEqual({
+        info: { settlementRouter: "0x0" },
+      });
     });
   });
 });

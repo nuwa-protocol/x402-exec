@@ -179,7 +179,8 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     if (!hook) throw new Error("Missing required parameter: hook");
     if (hookData === undefined) throw new Error("Missing required parameter: hookData");
     if (!finalPayTo) throw new Error("Missing required parameter: finalPayTo");
-    if (facilitatorFee === undefined) throw new Error("Missing required parameter: facilitatorFee");
+    // facilitatorFee is optional - if not provided, use "0" (facilitator will calculate actual fee)
+    const resolvedFacilitatorFee = facilitatorFee ?? "0";
 
     // Parse chain ID from network (e.g., "eip155:84532" -> 84532)
     const chainId = parseInt(paymentRequirements.network.split(":")[1]);
@@ -203,7 +204,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
       validBefore,
       salt,
       payTo: finalPayTo,
-      facilitatorFee,
+      facilitatorFee: resolvedFacilitatorFee,
       hook,
       hookData,
     };
