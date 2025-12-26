@@ -195,6 +195,8 @@ export {
   getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
   toCanonicalNetworkKey,
-  NETWORK_ALIASES_V1_TO_V2
+  NETWORK_ALIASES_V1_TO_V2,
+  NETWORK_NAMES,
+  NETWORK_IDS
 } from "./network-utils.js";
 

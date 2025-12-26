@@ -7,7 +7,8 @@
 
 import { defineChain, type Chain } from "viem";
 import * as allChains from "viem/chains";
-import { getNetworkId } from "./network-utils.js";
+import type { Network } from "@x402/core/types";
+import { NETWORK_ALIASES_V1_TO_V2 } from "./network-utils.js";
 
 /**
  * Custom chain definitions for networks not in viem's standard list
@@ -62,27 +63,43 @@ const customChains: Record<number, Chain> = {
 };
 
 /**
- * Get viem chain configuration for a network name
+ * Get viem chain configuration for a network
  * 
+ * Accepts both CAIP-2 format (preferred) and human-readable network names (legacy).
  * Checks custom chains first, then falls back to viem's standard chains.
  * 
- * @param network - Network name (e.g., "base-sepolia", "x-layer-testnet")
+ * @param network - Network identifier (CAIP-2 or human-readable name)
  * @returns Viem chain configuration
  * @throws Error if network is not supported
  * 
  * @example
  * ```typescript
- * const chain = getChain("x-layer-testnet");
+ * // Preferred: CAIP-2 format
+ * const chain = getChain("eip155:1952");
  * // => { id: 1952, name: "X Layer Testnet", ... }
  * 
+ * // Legacy: human-readable name
  * const baseChain = getChain("base-sepolia");
  * // => { id: 84532, name: "Base Sepolia", ... }
  * ```
  */
-export function getChain(network: string): Chain {
-  // Get the CAIP-2 network ID (e.g., "base-sepolia" -> "eip155:84532")
-  const networkId = getNetworkId(network);
-  const chainId = parseInt(networkId.split(":")[1]);
+export function getChain(network: string | Network): Chain {
+  let chainId: number;
+  
+  // If already CAIP-2 format, extract chainId directly
+  if (network.startsWith('eip155:')) {
+    chainId = parseInt(network.split(":")[1]);
+  } else {
+    // Convert name to CAIP-2, then extract chainId
+    const caip2 = NETWORK_ALIASES_V1_TO_V2[network];
+    if (!caip2) {
+      throw new Error(
+        `Unknown network: ${network}. ` +
+        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+      );
+    }
+    chainId = parseInt(caip2.split(":")[1]);
+  }
 
   // Check custom chains first
   if (customChains[chainId]) {
@@ -93,7 +110,7 @@ export function getChain(network: string): Chain {
   const chain = Object.values(allChains).find((c) => c.id === chainId);
   if (!chain) {
     throw new Error(
-      `Unsupported network: ${network} (chain ID: ${chainId}). ` +
+      `Unsupported chain ID: ${chainId}. ` +
         `Please add custom chain definition in chains.ts`
     );
   }

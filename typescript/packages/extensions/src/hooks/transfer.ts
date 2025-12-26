@@ -8,6 +8,7 @@
 
 import { encodeAbiParameters } from "viem";
 import type { Address } from "viem";
+import type { Network } from "@x402/core/types";
 import { getNetworkConfig } from "../networks.js";
 
 /**
@@ -139,17 +140,24 @@ export namespace TransferHook {
   /**
    * Get TransferHook address for a specific network
    *
-   * @param network - Network name (e.g., 'base-sepolia')
+   * Accepts both CAIP-2 format (preferred) and human-readable network names (legacy).
+   *
+   * @param network - Network identifier (CAIP-2 or human-readable name)
    * @returns TransferHook contract address
    * @throws Error if network is not supported
    *
    * @example
    * ```typescript
-   * const address = TransferHook.getAddress('base-sepolia');
+   * // Preferred: CAIP-2 format
+   * const address = TransferHook.getAddress('eip155:84532');
+   * // => '0x4DE234059C6CcC94B8fE1eb1BD24804794083569'
+   * 
+   * // Legacy: human-readable name
+   * const address2 = TransferHook.getAddress('base-sepolia');
    * // => '0x4DE234059C6CcC94B8fE1eb1BD24804794083569'
    * ```
    */
-  export function getAddress(network: string): string {
+  export function getAddress(network: string | Network): string {
     const config = getNetworkConfig(network);
     return config.hooks.transfer;
   }

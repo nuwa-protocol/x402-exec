@@ -20,9 +20,14 @@ export interface AssetInfo {
 }
 
 /**
- * Network name to CAIP-2 network ID mapping
+ * Primary mapping from human-readable network names to CAIP-2 identifiers
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for network name mappings.
+ * When adding a new network, only update this mapping and the corresponding
+ * entries in networks.ts and DEFAULT_ASSETS.
  */
-const NETWORK_IDS: Record<string, Network> = {
+export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
+  // V1 human-readable names -> V2 CAIP-2 canonical keys
   "base-sepolia": "eip155:84532",
   "x-layer-testnet": "eip155:1952",
   "skale-base-sepolia": "eip155:324705682",
@@ -33,17 +38,23 @@ const NETWORK_IDS: Record<string, Network> = {
 };
 
 /**
- * CAIP-2 network ID to network name mapping (reverse lookup)
+ * @deprecated Use NETWORK_ALIASES_V1_TO_V2 instead
+ * Network name to CAIP-2 network ID mapping (alias for backward compatibility)
  */
-const NETWORK_NAMES: Record<Network, string> = {
-  "eip155:84532": "base-sepolia",
-  "eip155:1952": "x-layer-testnet",
-  "eip155:324705682": "skale-base-sepolia",
-  "eip155:8453": "base",
-  "eip155:196": "x-layer",
-  "eip155:97": "bsc-testnet",
-  "eip155:56": "bsc",
-};
+export const NETWORK_IDS = NETWORK_ALIASES_V1_TO_V2;
+
+/**
+ * CAIP-2 network ID to network name mapping (reverse lookup)
+ * 
+ * Automatically generated from NETWORK_ALIASES_V1_TO_V2.
+ * DO NOT edit this manually - it will be regenerated.
+ */
+export const NETWORK_NAMES: Record<Network, string> = Object.entries(
+  NETWORK_ALIASES_V1_TO_V2
+).reduce((acc, [name, caip2]) => {
+  acc[caip2] = name;
+  return acc;
+}, {} as Record<Network, string>);
 
 /**
  * Default asset (USDC) configuration per network
@@ -247,21 +258,6 @@ export function processPriceToAtomicAmount(
     };
   }
 }
-
-/**
- * Alias mapping from v1 network names to v2 CAIP-2 identifiers
- * This provides backward compatibility for v1 network names
- */
-export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
-  // V1 human-readable names -> V2 CAIP-2 canonical keys
-  "base-sepolia": "eip155:84532",
-  "x-layer-testnet": "eip155:1952",
-  "skale-base-sepolia": "eip155:324705682",
-  "base": "eip155:8453",
-  "x-layer": "eip155:196",
-  "bsc-testnet": "eip155:97",
-  "bsc": "eip155:56",
-};
 
 /**
  * Get list of all supported network IDs (CAIP-2 identifiers)
