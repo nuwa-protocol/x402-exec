@@ -7,6 +7,7 @@
 
 import { encodeAbiParameters } from "viem";
 import type { Address } from "viem";
+import type { Network } from "@x402/core/types";
 import { getNetworkConfig } from "../networks.js";
 
 /**
@@ -32,11 +33,13 @@ export namespace NFTMintHook {
   /**
    * Get NFTMintHook contract address for a specific network
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
+   * Accepts both CAIP-2 format and human-readable network names.
+   *
+   * @param network - Network identifier (CAIP-2 or human-readable name)
    * @returns The contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
-  export function getAddress(network: string): `0x${string}` {
+  export function getAddress(network: string | Network): `0x${string}` {
     const config = getNetworkConfig(network);
     if (!config.demoHooks?.nftMint) {
       throw new Error(
@@ -50,12 +53,13 @@ export namespace NFTMintHook {
    * Get the NFT contract address for a specific network
    *
    * This is the address of the ERC721 contract that will be minted from.
+   * Accepts both CAIP-2 format and human-readable network names.
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
+   * @param network - Network identifier (CAIP-2 or human-readable name)
    * @returns The NFT contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
-  export function getNFTContractAddress(network: string): `0x${string}` {
+  export function getNFTContractAddress(network: string | Network): `0x${string}` {
     const config = getNetworkConfig(network);
     if (!config.demoHooks?.randomNFT) {
       throw new Error(
@@ -102,11 +106,13 @@ export namespace RewardHook {
   /**
    * Get RewardHook contract address for a specific network
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
+   * Accepts both CAIP-2 format and human-readable network names.
+   *
+   * @param network - Network identifier (CAIP-2 or human-readable name)
    * @returns The contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
-  export function getAddress(network: string): `0x${string}` {
+  export function getAddress(network: string | Network): `0x${string}` {
     const config = getNetworkConfig(network);
     if (!config.demoHooks?.reward) {
       throw new Error(
@@ -120,12 +126,13 @@ export namespace RewardHook {
    * Get the reward token (ERC20) address for a specific network
    *
    * This is the address of the ERC20 contract that will be distributed as rewards.
+   * Accepts both CAIP-2 format and human-readable network names.
    *
-   * @param network - Network identifier (e.g., 'base-sepolia', 'skale-base-sepolia')
+   * @param network - Network identifier (CAIP-2 or human-readable name)
    * @returns The reward token contract address for the specified network
    * @throws Error if demo hooks are not configured for the network
    */
-  export function getTokenAddress(network: string): `0x${string}` {
+  export function getTokenAddress(network: string | Network): `0x${string}` {
     const config = getNetworkConfig(network);
     if (!config.demoHooks?.rewardToken) {
       throw new Error(

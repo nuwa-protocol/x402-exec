@@ -62,7 +62,7 @@ vi.mock("@x402x/extensions", async () => {
       };
       return nameToId[network] || network;
     }),
-    getNetworkName: vi.fn((network) => {
+    getNetworkAlias: vi.fn((network) => {
       // Convert CAIP-2 to v1 name
       const idToName: Record<string, string> = {
         "eip155:84532": "base-sepolia",

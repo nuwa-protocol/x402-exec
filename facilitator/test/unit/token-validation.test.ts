@@ -59,7 +59,7 @@ describe("Token Address Validation", () => {
 
       expect(() => {
         validateTokenAddress(network, someAddress);
-      }).toThrow(/Unsupported network/);
+      }).toThrow(/Unknown network/);
     });
 
     it("should provide helpful error message with expected and actual addresses", () => {

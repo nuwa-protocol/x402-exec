@@ -2,11 +2,11 @@
  * Network configuration for x402x
  *
  * Contains deployed contract addresses and configuration for each supported network.
- * Uses official x402 v2 CAIP-2 network identifiers.
+ * Uses official x402 v2 CAIP-2 network identifiers as keys.
  */
 
 import type { Network } from "@x402/core/types";
-import { getDefaultAsset, getNetworkId } from "./network-utils.js";
+import { getDefaultAsset, NETWORK_ALIASES_V1_TO_V2, getNetworkAlias } from "./network-utils.js";
 import type { NetworkConfig } from "./types.js";
 
 /**
@@ -25,20 +25,61 @@ function getDefaultAssetConfig(network: Network) {
 }
 
 /**
+ * Normalize network identifier to CAIP-2 format
+ * 
+ * Accepts both human-readable names (string) and CAIP-2 format (Network type).
+ * This enables backward compatibility while supporting the new CAIP-2 standard.
+ * 
+ * @param network - Network identifier (CAIP-2 or human-readable name)
+ * @returns CAIP-2 network identifier
+ * @throws Error if network is not supported
+ * 
+ * @example
+ * ```typescript
+ * normalizeToCAIP2('base-sepolia');    // => 'eip155:84532'
+ * normalizeToCAIP2('eip155:84532');    // => 'eip155:84532'
+ * ```
+ */
+function normalizeToCAIP2(network: string | Network): Network {
+  // Already CAIP-2 format - validate it's supported
+  if (network.startsWith('eip155:')) {
+    const caip2 = network as Network;
+    // Check if this CAIP-2 identifier is in our supported networks
+    if (!(caip2 in networks)) {
+      throw new Error(
+        `Unsupported CAIP-2 network: ${network}. ` +
+        `Supported networks: ${Object.keys(networks).join(", ")}`
+      );
+    }
+    return caip2;
+  }
+  // Convert from human-readable name using alias mapping
+  const caip2 = NETWORK_ALIASES_V1_TO_V2[network];
+  if (!caip2) {
+    throw new Error(
+      `Unknown network: ${network}. ` +
+      `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+    );
+  }
+  return caip2;
+}
+
+/**
  * Network configurations for all supported networks
  *
- * Uses getNetworkId() and getDefaultAsset() to ensure consistency
- * with CAIP-2 network identifiers.
+ * Uses CAIP-2 format as keys for consistency with x402 v2 protocol.
+ * This ensures compatibility across different ecosystems and simplifies
+ * adding new networks (only need chain ID).
  */
-export const networks: Record<string, NetworkConfig> = {
-  "base-sepolia": {
-    chainId: parseInt(getNetworkId("base-sepolia").split(":")[1]),
+export const networks: Record<Network, NetworkConfig> = {
+  "eip155:84532": {
+    chainId: 84532,
     name: "Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
     txExplorerBaseUrl: "https://sepolia.basescan.org/tx/",
     settlementRouter: "0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("base-sepolia")),
+    defaultAsset: getDefaultAssetConfig("eip155:84532"),
     hooks: {
       transfer: "0x4DE234059C6CcC94B8fE1eb1BD24804794083569",
     },
@@ -53,14 +94,14 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "ETH",
     },
   },
-  "x-layer-testnet": {
-    chainId: parseInt(getNetworkId("x-layer-testnet").split(":")[1]),
+  "eip155:1952": {
+    chainId: 1952,
     name: "X Layer Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer-test/address/",
     txExplorerBaseUrl: "https://www.oklink.com/xlayer-test/tx/",
     settlementRouter: "0xba9980fb08771e2fd10c17450f52d39bcb9ed576",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("x-layer-testnet")),
+    defaultAsset: getDefaultAssetConfig("eip155:1952"),
     hooks: {
       transfer: "0xD4b98dd614c1Ea472fC4547a5d2B93f3D3637BEE",
     },
@@ -75,14 +116,14 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "OKB",
     },
   },
-  "skale-base-sepolia": {
-    chainId: parseInt(getNetworkId("skale-base-sepolia").split(":")[1]),
+  "eip155:324705682": {
+    chainId: 324705682,
     name: "SKALE Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/address/",
     txExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/tx/",
     settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("skale-base-sepolia")),
+    defaultAsset: getDefaultAssetConfig("eip155:324705682"),
     hooks: {
       transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
     },
@@ -97,14 +138,14 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "Credits",
     },
   },
-  "bsc-testnet": {
-    chainId: parseInt(getNetworkId("bsc-testnet").split(":")[1]),
+  "eip155:97": {
+    chainId: 97,
     name: "BSC Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://testnet.bscscan.com/address/",
     txExplorerBaseUrl: "https://testnet.bscscan.com/tx/",
     settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("bsc-testnet")),
+    defaultAsset: getDefaultAssetConfig("eip155:97"),
     hooks: {
       transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
     },
@@ -120,14 +161,14 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   // Mainnet configurations
-  base: {
-    chainId: parseInt(getNetworkId("base").split(":")[1]),
+  "eip155:8453": {
+    chainId: 8453,
     name: "Base Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://basescan.org/address/",
     txExplorerBaseUrl: "https://basescan.org/tx/",
     settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("base")),
+    defaultAsset: getDefaultAssetConfig("eip155:8453"),
     hooks: {
       transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
     },
@@ -142,14 +183,14 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "ETH",
     },
   },
-  "x-layer": {
-    chainId: parseInt(getNetworkId("x-layer").split(":")[1]),
+  "eip155:196": {
+    chainId: 196,
     name: "X Layer Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer/address/",
     txExplorerBaseUrl: "https://www.oklink.com/xlayer/tx/",
     settlementRouter: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("x-layer")),
+    defaultAsset: getDefaultAssetConfig("eip155:196"),
     hooks: {
       transfer: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
     },
@@ -164,14 +205,14 @@ export const networks: Record<string, NetworkConfig> = {
       nativeToken: "OKB",
     },
   },
-  bsc: {
-    chainId: parseInt(getNetworkId("bsc").split(":")[1]),
+  "eip155:56": {
+    chainId: 56,
     name: "BSC Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://bscscan.com/address/",
     txExplorerBaseUrl: "https://bscscan.com/tx/",
     settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
-    defaultAsset: getDefaultAssetConfig(getNetworkId("bsc")),
+    defaultAsset: getDefaultAssetConfig("eip155:56"),
     hooks: {
       transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
     },
@@ -189,20 +230,31 @@ export const networks: Record<string, NetworkConfig> = {
 };
 
 /**
- * Get network configuration by network name
+ * Get network configuration by network identifier
  *
- * @param network - Network name (e.g., 'base-sepolia', 'skale-base-sepolia')
+ * Accepts both CAIP-2 format (preferred) and human-readable network names (legacy).
+ * This provides backward compatibility while encouraging migration to CAIP-2.
+ *
+ * @param network - Network identifier, accepts either:
+ *   - CAIP-2 format (preferred): 'eip155:84532', 'eip155:8453'
+ *   - Human-readable name (legacy): 'base-sepolia', 'base'
  * @returns Network configuration
  * @throws Error if network is not supported
  *
  * @example
  * ```typescript
- * const config = getNetworkConfig('base-sepolia');
+ * // Preferred: CAIP-2 format
+ * const config = getNetworkConfig('eip155:84532');
+ * 
+ * // Legacy: human-readable name
+ * const config2 = getNetworkConfig('base-sepolia');
+ * 
  * console.log(config.settlementRouter);
  * ```
  */
-export function getNetworkConfig(network: string): NetworkConfig {
-  const config = networks[network];
+export function getNetworkConfig(network: string | Network): NetworkConfig {
+  const caip2Network = normalizeToCAIP2(network);
+  const config = networks[caip2Network];
   if (!config) {
     throw new Error(
       `Unsupported network: ${network}. ` +
@@ -215,47 +267,55 @@ export function getNetworkConfig(network: string): NetworkConfig {
 /**
  * Check if a network is supported
  *
- * @param network - Network name to check
+ * Accepts both CAIP-2 format and human-readable network names.
+ *
+ * @param network - Network identifier (CAIP-2 or human-readable name)
  * @returns True if network is supported
  *
  * @example
  * ```typescript
- * if (isNetworkSupported('base-sepolia')) {
+ * if (isNetworkSupported('eip155:84532')) {
  *   // proceed...
+ * }
+ * 
+ * if (isNetworkSupported('base-sepolia')) {
+ *   // also works...
  * }
  * ```
  */
-export function isNetworkSupported(network: string): boolean {
-  return network in networks;
+export function isNetworkSupported(network: string | Network): boolean {
+  try {
+    const caip2Network = normalizeToCAIP2(network);
+    return caip2Network in networks;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Get list of all supported network names (human-readable identifiers)
+ * Get list of all supported network aliases (v1 configuration names)
  *
- * Returns user-friendly network names like "base-sepolia", "base", etc.
+ * Returns user-friendly network aliases like "base-sepolia", "base", etc.
+ * These aliases are used for configuration files and backward compatibility.
  * Use this for UI display, configuration, and user-facing operations.
+ * 
+ * This function provides backward compatibility by returning v1 aliases
+ * even though the internal storage uses CAIP-2 format.
  *
- * @returns Array of supported network names
+ * @returns Array of v1 network aliases
  *
  * @example
  * ```typescript
- * const networks = getSupportedNetworkNames();
+ * const aliases = getSupportedNetworkAliases();
  * // => ['base-sepolia', 'base', 'x-layer-testnet', ...]
  * 
  * // For UI dropdown
  * <select>
- *   {networks.map(name => <option key={name}>{name}</option>)}
+ *   {aliases.map(alias => <option key={alias}>{alias}</option>)}
  * </select>
  * ```
  */
-export function getSupportedNetworkNames(): string[] {
-  return Object.keys(networks);
-}
-
-/**
- * @deprecated Use getSupportedNetworkNames() instead for clarity
- * Get list of all supported networks
- */
-export function getSupportedNetworks(): string[] {
-  return getSupportedNetworkNames();
+export function getSupportedNetworkAliases(): string[] {
+  // Convert CAIP-2 keys to v1 aliases using reverse mapping
+  return Object.keys(networks).map(caip2 => getNetworkAlias(caip2 as Network));
 }

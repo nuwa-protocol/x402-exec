@@ -19,7 +19,7 @@ import { HTTPFacilitatorClient } from "@x402/core/http";
 import type { RouteConfig as X402RouteConfig } from "@x402/core/server";
 import {
   registerRouterSettlement,
-  getSupportedNetworksV2,
+  getSupportedNetworkIds,
   TransferHook,
   createSettlementRouteConfig,
 } from "@x402x/extensions";
@@ -117,7 +117,7 @@ app.get("/api/health", (c) => {
     status: "ok",
     message: "x402-exec Showcase Server (Official SDK + x402x Extension)",
     defaultNetwork: appConfig.defaultNetwork,
-    supportedNetworks: getSupportedNetworksV2(),
+    supportedNetworks: getSupportedNetworkIds(),
   });
 });
 
@@ -240,7 +240,7 @@ app.get("/api/download/:contentId", async (c) => {
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 x402-exec Showcase Server (Official x402 v2 SDK + x402x Extension)`);
 console.log(`📍 Default network: ${appConfig.defaultNetwork}`);
-console.log(`🌐 Supported networks: ${getSupportedNetworksV2().join(", ")}`);
+console.log(`🌐 Supported networks: ${getSupportedNetworkIds().join(", ")}`);
 console.log(`💰 Resource server address: ${appConfig.resourceServerAddress}`);
 console.log(`🔧 Facilitator URL: ${appConfig.facilitatorUrl}`);
 console.log(`📥 Server Mode: Premium Download`);

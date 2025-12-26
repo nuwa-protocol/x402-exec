@@ -20,9 +20,14 @@ export interface AssetInfo {
 }
 
 /**
- * Network name to CAIP-2 network ID mapping
+ * Primary mapping from human-readable network names to CAIP-2 identifiers
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for network name mappings.
+ * When adding a new network, only update this mapping and the corresponding
+ * entries in networks.ts and DEFAULT_ASSETS.
  */
-const NETWORK_IDS: Record<string, Network> = {
+export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
+  // V1 human-readable names -> V2 CAIP-2 canonical keys
   "base-sepolia": "eip155:84532",
   "x-layer-testnet": "eip155:1952",
   "skale-base-sepolia": "eip155:324705682",
@@ -33,17 +38,20 @@ const NETWORK_IDS: Record<string, Network> = {
 };
 
 /**
- * CAIP-2 network ID to network name mapping (reverse lookup)
+ * CAIP-2 network ID to network alias mapping (reverse lookup)
+ * 
+ * Maps CAIP-2 identifiers to v1 configuration aliases (e.g., "eip155:84532" → "base-sepolia").
+ * These aliases are used in configuration files and for backward compatibility.
+ * 
+ * Automatically generated from NETWORK_ALIASES_V1_TO_V2.
+ * DO NOT edit this manually - it will be regenerated.
  */
-const NETWORK_NAMES: Record<Network, string> = {
-  "eip155:84532": "base-sepolia",
-  "eip155:1952": "x-layer-testnet",
-  "eip155:324705682": "skale-base-sepolia",
-  "eip155:8453": "base",
-  "eip155:196": "x-layer",
-  "eip155:97": "bsc-testnet",
-  "eip155:56": "bsc",
-};
+export const NETWORK_ALIASES: Record<Network, string> = Object.entries(
+  NETWORK_ALIASES_V1_TO_V2
+).reduce((acc, [name, caip2]) => {
+  acc[caip2] = name;
+  return acc;
+}, {} as Record<Network, string>);
 
 /**
  * Default asset (USDC) configuration per network
@@ -108,49 +116,29 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
 };
 
 /**
- * Get CAIP-2 network ID from network name
+ * Get network alias from CAIP-2 network ID
  * 
- * @param networkName - Network name (e.g., 'base-sepolia', 'base')
- * @returns CAIP-2 network identifier (e.g., 'eip155:84532')
- * @throws Error if network name is not supported
- * 
- * @example
- * ```typescript
- * const networkId = getNetworkId('base-sepolia'); // 'eip155:84532'
- * ```
- */
-export function getNetworkId(networkName: string): Network {
-  const networkId = NETWORK_IDS[networkName];
-  if (!networkId) {
-    throw new Error(
-      `Unsupported network: ${networkName}. ` +
-        `Supported networks: ${Object.keys(NETWORK_IDS).join(", ")}`
-    );
-  }
-  return networkId;
-}
-
-/**
- * Get network name from CAIP-2 network ID
+ * Returns the v1 configuration alias (e.g., "base-sepolia") for a given CAIP-2 identifier.
+ * These aliases are used in configuration files and for backward compatibility.
  * 
  * @param network - CAIP-2 network identifier (e.g., 'eip155:84532')
- * @returns Network name (e.g., 'base-sepolia')
+ * @returns Network alias (e.g., 'base-sepolia')
  * @throws Error if network ID is not supported
  * 
  * @example
  * ```typescript
- * const networkName = getNetworkName('eip155:84532'); // 'base-sepolia'
+ * const alias = getNetworkAlias('eip155:84532'); // 'base-sepolia'
  * ```
  */
-export function getNetworkName(network: Network): string {
-  const networkName = NETWORK_NAMES[network];
-  if (!networkName) {
+export function getNetworkAlias(network: Network): string {
+  const networkAlias = NETWORK_ALIASES[network];
+  if (!networkAlias) {
     throw new Error(
       `Unsupported network ID: ${network}. ` +
-        `Supported network IDs: ${Object.keys(NETWORK_NAMES).join(", ")}`
+        `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`
     );
   }
-  return networkName;
+  return networkAlias;
 }
 
 /**
@@ -249,21 +237,6 @@ export function processPriceToAtomicAmount(
 }
 
 /**
- * Alias mapping from v1 network names to v2 CAIP-2 identifiers
- * This provides backward compatibility for v1 network names
- */
-export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
-  // V1 human-readable names -> V2 CAIP-2 canonical keys
-  "base-sepolia": "eip155:84532",
-  "x-layer-testnet": "eip155:1952",
-  "skale-base-sepolia": "eip155:324705682",
-  "base": "eip155:8453",
-  "x-layer": "eip155:196",
-  "bsc-testnet": "eip155:97",
-  "bsc": "eip155:56",
-};
-
-/**
  * Get list of all supported network IDs (CAIP-2 identifiers)
  *
  * Returns protocol-level CAIP-2 network identifiers like "eip155:84532".
@@ -283,15 +256,7 @@ export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
  * ```
  */
 export function getSupportedNetworkIds(): Network[] {
-  return Object.keys(NETWORK_NAMES) as Network[];
-}
-
-/**
- * @deprecated Use getSupportedNetworkIds() instead for clarity
- * Get list of all supported networks using v2 CAIP-2 identifiers
- */
-export function getSupportedNetworksV2(): Network[] {
-  return getSupportedNetworkIds();
+  return Object.keys(NETWORK_ALIASES) as Network[];
 }
 
 /**
@@ -330,12 +295,12 @@ export function toCanonicalNetworkKey(network: string): Network {
   // If it's already a CAIP-2 identifier, validate it
   if (network.startsWith('eip155:')) {
     const canonicalNetwork = network as Network;
-    if (canonicalNetwork in NETWORK_NAMES) {
+    if (canonicalNetwork in NETWORK_ALIASES) {
       return canonicalNetwork;
     }
     throw new Error(
       `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_NAMES).join(", ")}`
+        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`
     );
   }
 

@@ -30,7 +30,7 @@ import {
   parseSettlementExtra,
   getNetworkConfig,
   toCanonicalNetworkKey,
-  getNetworkName,
+  getNetworkAlias,
   type NetworkConfig,
 } from "@x402x/extensions";
 
@@ -83,8 +83,8 @@ export function createPublicClientForNetwork(
 ): PublicClient {
   // Normalize network identifier: any format -> CAIP-2 -> V1 name
   const canonicalNetwork = toCanonicalNetworkKey(network);
-  const v1NetworkName = getNetworkName(canonicalNetwork);
-  const networkConfig = getNetworkConfig(v1NetworkName);
+  const v1NetworkAlias = getNetworkAlias(canonicalNetwork);
+  const networkConfig = getNetworkConfig(v1NetworkAlias);
 
   if (!networkConfig) {
     throw new Error(`Network configuration not found for network: ${network}`);
@@ -93,7 +93,7 @@ export function createPublicClientForNetwork(
   // Use provided RPC URL or require it to be provided
   const rpcUrl =
     rpcUrls?.[network] ||
-    rpcUrls?.[v1NetworkName] ||
+    rpcUrls?.[v1NetworkAlias] ||
     rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
@@ -122,13 +122,13 @@ export function createWalletClientForNetwork(
 ): WalletClient {
   // Normalize network identifier: any format -> CAIP-2 -> V1 name
   const canonicalNetwork = toCanonicalNetworkKey(network);
-  const v1NetworkName = getNetworkName(canonicalNetwork);
-  const networkConfig = getNetworkConfig(v1NetworkName);
+  const v1NetworkAlias = getNetworkAlias(canonicalNetwork);
+  const networkConfig = getNetworkConfig(v1NetworkAlias);
 
   // Use provided RPC URL or require it to be provided
   const rpcUrl =
     rpcUrls?.[network] ||
-    rpcUrls?.[v1NetworkName] ||
+    rpcUrls?.[v1NetworkAlias] ||
     rpcUrls?.[canonicalNetwork];
 
   if (!rpcUrl) {
@@ -399,8 +399,8 @@ export async function executeSettlementWithWalletClient(
     // Validate SettlementRouter
     // Normalize network identifier: any format -> CAIP-2 -> V1 name
     const canonicalNetwork = toCanonicalNetworkKey(paymentRequirements.network);
-    const v1NetworkName = getNetworkName(canonicalNetwork);
-    const networkConfig = getNetworkConfig(v1NetworkName);
+    const v1NetworkAlias = getNetworkAlias(canonicalNetwork);
+    const networkConfig = getNetworkConfig(v1NetworkAlias);
 
     const settlementRouter = paymentRequirements.extra?.settlementRouter as string | undefined;
     if (!settlementRouter) {
