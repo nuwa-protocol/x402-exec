@@ -154,7 +154,8 @@ if [ ! -d "typescript/packages" ]; then
 fi
 
 # Package list in dependency order (important!)
-PACKAGES=("extensions" "client" "facilitator-sdk")
+# Note: @x402x/core is v1 legacy package and should not be published
+PACKAGES=("extensions" "facilitator-sdk" "client")
 
 # Generate version if needed
 if [[ $VERSION_TYPE =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

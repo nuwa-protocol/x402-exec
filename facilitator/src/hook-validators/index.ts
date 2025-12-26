@@ -5,7 +5,7 @@
  * Routes validation requests to appropriate validators based on hook type.
  */
 
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import { TransferHookValidator } from "./transfer-hook.js";
 import type { HookValidator, HookTypeInfo, HookValidationResult } from "./types.js";
 import { BuiltInHookType } from "./types.js";

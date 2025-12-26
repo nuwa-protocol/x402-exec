@@ -208,7 +208,12 @@ export class VersionDispatcher {
       } else {
         // V2 implementation - always uses router settlement
         mode = "v2_router";
-        result = await this.settleV2(paymentPayload, paymentRequirements as V2PaymentRequirements);
+        // paymentRequirements is validated earlier, but its static type includes v1 shapes.
+        // Cast via unknown to avoid structural mismatch errors.
+        result = await this.settleV2(
+          paymentPayload,
+          paymentRequirements as unknown as V2PaymentRequirements,
+        );
       }
 
       // Record metrics

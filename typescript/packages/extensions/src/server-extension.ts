@@ -143,7 +143,8 @@ export function registerRouterSettlement(server: x402ResourceServer): x402Resour
  *       hook: "0x...",
  *       hookData: "0x",
  *       finalPayTo: "0x...",
- *       facilitatorFee: "0"
+ *       facilitatorFee: "0",
+ *       salt: "0x..." // Optional, will be auto-generated if not provided
  *     })
  *   }
  * };
@@ -157,6 +158,7 @@ export function createExtensionDeclaration(params?: {
   hookData?: string;
   finalPayTo?: string;
   facilitatorFee?: string;
+  salt?: string; // Optional salt, will be auto-generated if not provided
 }): Record<string, unknown> {
   return {
     [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension(params),

@@ -1,10 +1,6 @@
 // Type declarations for workspace packages that may not have generated types yet
-declare module "@x402x/extensions" {
-  export function toCanonicalNetworkKey(network: string): string;
-  export function getNetworkAlias(network: string): string;
-  export function getNetworkConfig(network: string): any;
-  export function calculateCommitment(params: any): string;
-  export function isSettlementMode(pr: any): boolean;
-  export function parseSettlementExtra(extra: any): any;
-  export const NETWORK_ALIASES: Record<string, string>;
-}
+//
+// IMPORTANT:
+// Do NOT declare module "@x402x/extensions" here.
+// The @x402x/extensions package generates proper .d.ts and this file would shadow it,
+// causing TypeScript to believe exports are missing.

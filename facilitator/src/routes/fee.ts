@@ -7,7 +7,7 @@
 import { Router, Request, Response } from "express";
 import { getLogger, traced, recordMetric } from "../telemetry.js";
 import { calculateMinFacilitatorFee, type GasCostConfig } from "../gas-cost.js";
-import { getNetworkConfig } from "@x402x/core";
+import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
 import type { PoolManager } from "../pool-manager.js";
@@ -73,7 +73,7 @@ export function createFeeRoutes(deps: FeeRouteDependencies): Router {
       // Validate network is supported
       try {
         getNetworkConfig(network);
-      } catch (error) {
+      } catch {
         return res.status(400).json({
           error: "Invalid network",
           message: `Network '${network}' is not supported`,

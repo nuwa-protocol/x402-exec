@@ -3,6 +3,7 @@
  * Allows users to select which network to use for payment
  */
 
+import { useEffect } from "react";
 import { Network, NETWORKS, getPreferredNetwork, setPreferredNetwork } from "../config";
 import { NetworkBalance } from "../hooks/useNetworkBalances";
 import "./PaymentMethodSelector.css";
@@ -35,12 +36,14 @@ export function PaymentMethodSelector({
   };
 
   // Auto-select preferred network on mount if none selected and autoSelectPreferred is true
-  if (!selectedNetwork && !disabled && autoSelectPreferred) {
-    const preferred = getPreferredNetwork();
-    if (preferred) {
-      setTimeout(() => onSelect(preferred), 0);
+  useEffect(() => {
+    if (!selectedNetwork && !disabled && autoSelectPreferred) {
+      const preferred = getPreferredNetwork();
+      if (preferred) {
+        onSelect(preferred);
+      }
     }
-  }
+  }, []); // Only run once on mount
 
   return (
     <div className="payment-method-selector">

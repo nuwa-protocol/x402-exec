@@ -12,7 +12,14 @@
 
 import { Router, Request, Response } from "express";
 import { createPublicClient, http, decodeEventLog } from "viem";
-import { getNetworkConfig, getSupportedNetworks } from "@x402x/core";
+import {
+  getNetworkAlias,
+  getNetworkConfig,
+  getSupportedNetworkIds,
+  toCanonicalNetworkKey,
+} from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
+// Alias for backward compatibility
+const getSupportedNetworks = getSupportedNetworkIds;
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import { getLogger } from "../telemetry.js";
 
@@ -73,8 +80,22 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
             .filter(Boolean)
         : undefined;
 
-      const supported = getSupportedNetworks();
-      const networks = (requestedNetworks || supported).filter((n) => supported.includes(n));
+      const supported = getSupportedNetworks(); // CAIP-2 network ids
+      const requestedCanonical = requestedNetworks
+        ? requestedNetworks
+            .map((n) => {
+              try {
+                return toCanonicalNetworkKey(n);
+              } catch {
+                return undefined;
+              }
+            })
+            .filter((n): n is `${string}:${string}` => !!n)
+        : undefined;
+
+      const networks = (requestedCanonical || supported).filter(
+        (n): n is `${string}:${string}` => supported.includes(n as any),
+      );
 
       // Optional lookback config
       const maxBlocks = parseInt(
@@ -82,8 +103,9 @@ export function createStatsRoutes(deps: StatsRouteDependencies): Router {
       );
 
       // Optional per-network fromBlock override via env, e.g. BASE_FROM_BLOCK, X_LAYER_FROM_BLOCK
-      const envFromBlock = (network: string) => {
-        const key = `${network.toUpperCase().replace(/-/g, "_")}_STATS_FROM_BLOCK`;
+      const envFromBlock = (network: `${string}:${string}`) => {
+        const alias = getNetworkAlias(network);
+        const key = `${alias.toUpperCase().replace(/-/g, "_")}_STATS_FROM_BLOCK`;
         const v = process.env[key];
         return v ? BigInt(v) : undefined;
       };

@@ -174,7 +174,8 @@ export function calculateGasLimit(
   const baseGas = 200000n; // Conservative estimate
 
   // Add gas for hook execution (if any)
-  const hookGas = facilitatorFee !== "0x0" ? 100000n : 0n;
+  // Treat both "0" and "0x0" (and any numeric zero) as no-fee.
+  const hookGas = BigInt(facilitatorFee) === 0n ? 0n : 100000n;
 
   // Calculate total with multiplier
   const totalGas = ((baseGas + hookGas) * BigInt(Math.ceil(gasMultiplier * 100))) / 100n;
@@ -348,24 +349,110 @@ function parseEvmExactPayload(payload: any): ExactEvmPayload {
 }
 
 /**
+ * Parse x402x router settlement extension from v2 PaymentPayload.extensions
+ * 
+ * @param extensions - PaymentPayload.extensions object
+ * @returns Router settlement info or undefined if not present
+ */
+function parseRouterSettlementFromExtensions(extensions: Record<string, unknown> | undefined): {
+  salt: string;
+  settlementRouter: string;
+  hook: string;
+  hookData: string;
+  finalPayTo: string;
+  facilitatorFee: string;
+} | undefined {
+  if (!extensions || typeof extensions !== "object") {
+    return undefined;
+  }
+
+  const ROUTER_SETTLEMENT_KEY = "x402x-router-settlement";
+  const routerSettlement = extensions[ROUTER_SETTLEMENT_KEY];
+  
+  if (!routerSettlement || typeof routerSettlement !== "object") {
+    return undefined;
+  }
+
+  const info = (routerSettlement as any).info;
+  if (!info || typeof info !== "object") {
+    return undefined;
+  }
+
+  // Validate and extract all required fields
+  if (
+    typeof info.salt !== "string" ||
+    typeof info.settlementRouter !== "string" ||
+    typeof info.hook !== "string" ||
+    typeof info.hookData !== "string" ||
+    typeof info.finalPayTo !== "string"
+  ) {
+    return undefined;
+  }
+
+  // facilitatorFee is optional; default to "0" when omitted
+  const facilitatorFee =
+    typeof (info as any).facilitatorFee === "string" ? (info as any).facilitatorFee : "0";
+
+  return {
+    salt: info.salt,
+    settlementRouter: info.settlementRouter,
+    hook: info.hook,
+    hookData: info.hookData,
+    finalPayTo: info.finalPayTo,
+    facilitatorFee,
+  };
+}
+
+/**
  * Parse settlement parameters from payment requirements and payload
+ * 
+ * v2 behavior: Read from paymentPayload.extensions["x402x-router-settlement"].info first,
+ * fallback to paymentRequirements.extra for legacy compatibility.
  */
 export function parseSettlementRouterParams(
   paymentRequirements: any,
   paymentPayload: any,
 ): SettlementRouterParams {
-  if (!isSettlementMode(paymentRequirements)) {
-    throw new Error("Payment requirements are not in SettlementRouter mode");
-  }
-
   // Parse standard x402 v2 EVM exact payload
   const evmPayload = parseEvmExactPayload(paymentPayload);
+
+  // Try v2 extensions first (paymentPayload.extensions["x402x-router-settlement"])
+  const extensionParams = parseRouterSettlementFromExtensions(paymentPayload.extensions);
+  
+  if (extensionParams) {
+    // v2 path: all params from extensions
+    return {
+      token: paymentRequirements.asset as Address,
+      from: evmPayload.authorization.from as Address,
+      value: paymentRequirements.amount,
+      validAfter: evmPayload.authorization.validAfter || "0x0",
+      validBefore: evmPayload.authorization.validBefore || "0xFFFFFFFFFFFFFFFF",
+      nonce: evmPayload.authorization.nonce,
+      signature: evmPayload.signature,
+      salt: extensionParams.salt,
+      payTo: extensionParams.finalPayTo as Address,
+      facilitatorFee: extensionParams.facilitatorFee,
+      hook: extensionParams.hook as Address,
+      hookData: extensionParams.hookData,
+      settlementRouter: extensionParams.settlementRouter as Address,
+    };
+  }
+
+  // Fallback: legacy mode (read from requirements.extra)
+  if (!isSettlementMode(paymentRequirements)) {
+    throw new Error(
+      "x402x router settlement parameters not found. " +
+      "Expected paymentPayload.extensions['x402x-router-settlement'].info (v2) or " +
+      "paymentRequirements.extra.settlementRouter (legacy)."
+    );
+  }
+
   const extra = parseSettlementExtra(paymentRequirements.extra);
 
   return {
     token: paymentRequirements.asset as Address,
     from: evmPayload.authorization.from as Address,
-    value: paymentRequirements.amount, // V2 uses 'amount', not 'maxAmountRequired'
+    value: paymentRequirements.amount,
     validAfter: evmPayload.authorization.validAfter || "0x0",
     validBefore: evmPayload.authorization.validBefore || "0xFFFFFFFFFFFFFFFF",
     nonce: evmPayload.authorization.nonce,
@@ -396,26 +483,21 @@ export async function executeSettlementWithWalletClient(
   } = {},
 ): Promise<SettleResponse> {
   try {
+    // Parse settlement parameters (reads from paymentPayload.extensions or requirements.extra)
+    const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
+
     // Validate SettlementRouter
     // Normalize network identifier: any format -> CAIP-2 -> V1 name
     const canonicalNetwork = toCanonicalNetworkKey(paymentRequirements.network);
     const v1NetworkAlias = getNetworkAlias(canonicalNetwork);
     const networkConfig = getNetworkConfig(v1NetworkAlias);
 
-    const settlementRouter = paymentRequirements.extra?.settlementRouter as string | undefined;
-    if (!settlementRouter) {
-      throw new Error("Missing settlementRouter in payment requirements");
-    }
-
     validateSettlementRouter(
       paymentRequirements.network,
-      settlementRouter as Address,
+      params.settlementRouter,
       config.allowedRouters,
       networkConfig,
     );
-
-    // Parse settlement parameters
-    const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
 
     // Execute settlement with provided wallet client
     const txHash = await executeSettlementWithRouter(walletClient, params, {
@@ -486,17 +568,17 @@ export async function settleWithSettlementRouter(
   } = {},
 ): Promise<SettleResponse> {
   try {
+    // Parse settlement parameters (reads from extensions or extra)
+    const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
+    
     // Validate configuration
     const networkConfig = getNetworkConfig(paymentRequirements.network);
     validateSettlementRouter(
       paymentRequirements.network,
-      paymentRequirements.extra?.settlementRouter,
+      params.settlementRouter,
       config.allowedRouters,
       networkConfig,
     );
-
-    // Parse settlement parameters
-    const params = parseSettlementRouterParams(paymentRequirements, paymentPayload);
 
     // Create clients
     const publicClient = createPublicClientForNetwork(paymentRequirements.network, config.rpcUrls);

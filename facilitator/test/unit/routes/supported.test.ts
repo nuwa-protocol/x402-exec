@@ -26,10 +26,13 @@ describe("routes/supported", () => {
     mockDeps = {
       poolManager: {
         getSupportedNetworks: vi.fn(() => mockSupportedNetworks),
+        // isNetworkReady() now checks pool existence via getPool()
+        getPool: vi.fn(() => ({})),
       } as any,
       enableV2: false,
       v2Signer: undefined,
       allowedRouters: undefined,
+      rpcUrls: undefined,
     };
 
     app = express();
@@ -71,7 +74,11 @@ describe("routes/supported", () => {
     beforeEach(() => {
       mockDeps.enableV2 = true;
       mockDeps.v2Signer = "0x1234567890123456789012345678901234567890";
-      mockDeps.allowedRouters = {};
+      // In v2 mode, /supported filters out networks without configured routers.
+      mockDeps.allowedRouters = {
+        "eip155:84532": ["0x0000000000000000000000000000000000000001"],
+        "eip155:1952": ["0x0000000000000000000000000000000000000002"],
+      };
 
       app = express();
       app.use(createSupportedRoutes(mockDeps));
@@ -119,7 +126,11 @@ describe("routes/supported", () => {
     beforeEach(() => {
       mockDeps.enableV2 = true;
       mockDeps.v2Signer = "0x1234567890123456789012345678901234567890";
-      mockDeps.allowedRouters = {};
+      // In v2 mode, /supported filters out networks without configured routers.
+      mockDeps.allowedRouters = {
+        "eip155:84532": ["0x0000000000000000000000000000000000000001"],
+        "eip155:1952": ["0x0000000000000000000000000000000000000002"],
+      };
 
       app = express();
       app.use(createSupportedRoutes(mockDeps));

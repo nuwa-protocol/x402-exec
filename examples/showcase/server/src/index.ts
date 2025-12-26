@@ -16,6 +16,7 @@ import { cors } from "hono/cors";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { registerExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/http";
+import { decodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@x402/core/http";
 import type { RouteConfig as X402RouteConfig } from "@x402/core/server";
 import {
   registerRouterSettlement,
@@ -43,6 +44,10 @@ const app = new Hono();
 
 // ===== Configure x402 v2 Resource Server =====
 
+// Get all networks supported by x402x extension
+// x402x defines default assets for each network, bypassing official SDK's hardcoded list
+const allX402xSupportedNetworks = getSupportedNetworkIds();
+
 // Create facilitator client
 const facilitatorClient = new HTTPFacilitatorClient({
   url: appConfig.facilitatorUrl,
@@ -51,8 +56,12 @@ const facilitatorClient = new HTTPFacilitatorClient({
 // Create and configure x402 resource server
 const resourceServer = new x402ResourceServer(facilitatorClient);
 
-// Register EVM exact scheme
-registerExactEvmScheme(resourceServer, {});
+// Register EVM exact scheme with wildcard network support
+// We can now support all x402x networks because createSettlementRouteConfig
+// uses AssetAmount with x402x default assets, bypassing ExactEvmScheme.getDefaultAsset()
+registerExactEvmScheme(resourceServer, {
+  networks: ["eip155:*"], // Wildcard: accept any EIP-155 network
+});
 
 // Register x402x router settlement extension
 registerRouterSettlement(resourceServer);
@@ -61,39 +70,52 @@ registerRouterSettlement(resourceServer);
 await resourceServer.initialize();
 
 console.log("✅ x402 Resource Server initialized");
+console.log(`✅ Supporting ${allX402xSupportedNetworks.length} x402x networks:`, allX402xSupportedNetworks);
 
 // ===== Configure Routes with Settlement =====
 
 // Use createSettlementRouteConfig to build route configuration following v2 standard
-// Settlement params are now in extensions, not extra
+// Key: price is converted to AssetAmount using x402x default assets per network
+// This bypasses official SDK's hardcoded getDefaultAsset() and enables all x402x networks
 const routes: Record<string, X402RouteConfig> = {
-  "POST /api/purchase-download": createSettlementRouteConfig(
-    {
-      accepts: {
-        scheme: "exact",
-        network: "eip155:84532" as `${string}:${string}`, // Base Sepolia - ensure type is correct
-        payTo: appConfig.resourceServerAddress, // Will be overridden to settlementRouter
-        price: "$1.00",
-      },
-      description: "Premium Content Download: Purchase and download digital content",
-      mimeType: "application/json",
-    },
-    {
-      hook: TransferHook.getAddress("base-sepolia"),
-      hookData: TransferHook.encode(),
-      finalPayTo: appConfig.resourceServerAddress,
-      facilitatorFee: "0", // Will be calculated by facilitator
-      description: "Router settlement for premium download",
-    }
-  ) as X402RouteConfig, // Cast to ensure type compatibility
+  "POST /api/purchase-download": createSettlementRouteConfig({
+    accepts: allX402xSupportedNetworks.map((network) => ({
+      scheme: "exact",
+      network: network as `${string}:${string}`,
+      payTo: appConfig.resourceServerAddress, // Will be used as finalPayTo and overridden to settlementRouter
+      price: "$0.1", // Will be converted to AssetAmount with x402x default asset
+    })),
+    description: "Premium Content Download: Purchase and download digital content",
+    mimeType: "application/json",
+  }, {
+    // Pass facilitatorUrl to enable dynamic fee calculation during 402 negotiation
+    // Falls back to DEFAULT_FACILITATOR_URL if not configured
+    facilitatorUrl: appConfig.facilitatorUrl,
+  }) as X402RouteConfig, // Cast to ensure type compatibility
 };
 
 // Enable CORS for frontend
+// IMPORTANT: Must expose x402 protocol headers for client access
+// AND allow x402 request headers from client
 app.use(
   "/*",
   cors({
     origin: "*",
     credentials: false,
+    // Allow x402 headers in requests from client
+    allowHeaders: [
+      "Content-Type",
+      "PAYMENT-SIGNATURE",              // v2: Payment authorization from client
+      "payment-signature",              // v2: lowercase variant
+      "X-PAYMENT",                      // v1: Legacy payment header
+    ],
+    // Expose x402 headers in responses so clients can read them
+    exposeHeaders: [
+      "PAYMENT-REQUIRED",       // v2: Payment requirements
+      "PAYMENT-RESPONSE",       // v2: Settlement confirmation
+      "X-PAYMENT-REQUIRED",     // v1: Legacy payment requirements
+      "X-PAYMENT-RESPONSE",     // v1: Legacy settlement confirmation
+    ],
   }),
 );
 
@@ -133,6 +155,72 @@ app.get("/api/scenarios", (c) => {
 app.get("/api/premium-download/info", (c) => {
   const info = premiumDownload.getScenarioInfo();
   return c.json(info);
+});
+
+// Debug: print accept / accepted for troubleshooting deepEqual matching (enable with DEBUG_X402=1)
+app.use("/api/purchase-download", async (c, next) => {
+  if (process.env.DEBUG_X402 !== "1") {
+    return next();
+  }
+
+  const header =
+    c.req.header("PAYMENT-SIGNATURE") ||
+    c.req.header("payment-signature") ||
+    c.req.header("X-PAYMENT") ||
+    c.req.header("x-payment");
+
+  if (header) {
+    try {
+      const payload = decodePaymentSignatureHeader(header);
+      console.log("[DEBUG_X402] ===== Received Payment Payload =====");
+      console.log("[DEBUG_X402] paymentPayload.accepted:", JSON.stringify(payload.accepted, null, 2));
+      console.log("[DEBUG_X402] paymentPayload.extensions keys:", Object.keys(payload.extensions || {}));
+      if (payload.extensions?.["x402x-router-settlement"]) {
+        console.log("[DEBUG_X402] x402x-router-settlement extension:", JSON.stringify(payload.extensions["x402x-router-settlement"], null, 2));
+      }
+      // Extract and display facilitatorFee from accepted.extra
+      const acceptedExtra = payload.accepted.extra as any;
+      if (acceptedExtra?.["x402x-router-settlement"]?.info?.facilitatorFee) {
+        console.log("[DEBUG_X402] ✅ Replay: facilitatorFee from accepted:", acceptedExtra["x402x-router-settlement"].info.facilitatorFee);
+      }
+    } catch (e) {
+      console.warn(
+        "[DEBUG_X402] failed to decode payment signature header",
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  } else {
+    console.log("[DEBUG_X402] no payment header on request (initial 402 probe)");
+  }
+
+  await next();
+
+  if (c.res?.status === 402) {
+    const prh = c.res.headers.get("PAYMENT-REQUIRED") || c.res.headers.get("payment-required");
+    if (prh) {
+      try {
+        const paymentRequired = decodePaymentRequiredHeader(prh);
+        console.log("[DEBUG_X402] ===== Returning Payment Required =====");
+        console.log("[DEBUG_X402] paymentRequired.error:", paymentRequired.error);
+        console.log("[DEBUG_X402] paymentRequired.accepts.length:", paymentRequired.accepts.length);
+        if (paymentRequired.accepts.length > 0) {
+          console.log("[DEBUG_X402] First accept option:", JSON.stringify(paymentRequired.accepts[0], null, 2));
+          console.log("[DEBUG_X402] All accept networks:", paymentRequired.accepts.map(a => a.network).join(", "));
+          
+          // Display facilitatorFee from first accept option (probe response)
+          const firstAcceptExtra = paymentRequired.accepts[0].extra as any;
+          if (firstAcceptExtra?.["x402x-router-settlement"]?.info?.facilitatorFee) {
+            console.log("[DEBUG_X402] ✅ Probe: facilitatorFee from first accept:", firstAcceptExtra["x402x-router-settlement"].info.facilitatorFee);
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "[DEBUG_X402] failed to decode PAYMENT-REQUIRED header",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    }
+  }
 });
 
 // Apply payment middleware to protected route

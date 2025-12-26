@@ -8,6 +8,7 @@
 import { createPublicClient, http, type PublicClient } from "viem";
 import { getLogger } from "./telemetry.js";
 import type { GasCostConfig } from "./gas-cost.js";
+import { getConfigForNetwork, normalizeNetwork } from "./network-id.js";
 
 const logger = getLogger();
 
@@ -72,15 +73,19 @@ export async function getGasPrice(
 /**
  * Get static gas price from configuration
  *
- * @param network
- * @param config
+ * @param network - Network identifier (v1 or v2)
+ * @param config - Gas cost configuration
  */
 function getStaticGasPrice(network: string, config: GasCostConfig): string {
-  const gasPrice = config.networkGasPrice[network];
-  if (!gasPrice) {
-    throw new Error(`No gas price configured for network ${network}`);
+  const lookup = getConfigForNetwork(config.networkGasPrice, network);
+  if (!lookup.value) {
+    const normalized = normalizeNetwork(network);
+    throw new Error(
+      `No gas price configured for network ${network} ` +
+      `(canonical: ${normalized.canonical}, alias: ${normalized.aliasV1})`
+    );
   }
-  return gasPrice;
+  return lookup.value;
 }
 
 /**
@@ -95,37 +100,45 @@ async function getDynamicGasPrice(
   config: GasCostConfig,
   dynamicConfig?: DynamicGasPriceConfig,
 ): Promise<string> {
+  // Normalize network for cache lookup (use canonical as cache key)
+  const normalized = normalizeNetwork(network);
+  
   // Check cache first
-  const cached = gasPriceCache.get(network);
+  const cached = gasPriceCache.get(normalized.canonical);
   if (cached && dynamicConfig) {
     const age = (Date.now() - cached.timestamp) / 1000;
     if (age < dynamicConfig.cacheTTL) {
-      logger.debug({ network, gasPrice: cached.gasPrice, age }, "Using cached gas price");
+      logger.debug({ network, canonical: normalized.canonical, gasPrice: cached.gasPrice, age }, "Using cached gas price");
       return cached.gasPrice;
     }
   }
 
   // Fetch from chain
   try {
-    const rpcUrl = dynamicConfig?.rpcUrls[network];
-    if (!rpcUrl) {
-      throw new Error(`No RPC URL configured for network ${network}`);
+    const lookup = dynamicConfig ? getConfigForNetwork(dynamicConfig.rpcUrls, network) : { value: undefined };
+    if (!lookup.value) {
+      const normalized = normalizeNetwork(network);
+      throw new Error(
+        `No RPC URL configured for network ${network} ` +
+        `(canonical: ${normalized.canonical}, alias: ${normalized.aliasV1})`
+      );
     }
 
     const client = createPublicClient({
-      transport: http(rpcUrl),
+      transport: http(lookup.value),
     });
 
     const gasPrice = await client.getGasPrice();
     const gasPriceStr = gasPrice.toString();
 
-    // Update cache
-    gasPriceCache.set(network, {
+    // Update cache (use canonical network as cache key for consistency)
+    const normalized = normalizeNetwork(network);
+    gasPriceCache.set(normalized.canonical, {
       gasPrice: gasPriceStr,
       timestamp: Date.now(),
     });
 
-    logger.debug({ network, gasPrice: gasPriceStr }, "Fetched gas price from chain");
+    logger.debug({ network, canonical: normalized.canonical, gasPrice: gasPriceStr }, "Fetched gas price from chain");
 
     return gasPriceStr;
   } catch (error) {

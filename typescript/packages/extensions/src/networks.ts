@@ -319,3 +319,21 @@ export function getSupportedNetworkAliases(): string[] {
   // Convert CAIP-2 keys to v1 aliases using reverse mapping
   return Object.keys(networks).map(caip2 => getNetworkAlias(caip2 as Network));
 }
+
+/**
+ * Get list of all supported networks (CAIP-2 format)
+ *
+ * Returns network identifiers in CAIP-2 format (e.g., "eip155:84532").
+ * This is the canonical format used internally and in x402 v2.
+ *
+ * @returns Array of CAIP-2 network identifiers
+ *
+ * @example
+ * ```typescript
+ * const networks = getSupportedNetworks();
+ * // => ['eip155:84532', 'eip155:8453', 'eip155:1952', ...]
+ * ```
+ */
+export function getSupportedNetworks(): Network[] {
+  return Object.keys(networks) as Network[];
+}
