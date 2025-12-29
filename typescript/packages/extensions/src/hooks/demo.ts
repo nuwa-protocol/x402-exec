@@ -5,9 +5,10 @@
  * These hooks are optional and may not be deployed on all networks.
  */
 
+import type { Network } from "@x402/core/types";
 import { encodeAbiParameters } from "viem";
 import type { Address } from "viem";
-import type { Network } from "@x402/core/types";
+
 import { getNetworkConfig } from "../networks.js";
 
 /**

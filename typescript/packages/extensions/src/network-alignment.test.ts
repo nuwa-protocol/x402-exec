@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+
 import {
   getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
@@ -91,12 +92,12 @@ describe("Network Alignment (v1 ↔ v2)", () => {
       // Should return the expected networks
       const expectedNetworks = [
         "eip155:84532", // base-sepolia
-        "eip155:1952",  // x-layer-testnet
+        "eip155:1952", // x-layer-testnet
         "eip155:324705682", // skale-base-sepolia
-        "eip155:8453",  // base
-        "eip155:196",   // x-layer
-        "eip155:97",    // bsc-testnet
-        "eip155:56",    // bsc
+        "eip155:8453", // base
+        "eip155:196", // x-layer
+        "eip155:97", // bsc-testnet
+        "eip155:56", // bsc
       ];
 
       expectedNetworks.forEach((expectedNetwork) => {
@@ -149,23 +150,17 @@ describe("Network Alignment (v1 ↔ v2)", () => {
       });
 
       it("should throw error for unsupported v1 networks", () => {
-        expect(() => toCanonicalNetworkKey("ethereum")).toThrow(
-          "Unsupported network: ethereum"
-        );
-        expect(() => toCanonicalNetworkKey("polygon")).toThrow(
-          "Unsupported network: polygon"
-        );
-        expect(() => toCanonicalNetworkKey("")).toThrow(
-          "Unsupported network:"
-        );
+        expect(() => toCanonicalNetworkKey("ethereum")).toThrow("Unsupported network: ethereum");
+        expect(() => toCanonicalNetworkKey("polygon")).toThrow("Unsupported network: polygon");
+        expect(() => toCanonicalNetworkKey("")).toThrow("Unsupported network:");
       });
 
       it("should throw error for unsupported CAIP-2 networks", () => {
         expect(() => toCanonicalNetworkKey("eip155:1")).toThrow(
-          "Unsupported CAIP-2 network: eip155:1"
+          "Unsupported CAIP-2 network: eip155:1",
         );
         expect(() => toCanonicalNetworkKey("eip155:137")).toThrow(
-          "Unsupported CAIP-2 network: eip155:137"
+          "Unsupported CAIP-2 network: eip155:137",
         );
         expect(() => toCanonicalNetworkKey("eip155:invalid")).toThrow(); // Invalid format should throw
       });
@@ -207,10 +202,10 @@ describe("Network Alignment (v1 ↔ v2)", () => {
         "base-sepolia": "84532",
         "x-layer-testnet": "1952",
         "skale-base-sepolia": "324705682",
-        "base": "8453",
+        base: "8453",
         "x-layer": "196",
         "bsc-testnet": "97",
-        "bsc": "56",
+        bsc: "56",
       };
 
       Object.entries(expectedChainIds).forEach(([v1Network, expectedChainId]) => {

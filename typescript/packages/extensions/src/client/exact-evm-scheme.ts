@@ -1,6 +1,6 @@
 /**
  * x402x EVM Client Scheme with Router Settlement
- * 
+ *
  * This scheme extends the standard EVM exact scheme to support x402x router settlement.
  * The key difference is using a commitment hash (binding all settlement parameters)
  * as the EIP-3009 nonce instead of a random value.
@@ -8,9 +8,10 @@
 
 import type { PaymentPayload, PaymentRequirements, SchemeNetworkClient } from "@x402/core/types";
 import { getAddress, type Hex } from "viem";
+
 import { calculateCommitment } from "../commitment.js";
-import type { CommitmentParams } from "../types.js";
 import { ROUTER_SETTLEMENT_KEY } from "../server-extension.js";
+import type { CommitmentParams } from "../types.js";
 
 /**
  * Client EVM signer interface
@@ -74,19 +75,19 @@ interface RouterSettlementExtension {
 
 /**
  * EVM client implementation for the Exact payment scheme with x402x router settlement.
- * 
+ *
  * This scheme uses a commitment hash as the EIP-3009 nonce to cryptographically bind
  * all settlement parameters (salt, hook, hookData, etc.) to the user's signature,
  * preventing parameter tampering attacks.
- * 
+ *
  * @example
  * ```typescript
  * import { ExactEvmSchemeWithRouterSettlement } from '@x402x/extensions/client';
  * import { x402Client } from '@x402/core/client';
- * 
+ *
  * const signer = { address, signTypedData }; // viem WalletClient or LocalAccount
  * const scheme = new ExactEvmSchemeWithRouterSettlement(signer);
- * 
+ *
  * const client = new x402Client()
  *   .register('eip155:84532', scheme);
  * ```
@@ -127,7 +128,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
 
   /**
    * Creates a payment payload for the Exact scheme with router settlement.
-   * 
+   *
    * This method:
    * 1. Extracts settlement parameters from PaymentRequired.extensions
    * 2. Calculates a commitment hash binding all parameters
@@ -137,7 +138,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
    * @param x402Version - The x402 protocol version (must be 2)
    * @param paymentRequirements - The payment requirements from the server
    * @returns Promise resolving to a payment payload
-   * 
+   *
    * @throws Error if x402Version is not 2
    * @throws Error if x402x-router-settlement extension is missing
    * @throws Error if required settlement parameters are missing
@@ -148,7 +149,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
   ): Promise<Pick<PaymentPayload, "x402Version" | "payload">> {
     if (x402Version !== 2) {
       throw new Error(
-        `ExactEvmSchemeWithRouterSettlement only supports x402 version 2, got: ${x402Version}`
+        `ExactEvmSchemeWithRouterSettlement only supports x402 version 2, got: ${x402Version}`,
       );
     }
 
@@ -156,8 +157,9 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     // Prefer per-requirement extra (if a server implementation provides it),
     // otherwise use the per-request data injected from PaymentRequired.extensions.
     const routerSettlement =
-      (paymentRequirements.extra?.[ROUTER_SETTLEMENT_KEY] as RouterSettlementExtension | undefined) ??
-      this.routerSettlementFromPaymentRequired;
+      (paymentRequirements.extra?.[ROUTER_SETTLEMENT_KEY] as
+        | RouterSettlementExtension
+        | undefined) ?? this.routerSettlementFromPaymentRequired;
 
     if (!routerSettlement?.info) {
       throw new Error(
@@ -254,7 +256,7 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     // Extract EIP-712 domain parameters from extra
     if (!requirements.extra?.name || !requirements.extra?.version) {
       throw new Error(
-        `EIP-712 domain parameters (name, version) are required in payment requirements for asset ${requirements.asset}`
+        `EIP-712 domain parameters (name, version) are required in payment requirements for asset ${requirements.asset}`,
       );
     }
 
@@ -284,4 +286,3 @@ export class ExactEvmSchemeWithRouterSettlement implements SchemeNetworkClient {
     });
   }
 }
-

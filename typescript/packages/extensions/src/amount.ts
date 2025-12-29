@@ -3,6 +3,7 @@
  */
 
 import type { Network } from "@x402/core/types";
+
 import { processPriceToAtomicAmount, getDefaultAsset } from "./network-utils.js";
 
 /**

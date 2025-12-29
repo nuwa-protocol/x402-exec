@@ -49,10 +49,10 @@ export {
   toJsonSafe,
 } from "./middleware-utils.js";
 
-export type { 
+export type {
   RouteConfig as LegacyRouteConfig,
-  RoutesConfig, 
-  RoutePattern 
+  RoutesConfig,
+  RoutePattern,
 } from "./middleware-utils.js";
 
 // Export commitment utilities
@@ -68,12 +68,7 @@ export {
 } from "./networks.js";
 
 // Export chain configurations
-export {
-  getChain,
-  getChainById,
-  getCustomChains,
-  isCustomChain,
-} from "./chains.js";
+export { getChain, getChainById, getCustomChains, isCustomChain } from "./chains.js";
 
 // Export builtin hooks
 export { TransferHook, NFTMintHook, RewardHook } from "./hooks/index.js";
@@ -85,15 +80,9 @@ export type { MintConfig, RewardConfig } from "./hooks/demo.js";
 export { addSettlementExtra } from "./utils.js";
 
 // Export extension helpers
-export {
-  createRouterSettlementExtension,
-  getRouterSettlementExtensionKey,
-} from "./extensions.js";
+export { createRouterSettlementExtension, getRouterSettlementExtensionKey } from "./extensions.js";
 
-export type {
-  RouterSettlementExtension,
-  RouterSettlementExtensionInfo,
-} from "./extensions.js";
+export type { RouterSettlementExtension, RouterSettlementExtensionInfo } from "./extensions.js";
 
 // Export server extension for x402 v2 resource servers
 export {
@@ -178,6 +167,6 @@ export {
 export {
   ExactEvmSchemeWithRouterSettlement,
   injectX402xExtensionHandler,
-  registerX402xScheme,  // High-level API (recommended)
+  registerX402xScheme, // High-level API (recommended)
   type ClientEvmSigner,
 } from "./client/index.js";

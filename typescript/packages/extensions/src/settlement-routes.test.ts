@@ -2,8 +2,9 @@
  * Tests for settlement-routes.ts - DynamicPrice probe/retry flow
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createSettlementRouteConfig, DEFAULT_FACILITATOR_URL } from "./settlement-routes.js";
+
 import * as facilitatorModule from "./facilitator.js";
+import { createSettlementRouteConfig, DEFAULT_FACILITATOR_URL } from "./settlement-routes.js";
 
 // Mock facilitator fee calculation
 vi.mock("./facilitator.js", () => ({
@@ -33,16 +34,18 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
           decimals: 6,
         },
       };
-      
+
       vi.mocked(facilitatorModule.calculateFacilitatorFee).mockResolvedValue(mockFeeResult);
 
       const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
+        accepts: [
+          {
+            scheme: "exact",
+            network: "eip155:84532",
+            payTo: "0xMerchant",
+            price: "$1.00",
+          },
+        ],
         description: "Test endpoint",
       });
 
@@ -79,17 +82,22 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
     });
 
     it("should use fixed fee if provided in options", async () => {
-      const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
-        description: "Test endpoint",
-      }, {
-        facilitatorFee: "12345", // Fixed fee
-      });
+      const config = createSettlementRouteConfig(
+        {
+          accepts: [
+            {
+              scheme: "exact",
+              network: "eip155:84532",
+              payTo: "0xMerchant",
+              price: "$1.00",
+            },
+          ],
+          description: "Test endpoint",
+        },
+        {
+          facilitatorFee: "12345", // Fixed fee
+        },
+      );
 
       const httpContext = {
         paymentHeader: undefined,
@@ -125,12 +133,14 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
       });
 
       const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
+        accepts: [
+          {
+            scheme: "exact",
+            network: "eip155:84532",
+            payTo: "0xMerchant",
+            price: "$1.00",
+          },
+        ],
         description: "Test endpoint",
       });
 
@@ -142,13 +152,13 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
 
       const enhancedOption = Array.isArray(config.accepts) ? config.accepts[0] : config.accepts;
       await expect((enhancedOption.price as Function)(httpContext)).rejects.toThrow(
-        "Hook not allowed by facilitator"
+        "Hook not allowed by facilitator",
       );
     });
 
     it("should use custom facilitatorUrl if provided", async () => {
       const customUrl = "https://custom-facilitator.example.com";
-      
+
       vi.mocked(facilitatorModule.calculateFacilitatorFee).mockResolvedValue({
         network: "eip155:84532",
         hook: "0x1111111111111111111111111111111111111111",
@@ -165,17 +175,22 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
         },
       });
 
-      const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
-        description: "Test endpoint",
-      }, {
-        facilitatorUrl: customUrl,
-      });
+      const config = createSettlementRouteConfig(
+        {
+          accepts: [
+            {
+              scheme: "exact",
+              network: "eip155:84532",
+              payTo: "0xMerchant",
+              price: "$1.00",
+            },
+          ],
+          description: "Test endpoint",
+        },
+        {
+          facilitatorUrl: customUrl,
+        },
+      );
 
       const httpContext = {
         paymentHeader: undefined,
@@ -199,12 +214,14 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
   describe("Retry phase (with payment header)", () => {
     it("should replay accepted from payment payload", async () => {
       const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
+        accepts: [
+          {
+            scheme: "exact",
+            network: "eip155:84532",
+            payTo: "0xMerchant",
+            price: "$1.00",
+          },
+        ],
         description: "Test endpoint",
       });
 
@@ -239,7 +256,7 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
           signature: "0xsig",
         },
       };
-      
+
       // Use actual upstream encoding if available, or simple base64 for test
       const mockPaymentHeader = Buffer.from(JSON.stringify(paymentPayload)).toString("base64");
 
@@ -250,7 +267,7 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
       };
 
       const enhancedOption = Array.isArray(config.accepts) ? config.accepts[0] : config.accepts;
-      
+
       // Note: This test might fail if decodePaymentSignatureHeader requires proper format
       // In that case, we'd need to use a real encoded header or mock the decode function
       try {
@@ -287,12 +304,14 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
       });
 
       const config = createSettlementRouteConfig({
-        accepts: [{
-          scheme: "exact",
-          network: "eip155:84532",
-          payTo: "0xMerchant",
-          price: "$1.00",
-        }],
+        accepts: [
+          {
+            scheme: "exact",
+            network: "eip155:84532",
+            payTo: "0xMerchant",
+            price: "$1.00",
+          },
+        ],
         description: "Test endpoint",
       });
 
@@ -310,7 +329,7 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
         extensions: {},
         authorization: { signature: "0xsig" },
       };
-      
+
       const mockPaymentHeader = Buffer.from(JSON.stringify(paymentPayload)).toString("base64");
 
       const httpContext = {
@@ -320,7 +339,7 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
       };
 
       const enhancedOption = Array.isArray(config.accepts) ? config.accepts[0] : config.accepts;
-      
+
       try {
         const result = await (enhancedOption.price as Function)(httpContext);
 
@@ -386,12 +405,11 @@ describe("createSettlementRouteConfig - DynamicPrice", () => {
 
       expect(result1.extra["x402x-router-settlement"]).toBeDefined();
       expect(result2.extra["x402x-router-settlement"]).toBeDefined();
-      
+
       // Should have different salts (regenerated per request)
       expect(result1.extra["x402x-router-settlement"].info.salt).not.toBe(
-        result2.extra["x402x-router-settlement"].info.salt
+        result2.extra["x402x-router-settlement"].info.salt,
       );
     });
   });
 });
-

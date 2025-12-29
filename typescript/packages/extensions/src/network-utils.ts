@@ -1,6 +1,6 @@
 /**
  * Network utility functions for x402x core_v2
- * 
+ *
  * These utilities provide helpers for working with CAIP-2 network identifiers
  * and accessing network-specific asset information.
  */
@@ -21,7 +21,7 @@ export interface AssetInfo {
 
 /**
  * Primary mapping from human-readable network names to CAIP-2 identifiers
- * 
+ *
  * This is the SINGLE SOURCE OF TRUTH for network name mappings.
  * When adding a new network, only update this mapping and the corresponding
  * entries in networks.ts and DEFAULT_ASSETS.
@@ -31,27 +31,30 @@ export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
   "base-sepolia": "eip155:84532",
   "x-layer-testnet": "eip155:1952",
   "skale-base-sepolia": "eip155:324705682",
-  "base": "eip155:8453",
+  base: "eip155:8453",
   "x-layer": "eip155:196",
   "bsc-testnet": "eip155:97",
-  "bsc": "eip155:56",
+  bsc: "eip155:56",
 };
 
 /**
  * CAIP-2 network ID to network alias mapping (reverse lookup)
- * 
+ *
  * Maps CAIP-2 identifiers to v1 configuration aliases (e.g., "eip155:84532" → "base-sepolia").
  * These aliases are used in configuration files and for backward compatibility.
- * 
+ *
  * Automatically generated from NETWORK_ALIASES_V1_TO_V2.
  * DO NOT edit this manually - it will be regenerated.
  */
 export const NETWORK_ALIASES: Record<Network, string> = Object.entries(
-  NETWORK_ALIASES_V1_TO_V2
-).reduce((acc, [name, caip2]) => {
-  acc[caip2] = name;
-  return acc;
-}, {} as Record<Network, string>);
+  NETWORK_ALIASES_V1_TO_V2,
+).reduce(
+  (acc, [name, caip2]) => {
+    acc[caip2] = name;
+    return acc;
+  },
+  {} as Record<Network, string>,
+);
 
 /**
  * Default asset (USDC) configuration per network
@@ -117,14 +120,14 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
 
 /**
  * Get network alias from CAIP-2 network ID
- * 
+ *
  * Returns the v1 configuration alias (e.g., "base-sepolia") for a given CAIP-2 identifier.
  * These aliases are used in configuration files and for backward compatibility.
- * 
+ *
  * @param network - CAIP-2 network identifier (e.g., 'eip155:84532')
  * @returns Network alias (e.g., 'base-sepolia')
  * @throws Error if network ID is not supported
- * 
+ *
  * @example
  * ```typescript
  * const alias = getNetworkAlias('eip155:84532'); // 'base-sepolia'
@@ -135,7 +138,7 @@ export function getNetworkAlias(network: Network): string {
   if (!networkAlias) {
     throw new Error(
       `Unsupported network ID: ${network}. ` +
-        `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`
+        `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
     );
   }
   return networkAlias;
@@ -143,11 +146,11 @@ export function getNetworkAlias(network: Network): string {
 
 /**
  * Get default asset (USDC) information for a network
- * 
+ *
  * @param network - CAIP-2 network identifier (e.g., 'eip155:84532')
  * @returns Asset information including address, decimals, and EIP-712 domain
  * @throws Error if network is not supported
- * 
+ *
  * @example
  * ```typescript
  * const asset = getDefaultAsset('eip155:84532');
@@ -164,16 +167,16 @@ export function getDefaultAsset(network: Network): AssetInfo {
 
 /**
  * Parse money value to decimal number
- * 
+ *
  * Handles various formats:
  * - Dollar sign: '$1.50' -> 1.50
  * - Decimal string: '1.50' -> 1.50
  * - Number: 1.50 -> 1.50
- * 
+ *
  * @param money - Money value as string or number
  * @returns Decimal number
  * @throws Error if money format is invalid
- * 
+ *
  * @example
  * ```typescript
  * parseMoneyToDecimal('$1.50');  // 1.50
@@ -199,14 +202,14 @@ export function parseMoneyToDecimal(money: string | number): number {
 
 /**
  * Process price to atomic amount for the default asset on a network
- * 
+ *
  * This function converts various price formats to atomic units (smallest denomination).
  * For USDC with 6 decimals: 1.5 USD -> '1500000'
- * 
+ *
  * @param price - Price as string or number (in USD, not atomic units)
  * @param network - CAIP-2 network identifier
  * @returns Object with amount as string in atomic units, or error
- * 
+ *
  * @example
  * ```typescript
  * const result = processPriceToAtomicAmount('1.5', 'eip155:84532');
@@ -215,7 +218,7 @@ export function parseMoneyToDecimal(money: string | number): number {
  */
 export function processPriceToAtomicAmount(
   price: string | number,
-  network: Network
+  network: Network,
 ): { amount: string } | { error: string } {
   try {
     const amount = parseMoneyToDecimal(price);
@@ -224,8 +227,8 @@ export function processPriceToAtomicAmount(
 
     // Convert to smallest unit using integer-only arithmetic to avoid floating-point precision issues
     // Split the amount into whole and fractional parts
-    const [whole, fractional = '0'] = amount.toString().split('.');
-    const paddedFractional = fractional.padEnd(decimals, '0').slice(0, decimals);
+    const [whole, fractional = "0"] = amount.toString().split(".");
+    const paddedFractional = fractional.padEnd(decimals, "0").slice(0, decimals);
     const atomicAmount = BigInt(whole) * BigInt(10 ** decimals) + BigInt(paddedFractional);
 
     return { amount: atomicAmount.toString() };
@@ -248,7 +251,7 @@ export function processPriceToAtomicAmount(
  * ```typescript
  * const networkIds = getSupportedNetworkIds();
  * // => ['eip155:84532', 'eip155:8453', 'eip155:1952', ...]
- * 
+ *
  * // For x402 v2 protocol
  * const facilitator = createFacilitator({
  *   networks: getSupportedNetworkIds()
@@ -293,14 +296,14 @@ export function getNetworkAliasesV1ToV2(): Record<string, Network> {
  */
 export function toCanonicalNetworkKey(network: string): Network {
   // If it's already a CAIP-2 identifier, validate it
-  if (network.startsWith('eip155:')) {
+  if (network.startsWith("eip155:")) {
     const canonicalNetwork = network as Network;
     if (canonicalNetwork in NETWORK_ALIASES) {
       return canonicalNetwork;
     }
     throw new Error(
       `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`
+        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
     );
   }
 
@@ -309,7 +312,7 @@ export function toCanonicalNetworkKey(network: string): Network {
   if (!canonicalNetwork) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
     );
   }
   return canonicalNetwork;

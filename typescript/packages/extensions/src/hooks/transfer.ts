@@ -6,9 +6,10 @@
  * 2. Distributed Transfer: Split transfer to multiple recipients by percentage
  */
 
+import type { Network } from "@x402/core/types";
 import { encodeAbiParameters } from "viem";
 import type { Address } from "viem";
-import type { Network } from "@x402/core/types";
+
 import { getNetworkConfig } from "../networks.js";
 
 /**
@@ -151,7 +152,7 @@ export namespace TransferHook {
    * // Preferred: CAIP-2 format
    * const address = TransferHook.getAddress('eip155:84532');
    * // => '0x4DE234059C6CcC94B8fE1eb1BD24804794083569'
-   * 
+   *
    * // Legacy: human-readable name
    * const address2 = TransferHook.getAddress('base-sepolia');
    * // => '0x4DE234059C6CcC94B8fE1eb1BD24804794083569'

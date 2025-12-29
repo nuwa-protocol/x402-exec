@@ -1,13 +1,14 @@
 /**
  * Chain definitions for x402x supported networks
- * 
+ *
  * This module provides viem chain configurations for all supported networks,
  * including custom definitions for chains not in viem's standard list.
  */
 
+import type { Network } from "@x402/core/types";
 import { defineChain, type Chain } from "viem";
 import * as allChains from "viem/chains";
-import type { Network } from "@x402/core/types";
+
 import { NETWORK_ALIASES_V1_TO_V2, NETWORK_ALIASES } from "./network-utils.js";
 
 /**
@@ -64,20 +65,20 @@ const customChains: Record<number, Chain> = {
 
 /**
  * Get viem chain configuration for a network
- * 
+ *
  * Accepts both CAIP-2 format (preferred) and human-readable network names (legacy).
  * Checks custom chains first, then falls back to viem's standard chains.
- * 
+ *
  * @param network - Network identifier (CAIP-2 or human-readable name)
  * @returns Viem chain configuration
  * @throws Error if network is not supported
- * 
+ *
  * @example
  * ```typescript
  * // Preferred: CAIP-2 format
  * const chain = getChain("eip155:1952");
  * // => { id: 1952, name: "X Layer Testnet", ... }
- * 
+ *
  * // Legacy: human-readable name
  * const baseChain = getChain("base-sepolia");
  * // => { id: 84532, name: "Base Sepolia", ... }
@@ -85,15 +86,15 @@ const customChains: Record<number, Chain> = {
  */
 export function getChain(network: string | Network): Chain {
   let chainId: number;
-  
+
   // If already CAIP-2 format, validate it's supported before extracting chainId
-  if (network.startsWith('eip155:')) {
+  if (network.startsWith("eip155:")) {
     const caip2 = network as Network;
     // Validate that this CAIP-2 identifier is in our supported networks
     if (!(caip2 in NETWORK_ALIASES)) {
       throw new Error(
         `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`
+          `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
       );
     }
     chainId = parseInt(network.split(":")[1]);
@@ -103,7 +104,7 @@ export function getChain(network: string | Network): Chain {
     if (!caip2) {
       throw new Error(
         `Unknown network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+          `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
       );
     }
     chainId = parseInt(caip2.split(":")[1]);
@@ -118,8 +119,7 @@ export function getChain(network: string | Network): Chain {
   const chain = Object.values(allChains).find((c) => c.id === chainId);
   if (!chain) {
     throw new Error(
-      `Unsupported chain ID: ${chainId}. ` +
-        `Please add custom chain definition in chains.ts`
+      `Unsupported chain ID: ${chainId}. ` + `Please add custom chain definition in chains.ts`,
     );
   }
   return chain;
@@ -127,11 +127,11 @@ export function getChain(network: string | Network): Chain {
 
 /**
  * Get viem chain configuration by chain ID
- * 
+ *
  * @param chainId - Chain ID
  * @returns Viem chain configuration
  * @throws Error if chain ID is not supported
- * 
+ *
  * @example
  * ```typescript
  * const chain = getChainById(1952);
@@ -148,8 +148,7 @@ export function getChainById(chainId: number): Chain {
   const chain = Object.values(allChains).find((c) => c.id === chainId);
   if (!chain) {
     throw new Error(
-      `Unsupported chain ID: ${chainId}. ` +
-        `Please add custom chain definition in chains.ts`
+      `Unsupported chain ID: ${chainId}. ` + `Please add custom chain definition in chains.ts`,
     );
   }
   return chain;
@@ -157,9 +156,9 @@ export function getChainById(chainId: number): Chain {
 
 /**
  * Get all custom chain definitions
- * 
+ *
  * @returns Record of chain ID to chain configuration
- * 
+ *
  * @example
  * ```typescript
  * const customs = getCustomChains();
@@ -172,10 +171,10 @@ export function getCustomChains(): Record<number, Chain> {
 
 /**
  * Check if a chain ID has a custom definition
- * 
+ *
  * @param chainId - Chain ID to check
  * @returns True if chain has custom definition
- * 
+ *
  * @example
  * ```typescript
  * isCustomChain(1952); // true (X Layer Testnet)
@@ -185,4 +184,3 @@ export function getCustomChains(): Record<number, Chain> {
 export function isCustomChain(chainId: number): boolean {
   return chainId in customChains;
 }
-

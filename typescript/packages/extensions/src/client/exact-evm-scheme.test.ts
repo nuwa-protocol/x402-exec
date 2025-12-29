@@ -2,11 +2,13 @@
  * Tests for ExactEvmSchemeWithRouterSettlement
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ExactEvmSchemeWithRouterSettlement } from "./exact-evm-scheme.js";
 import type { PaymentRequirements } from "@x402/core/types";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { calculateCommitment } from "../commitment.js";
 import { ROUTER_SETTLEMENT_KEY } from "../server-extension.js";
+
+import { ExactEvmSchemeWithRouterSettlement } from "./exact-evm-scheme.js";
 
 describe("ExactEvmSchemeWithRouterSettlement", () => {
   const mockSigner = {
@@ -55,7 +57,7 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
     // Verify the nonce is a commitment hash (not random)
     const auth = result.payload.authorization;
     expect(auth.nonce).toMatch(/^0x[0-9a-f]{64}$/i);
-    
+
     // Verify 'to' is settlementRouter
     expect(auth.to.toLowerCase()).toBe("0x2222222222222222222222222222222222222222");
 
@@ -64,11 +66,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
     const signCall = mockSigner.signTypedData.mock.calls[0][0];
     expect(signCall.domain.chainId).toBe(84532);
     expect(signCall.domain.verifyingContract.toLowerCase()).toBe(
-      "0x036cbd53842c5426634e7929541ec2318f3dcf7e"
+      "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
     );
-    expect(signCall.message.to.toLowerCase()).toBe(
-      "0x2222222222222222222222222222222222222222"
-    );
+    expect(signCall.message.to.toLowerCase()).toBe("0x2222222222222222222222222222222222222222");
   });
 
   it("should support reading router settlement from PaymentRequired.extensions via injected context (without mutating accepted)", async () => {
@@ -119,9 +119,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       extra: {},
     };
 
-    await expect(
-      scheme.createPaymentPayload(1, paymentRequirements)
-    ).rejects.toThrow("only supports x402 version 2");
+    await expect(scheme.createPaymentPayload(1, paymentRequirements)).rejects.toThrow(
+      "only supports x402 version 2",
+    );
   });
 
   it("should throw error if x402x extension is missing", async () => {
@@ -137,9 +137,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       extra: {},
     };
 
-    await expect(
-      scheme.createPaymentPayload(2, paymentRequirements)
-    ).rejects.toThrow("x402x-router-settlement extension not available");
+    await expect(scheme.createPaymentPayload(2, paymentRequirements)).rejects.toThrow(
+      "x402x-router-settlement extension not available",
+    );
   });
 
   it("should throw error if required parameters are missing", async () => {
@@ -164,9 +164,9 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
       },
     };
 
-    await expect(
-      scheme.createPaymentPayload(2, paymentRequirements)
-    ).rejects.toThrow("Missing required parameter");
+    await expect(scheme.createPaymentPayload(2, paymentRequirements)).rejects.toThrow(
+      "Missing required parameter",
+    );
   });
 
   it("should calculate correct commitment hash", async () => {
@@ -262,4 +262,3 @@ describe("ExactEvmSchemeWithRouterSettlement", () => {
     expect(signCall.domain.chainId).toBe(8453);
   });
 });
-

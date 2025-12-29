@@ -6,6 +6,7 @@
  */
 
 import type { Network } from "@x402/core/types";
+
 import { getDefaultAsset, NETWORK_ALIASES_V1_TO_V2, getNetworkAlias } from "./network-utils.js";
 import type { NetworkConfig } from "./types.js";
 
@@ -26,14 +27,14 @@ function getDefaultAssetConfig(network: Network) {
 
 /**
  * Normalize network identifier to CAIP-2 format
- * 
+ *
  * Accepts both human-readable names (string) and CAIP-2 format (Network type).
  * This enables backward compatibility while supporting the new CAIP-2 standard.
- * 
+ *
  * @param network - Network identifier (CAIP-2 or human-readable name)
  * @returns CAIP-2 network identifier
  * @throws Error if network is not supported
- * 
+ *
  * @example
  * ```typescript
  * normalizeToCAIP2('base-sepolia');    // => 'eip155:84532'
@@ -42,13 +43,13 @@ function getDefaultAssetConfig(network: Network) {
  */
 function normalizeToCAIP2(network: string | Network): Network {
   // Already CAIP-2 format - validate it's supported
-  if (network.startsWith('eip155:')) {
+  if (network.startsWith("eip155:")) {
     const caip2 = network as Network;
     // Check if this CAIP-2 identifier is in our supported networks
     if (!(caip2 in networks)) {
       throw new Error(
         `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(networks).join(", ")}`
+          `Supported networks: ${Object.keys(networks).join(", ")}`,
       );
     }
     return caip2;
@@ -58,7 +59,7 @@ function normalizeToCAIP2(network: string | Network): Network {
   if (!caip2) {
     throw new Error(
       `Unknown network: ${network}. ` +
-      `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`
+        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
     );
   }
   return caip2;
@@ -245,10 +246,10 @@ export const networks: Record<Network, NetworkConfig> = {
  * ```typescript
  * // Preferred: CAIP-2 format
  * const config = getNetworkConfig('eip155:84532');
- * 
+ *
  * // Legacy: human-readable name
  * const config2 = getNetworkConfig('base-sepolia');
- * 
+ *
  * console.log(config.settlementRouter);
  * ```
  */
@@ -277,7 +278,7 @@ export function getNetworkConfig(network: string | Network): NetworkConfig {
  * if (isNetworkSupported('eip155:84532')) {
  *   // proceed...
  * }
- * 
+ *
  * if (isNetworkSupported('base-sepolia')) {
  *   // also works...
  * }
@@ -298,7 +299,7 @@ export function isNetworkSupported(network: string | Network): boolean {
  * Returns user-friendly network aliases like "base-sepolia", "base", etc.
  * These aliases are used for configuration files and backward compatibility.
  * Use this for UI display, configuration, and user-facing operations.
- * 
+ *
  * This function provides backward compatibility by returning v1 aliases
  * even though the internal storage uses CAIP-2 format.
  *
@@ -308,7 +309,7 @@ export function isNetworkSupported(network: string | Network): boolean {
  * ```typescript
  * const aliases = getSupportedNetworkAliases();
  * // => ['base-sepolia', 'base', 'x-layer-testnet', ...]
- * 
+ *
  * // For UI dropdown
  * <select>
  *   {aliases.map(alias => <option key={alias}>{alias}</option>)}
@@ -317,7 +318,7 @@ export function isNetworkSupported(network: string | Network): boolean {
  */
 export function getSupportedNetworkAliases(): string[] {
   // Convert CAIP-2 keys to v1 aliases using reverse mapping
-  return Object.keys(networks).map(caip2 => getNetworkAlias(caip2 as Network));
+  return Object.keys(networks).map((caip2) => getNetworkAlias(caip2 as Network));
 }
 
 /**

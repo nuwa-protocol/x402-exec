@@ -1,6 +1,6 @@
 /**
  * Type definitions for facilitator services
- * 
+ *
  * These types define the interfaces and configurations used by facilitator
  * implementations that handle payment verification and settlement.
  */
@@ -107,4 +107,3 @@ export class SettlementRouterError extends Error {
     this.name = "SettlementRouterError";
   }
 }
-

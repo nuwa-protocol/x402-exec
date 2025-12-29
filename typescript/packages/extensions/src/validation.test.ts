@@ -3,6 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
+
+import { SettlementExtraError } from "./types";
 import {
   validateSettlementExtra,
   assertValidSettlementExtra,
@@ -11,7 +13,6 @@ import {
   isValid32ByteHex,
   isValidNumericString,
 } from "./validation";
-import { SettlementExtraError } from "./types";
 
 describe("isValidAddress", () => {
   it("should accept valid Ethereum addresses", () => {
@@ -274,7 +275,7 @@ describe("assertValidSettlementExtra", () => {
       assertValidSettlementExtra({
         ...validExtra,
         settlementRouter: undefined,
-      })
+      }),
     ).toThrow(SettlementExtraError);
   });
 

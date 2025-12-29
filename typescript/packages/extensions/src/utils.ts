@@ -2,11 +2,11 @@
  * Utility functions for x402x
  */
 
-import type { PaymentRequirements, SettlementExtra } from "./types.js";
-import { getNetworkConfig } from "./networks.js";
 import { generateSalt } from "./commitment.js";
-import { assertValidSettlementExtra } from "./validation.js";
 import { getNetworkAlias } from "./network-utils.js";
+import { getNetworkConfig } from "./networks.js";
+import type { PaymentRequirements, SettlementExtra } from "./types.js";
+import { assertValidSettlementExtra } from "./validation.js";
 
 /**
  * Add settlement extension to PaymentRequirements

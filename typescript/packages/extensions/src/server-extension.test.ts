@@ -3,12 +3,13 @@
  */
 
 import { describe, it, expect } from "vitest";
+
+import { createRouterSettlementExtension } from "./extensions.js";
 import {
   routerSettlementServerExtension,
   createExtensionDeclaration,
   ROUTER_SETTLEMENT_KEY,
 } from "./server-extension.js";
-import { createRouterSettlementExtension } from "./extensions.js";
 
 describe("Server Extension", () => {
   describe("routerSettlementServerExtension", () => {
@@ -125,4 +126,3 @@ describe("Server Extension", () => {
     });
   });
 });
-
