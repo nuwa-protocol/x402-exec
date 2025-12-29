@@ -1,98 +1,49 @@
 ---
 title: Packages Reference
-description: Overview of the x402x TypeScript packages and their primary APIs.
+description: Overview of the official x402 and x402x extension packages.
 navGroup: Reference
 navOrder: 10
 status: stable
 ---
 
-## @x402x/core
+## @x402x/extensions
 
-Core utilities and network configuration.
+The core extension library that adds programmable settlement to standard x402 V2.
 
-- Network helpers: `getNetworkConfig(network)`, `getSupportedNetworks()`
-- Settlement helpers: `addSettlementExtra(requirements, { hook, hookData, facilitatorFee?, payTo?, salt? })`
-- Commitment: `calculateCommitment(params)`, `generateSalt()`
-- Built‑in hooks: `TransferHook.getAddress(network)`, `TransferHook.encode(splits?)`
-- Facilitator helpers: `isSettlementMode(req)`, `parseSettlementExtra(extra)`,
-  `settle(facilitatorUrl, paymentPayload, paymentRequirements)`, `calculateFacilitatorFee(url, network, hook, hookData?)`
-
-Example:
-
-```core-example.ts
-import { addSettlementExtra, TransferHook, calculateCommitment } from "@x402x/core";
-```
-
-## @x402x/fetch
-
-Fetch wrapper that completes 402 flows automatically and supports settlement mode.
-
-- `wrapFetchWithPayment(fetch, walletClient, maxValue?, selector?, config?)`
-- Also exports `decodeXPaymentResponse`, `createSigner` from x402
-
-Example:
-
-```fetch-example.ts
-const fetchWithPay = wrapFetchWithPayment(fetch, walletClient);
-const res = await fetchWithPay("/api/protected");
-```
-
-## @x402x/hono
-
-Hono middleware for protecting routes and settling via facilitator.
-
-- `paymentMiddleware(payTo, routes, facilitatorConfig?)`
-- Adds `c.get("x402")` context: payer, amount, network, payment, settlement?
-
-```hono-middleware.ts
-app.use("/api/*", paymentMiddleware("0xRecipient...", { price: "$0.10", network: "base-sepolia" }, { url }));
-```
-
-## @x402x/express
-
-Express middleware mirroring the Hono API.
-
-- `paymentMiddleware(payTo, routes, facilitatorConfig?)`
-- Adds `req.x402`
-
-```express-middleware.ts
-app.use(paymentMiddleware("0xRecipient...", { price: "$0.10", network: "base-sepolia" }, { url }));
-```
-
-## @x402x/react
-
-React helpers for client apps.
-
-- `useX402Payment({ maxValue? })` → `pay(url)`, `status`, `error`, `result`
-
-```react-example.ts
-const { pay, status } = useX402Payment();
-await pay("/api/premium");
-```
+- **Hook Helpers**: `TransferHook.getAddress(network)`, `TransferHook.encode(splits?)`
+- **Configuration**: `createSettlementRouteConfig` (for Server)
+- **Schemes**: `ExactEvmSchemeWithRouterSettlement` (for Client)
+- **Registration**: `registerRouterSettlement(server)` (for Hono/Express)
+- **Network Helpers**: `getSupportedNetworkIds()`
 
 ## @x402x/client
 
-Serverless client SDK for talking to the facilitator directly.
+Serverless client SDK for interacting directly with the Facilitator (no Resource Server required).
 
-- Class: `new X402Client({ wallet, network, facilitatorUrl, ... })`
+- Class: `new x402xClient({ wallet, network, facilitatorUrl, ... })`
 - Methods: `execute({...})`
 - Primitives: `prepareSettlement`, `signAuthorization`, `settle`
 
-```client-example.ts
-const client = new X402Client({ wallet, network: "base-sepolia", facilitatorUrl: url });
-await client.execute({ hook, hookData, amount, payTo });
-```
+## Official x402 SDKs
 
-## Facilitator Service
+We use the official packages from `@x402/*`.
 
-A production‑ready facilitator lives under `facilitator/`.
+### @x402/hono
+Official middleware for Hono.
+- `x402ResourceServer`: The main server class.
+- `paymentMiddleware`: The route guard.
 
-- Dual‑mode (standard x402 and settlement)
-- Security: CORS, rate‑limit, hook whitelist, gas caps, fee validation
-- Observability: metrics + OpenTelemetry
-- Endpoints: `/verify`, `/settle`, `/calculate-fee` (aka `min-facilitator-fee`), `/health`, `/ready`
+### @x402/client
+Official Browser/Node client.
+- Can be used with `ExactEvmSchemeWithRouterSettlement` from `@x402x/extensions`.
 
-See `facilitator/README.md` for deployment and configuration.
+## Legacy Packages (Deprecated)
+
+The following packages are v1 wrappers/forks and are **deprecated** in favor of official SDKs + extensions:
+
+- `@x402x/core`: Replaced by `@x402x/extensions`.
+- `@x402x/fetch`: Use `@x402/client`.
+- `@x402x/hono` / `@x402x/express`: Use `@x402/hono` / `@x402/express` + extension registration.
 
 import { RelatedLinks } from "@/components/docs/related-links";
 
@@ -108,7 +59,7 @@ import { RelatedLinks } from "@/components/docs/related-links";
     {
       title: "Third‑Party Integration Guide",
       href: "https://github.com/nuwa-protocol/x402-exec/blob/main/docs/third-party-integration.md",
-      description: "Install the aliased x402 and use paymentRequirements.",
+      description: "Integration guide.",
     },
     {
       title: "Project README",
@@ -116,4 +67,4 @@ import { RelatedLinks } from "@/components/docs/related-links";
       description: "Top‑level overview, deployments, and links.",
     },
   ]}
-/> 
+/>

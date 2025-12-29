@@ -1,8 +1,8 @@
-import { getNetworkConfig, getSupportedNetworks } from "@x402x/core";
+import { getNetworkConfig, getSupportedNetworks } from "@x402x/extensions";
 
 export const FACILITATOR_HOSTED_URL = "https://facilitator.x402x.dev/" as const;
 const ISSUE_DEFAULT_TITLE =
-	"[Request] Add new facilitator network - NETWORK NAME/ASSET NAME";
+  "[Request] Add new facilitator network - NETWORK NAME/ASSET NAME";
 const ISSUE_DEFAULT_BODY = `## Summary
 
 - Network name:
@@ -11,47 +11,47 @@ const ISSUE_DEFAULT_BODY = `## Summary
 `;
 
 const issueParams = new URLSearchParams({
-	title: ISSUE_DEFAULT_TITLE,
-	body: ISSUE_DEFAULT_BODY,
+  title: ISSUE_DEFAULT_TITLE,
+  body: ISSUE_DEFAULT_BODY,
 });
 
 export const GH_ROOT =
-	"https://github.com/nuwa-protocol/x402-exec/tree/main/" as const;
+  "https://github.com/nuwa-protocol/x402-exec/tree/main/" as const;
 
 export const ISSUE_SUBMIT_URL = `https://github.com/nuwa-protocol/x402-exec/issues/new?${issueParams.toString()}`;
 
 export type ApiEndpoint = {
-	id: string;
-	method: "GET" | "POST";
-	path: string;
-	title: string;
-	summary: string;
-	baseUrl?: string;
-	request?: string;
-	response?: string;
+  id: string;
+  method: "GET" | "POST";
+  path: string;
+  title: string;
+  summary: string;
+  baseUrl?: string;
+  request?: string;
+  response?: string;
 };
 
 export const API_ENDPOINTS: ApiEndpoint[] = [
-	{
-		id: "supported",
-		method: "GET",
-		path: "/supported",
-		title: "Supported payment kinds",
-		summary:
-			"Returns all scheme/network pairs the facilitator can currently settle.",
-		baseUrl: FACILITATOR_HOSTED_URL,
-		request: `curl -s ${FACILITATOR_HOSTED_URL}supported`,
-		response: `{"kinds":[{"x402Version":1,"scheme":"exact","network":"base-sepolia"},{"x402Version":1,"scheme":"exact","network":"x-layer-testnet"},{"x402Version":1,"scheme":"exact","network":"base"},{"x402Version":1,"scheme":"exact","network":"x-layer"}]}`,
-	},
-	{
-		id: "verify-get",
-		method: "GET",
-		path: "/verify",
-		title: "Verify endpoint metadata",
-		summary: "Inspects the POST /verify contract (body schema, description).",
-		baseUrl: FACILITATOR_HOSTED_URL,
-		request: `curl -s ${FACILITATOR_HOSTED_URL}verify`,
-		response: `{
+  {
+    id: "supported",
+    method: "GET",
+    path: "/supported",
+    title: "Supported payment kinds",
+    summary:
+      "Returns all scheme/network pairs the facilitator can currently settle.",
+    baseUrl: FACILITATOR_HOSTED_URL,
+    request: `curl -s ${FACILITATOR_HOSTED_URL}supported`,
+    response: `{"kinds":[{"x402Version":1,"scheme":"exact","network":"base-sepolia"},{"x402Version":1,"scheme":"exact","network":"x-layer-testnet"},{"x402Version":1,"scheme":"exact","network":"base"},{"x402Version":1,"scheme":"exact","network":"x-layer"}]}`,
+  },
+  {
+    id: "verify-get",
+    method: "GET",
+    path: "/verify",
+    title: "Verify endpoint metadata",
+    summary: "Inspects the POST /verify contract (body schema, description).",
+    baseUrl: FACILITATOR_HOSTED_URL,
+    request: `curl -s ${FACILITATOR_HOSTED_URL}verify`,
+    response: `{
   "endpoint": "/verify",
   "description": "POST to verify x402 payments",
   "body": {
@@ -59,16 +59,16 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     "paymentRequirements": "PaymentRequirements"
   }
 }`,
-	},
-	{
-		id: "verify-post",
-		method: "POST",
-		path: "/verify",
-		title: "Verify a payment",
-		summary:
-			"Submits a PaymentPayload + PaymentRequirements atomically for validation.",
-		baseUrl: FACILITATOR_HOSTED_URL,
-		request: `curl -s -X POST ${FACILITATOR_HOSTED_URL}verify \\
+  },
+  {
+    id: "verify-post",
+    method: "POST",
+    path: "/verify",
+    title: "Verify a payment",
+    summary:
+      "Submits a PaymentPayload + PaymentRequirements atomically for validation.",
+    baseUrl: FACILITATOR_HOSTED_URL,
+    request: `curl -s -X POST ${FACILITATOR_HOSTED_URL}verify \\
   -H 'Content-Type: application/json' \\
   -d '{
     "paymentPayload": {
@@ -109,20 +109,20 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
       }
     }
   }'`,
-		response: `{
+    response: `{
   "isValid": true,
   "payer": "0xdD2FD4581271e230360230F9337D5c0430Bf44C0"
 }`,
-	},
-	{
-		id: "settle-get",
-		method: "GET",
-		path: "/settle",
-		title: "Settle endpoint metadata",
-		summary: "Explains POST /settle modes plus expected payload shape.",
-		baseUrl: FACILITATOR_HOSTED_URL,
-		request: `curl -s ${FACILITATOR_HOSTED_URL}settle`,
-		response: `{
+  },
+  {
+    id: "settle-get",
+    method: "GET",
+    path: "/settle",
+    title: "Settle endpoint metadata",
+    summary: "Explains POST /settle modes plus expected payload shape.",
+    baseUrl: FACILITATOR_HOSTED_URL,
+    request: `curl -s ${FACILITATOR_HOSTED_URL}settle`,
+    response: `{
   "endpoint": "/settle",
   "description": "POST to settle x402 payments",
   "supportedModes": ["standard", "settlementRouter"],
@@ -131,16 +131,16 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     "paymentRequirements": "PaymentRequirements (with optional extra.settlementRouter)"
   }
 }`,
-	},
-	{
-		id: "settle-post",
-		method: "POST",
-		path: "/settle",
-		title: "Settle a payment",
-		summary:
-			"Executes payment settlement and surfaces tx metadata when successful.",
-		baseUrl: FACILITATOR_HOSTED_URL,
-		request: `curl -s -X POST ${FACILITATOR_HOSTED_URL}settle \\
+  },
+  {
+    id: "settle-post",
+    method: "POST",
+    path: "/settle",
+    title: "Settle a payment",
+    summary:
+      "Executes payment settlement and surfaces tx metadata when successful.",
+    baseUrl: FACILITATOR_HOSTED_URL,
+    request: `curl -s -X POST ${FACILITATOR_HOSTED_URL}settle \\
   -H 'Content-Type: application/json' \\
   -d '{
     "paymentPayload": {
@@ -181,20 +181,20 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
       }
     }
   }'`,
-		response: `{
+    response: `{
   "success": true,
   "transaction": "0xade93c73d5cd9f82c3baf8b4f2245d152341a84f984f6d0332ba6983fc7fb9a3",
   "network": "base-sepolia",
   "payer": "0xdD2FD4581271e230360230F9337D5c0430Bf44C0"
 }`,
-	},
+  },
 ];
 
 export type PaymentToken = {
-	symbol: string;
-	label: string;
-	address: string;
-	explorerUrl?: string;
+  symbol: string;
+  label: string;
+  address: string;
+  explorerUrl?: string;
 };
 
 export type SupportedNetwork = {
@@ -219,17 +219,17 @@ export const SUPPORTED_PAYMENT_TOKENS: Record<string, PaymentToken[]> = (() => {
     const defaultAsset = cfg.defaultAsset;
     const tokenName = defaultAsset.eip712.name;
 
-		result[n] = [
-			{
+    result[n] = [
+      {
         //TODO config symbol from network config
-				symbol: "USDC",
-				label: tokenName,
-				address: defaultAsset.address,
-				explorerUrl: addressBase ? `${addressBase}${defaultAsset.address}` : undefined,
-			},
-		];
-	}
-	return result;
+        symbol: "USDC",
+        label: tokenName,
+        address: defaultAsset.address,
+        explorerUrl: addressBase ? `${addressBase}${defaultAsset.address}` : undefined,
+      },
+    ];
+  }
+  return result;
 })();
 
 // Build supported networks list from SDK + meta config

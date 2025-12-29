@@ -30,7 +30,7 @@ export const TokenMint = () => {
     const totalAllocation =
         X402X_TOKEN_CONFIG.mintAllocationTokens || 1_000_000_000 / 10;
     const mintedAmount = Math.max(totalAllocation - unsoldTokens, 0);
-    const percentage = Math.min((mintedAmount / totalAllocation) * 100, 100);
+    //const percentage = Math.min((mintedAmount / totalAllocation) * 100, 100);
 
     const effectiveCurrentPrice =
         calculateBondingCurvePrice(mintedAmount, totalAllocation) || null;

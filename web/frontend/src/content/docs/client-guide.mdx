@@ -1,13 +1,12 @@
 ---
-title: Facilitator — Client‑Side
-description: Call the facilitator directly from the browser or client app (serverless mode).
+title: Client Integration Guide
+description: Integrate x402x payments into your browser or client application.
 navGroup: Facilitator
 navOrder: 4
 status: beta
 ---
 
-This path lets you execute on‑chain contracts without running a resource server. You talk directly
-to the facilitator from the browser/app.
+This guide covers both integration modes from the client perspective.
 
 import { CodeTabs } from "@/components/ui/shadcn-io/code-tabs";
 
@@ -15,29 +14,76 @@ import { CodeTabs } from "@/components/ui/shadcn-io/code-tabs";
 
 <CodeTabs
   codes={{
-    npm: "npm install @x402x/client @x402x/core viem",
-    pnpm: "pnpm add @x402x/client @x402x/core viem",
-    yarn: "yarn add @x402x/client @x402x/core viem",
-    bun: "bun add @x402x/client @x402x/core viem",
+    npm: "npm install @x402x/client @x402x/extensions @x402/fetch viem",
+    pnpm: "pnpm add @x402x/client @x402x/extensions @x402/fetch viem",
+    yarn: "yarn add @x402x/client @x402x/extensions @x402/fetch viem",
+    bun: "bun add @x402x/client @x402x/extensions @x402/fetch viem",
   }}
   lang="bash"
 />
 
-## High‑Level API
+---
 
-```client.ts
-import { X402Client } from "@x402x/client";
-import { TransferHook } from "@x402x/core";
+## Mode A: Server-Validated
 
-const client = new X402Client({
+Use this when your backend returns 402 responses. The SDK handles negotiation, signing, and retry automatically.
+
+```typescript
+import { wrapFetchWithPayment } from "@x402/fetch";
+import { x402Client } from "@x402/core/client";
+import { registerX402xScheme } from "@x402x/extensions";
+
+// 1. Create a signer from your wallet (e.g., wagmi walletClient)
+const signer = {
+  address: walletClient.account.address,
+  signTypedData: (params) => walletClient.signTypedData(params),
+};
+
+// 2. Create client and register x402x scheme
+const client = new x402Client();
+registerX402xScheme(client, "eip155:84532", signer); // Base Sepolia
+
+// 3. Wrap fetch - it handles 402 automatically!
+const fetchWithPayment = wrapFetchWithPayment(fetch, client);
+
+// 4. Use like normal fetch - payment happens transparently
+const response = await fetchWithPayment("/api/premium-content", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ /* your data */ }),
+});
+
+const result = await response.json();
+```
+
+**How it works:**
+1. Your request hits a 402 Protected endpoint
+2. SDK parses payment requirements from response headers
+3. Signs EIP-3009 authorization
+4. Retries request with payment header
+5. Server verifies via Facilitator and returns content
+
+---
+
+## Mode B: Serverless
+
+Use this to call the Facilitator directly from browser, no backend needed.
+
+### High-Level API (Recommended)
+
+```typescript
+import { x402xClient } from "@x402x/client";
+import { TransferHook } from "@x402x/extensions";
+
+const client = new x402xClient({
   wallet,                // viem wallet client (e.g. from wagmi)
-  network: "base-sepolia",
+  network: "eip155:84532",
   facilitatorUrl: "https://facilitator.x402x.dev",
 });
 
 // Example 1: Simple transfer (hook defaults to TransferHook, no splits)
 const res1 = await client.execute({
-  amount: "1000000",     // 1.00 USDC
+  amount: "1000000",     // 1.00 USDC (atomic units)
   payTo: "0xMerchant...",
 });
 console.log("Simple transfer:", res1.txHash);
@@ -54,20 +100,45 @@ const res2 = await client.execute({
 console.log("Revenue split:", res2.txHash);
 ```
 
-Under the hood the client:
+### React Hook
 
+```tsx
+import { useX402xClient } from "@x402x/client";
+
+function PayButton() {
+  const client = useX402xClient({ 
+    facilitatorUrl: "https://facilitator.x402x.dev" 
+  });
+
+  const handlePay = async () => {
+    if (!client) return;
+    const result = await client.execute({ 
+      amount: "1000000", 
+      payTo: "0xMerchant..." 
+    });
+    console.log("Paid:", result.txHash);
+  };
+
+  if (!client) return <div>Connect wallet first</div>;
+  return <button onClick={handlePay}>Pay $1</button>;
+}
+```
+
+Under the hood the client:
 - Queries min facilitator fee (or uses your provided fee)
 - Prepares the settlement and computes the commitment (nonce)
-- Signs EIP‑3009 with EIP‑712
+- Signs EIP-3009 with EIP-712
 - Submits to the facilitator and waits for confirmation (optional)
 
-See the [Facilitator Fee documentation](./facilitator-fee.mdx) for detailed information about how fees work and how to manage them in your client applications.
+---
 
-## Low‑Level Primitives
+## Low-Level Primitives
 
-```low-level.ts
+For full control over the settlement flow:
+
+```typescript
 import { prepareSettlement, signAuthorization, settle } from "@x402x/client";
-import { TransferHook } from "@x402x/core";
+import { TransferHook } from "@x402x/extensions";
 
 const settlement = await prepareSettlement({
   wallet,
@@ -90,19 +161,14 @@ console.log('Settlement result:', {
 });
 ```
 
-## React Hook
-
-```react-hook.ts
-import { useX402Payment } from "@x402x/react";
-
-const { pay, status, error } = useX402Payment();
-await pay("/api/premium-content");
-```
+---
 
 ## CORS Notes
 
 If calling a hosted facilitator from the browser, configure CORS on the facilitator
 (`CORS_ORIGIN=https://yourapp.com` or a list of origins). See facilitator README for details.
+
+---
 
 import { RelatedLinks } from "@/components/docs/related-links";
 
@@ -111,14 +177,19 @@ import { RelatedLinks } from "@/components/docs/related-links";
 <RelatedLinks
   items={[
     {
+      title: "Server-Side Guide",
+      href: "./server-guide",
+      description: "Protect your API routes with payment middleware.",
+    },
+    {
+      title: "Facilitator Fee",
+      href: "./facilitator-fee",
+      description: "How fees work and how to manage them.",
+    },
+    {
       title: "Facilitator README",
       href: "https://github.com/nuwa-protocol/x402-exec/blob/main/facilitator/README.md",
       description: "CORS, security knobs, and production deployment.",
     },
-    {
-      title: "Showcase README",
-      href: "https://github.com/nuwa-protocol/x402-exec/blob/main/examples/showcase/README.md",
-      description: "Walkthrough of referral split, NFT mint, and rewards.",
-    },
   ]}
-/> 
+/>

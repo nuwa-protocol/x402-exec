@@ -1,98 +1,78 @@
 ---
 title: Integration Overview
-description: How to integrate x402x into projects that already use x402.
+description: How to integrate x402x into your projects.
 navGroup: Integration
 navOrder: 2
 status: stable
 ---
 
-This page shows how to add programmable settlement to an existing x402 setup. You can:
+x402x extends the x402 protocol with programmable settlement. Choose your integration path based on your architecture.
 
-- Keep your current x402 client/server, add `extra` settlement parameters, and let a facilitator
-  handle SettlementRouter calls
-- Or go serverless and call the facilitator directly from the client (see Facilitator — Client‑Side)
+## Architecture
 
-import { CodeTabs } from "@/components/ui/shadcn-io/code-tabs";
-
-## 1) Install The Enhanced x402 Package
-
-Use npm alias so your code keeps `import ... from "x402"`:
-
-<CodeTabs
-  codes={{
-    npm: "npm install x402@npm:@x402x/x402@0.6.6-patch.7",
-    pnpm: "pnpm add x402@npm:@x402x/x402@0.6.6-patch.7",
-    yarn: "yarn add x402@npm:@x402x/x402@0.6.6-patch.7",
-    bun: "bun add x402@npm:@x402x/x402@0.6.6-patch.7",
-  }}
-  lang="bash"
-/>
-
-This adds optional `paymentRequirements` to `PaymentPayload`, enabling stateless facilitators.
-
-## 2) Generate PaymentRequirements With Settlement Extra
-
-Use `@x402x/core` to fill the required fields consistently.
-
-```payment-requirements.ts
-import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/core";
-
-const base = {
-  scheme: "exact",
-  network: "base-sepolia",
-  resource: "/api/premium",
-  maxAmountRequired: "1000000", // business price in atomic units
-  payTo: getNetworkConfig("base-sepolia").settlementRouter,
-  asset: getNetworkConfig("base-sepolia").defaultAsset.address,
-};
-
-const withSettlement = addSettlementExtra(base, {
-  hook: TransferHook.getAddress("base-sepolia"),
-  hookData: TransferHook.encode(),
-  facilitatorFee: "10000", // or compute dynamically; see middlewares
-  payTo: "0xMerchantAddress...", // Final recipient (merchant) address
-});
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Integration Modes                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Mode A: Server-Validated           Mode B: Serverless       │
+│  ┌─────────┐   ┌─────────────┐     ┌─────────┐              │
+│  │ Client  │──▶│   Server    │     │ Client  │              │
+│  └─────────┘   │ (Resource)  │     └────┬────┘              │
+│                └──────┬──────┘          │                   │
+│                       │                 │                   │
+│                       ▼                 ▼                   │
+│               ┌─────────────────────────────┐               │
+│               │        Facilitator          │               │
+│               └──────────────┬──────────────┘               │
+│                              │                              │
+│                              ▼                              │
+│                    ┌─────────────────┐                      │
+│                    │   Blockchain    │                      │
+│                    └─────────────────┘                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Note:** The `payTo` parameter in `addSettlementExtra` specifies the final recipient (merchant) address.
-This is different from the base `requirements.payTo` which points to the SettlementRouter for the EIP-3009 authorization.
-The SettlementRouter will use the `extra.payTo` value to determine where funds should ultimately go.
+## Integration Modes
 
-Important: The client should include this `paymentRequirements` in its final `X-PAYMENT` header so
-the facilitator can validate the same parameters (salt, hook, fee, etc.).
+### Mode A: Server-Validated
 
-For more information about facilitator fees, how they're calculated, and how to work with them, see the [Facilitator Fee documentation](./facilitator-fee.mdx).
+Use when you have a backend server that controls access to resources.
 
-## 3) Client: Create X‑PAYMENT
+- Client requests protected resource
+- Server returns 402 with payment requirements
+- Client signs and retries
+- Server verifies payment via Facilitator
 
-- Standard x402 mode: random 32‑byte nonce; `to = payTo`
-- Settlement mode: nonce = commitment over all settlement params; `to = settlementRouter`
+**Best for:** APIs, premium content, SaaS features
 
-You can use `@x402x/fetch` to handle both modes automatically.
+👉 **See:** [Server-Side Guide](./server-guide) | [Client Usage](./client-guide#mode-a-server-validated)
 
-```client-fetch.ts
-import { wrapFetchWithPayment } from "@x402x/fetch";
+---
 
-const fetchWithPay = wrapFetchWithPayment(fetch, walletClient);
-const res = await fetchWithPay("/api/premium");
-```
+### Mode B: Serverless
 
-Or roll your own using `@x402x/core/calculateCommitment` and EIP‑712.
+Use when you want direct browser-to-facilitator payments without a backend.
 
-## 4) Facilitator Integration
+- Client calls Facilitator directly
+- No server needed
+- Ideal for static sites, SPAs
 
-On the server side, use our middlewares for Hono/Express to generate requirements, verify the
-posted payment, and call the facilitator automatically; or call the facilitator directly from the
-client (serverless). See the two Facilitator docs in the sidebar.
+**Best for:** Donations, tips, simple payments, dApps
 
-## Migration Notes
+👉 **See:** [Client-Side Guide](./client-guide#mode-b-serverless)
 
-- If you currently use direct ERC‑3009 transfers, start with the built‑in TransferHook; gas overhead
-  is minimal and you gain fee accounting + future extensibility
-- Reserve `paymentRequirements.extra.salt` per quote; do not reuse across different quotes
-- For the best UX, query the facilitator for min fee and add it to the total (see middlewares)
+---
 
-Related docs: docs/third-party-integration.md, contracts/docs/builtin_hooks.md
+## Quick Start
+
+| I want to... | Start here |
+|--------------|------------|
+| Protect my API with payments | [Server-Side Guide](./server-guide) |
+| Add payments to my frontend | [Client-Side Guide](./client-guide) |
+| Understand facilitator fees | [Facilitator Fee](./facilitator-fee) |
+
+---
 
 import { RelatedLinks } from "@/components/docs/related-links";
 
@@ -101,19 +81,19 @@ import { RelatedLinks } from "@/components/docs/related-links";
 <RelatedLinks
   items={[
     {
-      title: "Third‑Party Integration Guide",
-      href: "https://github.com/nuwa-protocol/x402-exec/blob/main/docs/third-party-integration.md",
-      description: "Use the aliased x402 package with settlement extensions.",
+      title: "Client-Side Guide",
+      href: "./client-guide",
+      description: "Browser/app integration with x402xClient.",
     },
     {
-      title: "Facilitator README",
-      href: "https://github.com/nuwa-protocol/x402-exec/blob/main/facilitator/README.md",
-      description: "Setup, security, observability, and API endpoints.",
+      title: "Server-Side Guide", 
+      href: "./server-guide",
+      description: "Protect routes with x402 middleware.",
     },
     {
-      title: "Showcase README",
-      href: "https://github.com/nuwa-protocol/x402-exec/blob/main/examples/showcase/README.md",
-      description: "End‑to‑end scenarios demonstrating common patterns.",
+      title: "Facilitator Fee",
+      href: "./facilitator-fee",
+      description: "How fees work and how to manage them.",
     },
   ]}
-/> 
+/>
