@@ -27,4 +27,6 @@ jobs:
       log_level: 'debug'
       issue_number: ${{ github.event.issue.number || github.event.pull_request.number }}
       comment_id: ${{ github.event.comment.id }}
-    secrets: inherit
+    secrets:
+      anthropic_auth_token: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+      authropic_base_url: ${{ secrets.AUTHROPIC_BASE_URL }}
