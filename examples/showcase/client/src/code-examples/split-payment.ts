@@ -1,6 +1,6 @@
 // @ts-nocheck
 // This file is for display purposes only and is not compiled
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { TransferHook } from "@x402x/core";
 
 // 1. Define split configuration
@@ -14,7 +14,7 @@ const splits = [
 const hookData = TransferHook.encode(splits);
 
 // 3. Execute split payment
-const client = new X402Client({ facilitatorUrl });
+const client = new x402xClient({ facilitatorUrl });
 await client.execute({
   hook: TransferHook.address,
   hookData,

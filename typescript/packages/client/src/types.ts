@@ -21,7 +21,7 @@ export type ExecuteStatus =
 /**
  * X402Client configuration
  */
-export interface X402ClientConfig {
+export interface x402xClientConfig {
   /** Wallet client from wagmi/viem */
   wallet: WalletClient;
   /** Network name (e.g., 'base-sepolia', 'x-layer-testnet') */
@@ -208,5 +208,9 @@ export interface SettleResult {
   errorReason?: string;
 }
 
+
 // Re-export x402 types for convenience
 export type { PaymentRequirements, PaymentPayload };
+
+// Backward compatibility alias
+export type { x402xClientConfig as X402ClientConfig };

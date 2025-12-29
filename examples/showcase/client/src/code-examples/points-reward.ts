@@ -1,6 +1,6 @@
 // @ts-nocheck
 // This file is for display purposes only and is not compiled
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { encodeAbiParameters } from "viem";
 
 // 1. Configure reward distribution (simplified - no merchant field)
@@ -19,7 +19,7 @@ const hookData = encodeAbiParameters(
 );
 
 // 2. Execute payment with reward hook
-const client = new X402Client({ facilitatorUrl });
+const client = new x402xClient({ facilitatorUrl });
 await client.execute({
   hook: rewardHookAddress,
   hookData,

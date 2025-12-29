@@ -1,78 +1,92 @@
 ---
-title: Facilitator — Middlewares
-description: Protect routes with x402x and settle via facilitator using Hono or Express.
+title: Server Integration Guide
+description: Protect routes with x402 and settle via facilitator.
 navGroup: Facilitator
 navOrder: 5
 status: beta
 ---
 
-The middlewares generate PaymentRequirements (including settlement `extra`), verify the posted
-`X-PAYMENT`, and settle via the facilitator automatically.
+Use official x402 middlewares with the x402x extension to automatically handle payment verification and settlement.
+
+import { CodeTabs } from "@/components/ui/shadcn-io/code-tabs";
+
+## Install
+
+<CodeTabs
+  codes={{
+    npm: "npm install @x402/hono @x402/evm @x402x/extensions",
+    pnpm: "pnpm add @x402/hono @x402/evm @x402x/extensions",
+    yarn: "yarn add @x402/hono @x402/evm @x402x/extensions",
+    bun: "bun add @x402/hono @x402/evm @x402x/extensions",
+  }}
+  lang="bash"
+/>
+
+---
 
 ## Hono
 
-```hono.ts
+```typescript
 import { Hono } from "hono";
-import { paymentMiddleware } from "@x402x/hono";
+import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
+import { registerExactEvmScheme } from "@x402/evm";
+import { registerRouterSettlement, createSettlementRouteConfig, TransferHook } from "@x402x/extensions";
+import { HTTPFacilitatorClient } from "@x402/core/http";
 
 const app = new Hono();
 
-app.use(
-  "/api/*",
-  paymentMiddleware(
-    "0xRecipient...", // final recipient
-    {
+// 1. Setup Resource Server
+const facilitatorClient = new HTTPFacilitatorClient({ url: process.env.FACILITATOR_URL! });
+const server = new x402ResourceServer(facilitatorClient);
+
+registerExactEvmScheme(server, {});
+registerRouterSettlement(server); // <--- Key: Enable settlement extension
+
+// 2. Initialize
+await server.initialize();
+
+// 3. Define Routes with Settlement Config
+const routes = {
+  "/api/premium": createSettlementRouteConfig({
+    accepts: {
+      scheme: "exact",
+      network: "base-sepolia",
+      payTo: "0xMerchant...",
       price: "$0.10",
-      network: ["base-sepolia", "x-layer-testnet"],
-      // hook defaults to TransferHook; hookData defaults to "0x"
-      facilitatorFee: "auto", // query min fee from facilitator
-    },
-    { url: process.env.FACILITATOR_URL! },
-  ),
-);
+    }},
+    {
+      hook: TransferHook.getAddress("base-sepolia"),
+      hookData: TransferHook.encode(),
+      facilitatorFee: "10000"
+    }
+  )
+};
+
+// 4. Use Middleware
+app.use("/api/*", paymentMiddleware(routes, server));
 
 app.get("/api/premium", (c) => {
-  const ctx = c.get("x402"); // payer, amount, network, settlement
-  return c.json({ ok: true, payer: ctx?.payer });
+  // Payment confirmed/settled by middleware
+  return c.json({ ok: true, message: "Premium content" });
 });
 ```
+
+---
 
 ## Express
 
-```express.ts
-import express from "express";
-import { paymentMiddleware } from "@x402x/express";
+*Coming soon: Use `@x402/express` with similar `x402ResourceServer` configuration.*
 
-const app = express();
+---
 
-app.use(
-  paymentMiddleware(
-    "0xRecipient...",
-    {
-      "/api/basic": { price: "$0.01", network: "base-sepolia" },
-      "POST /api/premium": {
-        price: "$0.10",
-        network: ["base-sepolia", "x-layer-testnet"],
-        facilitatorFee: "auto",
-      },
-    },
-    { url: process.env.FACILITATOR_URL! },
-  ),
-);
+## Notes
 
-app.get("/api/basic", (req, res) => {
-  const x = (req as any).x402; // payer, amount, network, settlement
-  res.json({ ok: true, payer: x?.payer });
-});
-```
+- `createSettlementRouteConfig` helper simplifies creating valid v2 payment requirements with extension fields.
+- The `x402ResourceServer` handles communication with the Facilitator to settle payments before passing control to your handler.
 
-Notes:
+See the [Facilitator Fee documentation](./facilitator-fee) for information about fee management.
 
-- The middleware adds x402 context: payer, amount, network, payment, and optional settlement fields
-- With `facilitatorFee: "auto"`, total price = business price + min facilitator fee (queried live)
-- If your client posts its own `paymentRequirements`, middleware will use it (keeps `salt` stable)
-
-See the [Facilitator Fee documentation](./facilitator-fee.mdx) for detailed information about fee calculation, validation, and server-side management.
+---
 
 import { RelatedLinks } from "@/components/docs/related-links";
 
@@ -81,14 +95,19 @@ import { RelatedLinks } from "@/components/docs/related-links";
 <RelatedLinks
   items={[
     {
+      title: "Client Integration Guide",
+      href: "./client-guide",
+      description: "Browser/app integration for paying clients.",
+    },
+    {
       title: "Facilitator README",
       href: "https://github.com/nuwa-protocol/x402-exec/blob/main/facilitator/README.md",
-      description: "End‑to‑end setup and ops guidance.",
+      description: "End-to-end setup and ops guidance.",
     },
     {
       title: "Facilitator Developer Guide",
       href: "https://github.com/nuwa-protocol/x402-exec/blob/main/contracts/docs/facilitator_guide.md",
-      description: "Language‑agnostic integration if you run your own.",
+      description: "Language-agnostic integration if you run your own.",
     },
   ]}
-/> 
+/>

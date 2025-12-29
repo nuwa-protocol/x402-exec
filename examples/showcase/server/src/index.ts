@@ -8,6 +8,19 @@
  * - Uses official @x402/hono middleware with x402x extension
  *
  * Note: Most scenarios have moved to Serverless Mode (client-side only)
+ *
+ * Calling Flow:
+ * 1. Client: Generates payment, calculates commitment (as nonce), and signs via EIP-3009 (ExactEvmSchemeWithRouterSettlement)
+ * 2. Client -> Server: Sends request with `PAYMENT-SIGNATURE` header
+ * 3. Server (@x402/hono): 
+ *    - Intercepts request in `paymentMiddleware`
+ *    - Verifies signature
+ *    - Calls Facilitator to settle payment
+ * 4. Facilitator:
+ *    - Verifies commitment
+ *    - Submits transaction to SettlementRouter
+ *    - SettlementRouter executes payment + business logic (Hooks)
+ * 5. Server: Receives settlement confirmation, allows request to proceed to business logic
  */
 
 import { Hono } from "hono";

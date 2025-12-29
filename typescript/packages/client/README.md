@@ -47,7 +47,7 @@ Client → Facilitator → Smart Contract (Hook)
 import { parseDefaultAssetAmount } from "@x402x/extensions";
 
 const atomicAmount = parseDefaultAssetAmount("1", network); // '1000000'
-const client = new X402Client({ wallet, network, facilitatorUrl });
+const client = new x402xClient({ wallet, network, facilitatorUrl });
 const result = await client.execute({
   hook: TransferHook.address,
   amount: atomicAmount, // Must be atomic units
@@ -74,7 +74,7 @@ yarn add @x402x/client @x402x/extensions
 ### Basic Usage (React + wagmi)
 
 ```typescript
-import { X402Client } from '@x402x/client';
+import { x402xClient } from '@x402x/client';
 import { TransferHook, parseDefaultAssetAmount } from '@x402x/extensions';
 import { useWalletClient } from 'wagmi';
 import { publicActions } from 'viem';
@@ -87,7 +87,7 @@ function PayButton() {
     const extendedWallet = wallet.extend(publicActions);
 
     // Uses default facilitator at https://facilitator.x402x.dev/
-    const client = new X402Client({
+    const client = new x402xClient({
       wallet: extendedWallet,
       network: 'base-sepolia'
     });
@@ -109,7 +109,7 @@ function PayButton() {
 }
 ```
 
-> **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`useX402Client`), this is done automatically.
+> **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`useX402xClient`), this is done automatically.
 
 ---
 
@@ -142,10 +142,10 @@ const displayAmount = formatDefaultAssetAmount("1000000", "base-sepolia"); // '1
 ### Example
 
 ```typescript
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { parseDefaultAssetAmount } from "@x402x/extensions";
 
-const client = new X402Client({ wallet, network: "base-sepolia" });
+const client = new x402xClient({ wallet, network: "base-sepolia" });
 
 // ✅ Correct: Convert first, then pass atomic units
 const atomicAmount = parseDefaultAssetAmount("5", "base-sepolia");
@@ -161,13 +161,13 @@ await client.execute({ amount: "5", payTo: "0x..." }); // Will fail validation
 
 ### High-Level API (Recommended)
 
-#### X402Client
+#### x402xClient
 
 The main client class that handles the entire settlement flow.
 
 ```typescript
-class X402Client {
-  constructor(config: X402ClientConfig);
+class x402xClient {
+  constructor(config: x402xClientConfig);
   execute(params: ExecuteParams): Promise<ExecuteResult>;
   calculateFee(hook: Address, hookData?: Hex): Promise<FeeCalculationResult>;
   waitForTransaction(txHash: Hex): Promise<TransactionReceipt>;
@@ -177,16 +177,16 @@ class X402Client {
 **Example:**
 
 ```typescript
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
-const client = new X402Client({
+const client = new x402xClient({
   wallet: walletClient,
   network: "base-sepolia",
 });
 
 // Or specify custom facilitator
-const client = new X402Client({
+const client = new x402xClient({
   wallet: walletClient,
   network: "base-sepolia",
   facilitatorUrl: "https://custom-facilitator.example.com",
@@ -210,19 +210,19 @@ const result = await client.execute({
 
 #### React Hooks
 
-##### useX402Client
+##### useX402xClient
 
-Automatically creates an X402Client using wagmi's wallet connection.
+Automatically creates an x402xClient using wagmi's wallet connection.
 
 ```typescript
-import { useX402Client } from '@x402x/client';
+import { useX402xClient } from '@x402x/client';
 
 function MyComponent() {
   // Uses default facilitator at https://facilitator.x402x.dev/
-  const client = useX402Client();
+  const client = useX402xClient();
 
   // Or specify custom facilitator
-  const client = useX402Client({
+  const client = useX402xClient({
     facilitatorUrl: 'https://custom-facilitator.example.com'
   });
 
@@ -301,7 +301,7 @@ Understanding the x402 protocol terminology used in this SDK:
 
 **Execute** (high-level API) - Complete end-to-end payment flow including preparation, signing, settlement, and confirmation.
 
-- In @x402x/client: `X402Client.execute()` method
+- In @x402x/client: `x402xClient.execute()` method
 - Flow: `prepare → sign → settle → wait for confirmation`
 - Use case: One-line payment execution for most developers
 
@@ -376,11 +376,11 @@ const result = await settle("https://facilitator.x402x.dev", signed);
 ### Example 1: Simple Payment
 
 ```typescript
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
-const client = new X402Client({
+const client = new x402xClient({
   wallet: walletClient,
   network: "base-sepolia",
 });
@@ -403,10 +403,10 @@ console.log("Transaction:", result.txHash);
 TransferHook supports distributing funds to multiple recipients by percentage:
 
 ```typescript
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { TransferHook, parseDefaultAssetAmount, type Split } from "@x402x/extensions";
 
-const client = new X402Client({
+const client = new x402xClient({
   wallet: walletClient,
   network: "base-sepolia",
 });
@@ -526,7 +526,7 @@ console.log("Transaction:", result.transaction);
 
 ```typescript
 import { ref } from "vue";
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 export function usePayment() {
@@ -538,7 +538,7 @@ export function usePayment() {
     error.value = null;
 
     try {
-      const client = new X402Client({
+      const client = new x402xClient({
         wallet: walletClient,
         network,
         facilitatorUrl: import.meta.env.VITE_FACILITATOR_URL,
@@ -575,7 +575,7 @@ The SDK provides typed error classes for better error handling:
 
 ```typescript
 import {
-  X402ClientError,
+  x402xClientError,
   NetworkError,
   SigningError,
   FacilitatorError,
@@ -608,7 +608,7 @@ Full TypeScript support with comprehensive type definitions:
 
 ```typescript
 import type {
-  X402ClientConfig,
+  x402xClientConfig,
   ExecuteParams,
   ExecuteResult,
   SettlementData,

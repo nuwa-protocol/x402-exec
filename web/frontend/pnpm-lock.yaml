@@ -126,9 +126,9 @@ importers:
       '@x402x/client':
         specifier: workspace:*
         version: link:../../typescript/packages/client
-      '@x402x/core':
+      '@x402x/extensions':
         specifier: workspace:*
-        version: link:../../typescript/packages/core
+        version: link:../../typescript/packages/extensions
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
