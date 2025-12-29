@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
-import { usex402xClient, x402xClient } from "@x402x/client";
+import { useX402xClient, x402xClient } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
 import { WalletSelector } from "./WalletSelector";
@@ -65,15 +65,15 @@ export function ServerlessPaymentDialog({
     // Fallback to deprecated amount prop or default
     return amount || "100000"; // Default to 0.1 USDC equivalent for 6 decimals
   }, [amountCalculator, selectedNetwork, amount]);
-  
-  // Fix: Pass selectedNetwork explicitly to usex402xClient
+
+  // Fix: Pass selectedNetwork explicitly to useX402xClient
   // This ensures the client is recreated whenever the user selects a different network,
   // guaranteeing that calculateFee() and execute() always use the correct network.
-  const client = usex402xClient({ 
+  const client = useX402xClient({
     facilitatorUrl,
     network: selectedNetwork ?? undefined  // Explicitly use the selected network
   });
-  
+
   const { switchToNetwork, isSwitching } = useNetworkSwitch();
 
   const handleResetNetworkSelection = () => {
@@ -315,9 +315,9 @@ export function ServerlessPaymentDialog({
 
   const totalAmount = feeInfo && selectedNetwork
     ? formatDefaultAssetAmount(
-        (BigInt(currentAmount) + BigInt(feeInfo.facilitatorFee)).toString(),
-        toCanonicalNetworkKey(selectedNetwork)
-      )
+      (BigInt(currentAmount) + BigInt(feeInfo.facilitatorFee)).toString(),
+      toCanonicalNetworkKey(selectedNetwork)
+    )
     : amountInUsd;
 
   return (
@@ -554,175 +554,175 @@ export function ServerlessPaymentDialog({
               {(() => {
                 const tokenName = NETWORKS[selectedNetwork].defaultAsset.eip712.name;
 
-              return (
-                <>
-              {/* Network Info */}
-              <div
-                style={{
-                  marginBottom: "20px",
-                  padding: "15px",
-                  backgroundColor: "#f9fafb",
-                  borderRadius: "8px",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <span style={{ fontSize: "24px" }}>{NETWORKS[selectedNetwork].icon}</span>
-                  <div>
-                    <div style={{ fontWeight: "600", fontSize: "16px" }}>
-                      {NETWORKS[selectedNetwork].displayName}
+                return (
+                  <>
+                    {/* Network Info */}
+                    <div
+                      style={{
+                        marginBottom: "20px",
+                        padding: "15px",
+                        backgroundColor: "#f9fafb",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <span style={{ fontSize: "24px" }}>{NETWORKS[selectedNetwork].icon}</span>
+                        <div>
+                          <div style={{ fontWeight: "600", fontSize: "16px" }}>
+                            {NETWORKS[selectedNetwork].displayName}
+                          </div>
+                          <div style={{ fontSize: "13px", color: "#6b7280" }}>
+                            {NETWORKS[selectedNetwork].name}
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleResetNetworkSelection}
+                          disabled={isPaying}
+                          style={{
+                            marginLeft: "auto",
+                            padding: "6px 12px",
+                            fontSize: "13px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            backgroundColor: "white",
+                            cursor: isPaying ? "not-allowed" : "pointer",
+                            opacity: isPaying ? 0.5 : 1,
+                          }}
+                        >
+                          Change
+                        </button>
+                      </div>
+                      {address && (
+                        <div style={{ fontSize: "13px", color: "#6b7280", fontFamily: "monospace" }}>
+                          {address.slice(0, 6)}...{address.slice(-4)}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#6b7280" }}>
-                      {NETWORKS[selectedNetwork].name}
+
+                    {/* Fee Breakdown */}
+                    <div
+                      style={{
+                        marginBottom: "20px",
+                        padding: "20px",
+                        backgroundColor: "#f0f9ff",
+                        borderRadius: "8px",
+                        border: "1px solid #bfdbfe",
+                      }}
+                    >
+                      <h3 style={{ margin: "0 0 15px 0", fontSize: "16px", color: "#1e40af" }}>
+                        💰 Payment Breakdown
+                      </h3>
+
+                      <div
+                        style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}
+                      >
+                        <span style={{ color: "#4b5563" }}>Payment Amount:</span>
+                        <span style={{ fontWeight: "600", fontFamily: "monospace" }}>
+                          ${amountInUsd}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}
+                      >
+                        <span style={{ color: "#4b5563" }}>Facilitator Fee:</span>
+                        <span style={{ fontWeight: "600", fontFamily: "monospace", color: "#059669" }}>
+                          ${feeInfo.facilitatorFeeUSD}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          borderTop: "1px solid #bfdbfe",
+                          marginTop: "12px",
+                          paddingTop: "12px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <span style={{ fontWeight: "600", fontSize: "16px" }}>Total:</span>
+                        <span
+                          style={{
+                            fontWeight: "700",
+                            fontSize: "18px",
+                            fontFamily: "monospace",
+                            color: "#1e40af",
+                          }}
+                        >
+                          ${totalAmount} {tokenName}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <button
-                    onClick={handleResetNetworkSelection}
-                    disabled={isPaying}
-                    style={{
-                      marginLeft: "auto",
-                      padding: "6px 12px",
-                      fontSize: "13px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      backgroundColor: "white",
-                      cursor: isPaying ? "not-allowed" : "pointer",
-                      opacity: isPaying ? 0.5 : 1,
-                    }}
-                  >
-                    Change
-                  </button>
-                </div>
-                {address && (
-                  <div style={{ fontSize: "13px", color: "#6b7280", fontFamily: "monospace" }}>
-                    {address.slice(0, 6)}...{address.slice(-4)}
-                  </div>
-                )}
-              </div>
 
-              {/* Fee Breakdown */}
-              <div
-                style={{
-                  marginBottom: "20px",
-                  padding: "20px",
-                  backgroundColor: "#f0f9ff",
-                  borderRadius: "8px",
-                  border: "1px solid #bfdbfe",
-                }}
-              >
-                <h3 style={{ margin: "0 0 15px 0", fontSize: "16px", color: "#1e40af" }}>
-                  💰 Payment Breakdown
-                </h3>
+                    {error && (
+                      <div
+                        style={{
+                          marginBottom: "20px",
+                          padding: "15px",
+                          backgroundColor: "#fee",
+                          borderRadius: "8px",
+                          border: "1px solid #fcc",
+                        }}
+                      >
+                        <div style={{ fontSize: "14px", color: "#c00" }}>❌ {error}</div>
+                      </div>
+                    )}
 
-                <div
-                  style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}
-                >
-                  <span style={{ color: "#4b5563" }}>Payment Amount:</span>
-                  <span style={{ fontWeight: "600", fontFamily: "monospace" }}>
-                    ${amountInUsd}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}
-                >
-                  <span style={{ color: "#4b5563" }}>Facilitator Fee:</span>
-                  <span style={{ fontWeight: "600", fontFamily: "monospace", color: "#059669" }}>
-                    ${feeInfo.facilitatorFeeUSD}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    borderTop: "1px solid #bfdbfe",
-                    marginTop: "12px",
-                    paddingTop: "12px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span style={{ fontWeight: "600", fontSize: "16px" }}>Total:</span>
-                  <span
-                    style={{
-                      fontWeight: "700",
-                      fontSize: "18px",
-                      fontFamily: "monospace",
-                      color: "#1e40af",
-                    }}
-                  >
-                    ${totalAmount} {tokenName}
-                  </span>
-                </div>
-              </div>
-
-              {error && (
-                <div
-                  style={{
-                    marginBottom: "20px",
-                    padding: "15px",
-                    backgroundColor: "#fee",
-                    borderRadius: "8px",
-                    border: "1px solid #fcc",
-                  }}
-                >
-                  <div style={{ fontSize: "14px", color: "#c00" }}>❌ {error}</div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  onClick={onClose}
-                  disabled={isPaying}
-                  style={{
-                    flex: 1,
-                    padding: "14px 24px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    border: "2px solid #e5e7eb",
-                    borderRadius: "8px",
-                    backgroundColor: "white",
-                    color: "#374151",
-                    cursor: isPaying ? "not-allowed" : "pointer",
-                    opacity: isPaying ? 0.5 : 1,
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePay}
-                  disabled={isPaying}
-                  style={{
-                    flex: 2,
-                    padding: "14px 24px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "8px",
-                    backgroundColor: isPaying ? "#9ca3af" : "#3b82f6",
-                    color: "white",
-                    cursor: isPaying ? "not-allowed" : "pointer",
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isPaying) e.currentTarget.style.backgroundColor = "#2563eb";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isPaying) e.currentTarget.style.backgroundColor = "#3b82f6";
-                  }}
-                >
-                  {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} ${tokenName}`}
-                </button>
-              </div>
-                </>
-              );
+                    {/* Action Buttons */}
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button
+                        onClick={onClose}
+                        disabled={isPaying}
+                        style={{
+                          flex: 1,
+                          padding: "14px 24px",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          border: "2px solid #e5e7eb",
+                          borderRadius: "8px",
+                          backgroundColor: "white",
+                          color: "#374151",
+                          cursor: isPaying ? "not-allowed" : "pointer",
+                          opacity: isPaying ? 0.5 : 1,
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handlePay}
+                        disabled={isPaying}
+                        style={{
+                          flex: 2,
+                          padding: "14px 24px",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          border: "none",
+                          borderRadius: "8px",
+                          backgroundColor: isPaying ? "#9ca3af" : "#3b82f6",
+                          color: "white",
+                          cursor: isPaying ? "not-allowed" : "pointer",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isPaying) e.currentTarget.style.backgroundColor = "#2563eb";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isPaying) e.currentTarget.style.backgroundColor = "#3b82f6";
+                        }}
+                      >
+                        {isPaying ? "⏳ Processing..." : `💳 Pay $${totalAmount} ${tokenName}`}
+                      </button>
+                    </div>
+                  </>
+                );
               })()}
             </>
           )}
