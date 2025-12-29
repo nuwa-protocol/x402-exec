@@ -109,7 +109,7 @@ function PayButton() {
 }
 ```
 
-> **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`usex402xClient`), this is done automatically.
+> **Note**: The wallet client must be extended with `publicActions` from viem to support transaction confirmation via `waitForTransactionReceipt`. If you're using the React hooks (`useX402xClient`), this is done automatically.
 
 ---
 
@@ -210,19 +210,19 @@ const result = await client.execute({
 
 #### React Hooks
 
-##### usex402xClient
+##### useX402xClient
 
 Automatically creates an x402xClient using wagmi's wallet connection.
 
 ```typescript
-import { usex402xClient } from '@x402x/client';
+import { useX402xClient } from '@x402x/client';
 
 function MyComponent() {
   // Uses default facilitator at https://facilitator.x402x.dev/
-  const client = usex402xClient();
+  const client = useX402xClient();
 
   // Or specify custom facilitator
-  const client = usex402xClient({
+  const client = useX402xClient({
     facilitatorUrl: 'https://custom-facilitator.example.com'
   });
 

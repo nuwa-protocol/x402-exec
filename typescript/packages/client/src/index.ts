@@ -7,7 +7,7 @@
  * @example High-level API
  * ```typescript
  * import { x402xClient } from '@x402x/client';
- * import { TransferHook } from '@x402x/core';
+ * import { TransferHook } from '@x402x/extensions';
  *
  * const client = new x402xClient({
  *   wallet: walletClient,

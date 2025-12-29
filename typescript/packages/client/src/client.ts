@@ -42,7 +42,7 @@ interface InternalConfig extends x402xClientConfig {
  * @example
  * ```typescript
  * import { x402xClient } from '@x402x/client';
- * import { TransferHook } from '@x402x/core';
+ * import { TransferHook } from '@x402x/extensions';
  * import { useWalletClient } from 'wagmi';
  *
  * const { data: wallet } = useWalletClient();
