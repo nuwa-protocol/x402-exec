@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { useX402Client, type UseX402ClientConfig } from "./useX402Client.js";
+import { useX402xClient, type UseX402xClientConfig } from "./useX402xClient.js";
 import type { ExecuteParams, ExecuteResult, ExecuteStatus } from "../types.js";
 
 /**
@@ -75,8 +75,8 @@ export interface UseExecuteReturn {
  * }
  * ```
  */
-export function useExecute(config?: UseX402ClientConfig): UseExecuteReturn {
-  const client = useX402Client(config);
+export function useExecute(config?: UseX402xClientConfig): UseExecuteReturn {
+  const client = useX402xClient(config);
   const [status, setStatus] = useState<ExecuteStatus>("idle");
   const [error, setError] = useState<Error | null>(null);
   const [result, setResult] = useState<ExecuteResult | null>(null);
@@ -152,7 +152,7 @@ export function useExecute(config?: UseX402ClientConfig): UseExecuteReturn {
  * ```
  */
 export function useExecuteWithClient(
-  client: ReturnType<typeof useX402Client>,
+  client: ReturnType<typeof useX402xClient>,
 ): Omit<UseExecuteReturn, "reset"> {
   const [status, setStatus] = useState<ExecuteStatus>("idle");
   const [error, setError] = useState<Error | null>(null);

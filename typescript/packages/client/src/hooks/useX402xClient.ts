@@ -1,21 +1,21 @@
 /**
- * React hook for creating X402Client instance
+ * React hook for creating x402xClient instance
  *
- * This hook automatically creates an X402Client instance using wagmi's
+ * This hook automatically creates an x402xClient instance using wagmi's
  * wallet client and chain information.
  */
 
 import { useMemo } from "react";
 import { useWalletClient, useAccount, useChainId, WagmiProviderNotFoundError } from "wagmi";
 import { publicActions } from "viem";
-import { X402Client } from "../client.js";
-import type { X402ClientConfig } from "../types.js";
+import { x402xClient } from "../client.js";
+import type { x402xClientConfig } from "../types.js";
 
 /**
  * Partial configuration for useX402Client hook
  * (wallet, network, chainId are auto-detected from wagmi)
  */
-export type UseX402ClientConfig = Partial<Omit<X402ClientConfig, "wallet" | "network">> & {
+export type UseX402xClientConfig = Partial<Omit<x402xClientConfig, "wallet" | "network">> & {
   /** Optional: Facilitator URL (default: https://facilitator.x402x.dev/) */
   facilitatorUrl?: string;
   /** Optional: Override network name (auto-detected from chain if not provided) */
@@ -35,24 +35,24 @@ const CHAIN_ID_TO_NETWORK: Record<number, string> = {
 };
 
 /**
- * React hook for X402Client
+ * React hook for x402xClient
  *
- * Automatically creates an X402Client instance using the connected wallet
+ * Automatically creates an x402xClient instance using the connected wallet
  * from wagmi. Returns null if wallet is not connected.
  *
  * @param config - Client configuration (facilitatorUrl is optional, defaults to https://facilitator.x402x.dev/)
- * @returns X402Client instance or null if wallet not connected
+ * @returns x402xClient instance or null if wallet not connected
  *
  * @example
  * ```typescript
- * import { useX402Client } from '@x402x/client';
+ * import { useX402xClient } from '@x402x/client';
  *
  * function MyComponent() {
  *   // Use default facilitator
- *   const client = useX402Client();
+ *   const client = useX402xClient();
  *
  *   // Or specify custom facilitator
- *   const client = useX402Client({
+ *   const client = useX402xClient({
  *     facilitatorUrl: 'https://custom-facilitator.example.com'
  *   });
  *
@@ -73,7 +73,7 @@ const CHAIN_ID_TO_NETWORK: Record<number, string> = {
  * }
  * ```
  */
-export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
+export function useX402xClient(config?: UseX402xClientConfig): x402xClient | null {
   // First, try to get wagmi hooks outside of useMemo to catch provider errors early
   let walletClient: any;
   let isConnected: boolean;
@@ -121,7 +121,7 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
       // Extend wallet client with public actions (required for waitForTransactionReceipt)
       const extendedWallet = walletClient.extend(publicActions);
 
-      return new X402Client({
+      return new x402xClient({
         wallet: extendedWallet,
         network,
         facilitatorUrl: config?.facilitatorUrl,
@@ -130,7 +130,7 @@ export function useX402Client(config?: UseX402ClientConfig): X402Client | null {
         confirmationTimeout: config?.confirmationTimeout,
       });
     } catch (error) {
-      console.error("[x402x] Failed to create X402Client:", error);
+      console.error("[x402x] Failed to create x402xClient:", error);
       return null;
     }
   }, [

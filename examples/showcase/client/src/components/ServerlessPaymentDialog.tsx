@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWalletClient } from "wagmi";
 import { TransferHook, calculateFacilitatorFee, formatDefaultAssetAmount, toCanonicalNetworkKey } from "@x402x/extensions";
-import { useX402Client, X402Client } from "@x402x/client";
+import { usex402xClient, x402xClient } from "@x402x/client";
 import type { FeeCalculationResult } from "@x402x/client";
 import { useNetworkSwitch } from "../hooks/useNetworkSwitch";
 import { WalletSelector } from "./WalletSelector";
@@ -66,10 +66,10 @@ export function ServerlessPaymentDialog({
     return amount || "100000"; // Default to 0.1 USDC equivalent for 6 decimals
   }, [amountCalculator, selectedNetwork, amount]);
   
-  // Fix: Pass selectedNetwork explicitly to useX402Client
+  // Fix: Pass selectedNetwork explicitly to usex402xClient
   // This ensures the client is recreated whenever the user selects a different network,
   // guaranteeing that calculateFee() and execute() always use the correct network.
-  const client = useX402Client({ 
+  const client = usex402xClient({ 
     facilitatorUrl,
     network: selectedNetwork ?? undefined  // Explicitly use the selected network
   });
@@ -242,7 +242,7 @@ export function ServerlessPaymentDialog({
       }
       try {
         const extendedWallet = walletClient.extend(publicActions);
-        activeClient = new X402Client({
+        activeClient = new x402xClient({
           wallet: extendedWallet,
           network: selectedNetwork,
           facilitatorUrl,

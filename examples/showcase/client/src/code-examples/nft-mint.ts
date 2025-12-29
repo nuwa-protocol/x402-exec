@@ -1,6 +1,6 @@
 // @ts-nocheck
 // This file is for display purposes only and is not compiled
-import { X402Client } from "@x402x/client";
+import { x402xClient } from "@x402x/client";
 import { encodeAbiParameters } from "viem";
 
 // 1. Configure NFT mint (simplified - no merchant field)
@@ -19,7 +19,7 @@ const hookData = encodeAbiParameters(
 );
 
 // 2. Execute payment with NFT mint hook
-const client = new X402Client({ facilitatorUrl });
+const client = new x402xClient({ facilitatorUrl });
 await client.execute({
   hook: nftMintHookAddress,
   hookData,

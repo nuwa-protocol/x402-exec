@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { useX402Client, type ExecuteParams, type ExecuteResult } from "@x402x/client";
+import { usex402xClient, type ExecuteParams, type ExecuteResult } from "@x402x/client";
 import { useNetworkSwitch } from "./useNetworkSwitch";
 import type { Network } from "../config";
 import { getFacilitatorUrl } from "../config";
@@ -52,7 +52,7 @@ export function useX402Execute(): UseX402ExecuteReturn {
 
   const { switchToNetwork } = useNetworkSwitch();
   const facilitatorUrl = getFacilitatorUrl();
-  const client = useX402Client({ facilitatorUrl });
+  const client = usex402xClient({ facilitatorUrl });
 
   const execute = async (params: ExecuteParams, network: Network): Promise<ExecuteResult> => {
     setStatus("preparing");

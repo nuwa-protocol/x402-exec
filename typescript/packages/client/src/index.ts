@@ -6,10 +6,10 @@
  *
  * @example High-level API
  * ```typescript
- * import { X402Client } from '@x402x/client';
+ * import { x402xClient } from '@x402x/client';
  * import { TransferHook } from '@x402x/core';
  *
- * const client = new X402Client({
+ * const client = new x402xClient({
  *   wallet: walletClient,
  *   network: 'base-sepolia',
  *   facilitatorUrl: 'https://facilitator.x402x.dev'
@@ -37,9 +37,9 @@
  *
  * @example React Hooks
  * ```typescript
- * import { useX402Client, useExecute } from '@x402x/client';
+ * import { useX402xClient, useExecute } from '@x402x/client';
  *
- * const client = useX402Client({
+ * const client = useX402xClient({
  *   facilitatorUrl: 'https://facilitator.x402x.dev'
  * });
  *
@@ -51,7 +51,7 @@
  */
 
 // Export main client class and constants
-export { X402Client, DEFAULT_FACILITATOR_URL } from "./client.js";
+export { x402xClient, x402xClient as X402Client, DEFAULT_FACILITATOR_URL } from "./client.js";
 
 // Export low-level API (aligned with x402 standard terminology)
 export { prepareSettlement } from "./core/prepare.js";
@@ -70,13 +70,13 @@ export {
 export { parseDefaultAssetAmount, formatDefaultAssetAmount, AmountError } from "@x402x/extensions";
 
 // Export React hooks (optional, requires React peer dependency)
-export { useX402Client } from "./hooks/useX402Client.js";
+export { useX402xClient, useX402xClient as useX402Client } from "./hooks/useX402xClient.js";
 export { useExecute } from "./hooks/useExecute.js";
 
 // Re-export core types for convenience
-export type { 
-  FeeCalculationResult, 
-  SettlementExtra, 
+export type {
+  FeeCalculationResult,
+  SettlementExtra,
   SettlementExtraCore,
   PaymentRequirements as PaymentRequirementsV2,
   PaymentPayload as PaymentPayloadV2,

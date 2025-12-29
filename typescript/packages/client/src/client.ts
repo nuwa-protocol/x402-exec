@@ -1,5 +1,5 @@
 /**
- * X402Client - High-level client for x402x Serverless Mode
+ * x402xClient - High-level client for x402x Serverless Mode
  *
  * This is the main client class that provides a simple API for executing
  * on-chain contracts via facilitator without needing a resource server.
@@ -7,7 +7,7 @@
 
 import type { Address, Hex, TransactionReceipt } from "viem";
 import { calculateFacilitatorFee, type FeeCalculationResult, TransferHook } from "@x402x/extensions";
-import type { X402ClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
+import type { x402xClientConfig, ExecuteParams, ExecuteResult } from "./types.js";
 import { prepareSettlement, DEFAULT_FACILITATOR_URL } from "./core/prepare.js";
 import { signAuthorization } from "./core/sign.js";
 import { settle } from "./core/settle.js";
@@ -22,14 +22,14 @@ export { DEFAULT_FACILITATOR_URL };
 /**
  * Internal configuration with required fields
  */
-interface InternalConfig extends X402ClientConfig {
+interface InternalConfig extends x402xClientConfig {
   facilitatorUrl: string;
   timeout: number;
   confirmationTimeout: number;
 }
 
 /**
- * X402Client - High-level client for x402x Serverless Mode
+ * x402xClient - High-level client for x402x Serverless Mode
  *
  * This client simplifies the entire settlement flow into a single execute() call,
  * automatically handling:
@@ -41,14 +41,14 @@ interface InternalConfig extends X402ClientConfig {
  *
  * @example
  * ```typescript
- * import { X402Client } from '@x402x/client';
+ * import { x402xClient } from '@x402x/client';
  * import { TransferHook } from '@x402x/core';
  * import { useWalletClient } from 'wagmi';
  *
  * const { data: wallet } = useWalletClient();
  *
  * // Use default facilitator
- * const client = new X402Client({
+ * const client = new x402xClient({
  *   wallet,
  *   network: 'base-sepolia'
  * });
@@ -67,17 +67,17 @@ interface InternalConfig extends X402ClientConfig {
  * });
  * ```
  */
-export class X402Client {
+export class x402xClient {
   private config: InternalConfig;
 
   /**
-   * Create a new X402Client instance
+   * Create a new x402xClient instance
    *
    * @param config - Client configuration
    * @throws NetworkError if network is unsupported
    * @throws ValidationError if configuration is invalid
    */
-  constructor(config: X402ClientConfig) {
+  constructor(config: x402xClientConfig) {
     // Validate configuration
     if (!config.wallet) {
       throw new ValidationError("wallet is required");
@@ -262,7 +262,7 @@ export class X402Client {
     if (typeof publicClient.waitForTransactionReceipt !== "function") {
       throw new Error(
         "Wallet client does not support waitForTransactionReceipt. " +
-          "Please use a viem PublicClient or WalletClient with public actions.",
+        "Please use a viem PublicClient or WalletClient with public actions.",
       );
     }
 
