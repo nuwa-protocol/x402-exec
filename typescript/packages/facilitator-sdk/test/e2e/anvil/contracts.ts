@@ -15,7 +15,6 @@ import {
   type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { mine } from "viem/test-helpers";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -303,8 +302,7 @@ export async function deployTestContracts(
 
   console.log(`[Deploy] TransferHook at ${hookAddress}`);
 
-  // Wait for deployments
-  await mine(publicClient, { blocks: 1 });
+  // Note: Anvil automatically mines blocks on transactions, no need to manually mine
 
   // Define test accounts (Anvil default accounts)
   const accounts = {
@@ -323,7 +321,7 @@ export async function deployTestContracts(
     args: [accounts.payer, mintAmount],
   });
 
-  await mine(publicClient, { blocks: 1 });
+  // Note: Anvil automatically mines blocks on transactions, no need to manually mine
 
   console.log(`[Deploy] Minted ${mintAmount} tokens to payer`);
 
