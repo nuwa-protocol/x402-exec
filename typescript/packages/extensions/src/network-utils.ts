@@ -138,7 +138,7 @@ export function getNetworkAlias(network: Network): string {
   if (!networkAlias) {
     throw new Error(
       `Unsupported network ID: ${network}. ` +
-        `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
+      `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
     );
   }
   return networkAlias;
@@ -157,8 +157,9 @@ export function getNetworkAlias(network: Network): string {
  * // { address: '0x036Cb...', decimals: 6, eip712: { name: 'USDC', version: '2' } }
  * ```
  */
-export function getDefaultAsset(network: Network): AssetInfo {
-  const assetInfo = DEFAULT_ASSETS[network];
+export function getDefaultAsset(network: string | Network): AssetInfo {
+  const canonicalNetwork = toCanonicalNetworkKey(network);
+  const assetInfo = DEFAULT_ASSETS[canonicalNetwork];
   if (!assetInfo) {
     throw new Error(`No default asset configured for network: ${network}`);
   }
@@ -218,7 +219,7 @@ export function parseMoneyToDecimal(money: string | number): number {
  */
 export function processPriceToAtomicAmount(
   price: string | number,
-  network: Network,
+  network: string | Network,
 ): { amount: string } | { error: string } {
   try {
     const amount = parseMoneyToDecimal(price);
@@ -303,7 +304,7 @@ export function toCanonicalNetworkKey(network: string): Network {
     }
     throw new Error(
       `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
+      `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
     );
   }
 
@@ -312,7 +313,7 @@ export function toCanonicalNetworkKey(network: string): Network {
   if (!canonicalNetwork) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
+      `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
     );
   }
   return canonicalNetwork;

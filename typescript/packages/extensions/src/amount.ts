@@ -40,7 +40,7 @@ export class AmountError extends Error {
  * parseDefaultAssetAmount('100', 'base-sepolia')       // '100000000' (100 USDC, not 100 atomic units)
  * ```
  */
-export function parseDefaultAssetAmount(amount: string | number, network: Network): string {
+export function parseDefaultAssetAmount(amount: string | number, network: string | Network): string {
   // Handle empty/invalid input
   if (amount === null || amount === undefined || amount === "") {
     throw new AmountError("Amount is required");
@@ -74,7 +74,7 @@ export function parseDefaultAssetAmount(amount: string | number, network: Networ
  * formatDefaultAssetAmount('1', 'base-sepolia')        // '0.000001'
  * ```
  */
-export function formatDefaultAssetAmount(amount: string, network: Network): string {
+export function formatDefaultAssetAmount(amount: string, network: string | Network): string {
   const atomicAmount = BigInt(amount);
   if (atomicAmount < 0n) {
     throw new AmountError("Amount cannot be negative");

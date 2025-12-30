@@ -272,10 +272,10 @@ publish_package() {
     else
         print_info "Publishing $package_name_full@$VERSION to npm..."
         if [ "$TAG" = "latest" ]; then
-            npm publish --access public
+            pnpm publish --access public --no-git-checks
             publish_exit_code=$?
         else
-            npm publish --access public --tag "$TAG"
+            pnpm publish --access public --tag "$TAG" --no-git-checks
             publish_exit_code=$?
         fi
     fi

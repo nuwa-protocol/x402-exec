@@ -198,12 +198,14 @@ export function ServerlessPaymentDialog({
   }, [step, selectedNetwork, isConnected, switchToNetwork]);
 
   // Auto-continue flow after wallet connection
+  // NOTE: We check !error to prevent infinite retry loops when loadFee fails
   useEffect(() => {
     if (
       isConnected &&
       selectedNetwork &&
       step === "select-network" &&
       !showWalletSelector &&
+      !error &&  // Don't auto-retry if there was an error
       client
     ) {
       // Wallet just connected and client is ready, continue with the selected network
@@ -216,7 +218,7 @@ export function ServerlessPaymentDialog({
         loadFee(selectedNetwork);
       }
     }
-  }, [isConnected, selectedNetwork, chain, step, showWalletSelector, client, loadFee]);
+  }, [isConnected, selectedNetwork, chain, step, showWalletSelector, error, client, loadFee]);
 
   // Note: Removed auto-retry useEffect to prevent infinite retry loops
   // Users can manually retry by clicking the retry button in the error message

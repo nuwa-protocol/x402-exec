@@ -1,6 +1,6 @@
 {
   "name": "@x402x/facilitator-sdk",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "SchemeNetworkFacilitator SDK for x402x - enables router settlement with official x402 protocol",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

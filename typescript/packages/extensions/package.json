@@ -1,6 +1,6 @@
 {
   "name": "@x402x/extensions",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "x402x extensions for x402 protocol - core utilities for router settlement",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
