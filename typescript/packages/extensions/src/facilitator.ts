@@ -222,8 +222,8 @@ export async function calculateFacilitatorFee(
       headers: {
         "Content-Type": "application/json",
       },
-      // Add timeout
-      signal: AbortSignal.timeout(3000),
+      // Add timeout (10 seconds for remote facilitators with potential network latency)
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
