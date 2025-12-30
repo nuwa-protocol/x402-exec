@@ -1,0 +1,170 @@
+---
+title: Migration Guide (v1 to v2)
+description: How to upgrade your application from x402x v1 to v2.
+navGroup: Guides
+navOrder: 10
+status: stable
+---
+
+This guide outlines the steps to upgrade an application using `@x402x/client` and `@x402x/core` (v1) to the new x402x v2 ecosystem.
+
+## Overview
+
+x402 v2 introduces a modular architecture where core protocol logic, network implementations (EVM, SVM), and server integrations (Hono, Express) are split into separate packages. This allows for greater flexibility and "pay-as-you-go" dependency costs.
+
+**Key Changes in v2:**
+*   **Modular Packages**: `x402` is now a monorepo with scoped packages (e.g., `@x402/core`, `@x402/evm`, `@x402/hono`).
+*   **Extension System**: The protocol now supports extensions for custom logic, schemes, and networks.
+
+**x402x Implementation:**
+x402x leverages the v2 extension mechanism to inject its specific "Pay-and-Execute" logic (SettlementRouter, Hooks) and network configurations into the standard x402 SDK. This ensures that x402x remains fully compatible with the broader x402 ecosystem while providing its unique value proposition.
+
+Instead of monolithic wrappers, x402x v2 provides lightweight extensions (`@x402x/extensions`) that are registered with the official SDK clients and servers.
+
+## 1. Update Dependencies
+
+The package structure has changed in v2. The core logic previously in `@x402x/core` has been moved to `@x402x/extensions` to better reflect its role in the x402 ecosystem.
+
+### package.json
+
+```diff
+- "@x402x/client": "^0.2.0",
+- "@x402x/core": "^0.2.0",
+- "x402": "npm:@x402x/x402@^0.6.6-patch.7"
++ "@x402x/client": "^2.3.0",
++ "@x402x/extensions": "^2.3.0"
+```
+
+> [!IMPORTANT]
+> **Remove Legacy Packages**: 
+> - `@x402x/core`: This v1 package is deprecated. Its functionality is now in `@x402x/extensions`.
+> - `x402` (patched version): If your project used a patched version of the `x402` package (e.g., `npm:@x402x/x402@^0.6.6-patch.7`), remove it. v2 uses the official `x402` package via peer dependencies.
+
+> [!NOTE]
+> `@x402x/extensions` v2 is backward compatible with most v1 logic but includes support for the official x402 v2 protocol updates.
+
+## 2. Update Imports
+
+Most imports that previously came from `@x402x/core` should now be imported from `@x402x/extensions`. For convenience, `@x402x/client` also re-exports common utilities.
+
+### Common Mappings
+
+| Export | v1 Source | v2 Source |
+|--------|-----------|-----------|
+| `networks` | `@x402x/core` | `@x402x/extensions` |
+| `getNetworkConfig` | `@x402x/core` | `@x402x/extensions` |
+| `FeeCalculationResult` | `@x402x/client` | `@x402x/client` (unchanged) |
+| `parseDefaultAssetAmount`| `@x402x/core` | `@x402x/client` (recommended) or `@x402x/extensions` |
+
+### Example
+
+```typescript
+// v1
+import { networks, getNetworkConfig } from "@x402x/core";
+import { X402Client } from "@x402x/client";
+
+// v2
+import { networks, getNetworkConfig } from "@x402x/extensions";
+import { X402Client } from "@x402x/client";
+```
+
+## 3. Client Initialization
+
+The `X402Client` initialization is now synchronous. You no longer need to `await` a dynamic import or the constructor.
+
+```typescript
+// v1
+const { X402Client } = await import("@x402x/client");
+const client = new X402Client({ ... });
+
+// v2
+import { x402xClient } from "@x402x/client";
+const client = new x402xClient({ ... });
+```
+
+## 4. Network Identifiers (CAIP-2)
+
+x402x v2 uses [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) identifiers (e.g., `eip155:84532`) internally as network keys, replacing specific arbitrary strings.
+
+However, for backward compatibility, strict v1 aliases (like `base-sepolia`) are still supported in `getNetworkConfig` and amount utilities.
+
+```typescript
+// Both are valid in v2:
+const config1 = getNetworkConfig("base-sepolia");
+const config2 = getNetworkConfig("eip155:84532");
+
+// Recommended: Migrate internal config maps to use CAIP-2 keys if possible, 
+// but UI labels can remain human-readable.
+```
+
+## 5. Type Safety Improvements
+
+v2 enforces stricter types for addresses and hex strings using `viem` types (`Address`, `Hex`).
+
+- Ensure execution parameters (hooks, data) are typed as `Address` and `Hex`.
+- If you have strings that are definitely hex, cast them (e.g., `value as Hex`) or use `viem`'s `isHex` to validate.
+
+```typescript
+import type { Hex, Address } from "viem";
+
+// v2 Hook Params
+const params = {
+  hook: "0x..." as Address,
+  hookData: "0x..." as Hex
+};
+```
+
+## 6. Server-Side Migration (@x402/hono)
+
+If you are using Hono on the server, v2 moves away from the custom x402x wrapper to using the official [`@x402/hono`](https://github.com/coinbase/x402/tree/main/packages/hono) middleware with x402x extensions injected.
+
+### Dependencies
+
+```bash
+pnpm remove @x402x/hono
+pnpm add @x402/hono @x402/core @x402/evm
+pnpm add @x402x/extensions
+```
+
+### Initialization
+
+Instead of a monolithic initialization, you now compose the `x402ResourceServer` with specific extensions.
+
+```typescript
+import { x402ResourceServer, paymentMiddleware } from "@x402/hono";
+import { HTTPFacilitatorClient } from "@x402/core/http";
+import { registerRouterSettlement, createSettlementRouteConfig } from "@x402x/extensions";
+
+// 1. Create the Resource Server
+const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR_URL });
+const resourceServer = new x402ResourceServer(facilitatorClient);
+
+// 2. Register Extensions
+// Register the x402x Router Settlement extension
+registerRouterSettlement(resourceServer);
+
+// 3. Initialize
+await resourceServer.initialize();
+```
+
+### Route Configuration
+
+Use `createSettlementRouteConfig` from `@x402x/extensions` to generate route configs. This helper allows usage of network aliases and x402x's default asset map (bypassing the official SDK's stricter list).
+
+```typescript
+const routes = {
+  "POST /api/purchase": createSettlementRouteConfig({
+    accepts: [
+      {
+        scheme: "exact",
+        network: "base-sepolia", // Alias supported by extension
+        price: "$0.1",           // Auto-converted to atomic units
+        payTo: MERCHANT_ADDRESS,
+      }
+    ],
+    description: "Purchase Item",
+  }, { facilitatorUrl: FACILITATOR_URL })
+};
+
+app.use("/api/purchase", paymentMiddleware(routes, resourceServer));
+```
