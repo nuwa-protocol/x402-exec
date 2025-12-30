@@ -15,7 +15,9 @@ import {
   type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { deployContract, mine } from "viem/test-helpers";
+import { mine } from "viem/test-helpers";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 // Import ABIs
 const ERC3009_TOKEN_ABI = [
@@ -151,6 +153,16 @@ const SETTLEMENT_ROUTER_ABI = [
       { name: "hook", type: "address", indexed: true },
       { name: "result", type: "bytes", indexed: false },
     ],
+  },
+  {
+    type: "function",
+    name: "getPendingFees",
+    stateMutability: "view",
+    inputs: [
+      { name: "facilitator", type: "address" },
+      { name: "token", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
 

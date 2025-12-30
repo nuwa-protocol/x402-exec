@@ -38,11 +38,10 @@ import { x402Client, wrapFetchWithPayment } from "@x402/core/client";
 import {
   createExtensionDeclaration,
   generateSalt,
-  calculateCommitment,
   ROUTER_SETTLEMENT_KEY,
   createRouterSettlementExtension,
 } from "@x402x/extensions";
-import { registerX402xScheme, ExactEvmSchemeWithRouterSettlement } from "@x402x/extensions/client";
+import { ExactEvmSchemeWithRouterSettlement } from "@x402x/extensions/client";
 import { createRouterSettlementFacilitator } from "@x402x/facilitator-sdk";
 
 // Test utilities
@@ -235,7 +234,7 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
       const expectedSpent = BigInt(TEST_CONFIG.price) + BigInt(TEST_CONFIG.facilitatorFee);
       expect(initialPayerBalance - finalPayerBalance).toBe(expectedSpent);
 
-      // Verify merchant received correct amount (price - facilitator fee)
+      // Verify merchant received correct amount (price)
       const expectedMerchant = BigInt(TEST_CONFIG.price);
       expect(finalMerchantBalance - initialMerchantBalance).toBe(expectedMerchant);
 
@@ -268,6 +267,18 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
 
       const fetchWithPayment = wrapFetchWithPayment(client, fetch);
 
+      // Get initial pending fees before this test
+      const publicClient = createPublicClient({
+        transport: http(`http://localhost:${TEST_CONFIG.anvilPort}`),
+      });
+
+      const initialPendingFees = await publicClient.readContract({
+        address: contracts.settlementRouter.address,
+        abi: contracts.settlementRouter.abi,
+        functionName: "getPendingFees",
+        args: [contracts.accounts.facilitator, contracts.token.address],
+      });
+
       // Make 3 sequential payments
       for (let i = 0; i < 3; i++) {
         const response = await fetchWithPayment(`${serverUrl}/api/protected`, {
@@ -279,20 +290,16 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
         expect(result.success).toBe(true);
       }
 
-      // Verify facilitator fees accumulated
-      const publicClient = createPublicClient({
-        transport: http(`http://localhost:${TEST_CONFIG.anvilPort}`),
-      });
-
-      const pendingFees = await publicClient.readContract({
+      // Verify facilitator fees accumulated (initial + 3 new fees)
+      const finalPendingFees = await publicClient.readContract({
         address: contracts.settlementRouter.address,
         abi: contracts.settlementRouter.abi,
         functionName: "getPendingFees",
         args: [contracts.accounts.facilitator, contracts.token.address],
       });
 
-      const expectedTotalFees = BigInt(TEST_CONFIG.facilitatorFee) * 3n;
-      expect(pendingFees).toBe(expectedTotalFees);
+      const expectedTotalFees = initialPendingFees + BigInt(TEST_CONFIG.facilitatorFee) * 3n;
+      expect(finalPendingFees).toBe(expectedTotalFees);
     });
   });
 
@@ -459,7 +466,7 @@ async function createTestServer(): Promise<void> {
         "eip155:31337": `http://localhost:${TEST_CONFIG.anvilPort}`,
       },
       privateKey:
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as Hex,
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex,
     });
 
     try {
@@ -487,7 +494,7 @@ async function createTestServer(): Promise<void> {
         "eip155:31337": `http://localhost:${TEST_CONFIG.anvilPort}`,
       },
       privateKey:
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as Hex,
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex,
     });
 
     try {

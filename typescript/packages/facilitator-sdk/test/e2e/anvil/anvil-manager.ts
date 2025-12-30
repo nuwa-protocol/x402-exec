@@ -6,8 +6,6 @@
  */
 
 import { spawn, ChildProcess } from "child_process";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 export interface AnvilManagerOptions {
   /**
@@ -91,7 +89,7 @@ export class AnvilManager {
 
     args.push(...this.options.args);
 
-    const process = spawn("anvil", args, {
+    const anvilProcess = spawn("anvil", args, {
       stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...process.env,
@@ -100,15 +98,15 @@ export class AnvilManager {
     });
 
     // Set up error handling
-    process.on("error", (err) => {
+    anvilProcess.on("error", (err) => {
       console.error("[AnvilManager] Process error:", err);
     });
 
     // Wait for Anvil to be ready
-    await this.waitForReady(process);
+    await this.waitForReady(anvilProcess);
 
     this.config = {
-      process,
+      process: anvilProcess,
       port: this.options.port,
       chainId: this.options.chainId,
       rpcUrl: `http://localhost:${this.options.port}`,
@@ -123,7 +121,6 @@ export class AnvilManager {
    * Wait for Anvil to be ready by checking stdout
    */
   private async waitForReady(process: ChildProcess, timeout = 30000): Promise<void> {
-    const startTime = Date.now();
     let stdoutBuffer = "";
     let stderrBuffer = "";
 
