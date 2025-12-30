@@ -9,7 +9,12 @@ import type { Network } from "@x402/core/types";
 import { defineChain, type Chain } from "viem";
 import * as allChains from "viem/chains";
 
-import { NETWORK_ALIASES_V1_TO_V2, NETWORK_ALIASES } from "./network-utils.js";
+import {
+  NETWORK_ALIASES_V1_TO_V2,
+  NETWORK_ALIASES,
+  getSupportedNetworkIds,
+  getSupportedHumanReadableNetworks,
+} from "./network-utils.js";
 
 /**
  * Custom chain definitions for networks not in viem's standard list
@@ -94,7 +99,7 @@ export function getChain(network: string | Network): Chain {
     if (!(caip2 in NETWORK_ALIASES)) {
       throw new Error(
         `Unsupported CAIP-2 network: ${network}. ` +
-          `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
+          `Supported networks: ${getSupportedNetworkIds().join(", ")}`,
       );
     }
     chainId = parseInt(network.split(":")[1]);
@@ -104,7 +109,7 @@ export function getChain(network: string | Network): Chain {
     if (!caip2) {
       throw new Error(
         `Unknown network: ${network}. ` +
-          `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
+          `Supported networks: ${getSupportedHumanReadableNetworks().join(", ")}`,
       );
     }
     chainId = parseInt(caip2.split(":")[1]);

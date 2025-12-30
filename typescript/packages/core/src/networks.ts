@@ -206,7 +206,7 @@ export function getNetworkConfig(network: string): NetworkConfig {
   if (!config) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-        `Supported networks: ${Object.keys(networks).join(", ")}`,
+        `Supported networks: ${getSupportedNetworks().join(", ")}`,
     );
   }
   return config;

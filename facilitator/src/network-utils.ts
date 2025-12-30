@@ -35,8 +35,8 @@ export function getCanonicalNetwork(network: string): CanonicalNetwork {
     console.error(`[getCanonicalNetwork] Failed to canonicalize network: ${network}`, error);
 
     // Show both v1 names and v2 CAIP-2 identifiers in error message
-    const v1Names = Object.keys(NETWORK_ALIASES).join(", ");
-    const v2Identifiers = Object.values(NETWORK_ALIASES).join(", ");
+    const v1Names = getSupportedHumanReadableNetworks().join(", ");
+    const v2Identifiers = getSupportedCanonicalNetworks().join(", ");
     throw new Error(
       `Unsupported network: ${network}. ` +
         `Supported v1 names: ${v1Names}. ` +

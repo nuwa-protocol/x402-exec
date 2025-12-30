@@ -138,7 +138,7 @@ export function getNetworkAlias(network: Network): string {
   if (!networkAlias) {
     throw new Error(
       `Unsupported network ID: ${network}. ` +
-        `Supported network IDs: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
+        `Supported network IDs: ${getSupportedNetworkIds().join(", ")}`,
     );
   }
   return networkAlias;
@@ -278,6 +278,31 @@ export function getNetworkAliasesV1ToV2(): Record<string, Network> {
 }
 
 /**
+ * Get all supported human-readable network names (v1 aliases)
+ *
+ * Returns user-friendly network names like "base-sepolia", "base", etc.
+ * These aliases are used for configuration files and backward compatibility.
+ * Use this for error messages, UI display, and user-facing operations.
+ *
+ * @returns Array of v1 network aliases
+ *
+ * @example
+ * ```typescript
+ * const networks = getSupportedHumanReadableNetworks();
+ * // => ['base-sepolia', 'base', 'x-layer-testnet', ...]
+ *
+ * // For error messages
+ * throw new Error(
+ *   `Unsupported network: ${network}. ` +
+ *   `Supported networks: ${getSupportedHumanReadableNetworks().join(", ")}`
+ * );
+ * ```
+ */
+export function getSupportedHumanReadableNetworks(): string[] {
+  return Object.keys(NETWORK_ALIASES_V1_TO_V2);
+}
+
+/**
  * Convert any network identifier to its canonical v2 CAIP-2 key
  *
  * Handles both v1 human-readable names and v2 CAIP-2 identifiers,
@@ -303,7 +328,7 @@ export function toCanonicalNetworkKey(network: string): Network {
     }
     throw new Error(
       `Unsupported CAIP-2 network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES).join(", ")}`,
+        `Supported networks: ${getSupportedNetworkIds().join(", ")}`,
     );
   }
 
@@ -312,7 +337,7 @@ export function toCanonicalNetworkKey(network: string): Network {
   if (!canonicalNetwork) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
+        `Supported networks: ${getSupportedHumanReadableNetworks().join(", ")}`,
     );
   }
   return canonicalNetwork;

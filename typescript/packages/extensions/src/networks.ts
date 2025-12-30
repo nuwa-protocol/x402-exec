@@ -7,7 +7,13 @@
 
 import type { Network } from "@x402/core/types";
 
-import { getDefaultAsset, NETWORK_ALIASES_V1_TO_V2, getNetworkAlias } from "./network-utils.js";
+import {
+  getDefaultAsset,
+  NETWORK_ALIASES_V1_TO_V2,
+  getNetworkAlias,
+  getSupportedNetworks,
+  getSupportedHumanReadableNetworks,
+} from "./network-utils.js";
 import type { NetworkConfig } from "./types.js";
 
 /**
@@ -49,7 +55,7 @@ function normalizeToCAIP2(network: string | Network): Network {
     if (!(caip2 in networks)) {
       throw new Error(
         `Unsupported CAIP-2 network: ${network}. ` +
-          `Supported networks: ${Object.keys(networks).join(", ")}`,
+          `Supported networks: ${getSupportedNetworks().join(", ")}`,
       );
     }
     return caip2;
@@ -59,7 +65,7 @@ function normalizeToCAIP2(network: string | Network): Network {
   if (!caip2) {
     throw new Error(
       `Unknown network: ${network}. ` +
-        `Supported networks: ${Object.keys(NETWORK_ALIASES_V1_TO_V2).join(", ")}`,
+        `Supported networks: ${getSupportedHumanReadableNetworks().join(", ")}`,
     );
   }
   return caip2;
@@ -259,7 +265,7 @@ export function getNetworkConfig(network: string | Network): NetworkConfig {
   if (!config) {
     throw new Error(
       `Unsupported network: ${network}. ` +
-        `Supported networks: ${Object.keys(networks).join(", ")}`,
+        `Supported networks: ${getSupportedNetworks().join(", ")}`,
     );
   }
   return config;

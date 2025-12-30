@@ -9,6 +9,8 @@ import {
   getDefaultAsset,
   processPriceToAtomicAmount,
   parseMoneyToDecimal,
+  getSupportedHumanReadableNetworks,
+  getSupportedNetworkIds,
 } from "./network-utils";
 
 describe("toCanonicalNetworkKey", () => {
@@ -84,5 +86,53 @@ describe("processPriceToAtomicAmount", () => {
   it("should return error for invalid network", () => {
     const result = processPriceToAtomicAmount("1.5", "eip155:99999" as any);
     expect(result).toHaveProperty("error");
+  });
+});
+
+describe("getSupportedHumanReadableNetworks", () => {
+  it("should return array of v1 network aliases", () => {
+    const networks = getSupportedHumanReadableNetworks();
+    expect(Array.isArray(networks)).toBe(true);
+    expect(networks.length).toBeGreaterThan(0);
+    expect(networks).toContain("base-sepolia");
+    expect(networks).toContain("base");
+    expect(networks).toContain("x-layer-testnet");
+    expect(networks).toContain("x-layer");
+    expect(networks).toContain("bsc-testnet");
+    expect(networks).toContain("bsc");
+  });
+
+  it("should return all v1 network aliases that can be converted to CAIP-2", () => {
+    const v1Networks = getSupportedHumanReadableNetworks();
+    const caip2Networks = getSupportedNetworkIds();
+
+    // All v1 networks should be convertible to CAIP-2
+    v1Networks.forEach((v1Net) => {
+      expect(() => toCanonicalNetworkKey(v1Net)).not.toThrow();
+    });
+
+    // Number of v1 and CAIP-2 networks should match
+    expect(v1Networks.length).toBe(caip2Networks.length);
+  });
+});
+
+describe("getSupportedNetworkIds", () => {
+  it("should return array of CAIP-2 network identifiers", () => {
+    const networks = getSupportedNetworkIds();
+    expect(Array.isArray(networks)).toBe(true);
+    expect(networks.length).toBeGreaterThan(0);
+    expect(networks).toContain("eip155:84532");
+    expect(networks).toContain("eip155:8453");
+    expect(networks).toContain("eip155:1952");
+    expect(networks).toContain("eip155:196");
+    expect(networks).toContain("eip155:97");
+    expect(networks).toContain("eip155:56");
+  });
+
+  it("should return all CAIP-2 network identifiers that start with eip155:", () => {
+    const networks = getSupportedNetworkIds();
+    networks.forEach((network) => {
+      expect(network).toMatch(/^eip155:\d+$/);
+    });
   });
 });
