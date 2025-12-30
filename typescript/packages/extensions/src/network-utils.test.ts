@@ -36,7 +36,7 @@ describe("getDefaultAsset", () => {
 
   it("should throw error for unsupported network", () => {
     expect(() => getDefaultAsset("eip155:99999" as any)).toThrow(
-      "No default asset configured for network",
+      "Unsupported CAIP-2 network",
     );
   });
 });
