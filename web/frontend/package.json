@@ -9,9 +9,9 @@
 		"pnpm": ">=10.7.0"
 	},
 	"scripts": {
-		"dev": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/client build && vite",
-		"build": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/client build && tsc -b && vite build",
-		"build:prod": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/client build && vite build",
+		"dev": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/extensions build && pnpm -C ../../typescript/packages/client build && vite",
+		"build": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/extensions build && pnpm -C ../../typescript/packages/client build && tsc -b && vite build",
+		"build:prod": "pnpm -C ../../typescript/packages/core build && pnpm -C ../../typescript/packages/extensions build && pnpm -C ../../typescript/packages/client build && vite build",
 		"typecheck": "tsc -b --pretty false",
 		"lint": "biome lint .",
 		"check": "biome check .",

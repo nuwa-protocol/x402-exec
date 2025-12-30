@@ -26,3 +26,4 @@ apps/*/pnpm-lock.yaml
 .claude/.cache/
 .claude/logs/
 .claude/tmp/
+.pnpm-home*
