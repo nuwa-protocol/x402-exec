@@ -3,9 +3,10 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { addSettlementExtra } from "./utils";
+
 import { SettlementExtraError } from "./types";
 import type { PaymentRequirements } from "./types";
+import { addSettlementExtra } from "./utils";
 
 describe("addSettlementExtra", () => {
   const baseRequirements: PaymentRequirements = {
@@ -100,7 +101,7 @@ describe("addSettlementExtra", () => {
       addSettlementExtra(baseRequirements, {
         hook: "invalid",
         hookData: "0x",
-      })
+      }),
     ).toThrow(SettlementExtraError);
   });
 
@@ -109,7 +110,7 @@ describe("addSettlementExtra", () => {
       addSettlementExtra(baseRequirements, {
         hook: "0x9876543210987654321098765432109876543210",
         hookData: "not-hex",
-      })
+      }),
     ).toThrow(SettlementExtraError);
   });
 
@@ -119,7 +120,7 @@ describe("addSettlementExtra", () => {
         hook: "0x9876543210987654321098765432109876543210",
         hookData: "0x",
         facilitatorFee: "-100",
-      })
+      }),
     ).toThrow(SettlementExtraError);
   });
 
@@ -129,7 +130,7 @@ describe("addSettlementExtra", () => {
         hook: "0x9876543210987654321098765432109876543210",
         hookData: "0x",
         salt: "0x1234", // not 32 bytes
-      })
+      }),
     ).toThrow(SettlementExtraError);
   });
 

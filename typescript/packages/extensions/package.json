@@ -1,6 +1,6 @@
 {
   "name": "@x402x/extensions",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "x402x extensions for x402 protocol - core utilities for router settlement",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -40,9 +40,14 @@
     "viem": "2.40.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^1.0.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.0",
     "prettier": "3.5.2",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",

@@ -3,12 +3,13 @@
  */
 
 import { describe, it, expect } from "vitest";
+
+import { getRouterSettlementExtensionKey } from "./extensions.js";
 import {
   withRouterSettlement,
   isRouterSettlement,
   type WithRouterSettlementOptions,
 } from "./helpers.js";
-import { getRouterSettlementExtensionKey } from "./extensions.js";
 import type { PaymentRequirements } from "./types.js";
 
 describe("Helper Functions", () => {
@@ -169,4 +170,3 @@ describe("Helper Functions", () => {
     });
   });
 });
-

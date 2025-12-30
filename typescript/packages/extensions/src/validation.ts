@@ -17,7 +17,7 @@ export interface ValidationResult {
 
 /**
  * Validate Ethereum address format (0x followed by 40 hex characters)
- * 
+ *
  * @param address - Address to validate
  * @returns true if valid Ethereum address
  */
@@ -27,7 +27,7 @@ export function isValidAddress(address: string): boolean {
 
 /**
  * Validate hex string format (0x followed by even number of hex characters)
- * 
+ *
  * @param hex - Hex string to validate
  * @returns true if valid hex string
  */
@@ -37,7 +37,7 @@ export function isValidHex(hex: string): boolean {
 
 /**
  * Validate 32-byte hex string (0x followed by 64 hex characters)
- * 
+ *
  * @param hex - Hex string to validate
  * @returns true if valid 32-byte hex string
  */
@@ -47,7 +47,7 @@ export function isValid32ByteHex(hex: string): boolean {
 
 /**
  * Validate numeric string (non-negative integer)
- * 
+ *
  * @param value - Value to validate
  * @returns true if valid numeric string
  */
@@ -57,12 +57,12 @@ export function isValidNumericString(value: string): boolean {
 
 /**
  * Validate settlement extra parameters
- * 
+ *
  * This validates all required fields for settlement through SettlementRouter.
- * 
+ *
  * @param extra - Settlement extra parameters to validate
  * @returns Validation result with error message if invalid
- * 
+ *
  * @example
  * ```typescript
  * const result = validateSettlementExtra({
@@ -75,15 +75,13 @@ export function isValidNumericString(value: string): boolean {
  *   version: "2",
  *   salt: "0x1234..."
  * });
- * 
+ *
  * if (!result.valid) {
  *   throw new Error(result.error);
  * }
  * ```
  */
-export function validateSettlementExtra(
-  extra: Partial<SettlementExtra>
-): ValidationResult {
+export function validateSettlementExtra(extra: Partial<SettlementExtra>): ValidationResult {
   // Validate settlementRouter
   if (!extra.settlementRouter) {
     return { valid: false, error: "settlementRouter is required" };
@@ -145,7 +143,10 @@ export function validateSettlementExtra(
     return { valid: false, error: "salt is required" };
   }
   if (!isValid32ByteHex(extra.salt)) {
-    return { valid: false, error: "salt must be a 32-byte hex string (0x followed by 64 hex characters)" };
+    return {
+      valid: false,
+      error: "salt must be a 32-byte hex string (0x followed by 64 hex characters)",
+    };
   }
 
   return { valid: true };
@@ -154,10 +155,10 @@ export function validateSettlementExtra(
 /**
  * Assert that settlement extra parameters are valid
  * Throws SettlementExtraError if validation fails
- * 
+ *
  * @param extra - Settlement extra parameters to validate
  * @throws {SettlementExtraError} If validation fails
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -169,7 +170,7 @@ export function validateSettlementExtra(
  * ```
  */
 export function assertValidSettlementExtra(
-  extra: Partial<SettlementExtra>
+  extra: Partial<SettlementExtra>,
 ): asserts extra is SettlementExtra {
   const result = validateSettlementExtra(extra);
   if (!result.valid) {

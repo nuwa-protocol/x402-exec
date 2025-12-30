@@ -5,7 +5,8 @@
  * preventing parameter tampering attacks.
  */
 
-import { keccak256, encodePacked, hexToBytes, bytesToHex, type Hex } from "viem";
+import { keccak256, encodePacked, type Hex } from "viem";
+
 import type { CommitmentParams } from "./types.js";
 
 /**
@@ -148,7 +149,7 @@ export function validateCommitmentParams(params: CommitmentParams): void {
     BigInt(params.validAfter);
     BigInt(params.validBefore);
     BigInt(params.facilitatorFee);
-  } catch (e) {
+  } catch {
     throw new Error("Invalid numeric parameter");
   }
 

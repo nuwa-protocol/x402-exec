@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+
 import {
   toCanonicalNetworkKey,
   getDefaultAsset,
@@ -35,7 +36,7 @@ describe("getDefaultAsset", () => {
 
   it("should throw error for unsupported network", () => {
     expect(() => getDefaultAsset("eip155:99999" as any)).toThrow(
-      "No default asset configured for network"
+      "No default asset configured for network",
     );
   });
 });

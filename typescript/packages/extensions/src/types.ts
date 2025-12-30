@@ -1,6 +1,6 @@
 /**
  * Type definitions for @x402x/extensions
- * 
+ *
  * Re-exports official x402 v2 types from @x402/core
  */
 
@@ -187,4 +187,3 @@ export interface FacilitatorConfig {
   url: string;
   apiKey?: string;
 }
-

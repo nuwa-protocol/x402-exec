@@ -1,6 +1,6 @@
 /**
  * Middleware utility functions for x402x v2 packages
- * 
+ *
  * These utilities provide helpers for route matching, JSON encoding,
  * and other common middleware operations.
  */
@@ -31,16 +31,16 @@ export interface RoutePattern {
 
 /**
  * Compute route patterns from routes config
- * 
+ *
  * Converts route configuration into compiled patterns with regex matching.
- * 
+ *
  * **Note**: When a route is specified as a simple price value (string or number),
  * it is automatically converted to a RouteConfig with network defaulting to "base-sepolia".
  * For production use, explicitly specify the network in your route configuration.
- * 
+ *
  * @param routes - Routes configuration
  * @returns Array of route patterns
- * 
+ *
  * @example
  * ```typescript
  * const routes = {
@@ -89,12 +89,12 @@ export function computeRoutePatterns(routes: RoutesConfig): RoutePattern[] {
 
 /**
  * Find matching route for given path and method
- * 
+ *
  * @param routePatterns - Compiled route patterns
  * @param path - Request path
  * @param method - HTTP method
  * @returns Matching route pattern or undefined
- * 
+ *
  * @example
  * ```typescript
  * const route = findMatchingRoute(patterns, '/api/data', 'GET');
@@ -138,10 +138,10 @@ export function findMatchingRoute(
 
 /**
  * Find matching payment requirements from list
- * 
+ *
  * This is a placeholder for finding requirements that match certain criteria.
  * In v2, this logic is typically handled by the x402Client/x402ResourceServer classes.
- * 
+ *
  * @param requirements - List of payment requirements
  * @param network - Optional network filter
  * @returns First matching requirement or undefined
@@ -158,12 +158,12 @@ export function findMatchingPaymentRequirements<T>(
 
 /**
  * Convert value to JSON-safe format
- * 
+ *
  * Handles BigInt and other non-JSON-serializable types.
- * 
+ *
  * @param value - Value to convert
  * @returns JSON-safe representation
- * 
+ *
  * @example
  * ```typescript
  * const safe = toJsonSafe({ amount: 1000000n }); // { amount: "1000000" }

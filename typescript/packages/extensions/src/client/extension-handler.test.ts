@@ -1,21 +1,23 @@
-import { describe, it, expect } from "vitest";
 import { x402Client } from "@x402/core/client";
-import { injectX402xExtensionHandler, registerX402xScheme } from "./extension-handler";
-import type { ClientEvmSigner } from "./exact-evm-scheme";
+import { describe, it, expect } from "vitest";
+
 import { ROUTER_SETTLEMENT_KEY } from "../server-extension";
+
+import type { ClientEvmSigner } from "./exact-evm-scheme";
+import { injectX402xExtensionHandler, registerX402xScheme } from "./extension-handler";
 
 describe("x402x Extension Handler", () => {
   describe("injectX402xExtensionHandler", () => {
     it("should return the same client instance for chaining", () => {
       const client = new x402Client();
       const result = injectX402xExtensionHandler(client);
-      
+
       expect(result).toBe(client);
     });
 
     it("should not throw when called multiple times", () => {
       const client = new x402Client();
-      
+
       expect(() => {
         injectX402xExtensionHandler(client);
         injectX402xExtensionHandler(client);
@@ -74,10 +76,10 @@ describe("x402x Extension Handler", () => {
       };
 
       let hookCalled = false;
-      
+
       // Register x402x scheme
       registerX402xScheme(client, "eip155:84532", mockSigner);
-      
+
       // Add another hook after registration
       client.onBeforePaymentCreation(async () => {
         hookCalled = true;
@@ -110,8 +112,8 @@ describe("x402x Extension Handler", () => {
           extra: {
             name: "USDC",
             version: "2",
-            [ROUTER_SETTLEMENT_KEY]: { 
-              info: { 
+            [ROUTER_SETTLEMENT_KEY]: {
+              info: {
                 settlementRouter: "0xROUTER",
                 salt: "0xSALT",
                 hook: "0xHOOK",
@@ -182,7 +184,7 @@ describe("x402x Extension Handler", () => {
 
       // Should forward root-level extension to callback
       expect(forwarded).toEqual({ info: { settlementRouter: "0x0" } });
-      
+
       // Root extension should remain unchanged
       expect(ctx.paymentRequired.extensions[ROUTER_SETTLEMENT_KEY]).toEqual({
         info: { settlementRouter: "0x0" },
@@ -190,4 +192,3 @@ describe("x402x Extension Handler", () => {
     });
   });
 });
-
