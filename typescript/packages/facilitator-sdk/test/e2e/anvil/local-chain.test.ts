@@ -95,7 +95,7 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
     });
 
     // Create test server
-    await createTestServer();
+    await createTestServer(anvilConfig.rpcUrl);
   }, 60000); // 60s timeout for Anvil start + contract deployment
 
   afterAll(async () => {
@@ -158,8 +158,8 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
         method: "GET",
       });
 
-      // Verify 402 response
-      expect(response1.status).toBe(200);
+      // Verify 402 Payment Required response
+      expect(response1.status).toBe(402);
 
       const paymentRequired = await response1.json();
       expect(paymentRequired.requiresPayment).toBe(true);
@@ -373,27 +373,46 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
 /**
  * Create test server with x402x payment middleware
  */
-async function createTestServer(): Promise<void> {
+async function createTestServer(rpcUrl: string): Promise<void> {
+  // Create publicClient for facilitator
+  const publicClient = createPublicClient({
+    transport: http(rpcUrl),
+  });
   const app = new Hono();
 
-  // Protected endpoint - returns payment requirements
-  app.get("/api/protected", (c) => {
-    // Return payment requirements (simplified for testing)
-    const salt = generateSalt();
-    const requirements = {
-      requiresPayment: true,
-      accepts: [
-        {
-          scheme: "exact" as const,
-          network: "eip155:31337",
-          amount: TEST_CONFIG.price,
-          asset: contracts.token.address,
-          maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
-          extra: {
-            name: "MockUSDC",
-            version: "1",
+  // Protected endpoint - returns 402 with payment requirements
+  app.get("/api/protected", async (c) => {
+    // Check for X-Payment header indicating payment attempt
+    const paymentHeader = c.req.header("X-Payment");
+
+    if (!paymentHeader) {
+      // No payment - return 402 with requirements
+      const salt = generateSalt();
+      const requirements = {
+        requiresPayment: true,
+        accepts: [
+          {
+            scheme: "exact" as const,
+            network: "eip155:31337",
+            amount: TEST_CONFIG.price,
+            asset: contracts.token.address,
+            maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
+            extra: {
+              name: "MockUSDC",
+              version: "1",
+            },
+            extensions: createExtensionDeclaration({
+              settlementRouter: contracts.settlementRouter.address,
+              hook: contracts.transferHook.address,
+              hookData: "0x",
+              finalPayTo: contracts.accounts.merchant,
+              facilitatorFee: TEST_CONFIG.facilitatorFee,
+              salt,
+            }),
           },
-          extensions: createExtensionDeclaration({
+        ],
+        extensions: {
+          [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
             settlementRouter: contracts.settlementRouter.address,
             hook: contracts.transferHook.address,
             hookData: "0x",
@@ -402,116 +421,162 @@ async function createTestServer(): Promise<void> {
             salt,
           }),
         },
-      ],
-      extensions: {
-        [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
-          settlementRouter: contracts.settlementRouter.address,
-          hook: contracts.transferHook.address,
-          hookData: "0x",
-          finalPayTo: contracts.accounts.merchant,
-          facilitatorFee: TEST_CONFIG.facilitatorFee,
-          salt,
-        }),
-      },
-    };
-    return c.json(requirements);
-  });
+      };
 
-  // Extensions echo endpoint
-  app.post("/api/extensions-echo", (c) => {
-    // Similar to protected endpoint
-    const salt = generateSalt();
-    const requirements = {
-      requiresPayment: true,
-      accepts: [
-        {
-          scheme: "exact" as const,
-          network: "eip155:31337",
-          amount: TEST_CONFIG.price,
-          asset: contracts.token.address,
-          maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
-          extra: {
-            name: "MockUSDC",
-            version: "1",
-          },
-          extensions: createExtensionDeclaration({
-            settlementRouter: contracts.settlementRouter.address,
-            hook: contracts.transferHook.address,
-            hookData: "0x",
-            finalPayTo: contracts.accounts.merchant,
-            facilitatorFee: TEST_CONFIG.facilitatorFee,
-            salt,
-          }),
-        },
-      ],
-      extensions: {
-        [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
-          settlementRouter: contracts.settlementRouter.address,
-          hook: contracts.transferHook.address,
-          hookData: "0x",
-          finalPayTo: contracts.accounts.merchant,
-          facilitatorFee: TEST_CONFIG.facilitatorFee,
-          salt,
-        }),
-      },
-    };
-    return c.json(requirements);
-  });
+      // Return 402 Payment Required with Payment-Response header
+      return c.json(requirements, 402);
+    }
 
-  // Payment verification/settlement endpoint (for testing facilitator)
-  app.post("/api/verify", async (c) => {
-    const body = await c.req.json();
-    const { paymentPayload, paymentRequirements } = body;
-
-    // Create facilitator
-    const facilitator = createRouterSettlementFacilitator({
-      signer: contracts.accounts.facilitator,
-      allowedRouters: {
-        "eip155:31337": [contracts.settlementRouter.address],
-      },
-      rpcUrls: {
-        "eip155:31337": `http://localhost:${TEST_CONFIG.anvilPort}`,
-      },
-      privateKey:
-        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex,
-    });
-
+    // Payment provided - settle and verify
     try {
-      const verification = await facilitator.verify(paymentPayload, paymentRequirements);
-      return c.json(verification);
-    } catch (error) {
-      return c.json({
-        isValid: false,
-        invalidReason: error instanceof Error ? error.message : "Unknown error",
+      const facilitator = createRouterSettlementFacilitator({
+        signer: contracts.accounts.facilitator,
+        publicClient,
+        allowedRouters: {
+          "eip155:31337": [contracts.settlementRouter.address],
+        },
       });
+
+      // Decode payment header
+      const paymentPayload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString());
+
+      // Get requirements from query/body for settlement
+      const salt = generateSalt();
+      const paymentRequirements = {
+        accepts: [
+          {
+            scheme: "exact" as const,
+            network: "eip155:31337",
+            amount: TEST_CONFIG.price,
+            asset: contracts.token.address,
+            maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
+            extensions: createExtensionDeclaration({
+              settlementRouter: contracts.settlementRouter.address,
+              hook: contracts.transferHook.address,
+              hookData: "0x",
+              finalPayTo: contracts.accounts.merchant,
+              facilitatorFee: TEST_CONFIG.facilitatorFee,
+              salt,
+            }),
+          },
+        ],
+        extensions: {
+          [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
+            settlementRouter: contracts.settlementRouter.address,
+            hook: contracts.transferHook.address,
+            hookData: "0x",
+            finalPayTo: contracts.accounts.merchant,
+            facilitatorFee: TEST_CONFIG.facilitatorFee,
+            salt,
+          }),
+        },
+      };
+
+      // Settle payment
+      await facilitator.settle(paymentPayload, paymentRequirements);
+
+      return c.json({ success: true, message: "Payment successful" });
+    } catch (error) {
+      console.error("[E2E] Settlement error:", error);
+      return c.json({ success: false, error: (error as Error).message }, 402);
     }
   });
 
-  app.post("/api/settle", async (c) => {
-    const body = await c.req.json();
-    const { paymentPayload, paymentRequirements } = body;
+  // Extensions echo endpoint (similar to protected but with POST)
+  app.post("/api/extensions-echo", async (c) => {
+    const paymentHeader = c.req.header("X-Payment");
 
-    // Create facilitator
-    const facilitator = createRouterSettlementFacilitator({
-      signer: contracts.accounts.facilitator,
-      allowedRouters: {
-        "eip155:31337": [contracts.settlementRouter.address],
-      },
-      rpcUrls: {
-        "eip155:31337": `http://localhost:${TEST_CONFIG.anvilPort}`,
-      },
-      privateKey:
-        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex,
-    });
+    if (!paymentHeader) {
+      const salt = generateSalt();
+      const requirements = {
+        requiresPayment: true,
+        accepts: [
+          {
+            scheme: "exact" as const,
+            network: "eip155:31337",
+            amount: TEST_CONFIG.price,
+            asset: contracts.token.address,
+            maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
+            extra: {
+              name: "MockUSDC",
+              version: "1",
+            },
+            extensions: createExtensionDeclaration({
+              settlementRouter: contracts.settlementRouter.address,
+              hook: contracts.transferHook.address,
+              hookData: "0x",
+              finalPayTo: contracts.accounts.merchant,
+              facilitatorFee: TEST_CONFIG.facilitatorFee,
+              salt,
+            }),
+          },
+        ],
+        extensions: {
+          [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
+            settlementRouter: contracts.settlementRouter.address,
+            hook: contracts.transferHook.address,
+            hookData: "0x",
+            finalPayTo: contracts.accounts.merchant,
+            facilitatorFee: TEST_CONFIG.facilitatorFee,
+            salt,
+          }),
+        },
+      };
+      return c.json(requirements, 402);
+    }
 
+    // Payment provided - settle and return echo
     try {
-      const settlement = await facilitator.settle(paymentPayload, paymentRequirements);
-      return c.json(settlement);
-    } catch (error) {
-      return c.json({
-        success: false,
-        errorReason: error instanceof Error ? error.message : "Unknown error",
+      const facilitator = createRouterSettlementFacilitator({
+        signer: contracts.accounts.facilitator,
+        publicClient,
+        allowedRouters: {
+          "eip155:31337": [contracts.settlementRouter.address],
+        },
       });
+
+      const paymentPayload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString());
+      const salt = generateSalt();
+      const paymentRequirements = {
+        accepts: [
+          {
+            scheme: "exact" as const,
+            network: "eip155:31337",
+            amount: TEST_CONFIG.price,
+            asset: contracts.token.address,
+            maxTimeoutSeconds: TEST_CONFIG.maxTimeoutSeconds,
+            extensions: createExtensionDeclaration({
+              settlementRouter: contracts.settlementRouter.address,
+              hook: contracts.transferHook.address,
+              hookData: "0x",
+              finalPayTo: contracts.accounts.merchant,
+              facilitatorFee: TEST_CONFIG.facilitatorFee,
+              salt,
+            }),
+          },
+        ],
+        extensions: {
+          [ROUTER_SETTLEMENT_KEY]: createRouterSettlementExtension({
+            settlementRouter: contracts.settlementRouter.address,
+            hook: contracts.transferHook.address,
+            hookData: "0x",
+            finalPayTo: contracts.accounts.merchant,
+            facilitatorFee: TEST_CONFIG.facilitatorFee,
+            salt,
+          }),
+        },
+      };
+
+      await facilitator.settle(paymentPayload, paymentRequirements);
+
+      // Return echo of extensions data
+      return c.json({
+        success: true,
+        echoedExtensions: paymentRequirements.extensions,
+      });
+    } catch (error) {
+      console.error("[E2E] Settlement error:", error);
+      return c.json({ success: false, error: (error as Error).message }, 402);
     }
   });
 
