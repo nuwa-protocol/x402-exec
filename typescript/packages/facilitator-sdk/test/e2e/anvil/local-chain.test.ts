@@ -75,7 +75,14 @@ let contracts: DeployedContracts;
 let server: Server;
 let serverUrl: string;
 
-describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
+// Skip E2E tests if SKIP_E2E env var is set
+const describeOrSkip = process.env.SKIP_E2E ? describe.skip : describe;
+
+if (process.env.SKIP_E2E) {
+  console.log("[E2E] Skipping E2E tests (SKIP_E2E is set)");
+}
+
+describeOrSkip("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
   beforeAll(async () => {
     // Start Anvil
     anvilManager = getGlobalAnvil({

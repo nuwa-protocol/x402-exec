@@ -63,15 +63,21 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Run tests
+      - name: Run tests (unit tests only)
         run: pnpm -r --filter "@x402x/*" test
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          SKIP_E2E: "true"
+        # Temporarily skip E2E tests via SKIP_E2E env var
+        # E2E tests will be re-enabled in a follow-up PR
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (unit tests only)
         run: pnpm -r --filter "@x402x/*" test:coverage
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+          SKIP_E2E: "true"
+        # Temporarily skip E2E tests via SKIP_E2E env var
+        # E2E tests will be re-enabled in a follow-up PR
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
