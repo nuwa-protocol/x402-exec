@@ -30,9 +30,11 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import fetch from "node-fetch";
 
 // @x402 official packages
-import { x402Client, wrapFetchWithPayment } from "@x402/core/client";
+import { x402Client } from "@x402/core/client";
+import { wrapFetchWithPayment } from "@x402/fetch";
 
 // @x402x packages
 import {
@@ -47,6 +49,11 @@ import { createRouterSettlementFacilitator } from "@x402x/facilitator-sdk";
 // Test utilities
 import { AnvilManager, getGlobalAnvil, stopGlobalAnvil } from "./anvil-manager.js";
 import { deployTestContracts, type DeployedContracts } from "./contracts.js";
+
+// Polyfill global fetch for Node.js environment (required by @x402/fetch)
+if (!globalThis.fetch) {
+  globalThis.fetch = fetch as any;
+}
 
 /**
  * Test configuration
@@ -185,7 +192,7 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
       );
 
       // Wrap fetch with payment handling
-      const fetchWithPayment = wrapFetchWithPayment(client, fetch);
+      const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
       // Step 3: Request with payment headers
       const response2 = await fetchWithPayment(`${serverUrl}/api/protected`, {
@@ -265,7 +272,7 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
         new ExactEvmSchemeWithRouterSettlement(walletClient)
       );
 
-      const fetchWithPayment = wrapFetchWithPayment(client, fetch);
+      const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
       // Get initial pending fees before this test
       const publicClient = createPublicClient({
@@ -340,7 +347,7 @@ describe("E2E: Local Chain (Anvil) - Router Settlement Flow", () => {
         new ExactEvmSchemeWithRouterSettlement(walletClient)
       );
 
-      const fetchWithPayment = wrapFetchWithPayment(client, fetch);
+      const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
       // Request to extensions echo endpoint
       const response = await fetchWithPayment(`${serverUrl}/api/extensions-echo`, {

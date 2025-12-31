@@ -414,6 +414,9 @@ importers:
       '@x402/evm':
         specifier: 2.1.0
         version: 2.1.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@x402/fetch':
+        specifier: ^2.1.0
+        version: 2.1.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@x402x/extensions':
         specifier: workspace:*
         version: link:../extensions

@@ -40,6 +40,7 @@
   "dependencies": {
     "@x402/core": "2.1.0",
     "@x402/evm": "2.1.0",
+    "@x402/fetch": "^2.1.0",
     "@x402x/extensions": "workspace:*",
     "viem": "2.40.3"
   },
