@@ -9,12 +9,6 @@ dist/
 coverage/
 web/frontend/.claude
 
-# Prevent pnpm-lock.yaml in workspace packages (should only be in root)
-# Exception: web/frontend has its own lock file (uses --ignore-workspace)
-typescript/packages/*/pnpm-lock.yaml
-facilitator/pnpm-lock.yaml
-examples/**/pnpm-lock.yaml
-apps/*/pnpm-lock.yaml
 .vercel
 .pnpm-store
 operation/
