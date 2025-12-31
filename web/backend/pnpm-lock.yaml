@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  viem: 2.40.3
-  wagmi: 2.19.5
+  '@types/react': ^19.1.16
+  '@types/react-dom': ^19.1.9
 
 importers:
 
