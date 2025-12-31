@@ -27,3 +27,5 @@ Thumbs.db
 # Testing
 gas-report.txt
 *.log
+*.lcov
+lcov.info
