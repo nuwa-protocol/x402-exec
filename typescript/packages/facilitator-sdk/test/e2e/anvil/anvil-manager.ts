@@ -79,9 +79,12 @@ export class AnvilManager {
       this.options.port.toString(),
       "--chain-id",
       this.options.chainId.toString(),
-      "--block-time",
-      this.options.blockTime.toString(),
     ];
+
+    // Only add --block-time if > 0 (Anvil requires block-time >= 1)
+    if (this.options.blockTime > 0) {
+      args.push("--block-time", this.options.blockTime.toString());
+    }
 
     if (this.options.forkUrl) {
       args.push("--fork-url", this.options.forkUrl);

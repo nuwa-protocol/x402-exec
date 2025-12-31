@@ -28,8 +28,8 @@ import {
   http,
   type Address,
   type Hex,
-  privateKeyToAccount,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 // @x402 official packages
 import { x402Client, wrapFetchWithPayment } from "@x402/core/client";

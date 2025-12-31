@@ -48,7 +48,7 @@ jobs:
 
       - name: Generate contract coverage
         working-directory: contracts
-        run: forge coverage --report lcov
+        run: forge coverage --report lcov --ir-minimum
         continue-on-error: true
 
       - name: Upload contract coverage
