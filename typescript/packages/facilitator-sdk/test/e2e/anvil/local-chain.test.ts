@@ -423,12 +423,18 @@ async function createTestServer(rpcUrl: string): Promise<void> {
         },
       };
 
+      console.log("[E2E] No payment header - returning 402");
       // Return 402 Payment Required with Payment-Response header
+      // Base64 encode the requirements for the header
+      const requirementsJson = JSON.stringify(requirements);
+      const requirementsB64 = Buffer.from(requirementsJson).toString('base64');
+      c.header('Payment-Response', requirementsB64);
       return c.json(requirements, 402);
     }
 
     // Payment provided - settle and verify
     try {
+      console.log("[E2E] Payment header received, processing settlement...");
       const facilitator = createRouterSettlementFacilitator({
         signer: contracts.accounts.facilitator,
         publicClient,
@@ -438,7 +444,9 @@ async function createTestServer(rpcUrl: string): Promise<void> {
       });
 
       // Decode payment header
+      console.log("[E2E] Decoding payment payload...");
       const paymentPayload = JSON.parse(Buffer.from(paymentHeader, 'base64').toString());
+      console.log("[E2E] Payment payload decoded:", JSON.stringify(paymentPayload).slice(0, 200));
 
       // Get requirements from query/body for settlement
       const salt = generateSalt();
