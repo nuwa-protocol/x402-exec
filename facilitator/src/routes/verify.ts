@@ -3,11 +3,10 @@
  *
  * Provides verification endpoints for x402 payment payloads:
  * - GET /verify: Endpoint information
- * - POST /verify: Verify payment payload (supports both v1 and v2)
+ * - POST /verify: Verify payment payload (v2-only)
  *
- * Routes requests to appropriate implementation based on x402Version:
- * - v1: Uses legacy x402/facilitator implementation
- * - v2: Uses @x402x/facilitator-sdk with SettlementRouter
+ * v1 is deprecated - only x402Version=2 is supported.
+ * Routes requests to v2 implementation using @x402x/facilitator-sdk with SettlementRouter.
  */
 
 import { Router, Request, Response } from "express";
@@ -83,19 +82,20 @@ export function createVerifyRoutes(
   router.get("/verify", (req: Request, res: Response) => {
     res.json({
       endpoint: "/verify",
-      description: "POST to verify x402 payments (supports both v1 and v2)",
-      supportedVersions: deps.enableV2 ? [1, 2] : [1],
-      versionDetection: "Determined by x402Version field (defaults to 1)",
+      description: "POST to verify x402 payments (v2-only)",
+      supportedVersions: [2],
+      versionDetection: "x402Version field is required and must be 2",
+      deprecationNotice: "v1 is deprecated - please use x402Version=2",
       body: {
-        paymentPayload: "PaymentPayload (with optional x402Version)",
+        paymentPayload: "PaymentPayload (with x402Version=2)",
         paymentRequirements: "PaymentRequirements",
-        x402Version: "number (optional, defaults to 1)",
+        x402Version: "number (required, must be 2)",
       },
     });
   });
 
   /**
-   * POST /verify - Verify x402 payment payload (supports both v1 and v2)
+   * POST /verify - Verify x402 payment payload (v2-only)
    */
   const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
   if (hookValidation) middlewares.push(hookValidation);

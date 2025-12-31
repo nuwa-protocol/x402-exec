@@ -3,11 +3,10 @@
  *
  * Provides settlement endpoints for x402 payments:
  * - GET /settle: Endpoint information
- * - POST /settle: Settle payment (supports both v1 and v2)
+ * - POST /settle: Settle payment (v2-only)
  *
- * Routes requests to appropriate implementation based on x402Version:
- * - v1: Uses legacy x402/facilitator implementation with SettlementRouter support
- * - v2: Uses @x402x/facilitator-sdk with SettlementRouter
+ * v1 is deprecated - only x402Version=2 is supported.
+ * Routes requests to v2 implementation using @x402x/facilitator-sdk with SettlementRouter.
  */
 
 import { Router, Request, Response } from "express";
@@ -91,22 +90,21 @@ export function createSettleRoutes(
   router.get("/settle", (req: Request, res: Response) => {
     res.json({
       endpoint: "/settle",
-      description: "POST to settle x402 payments (supports both v1 and v2)",
-      supportedVersions: deps.enableV2 ? [1, 2] : [1],
-      versionDetection: "Determined by x402Version field (defaults to 1)",
-      supportedModes: deps.enableV2
-        ? ["v1_standard", "v1_settlementRouter", "v2_router"]
-        : ["v1_standard", "v1_settlementRouter"],
+      description: "POST to settle x402 payments (v2-only)",
+      supportedVersions: [2],
+      versionDetection: "x402Version field is required and must be 2",
+      supportedModes: ["v2_router"],
+      deprecationNotice: "v1 is deprecated - please use x402Version=2",
       body: {
-        paymentPayload: "PaymentPayload (with optional x402Version)",
+        paymentPayload: "PaymentPayload (with x402Version=2)",
         paymentRequirements: "PaymentRequirements",
-        x402Version: "number (optional, defaults to 1)",
+        x402Version: "number (required, must be 2)",
       },
     });
   });
 
   /**
-   * POST /settle - Settle x402 payment (supports both v1 and v2)
+   * POST /settle - Settle x402 payment (v2-only)
    */
   const middlewares: Array<RequestHandler | RateLimitRequestHandler> = [rateLimiter];
   if (hookValidation) middlewares.push(hookValidation);

@@ -1,8 +1,8 @@
 /**
  * Version Dispatcher for x402 Facilitator
  *
- * Handles routing between v1 and v2 x402 implementations based on x402Version
- * and network format detection.
+ * v1 is deprecated - only x402Version=2 is supported.
+ * All requests are routed to v2 implementation.
  */
 
 /// <reference path="./types.d.ts" />
@@ -81,22 +81,21 @@ export class VersionDispatcher {
   }
 
   /**
-   * Verify payment using appropriate version implementation
+   * Verify payment using v2 implementation
+   *
+   * v1 is deprecated - only v2 is supported.
    */
   async verify(request: VerifyRequest): Promise<VerifyResponse> {
     const startTime = Date.now();
     const { paymentPayload, paymentRequirements } = request;
 
     try {
-      // Determine version
+      // Determine version (must be 2)
       const version = determineX402Version(paymentPayload, request);
 
-      // Check if version is supported
+      // Check if version is supported (v2 must be enabled)
       if (!isVersionSupported(version)) {
-        const error =
-          version === 2
-            ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
-            : `Unsupported x402Version: ${version}`;
+        const error = "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable.";
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.verify.version_not_supported", 1, { version: String(version) });
@@ -110,21 +109,9 @@ export class VersionDispatcher {
       // Canonicalize network for internal use
       const canonicalNetwork = getCanonicalNetwork(paymentRequirements.network);
 
-      // Route to appropriate implementation
-      let result: VerifyResponse;
-      let mode: "v1_standard" | "v1_settlementRouter" | "v2_router";
-
-      if (version === 1) {
-        // V1 implementation - detect SettlementRouter mode
-        const isSettlementRouterMode = this.isV1SettlementRouterMode(paymentRequirements);
-        mode = isSettlementRouterMode ? "v1_settlementRouter" : "v1_standard";
-
-        result = await this.verifyV1(paymentPayload, paymentRequirements);
-      } else {
-        // V2 implementation - always uses router settlement
-        mode = "v2_router";
-        result = await this.verifyV2(paymentPayload, paymentRequirements as any);
-      }
+      // V2 implementation - always uses router settlement
+      const mode = "v2_router";
+      const result = await this.verifyV2(paymentPayload, paymentRequirements as any);
 
       // Record metrics
       const duration = Date.now() - startTime;
@@ -169,22 +156,21 @@ export class VersionDispatcher {
   }
 
   /**
-   * Settle payment using appropriate version implementation
+   * Settle payment using v2 implementation
+   *
+   * v1 is deprecated - only v2 is supported.
    */
   async settle(request: SettleRequest): Promise<SettleResponse> {
     const startTime = Date.now();
     const { paymentPayload, paymentRequirements } = request;
 
     try {
-      // Determine version
+      // Determine version (must be 2)
       const version = determineX402Version(paymentPayload, request);
 
-      // Check if version is supported
+      // Check if version is supported (v2 must be enabled)
       if (!isVersionSupported(version)) {
-        const error =
-          version === 2
-            ? "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable."
-            : `Unsupported x402Version: ${version}`;
+        const error = "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable.";
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.settle.version_not_supported", 1, { version: String(version) });
@@ -195,26 +181,14 @@ export class VersionDispatcher {
       // Canonicalize network for internal use
       const canonicalNetwork = getCanonicalNetwork(paymentRequirements.network);
 
-      // Route to appropriate implementation
-      let result: SettleResponse;
-      let mode: "v1_standard" | "v1_settlementRouter" | "v2_router";
-
-      if (version === 1) {
-        // V1 implementation - detect SettlementRouter mode
-        const isSettlementRouterMode = this.isV1SettlementRouterMode(paymentRequirements);
-        mode = isSettlementRouterMode ? "v1_settlementRouter" : "v1_standard";
-
-        result = await this.settleV1(paymentPayload, paymentRequirements);
-      } else {
-        // V2 implementation - always uses router settlement
-        mode = "v2_router";
-        // paymentRequirements is validated earlier, but its static type includes v1 shapes.
-        // Cast via unknown to avoid structural mismatch errors.
-        result = await this.settleV2(
-          paymentPayload,
-          paymentRequirements as unknown as V2PaymentRequirements,
-        );
-      }
+      // V2 implementation - always uses router settlement
+      const mode = "v2_router";
+      // paymentRequirements is validated earlier, but its static type includes v1 shapes.
+      // Cast via unknown to avoid structural mismatch errors.
+      const result = await this.settleV2(
+        paymentPayload,
+        paymentRequirements as unknown as V2PaymentRequirements,
+      );
 
       // Record metrics
       const duration = Date.now() - startTime;

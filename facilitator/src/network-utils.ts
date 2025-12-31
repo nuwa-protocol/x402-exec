@@ -134,19 +134,35 @@ export function validateNetwork(network: string): CanonicalNetwork {
 /**
  * Determine x402 version from request data
  *
- * @param paymentPayload - Payment payload containing optional x402Version
- * @param body - Request body containing optional x402Version
- * @returns The x402 version number (1 or 2)
+ * v1 is deprecated - this function now only accepts x402Version=2.
+ *
+ * @param paymentPayload - Payment payload containing x402Version
+ * @param body - Request body containing x402Version
+ * @returns The x402 version number (must be 2)
+ * @throws {Error} If x402Version is missing or not 2
  */
 export function determineX402Version(
   paymentPayload?: { x402Version?: number },
   body?: { x402Version?: number },
 ): number {
-  // Priority: paymentPayload.x402Version > body.x402Version > default to 1
-  const version = paymentPayload?.x402Version ?? body?.x402Version ?? 1;
+  // Priority: paymentPayload.x402Version > body.x402Version
+  const version = paymentPayload?.x402Version ?? body?.x402Version;
 
-  if (version !== 1 && version !== 2) {
-    throw new Error(`Invalid x402Version: ${version}. Only versions 1 and 2 are supported.`);
+  // Require x402Version to be present (v2 requirement)
+  if (version === undefined) {
+    throw new Error(
+      "x402Version is required. v1 is deprecated - please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+    );
+  }
+
+  // Only version 2 is supported (v1 is deprecated)
+  if (version !== 2) {
+    throw new Error(
+      `Version not supported: x402Version ${version} is deprecated. ` +
+        "Please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+    );
   }
 
   return version;
@@ -154,15 +170,14 @@ export function determineX402Version(
 
 /**
  * Check if v2 features are enabled and version is supported
+ *
+ * v1 is deprecated - only version 2 is supported.
  */
 export function isVersionSupported(version: number): boolean {
-  if (version === 1) {
-    return true; // v1 is always supported
-  }
-
   if (version === 2) {
     return FACILITATOR_ENABLE_V2;
   }
 
+  // v1 is deprecated and no longer supported
   return false;
 }

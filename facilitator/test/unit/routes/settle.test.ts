@@ -65,13 +65,14 @@ describe("routes/settle", () => {
   });
 
   describe("GET /settle", () => {
-    it("should return endpoint information", async () => {
+    it("should return endpoint information (v2-only)", async () => {
       const response = await request(app).get("/settle");
 
       expect(response.status).toBe(200);
       expect(response.body.endpoint).toBe("/settle");
-      expect(response.body.supportedModes).toContain("v1_standard");
-      expect(response.body.supportedModes).toContain("v1_settlementRouter");
+      expect(response.body.supportedVersions).toEqual([2]);
+      expect(response.body.supportedModes).toEqual(["v2_router"]);
+      expect(response.body.deprecationNotice).toContain("v1 is deprecated");
     });
   });
 

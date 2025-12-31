@@ -2,8 +2,9 @@
  * Supported Payment Kinds Routes
  *
  * Provides endpoint to list supported payment kinds:
- * - GET /supported: List all supported payment kinds
- * 
+ * - GET /supported: List all supported payment kinds (v2-only)
+ *
+ * v1 is deprecated - only v2 payment kinds are returned.
  * Only advertises networks that are actually usable (have RPC URL and at least one allowed router).
  * This prevents resource servers from failing initialization due to missing facilitator support.
  */
@@ -83,23 +84,13 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
   const router = Router();
 
   /**
-   * GET /supported - Returns supported payment kinds
-   * Supports ?x402Version=1|2 query parameter for filtering
-   * 
+   * GET /supported - Returns supported payment kinds (v2-only)
+   *
+   * v1 is deprecated - only returns v2 kinds.
    * Only advertises networks that are properly configured (have pool + routers + RPC).
    */
   router.get("/supported", async (req: Request, res: Response) => {
     const kinds: SupportedPaymentKind[] = [];
-
-    // Parse optional version filter from query parameter with validation
-    let versionFilter: number | undefined;
-    const rawVersionFilter = req.query.x402Version;
-    if (typeof rawVersionFilter === "string") {
-      const parsed = Number.parseInt(rawVersionFilter, 10);
-      if (!Number.isNaN(parsed)) {
-        versionFilter = parsed;
-      }
-    }
 
     // Get initialized networks from PoolManager (source of truth)
     const supportedNetworks = deps.poolManager.getSupportedNetworks();
@@ -121,21 +112,9 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
     // Check if v2 is available for advertisement
     const v2Available = !!(deps.enableV2 && (deps.v2Signer || deps.v2PrivateKey));
 
-    // Generate v1 kinds with human-readable network names
-    // (unless filtered to v2 only)
-    if (!versionFilter || versionFilter === 1) {
-      for (const { humanReadable } of readyNetworks) {
-        kinds.push({
-          x402Version: 1,
-          scheme: "exact",
-          network: humanReadable as any, // Type assertion for dynamic network names
-        });
-      }
-    }
-
-    // Generate v2 kinds with CAIP-2 canonical network names
-    // (if v2 available and not filtered to v1 only)
-    if (v2Available && (!versionFilter || versionFilter === 2)) {
+    // Only generate v2 kinds with CAIP-2 canonical network names
+    // v1 is deprecated and no longer returned
+    if (v2Available) {
       for (const { canonical } of readyNetworks) {
         kinds.push({
           x402Version: 2,

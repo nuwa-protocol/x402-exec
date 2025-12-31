@@ -2,7 +2,7 @@
  * Validation Helpers for Routes
  *
  * Provides basic structure validation for payment payloads and requirements.
- * Detailed validation is handled by the VersionDispatcher.
+ * v1 is deprecated - only x402Version=2 is supported.
  */
 
 import type { PaymentRequirements, PaymentPayload } from "x402/types";
@@ -27,30 +27,40 @@ export function validateBasicStructure<T>(data: unknown, fieldName: string): T {
 }
 
 /**
- * Validate x402Version if present (1 or 2)
+ * Validate x402Version (v2-only - must be exactly 2)
  *
- * @param version - The x402 version to validate (should be number or undefined)
- * @throws {Error} If version is not a number, not 1 or 2
+ * v1 has been deprecated. All requests must include x402Version=2.
+ *
+ * @param version - The x402 version to validate (should be number)
+ * @throws {Error} If version is missing, not a number, or not 2
  */
 export function validateX402Version(version?: unknown): void {
-  // Skip validation if undefined (will default to 1 elsewhere)
-  if (version === undefined) {
-    return;
-  }
-
-  // Type check: ensure version is a number
-  if (typeof version !== "number") {
+  // Require x402Version to be present (v2 requirement)
+  if (version === undefined || version === null) {
     const error = new Error(
-      `Invalid x402Version: expected number, got ${typeof version}. Only versions 1 and 2 are supported.`,
+      "x402Version is required. v1 is deprecated - please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
     );
     error.name = "ValidationError";
     throw error;
   }
 
-  // Value check: ensure version is 1 or 2
-  if (version !== 1 && version !== 2) {
+  // Type check: ensure version is a number
+  if (typeof version !== "number") {
     const error = new Error(
-      `Invalid x402Version: ${version}. Only versions 1 and 2 are supported.`,
+      `Invalid x402Version: expected number, got ${typeof version}. ` +
+        "v1 is deprecated - please use x402Version=2.",
+    );
+    error.name = "ValidationError";
+    throw error;
+  }
+
+  // Value check: ensure version is exactly 2 (v1 is deprecated)
+  if (version !== 2) {
+    const error = new Error(
+      `Version not supported: x402Version ${version} is deprecated. ` +
+        "Please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
     );
     error.name = "ValidationError";
     throw error;

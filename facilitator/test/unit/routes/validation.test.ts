@@ -69,52 +69,62 @@ describe("validateBasicStructure", () => {
   });
 });
 
-describe("validateX402Version", () => {
-  it("should accept version 1", () => {
-    expect(() => validateX402Version(1)).not.toThrow();
-  });
-
+describe("validateX402Version (v2-only)", () => {
   it("should accept version 2", () => {
     expect(() => validateX402Version(2)).not.toThrow();
   });
 
-  it("should accept undefined (defaults to 1 elsewhere)", () => {
-    expect(() => validateX402Version(undefined)).not.toThrow();
+  it("should reject undefined (v2 requirement)", () => {
+    expect(() => validateX402Version(undefined)).toThrow(
+      "x402Version is required. v1 is deprecated - please use x402Version=2",
+    );
+  });
+
+  it("should reject null", () => {
+    expect(() => validateX402Version(null as unknown)).toThrow(
+      "x402Version is required. v1 is deprecated - please use x402Version=2",
+    );
+  });
+
+  it("should reject version 1 (deprecated)", () => {
+    expect(() => validateX402Version(1)).toThrow(
+      "Version not supported: x402Version 1 is deprecated. Please use x402Version=2.",
+    );
   });
 
   it("should reject version 0", () => {
     expect(() => validateX402Version(0)).toThrow(
-      "Invalid x402Version: 0. Only versions 1 and 2 are supported.",
+      "Version not supported: x402Version 0 is deprecated. Please use x402Version=2.",
     );
   });
 
   it("should reject version 3", () => {
     expect(() => validateX402Version(3)).toThrow(
-      "Invalid x402Version: 3. Only versions 1 and 2 are supported.",
+      "Version not supported: x402Version 3 is deprecated. Please use x402Version=2.",
     );
   });
 
   it("should reject version 10", () => {
     expect(() => validateX402Version(10)).toThrow(
-      "Invalid x402Version: 10. Only versions 1 and 2 are supported.",
+      "Version not supported: x402Version 10 is deprecated. Please use x402Version=2.",
     );
   });
 
   it("should reject negative versions", () => {
     expect(() => validateX402Version(-1)).toThrow(
-      "Invalid x402Version: -1. Only versions 1 and 2 are supported.",
+      "Version not supported: x402Version -1 is deprecated. Please use x402Version=2.",
     );
   });
 
   it("should reject fractional versions", () => {
     expect(() => validateX402Version(1.5)).toThrow(
-      "Invalid x402Version: 1.5. Only versions 1 and 2 are supported.",
+      "Version not supported: x402Version 1.5 is deprecated. Please use x402Version=2.",
     );
   });
 
   it("should set ValidationError name on thrown error", () => {
     try {
-      validateX402Version(0);
+      validateX402Version(1);
       vi.fail("Expected error to be thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
@@ -139,15 +149,21 @@ describe("validateX402Version", () => {
     expect(() => validateX402Version({} as unknown)).toThrow(/expected number, got object/);
   });
 
-  it("should reject null", () => {
-    expect(() => validateX402Version(null as unknown)).toThrow(/expected number, got object/);
-  });
-
   it("should reject boolean true", () => {
     expect(() => validateX402Version(true as unknown)).toThrow(/expected number, got boolean/);
   });
 
   it("should reject array", () => {
     expect(() => validateX402Version([1] as unknown)).toThrow(/expected number, got object/);
+  });
+
+  it("error messages should include migration guide link", () => {
+    try {
+      validateX402Version(1);
+      vi.fail("Expected error to be thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("https://github.com/nuwa-protocol/x402-exec");
+    }
   });
 });
