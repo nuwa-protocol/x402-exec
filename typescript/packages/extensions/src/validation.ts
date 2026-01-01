@@ -6,6 +6,63 @@ import type { SettlementExtra } from "./types.js";
 import { SettlementExtraError } from "./types.js";
 
 /**
+ * Validate x402 version (v2-only, v1 is deprecated)
+ *
+ * This function ensures that only x402 v2 requests are accepted.
+ * v1 is explicitly deprecated, and future versions (v3+) are not yet supported.
+ *
+ * @param version - x402 version number from payment payload
+ * @throws {Error} If version is missing, not a number, or not supported
+ *
+ * @example
+ * ```typescript
+ * validateX402Version(2); // OK - passes silently
+ * validateX402Version(1); // Throws: "x402Version 1 is deprecated..."
+ * validateX402Version(3); // Throws: "x402Version 3 is not supported..."
+ * validateX402Version(undefined); // Throws: "x402Version is required..."
+ * ```
+ */
+export function validateX402Version(version?: unknown): void {
+  // Fast path: only version 2 is currently supported
+  if (typeof version === "number" && version === 2) {
+    return;
+  }
+
+  // Base error message for guidance
+  const baseMessage =
+    "x402Version is required and must be 2. v1 is deprecated - please use x402Version=2. " +
+    "See https://github.com/nuwa-protocol/x402-exec for migration guide.";
+
+  // Check for missing version
+  if (version === undefined || version === null) {
+    throw new Error(baseMessage);
+  }
+
+  // Check for invalid type
+  if (typeof version !== "number") {
+    throw new Error(
+      `Invalid x402Version: expected number, got ${typeof version}. ${baseMessage}`,
+    );
+  }
+
+  // At this point, version is a number but not the supported one
+  // Distinguish between deprecated (v1) and unsupported versions (v3+)
+  if (version === 1) {
+    throw new Error(
+      "x402Version 1 is deprecated. Please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+    );
+  }
+
+  // Any other version is not yet supported (not deprecated, just unsupported)
+  throw new Error(
+    `Version not supported: x402Version ${version} is not supported. ` +
+      "Please use x402Version=2. " +
+      "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+  );
+}
+
+/**
  * Validation result
  */
 export interface ValidationResult {

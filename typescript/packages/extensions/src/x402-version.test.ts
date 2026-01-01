@@ -107,7 +107,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeVerifyCallback!(context)).rejects.toThrow(
-        "Version not supported: x402Version 3 is deprecated",
+        "Version not supported: x402Version 3 is not supported",
       );
     });
 

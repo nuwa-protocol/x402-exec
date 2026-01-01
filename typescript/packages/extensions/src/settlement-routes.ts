@@ -18,6 +18,7 @@ import { TransferHook } from "./hooks/index.js";
 import { getNetworkConfig } from "./networks.js";
 import { createExtensionDeclaration } from "./server-extension.js";
 import { ROUTER_SETTLEMENT_KEY } from "./server-extension.js";
+import { validateX402Version } from "./validation.js";
 
 /**
  * Default facilitator URL
@@ -104,33 +105,6 @@ export interface SettlementHooksConfig {
   enableSaltExtraction?: boolean;
   /** Whether to validate settlement router parameters */
   validateSettlementParams?: boolean;
-}
-
-/**
- * Validate x402 version (v2-only, v1 is deprecated)
- *
- * @param version - x402 version number
- * @throws {Error} If version is missing or not 2
- */
-function validateX402Version(version?: unknown): void {
-  if (version === undefined || version === null) {
-    throw new Error(
-      "x402Version is required. v1 is deprecated - please use x402Version=2. " +
-        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
-    );
-  }
-
-  if (typeof version !== "number") {
-    throw new Error(`Invalid x402Version: expected number, got ${typeof version}.`);
-  }
-
-  if (version !== 2) {
-    throw new Error(
-      `Version not supported: x402Version ${version} is deprecated. ` +
-        "Please use x402Version=2. " +
-        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
-    );
-  }
 }
 
 /**
