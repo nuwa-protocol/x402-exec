@@ -7,7 +7,6 @@
 
 /// <reference path="./types.d.ts" />
 
-import { verify as v1Verify, settle as v1Settle } from "x402/facilitator";
 import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
 import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/extensions";
 import type { VerifyResponse, SettleResponse } from "x402/types";
@@ -15,7 +14,6 @@ import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
 import type { PoolManager } from "./pool-manager.js";
 import type { BalanceChecker } from "./balance-check.js";
 import { determineX402Version, isVersionSupported, getCanonicalNetwork } from "./network-utils.js";
-import { settleWithRouter } from "./settlement.js";
 
 const logger = getLogger();
 
@@ -230,33 +228,6 @@ export class VersionDispatcher {
     }
   }
 
-  /**
-   * V1 verification implementation
-   */
-  private async verifyV1(
-    paymentPayload: PaymentPayload,
-    paymentRequirements: PaymentRequirements,
-  ): Promise<VerifyResponse> {
-    // Create client (same as current v1 implementation)
-    const { evm } = await import("x402/types");
-    const { createPublicClient, http, publicActions } = await import("viem");
-
-    // Type assertion for dynamic import - SupportedEVMNetworks exists on evm module
-    if (!(evm as any).SupportedEVMNetworks?.includes(paymentRequirements.network)) {
-      throw new Error("Invalid network. Only EVM networks are supported.");
-    }
-
-    const chain = evm.getChainFromNetwork(paymentRequirements.network);
-    const rpcUrl =
-      this.config.rpcUrls?.[paymentRequirements.network] || chain.rpcUrls?.default?.http?.[0];
-    const client = createPublicClient({
-      chain,
-      transport: http(rpcUrl),
-    }).extend(publicActions);
-
-    // Verify using v1 implementation
-    return v1Verify(client, paymentPayload, paymentRequirements, this.deps.x402Config);
-  }
 
   /**
    * V2 verification implementation
@@ -290,57 +261,6 @@ export class VersionDispatcher {
     };
   }
 
-  /**
-   * V1 settlement implementation
-   */
-  private async settleV1(
-    paymentPayload: PaymentPayload,
-    paymentRequirements: PaymentRequirements,
-  ): Promise<SettleResponse> {
-    // Get account pool for v1 settlement
-    const accountPool = this.deps.poolManager.getPool(paymentRequirements.network);
-    if (!accountPool) {
-      throw new Error(`No account pool available for network: ${paymentRequirements.network}`);
-    }
-
-    // Extract payer address for duplicate detection
-    let payerAddress: string | undefined;
-    if (
-      paymentPayload.payload &&
-      typeof paymentPayload.payload === "object" &&
-      "authorization" in paymentPayload.payload &&
-      paymentPayload.payload.authorization &&
-      typeof paymentPayload.payload.authorization === "object" &&
-      "from" in paymentPayload.payload.authorization
-    ) {
-      payerAddress = (paymentPayload.payload.authorization as { from: string }).from;
-    }
-
-    // Execute in account pool
-    return accountPool.execute(async (signer) => {
-      if (this.isV1SettlementRouterMode(paymentRequirements)) {
-        // SettlementRouter mode for v1
-        const response = await settleWithRouter(
-          signer,
-          paymentPayload,
-          paymentRequirements,
-          this.deps.allowedSettlementRouters || {},
-        );
-
-        // Return standard format - type assertion for v2 -> v1 response conversion
-        return {
-          success: response.success,
-          transaction: response.transaction,
-          network: response.network as any,
-          payer: response.payer,
-          errorReason: response.errorReason as any,
-        } as SettleResponse;
-      } else {
-        // Standard mode for v1
-        return v1Settle(signer, paymentPayload, paymentRequirements, this.deps.x402Config);
-      }
-    }, payerAddress);
-  }
 
   /**
    * V2 settlement implementation
@@ -412,12 +332,6 @@ export class VersionDispatcher {
     }, payerAddress);
   }
 
-  /**
-   * Check if v1 payment requirements indicate SettlementRouter mode
-   */
-  private isV1SettlementRouterMode(paymentRequirements: PaymentRequirements): boolean {
-    return !!paymentRequirements.extra?.settlementRouter;
-  }
 }
 
 /**

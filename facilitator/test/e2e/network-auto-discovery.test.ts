@@ -79,6 +79,10 @@ describe("Network Auto Discovery E2E", () => {
       evmAccountCount: 1,
       tokenCache: undefined,
       balanceChecker: undefined,
+      // v1 is deprecated - enable v2 for /supported endpoint
+      enableV2: true,
+      v2Signer: "0xfacilitator",
+      v2PrivateKey: process.env.EVM_PRIVATE_KEY,
       // /supported filters out networks without router config, so provide router entries for all canonical networks
       allowedSettlementRouters: {
         "eip155:8453": ["0x0000000000000000000000000000000000000001"],
@@ -280,17 +284,22 @@ describe("Network Auto Discovery E2E", () => {
       const response = await request(app).get("/supported").expect(200);
 
       expect(response.body).toHaveProperty("kinds");
-      // All networks are EVM networks, so we can directly map to network names
+      // v1 is deprecated - endpoint now returns only v2 kinds with CAIP-2 network identifiers
       const supportedNetworks = response.body.kinds.map((kind: any) => kind.network);
 
-      // Should include all networks from @x402x/core
-      expect(supportedNetworks).toContain("base");
-      expect(supportedNetworks).toContain("base-sepolia");
-      expect(supportedNetworks).toContain("x-layer");
-      expect(supportedNetworks).toContain("x-layer-testnet");
-      expect(supportedNetworks).toContain("bsc");
-      expect(supportedNetworks).toContain("bsc-testnet");
-      expect(supportedNetworks).toContain("skale-base-sepolia");
+      // Should include all networks from @x402x/core in CAIP-2 format
+      expect(supportedNetworks).toContain("eip155:8453"); // base
+      expect(supportedNetworks).toContain("eip155:84532"); // base-sepolia
+      expect(supportedNetworks).toContain("eip155:196"); // x-layer
+      expect(supportedNetworks).toContain("eip155:1952"); // x-layer-testnet
+      expect(supportedNetworks).toContain("eip155:56"); // bsc
+      expect(supportedNetworks).toContain("eip155:97"); // bsc-testnet
+      expect(supportedNetworks).toContain("eip155:324705682"); // skale-base-sepolia
+
+      // All kinds should have x402Version=2 (v1 is deprecated)
+      response.body.kinds.forEach((kind: any) => {
+        expect(kind.x402Version).toBe(2);
+      });
     });
   });
 

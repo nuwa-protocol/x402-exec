@@ -49,7 +49,8 @@ export function validateX402Version(version?: unknown): void {
   if (typeof version !== "number") {
     const error = new Error(
       `Invalid x402Version: expected number, got ${typeof version}. ` +
-        "v1 is deprecated - please use x402Version=2.",
+        "v1 is deprecated - please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
     );
     error.name = "ValidationError";
     throw error;
