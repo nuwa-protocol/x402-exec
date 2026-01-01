@@ -73,7 +73,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeVerifyCallback!(context)).rejects.toThrow(
-        "x402Version is required. v1 is deprecated - please use x402Version=2",
+        "x402Version is required and must be 2. v1 is deprecated - please use x402Version=2",
       );
     });
 
@@ -90,7 +90,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeVerifyCallback!(context)).rejects.toThrow(
-        "Version not supported: x402Version 1 is deprecated",
+        "x402Version 1 is deprecated",
       );
     });
 
@@ -141,7 +141,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeVerifyCallback!(context)).rejects.toThrow(
-        "x402Version is required. v1 is deprecated - please use x402Version=2",
+        "x402Version is required and must be 2. v1 is deprecated - please use x402Version=2",
       );
     });
   });
@@ -187,7 +187,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeSettleCallback!(context)).rejects.toThrow(
-        "x402Version is required. v1 is deprecated - please use x402Version=2",
+        "x402Version is required and must be 2. v1 is deprecated - please use x402Version=2",
       );
     });
 
@@ -204,7 +204,7 @@ describe("x402 version validation (v2-only)", () => {
       };
 
       await expect(onBeforeSettleCallback!(context)).rejects.toThrow(
-        "Version not supported: x402Version 1 is deprecated",
+        "x402Version 1 is deprecated",
       );
     });
   });
