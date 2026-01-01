@@ -2,18 +2,20 @@
  * Network configuration for x402x
  *
  * Contains deployed contract addresses and configuration for each supported network.
- * Reuses x402's network and default asset configuration for consistency.
+ * Reuses @x402x/extensions network and default asset configuration for consistency.
  */
 
-import { getDefaultAsset, getNetworkId } from "x402/shared";
-import type { Network } from "x402/types";
+import { getDefaultAsset, getNetworkId, NETWORK_ALIASES_V1_TO_V2 } from "@x402x/extensions";
+import type { Network } from "@x402x/extensions";
 import type { NetworkConfig } from "./types.js";
 
 /**
- * Helper to get default asset config from x402
+ * Helper to get default asset config from @x402x/extensions
  */
-function getDefaultAssetConfig(network: Network) {
-  const defaultAsset = getDefaultAsset(network);
+function getDefaultAssetConfig(network: string) {
+  // Convert v1 network name to v2 CAIP-2 format
+  const v2Network = NETWORK_ALIASES_V1_TO_V2[network] || network;
+  const defaultAsset = getDefaultAsset(v2Network);
   return {
     address: defaultAsset.address as string,
     decimals: defaultAsset.decimals,
@@ -27,12 +29,12 @@ function getDefaultAssetConfig(network: Network) {
 /**
  * Network configurations for all supported networks
  *
- * Uses x402's getNetworkId() and getDefaultAsset() to ensure consistency
- * with x402 protocol configuration.
+ * Uses @x402x/extensions' getNetworkId() and getDefaultAsset() to ensure consistency
+ * with x402 v2 protocol configuration.
  */
 export const networks: Record<string, NetworkConfig> = {
   "base-sepolia": {
-    chainId: getNetworkId("base-sepolia"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["base-sepolia"]),
     name: "Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://sepolia.basescan.org/address/",
@@ -54,7 +56,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "x-layer-testnet": {
-    chainId: getNetworkId("x-layer-testnet"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["x-layer-testnet"]),
     name: "X Layer Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer-test/address/",
@@ -76,7 +78,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "skale-base-sepolia": {
-    chainId: getNetworkId("skale-base-sepolia"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["skale-base-sepolia"]),
     name: "SKALE Base Sepolia",
     type: "testnet",
     addressExplorerBaseUrl: "https://base-sepolia-testnet-explorer.skalenodes.com/address/",
@@ -99,7 +101,7 @@ export const networks: Record<string, NetworkConfig> = {
   },
   // Mainnet configurations
   base: {
-    chainId: getNetworkId("base"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["base"]),
     name: "Base Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://basescan.org/address/",
@@ -121,7 +123,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "x-layer": {
-    chainId: getNetworkId("x-layer"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["x-layer"]),
     name: "X Layer Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://www.oklink.com/xlayer/address/",
@@ -143,7 +145,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   "bsc-testnet": {
-    chainId: getNetworkId("bsc-testnet"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["bsc-testnet"]),
     name: "BSC Testnet",
     type: "testnet",
     addressExplorerBaseUrl: "https://testnet.bscscan.com/address/",
@@ -165,7 +167,7 @@ export const networks: Record<string, NetworkConfig> = {
     },
   },
   bsc: {
-    chainId: getNetworkId("bsc"),
+    chainId: getNetworkId(NETWORK_ALIASES_V1_TO_V2["bsc"]),
     name: "BSC Mainnet",
     type: "mainnet",
     addressExplorerBaseUrl: "https://bscscan.com/address/",

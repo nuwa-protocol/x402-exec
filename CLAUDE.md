@@ -31,7 +31,6 @@ x402-exec/
 ├── web/
 │   ├── frontend/       # Explorer/scanner web UI
 │   └── backend/        # Web backend service
-├── deps/               # Git submodule for x402 upstream (avoid direct edits)
 └── docs/               # Architecture and integration docs
 ```
 
@@ -40,9 +39,6 @@ x402-exec/
 ### Setup (First Time)
 
 ```bash
-# Initialize git submodules (x402 upstream dependency)
-git submodule update --init --recursive
-
 # Install all workspace dependencies
 pnpm install
 
@@ -184,13 +180,11 @@ The codebase supports both x402 v1 (human-readable network names like `base-sepo
 
 ### Submodule Management
 
-- `deps/x402` is a git submodule - **do not edit directly**
-- Update via submodule bump, not direct modifications
-- `contracts/lib/` and `lib/` also contain submodules
+- `contracts/lib/` and `lib/` contain git submodules - **do not edit directly**
 
 ### x402 Dependency
 
-The workspace uses an npm alias to patch the official x402 package: `x402: "npm:@x402x/x402@^0.6.6-patch.7"`. This allows x402x extensions to work with official x402 v2 while maintaining backward compatibility.
+The workspace uses the official `@x402/*` v2 packages from npm. The `@x402x/extensions` package provides x402x-specific extensions and utilities built on top of `@x402/core`.
 
 ## Package Relationships
 

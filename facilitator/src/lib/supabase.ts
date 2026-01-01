@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getLogger } from "../telemetry.js";
-import { PaymentRequirements, SettleResponse } from "x402/types";
+import { PaymentRequirements, SettleResponse } from "@x402/core/types";
 
 const logger = getLogger();
 

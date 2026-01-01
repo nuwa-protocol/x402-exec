@@ -9,7 +9,7 @@
  * - Automatic network discovery
  */
 
-import { evm } from "x402/types";
+import { evm } from "@x402/core/types";
 import { getSupportedNetworkIds, getChain as getX402xChain } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;

@@ -5,7 +5,7 @@
  */
 
 import type { PoolManager } from "./pool-manager.js";
-import { isEvmSignerWallet } from "x402/types";
+import { isEvmSignerWallet } from "@x402/core/types";
 import { getLogger } from "./telemetry.js";
 import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";

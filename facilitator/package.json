@@ -53,6 +53,7 @@
     "@opentelemetry/sdk-node": "^0.52.0",
     "@opentelemetry/sdk-trace-node": "^1.25.0",
     "@opentelemetry/semantic-conventions": "^1.25.0",
+    "@x402/core": "2.1.0",
     "@x402x/core": "workspace:*",
     "@x402x/facilitator-sdk": "workspace:*",
     "@x402x/extensions": "workspace:*",
@@ -66,7 +67,6 @@
     "pino-http": "^10.2.0",
     "pino-pretty": "^11.2.2",
     "viem": "2.40.3",
-    "x402": "npm:@x402x/x402@^0.6.6-patch.7",
     "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {

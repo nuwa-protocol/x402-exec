@@ -7,10 +7,10 @@
  * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
-import { verify } from "x402/facilitator";
-import { evm } from "x402/types";
-import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "x402/types";
-import { isEvmSignerWallet } from "x402/types";
+import { verify } from "@x402/core/facilitator";
+import { evm } from "@x402/core/types";
+import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "@x402/core/types";
+import { isEvmSignerWallet } from "@x402/core/types";
 import { createPublicClient, http, publicActions } from "viem";
 import {
   SettlementExtraError,

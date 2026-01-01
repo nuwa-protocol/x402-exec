@@ -145,6 +145,39 @@ export function getNetworkAlias(network: Network): string {
 }
 
 /**
+ * Get chain ID from CAIP-2 network identifier or v1 network name
+ *
+ * Extracts the numeric chain ID from a CAIP-2 identifier (e.g., "eip155:84532" → 84532).
+ * Also supports v1 human-readable network names (e.g., "base-sepolia" → 84532).
+ *
+ * @param network - CAIP-2 network identifier (e.g., 'eip155:84532') or v1 name (e.g., 'base-sepolia')
+ * @returns Numeric chain ID
+ * @throws Error if network format is invalid or not supported
+ *
+ * @example
+ * ```typescript
+ * getNetworkId('eip155:84532');    // 84532
+ * getNetworkId('base-sepolia');    // 84532
+ * getNetworkId('eip155:8453');     // 8453
+ * getNetworkId('base');            // 8453
+ * ```
+ */
+export function getNetworkId(network: string | Network): number {
+  const canonicalNetwork = toCanonicalNetworkKey(network);
+
+  // Extract chain ID from CAIP-2 identifier (eip155:<chainId>)
+  const match = canonicalNetwork.match(/^eip155:(\d+)$/);
+  if (!match) {
+    throw new Error(
+      `Invalid CAIP-2 network identifier: ${canonicalNetwork}. ` +
+      `Expected format: eip155:<chainId>`,
+    );
+  }
+
+  return parseInt(match[1], 10);
+}
+
+/**
  * Get default asset (USDC) information for a network
  *
  * @param network - CAIP-2 network identifier (e.g., 'eip155:84532')

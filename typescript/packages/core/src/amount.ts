@@ -2,7 +2,7 @@
  * Amount parsing and formatting utilities for x402x default asset (USDC)
  */
 
-import { processPriceToAtomicAmount, getDefaultAsset } from "x402/shared";
+import { processPriceToAtomicAmount, getDefaultAsset } from "@x402x/extensions";
 
 /**
  * Error class for amount-related validation errors
@@ -44,7 +44,7 @@ export function parseDefaultAssetAmount(amount: string | number, network: string
     throw new AmountError("Amount is required");
   }
 
-  // Use x402's processPriceToAtomicAmount for parsing
+  // Use @x402x/extensions' processPriceToAtomicAmount for parsing
   // This handles all string/number inputs as USD amounts
   const result = processPriceToAtomicAmount(amount, network as any);
 
@@ -52,7 +52,7 @@ export function parseDefaultAssetAmount(amount: string | number, network: string
     throw new AmountError(`Invalid amount format: ${result.error}`);
   }
 
-  return result.maxAmountRequired;
+  return result.amount;
 }
 
 /**

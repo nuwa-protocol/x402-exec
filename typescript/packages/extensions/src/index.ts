@@ -155,6 +155,7 @@ export {
 export {
   processPriceToAtomicAmount,
   getDefaultAsset,
+  getNetworkId,
   getSupportedNetworkIds,
   getNetworkAliasesV1ToV2,
   toCanonicalNetworkKey,

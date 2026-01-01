@@ -11,13 +11,13 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { type PaymentRequirements, type PaymentPayload } from "x402/types";
+import { type PaymentRequirements, type PaymentPayload } from "@x402/core/types";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
-import type { X402Config } from "x402/types";
+import type { X402Config } from "@x402/core/types";
 import {
   createVersionDispatcher,
   type VerifyRequest,

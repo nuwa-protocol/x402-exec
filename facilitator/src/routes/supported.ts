@@ -10,7 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import type { SupportedPaymentKind } from "x402/types";
+import type { SupportedPaymentKind } from "@x402/core/types";
 import type { PoolManager } from "../pool-manager.js";
 import { hasNetworkConfig } from "../network-id.js";
 import { getLogger } from "../telemetry.js";
