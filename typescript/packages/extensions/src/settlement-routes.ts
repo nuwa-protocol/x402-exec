@@ -107,6 +107,33 @@ export interface SettlementHooksConfig {
 }
 
 /**
+ * Validate x402 version (v2-only, v1 is deprecated)
+ *
+ * @param version - x402 version number
+ * @throws {Error} If version is missing or not 2
+ */
+function validateX402Version(version?: unknown): void {
+  if (version === undefined || version === null) {
+    throw new Error(
+      "x402Version is required. v1 is deprecated - please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+    );
+  }
+
+  if (typeof version !== "number") {
+    throw new Error(`Invalid x402Version: expected number, got ${typeof version}.`);
+  }
+
+  if (version !== 2) {
+    throw new Error(
+      `Version not supported: x402Version ${version} is deprecated. ` +
+        "Please use x402Version=2. " +
+        "See https://github.com/nuwa-protocol/x402-exec for migration guide.",
+    );
+  }
+}
+
+/**
  * Create a route configuration with router settlement support
  *
  * This helper wraps the standard x402 RouteConfig and adds settlement-specific
@@ -389,6 +416,9 @@ export function registerSettlementHooks(
     server.onBeforeVerify(async (context) => {
       const { paymentPayload, requirements } = context;
 
+      // Validate x402 version (v2-only)
+      validateX402Version(paymentPayload.x402Version);
+
       // Check if payment has settlement extension
       if (paymentPayload.extensions && "x402x-router-settlement" in paymentPayload.extensions) {
         const extension = paymentPayload.extensions["x402x-router-settlement"] as any;
@@ -422,6 +452,9 @@ export function registerSettlementHooks(
     // Hook to validate settlement router parameters before settlement
     server.onBeforeSettle(async (context) => {
       const { paymentPayload, requirements } = context;
+
+      // Validate x402 version (v2-only)
+      validateX402Version(paymentPayload.x402Version);
 
       // Try to get params from extensions first (v2 standard), then fall back to extra
       let settlementParams: any = {};
