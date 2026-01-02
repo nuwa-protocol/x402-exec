@@ -6,10 +6,11 @@
  */
 
 import { type Network, NETWORKS } from "../config";
+import type { ReactElement } from "react";
 
 interface DetailItem {
   label: string;
-  value: string | JSX.Element;
+  value: string | ReactElement;
 }
 
 interface TransactionResultProps {
