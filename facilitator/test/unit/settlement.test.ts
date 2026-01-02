@@ -30,8 +30,8 @@ vi.mock("viem", async () => {
   };
 });
 
-// Mock @x402x/core
-vi.mock("@x402x/core", () => {
+// Mock @x402x/extensions
+vi.mock("@x402x/extensions", () => {
   /**
    * Mock SettlementExtraError
    */

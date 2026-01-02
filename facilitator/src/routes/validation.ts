@@ -5,7 +5,7 @@
  * v1 is deprecated - only x402Version=2 is supported.
  */
 
-import type { PaymentRequirements, PaymentPayload } from "x402/types";
+import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
 
 /**
  * Basic structure validation to ensure required fields exist

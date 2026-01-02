@@ -7,10 +7,10 @@
  * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
-import { verify } from "x402/facilitator";
-import { evm } from "x402/types";
-import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "x402/types";
-import { isEvmSignerWallet } from "x402/types";
+import { verify } from "@x402/core/facilitator";
+import { evm } from "@x402/core/evm";
+import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "@x402/core/types";
+import { isEvmSignerWallet } from "@x402/core/evm";
 import { createPublicClient, http, publicActions } from "viem";
 import {
   SettlementExtraError,
@@ -18,9 +18,8 @@ import {
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
   calculateCommitment,
-} from "@x402x/core";
-// Import V2 getNetworkConfig for CAIP-2 support
-import { getNetworkConfig } from "@x402x/extensions";
+  getNetworkConfig,
+} from "@x402x/extensions";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
 import { getLogger } from "./telemetry.js";

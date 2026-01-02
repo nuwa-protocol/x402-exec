@@ -8,7 +8,7 @@
 /// <reference path="./types.d.ts" />
 
 import { toCanonicalNetworkKey, getNetworkAlias } from "@x402x/extensions";
-import type { Network as X402Network } from "x402/types";
+import type { Network as X402Network } from "@x402/core/types";
 
 /**
  * Type alias for canonical network identifiers (CAIP-2 format)
