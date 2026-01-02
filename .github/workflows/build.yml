@@ -154,7 +154,7 @@ jobs:
     name: Examples
     runs-on: ubuntu-latest
     needs: [changes, packages]
-    if: needs.changes.outputs.examples == 'true'
+    if: always() && needs.changes.outputs.examples == 'true' && (needs.packages.result == 'success' || needs.packages.result == 'skipped')
 
     steps:
       - name: Checkout repository
