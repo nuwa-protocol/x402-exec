@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import type { PaymentRequirements, SettleResponse } from "x402/types";
+import type { PaymentRequirements, SettleResponse } from "@x402/core/types";
 import { getLogger } from "../telemetry.js";
 import { recordHook, recordTransaction } from "../lib/supabase.js";
 

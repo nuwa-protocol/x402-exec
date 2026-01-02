@@ -18,7 +18,7 @@ import type { GasEstimationStrategy, SettlementGasParams, GasEstimationResult } 
 import { parseEstimateGasError } from "../utils.js";
 import { encodeFunctionData } from "viem";
 import { getHookTypeInfo } from "../../hook-validators/index.js";
-import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";
+import { SETTLEMENT_ROUTER_ABI } from "@x402x/extensions";
 
 export class SimulationBasedGasEstimator implements GasEstimationStrategy {
   readonly strategyName = "rpc_simulation";

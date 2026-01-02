@@ -3,12 +3,13 @@
  *
  * Provides dynamic network-to-chain mapping with support for:
  * - viem chain definitions
- * - x402x chain definitions
+ * - x402 chain definitions
  * - Environment variable overrides
  * - Caching for performance
  * - Automatic network discovery
  */
 
+import { evm } from "@x402/core/types";
 import { getSupportedNetworkIds, getChain as getX402xChain } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;
@@ -23,7 +24,7 @@ import { normalizeNetwork } from "./network-id.js";
 export interface ChainInfo {
   chain: Chain;
   rpcUrl: string;
-  source: "viem" | "x402x" | "environment"; // Removed x402 source
+  source: "viem" | "x402" | "x402x" | "environment"; // Added x402x source
   networkName: string;
 }
 
@@ -89,6 +90,7 @@ export class NetworkChainResolver {
    * 1. Environment variable RPC override (if configured)
    * 2. x402x chains (from @x402x/extensions - includes all supported networks with RPC)
    * 3. viem chains (fallback for standard networks)
+   * 4. x402 chains (legacy fallback)
    *
    * @param network - Network identifier (v1 or v2 CAIP-2)
    * @returns Chain information or null if network not found
@@ -150,7 +152,25 @@ export class NetworkChainResolver {
       return chainInfo;
     }
 
-    logger.warn({ network }, "Network not found in any chain source (x402x/viem)");
+    // Fallback to x402 chains (legacy)
+    try {
+      const x402Chain = evm.getChainFromNetwork(network);
+      if (x402Chain?.rpcUrls?.default?.http?.[0]) {
+        const chainInfo: ChainInfo = {
+          chain: x402Chain,
+          rpcUrl: x402Chain.rpcUrls.default.http[0],
+          source: "x402",
+          networkName: network,
+        };
+        this.chainCache.set(network, chainInfo);
+        logger.debug({ network, source: "x402" }, "Resolved chain from x402");
+        return chainInfo;
+      }
+    } catch (error) {
+      logger.debug({ network, error: String(error) }, "Network not found in x402 chains");
+    }
+
+    logger.warn({ network }, "Network not found in any chain source (x402x/viem/x402)");
     return null;
   }
 
@@ -247,7 +267,7 @@ export class NetworkChainResolver {
 
   /**
    * Get chain from any available source
-   * Priority: x402x > viem
+   * Priority: x402x > viem > x402
    */
   private async getChainFromAnySource(network: string): Promise<Chain | null> {
     // Try x402x first (highest priority - includes all supported networks)
@@ -266,7 +286,12 @@ export class NetworkChainResolver {
       return viemChain;
     }
 
-    return null;
+    // Try x402 (legacy fallback)
+    try {
+      return evm.getChainFromNetwork(network);
+    } catch {
+      return null;
+    }
   }
 
   /**

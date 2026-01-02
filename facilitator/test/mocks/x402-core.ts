@@ -1,7 +1,7 @@
 /**
  * Mock x402 Core Functions
  *
- * Mock implementations of @x402x/core functions for testing
+ * Mock implementations of @x402x/extensions functions for testing
  */
 
 import { vi } from "vitest";

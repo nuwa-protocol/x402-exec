@@ -4,20 +4,24 @@
  * This module provides functions for detecting and handling settlement mode payments
  * that use the SettlementRouter contract for extended business logic via Hooks.
  *
- * Now uses @x402x/facilitator-sdk for settlement logic instead of direct @x402 integration.
+ * Implements direct contract interaction with additional logging and gas metrics calculation.
  */
 
-import type { PaymentPayload, PaymentRequirements } from "x402/types";
-import type { Address, Hex } from "viem";
-import { parseErc6492Signature } from "viem/utils";
+import { verify } from "@x402/core/facilitator";
+import { evm } from "@x402/core/evm";
+import type { PaymentPayload, PaymentRequirements, Signer, X402Config } from "@x402/core/types";
+import { isEvmSignerWallet } from "@x402/core/evm";
+import { createPublicClient, http, publicActions } from "viem";
 import {
   SettlementExtraError,
   SETTLEMENT_ROUTER_ABI,
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
   calculateCommitment,
-} from "@x402x/core";
-import { getNetworkConfig, getChain } from "@x402x/extensions";
+  getNetworkConfig,
+} from "@x402x/extensions";
+import type { Address, Hex } from "viem";
+import { parseErc6492Signature } from "viem/utils";
 import { getLogger } from "./telemetry.js";
 import { calculateGasMetrics } from "./gas-metrics.js";
 import type { SettleResponseWithMetrics } from "./settlement-types.js";
@@ -26,7 +30,6 @@ import { getGasPrice, type DynamicGasPriceConfig } from "./dynamic-gas-price.js"
 import type { BalanceChecker } from "./balance-check.js";
 import { getCanonicalNetwork, getNetworkDisplayName } from "./network-utils.js";
 import { createGasEstimator, type GasEstimationConfig } from "./gas-estimation/index.js";
-import type { Signer } from "./account-pool.js";
 
 const logger = getLogger();
 
@@ -248,6 +251,7 @@ function parseSettlementExtra(extra: unknown): {
  * @param dynamicGasPriceConfig - Dynamic gas price configuration
  * @param nativeTokenPrices - Optional native token prices by network (for gas metrics)
  * @param balanceChecker - Optional balance checker for defensive balance validation
+ * @param x402Config - Optional x402 configuration for verification
  * @param gasEstimationConfig - Optional gas estimation configuration for smart gas limit calculation
  * @returns SettleResponse with gas metrics for monitoring
  * @throws Error if the payment is for non-EVM network or settlement fails
@@ -261,10 +265,16 @@ export async function settleWithRouter(
   dynamicGasPriceConfig?: DynamicGasPriceConfig,
   nativeTokenPrices?: Record<string, number>,
   balanceChecker?: BalanceChecker,
+  x402Config?: X402Config,
   gasEstimationConfig?: GasEstimationConfig,
 ): Promise<SettleResponseWithMetrics> {
   try {
-    // 1. Normalize network identifier (V1/V2 -> V1)
+    // 1. Ensure signer is EVM signer
+    if (!isEvmSignerWallet(signer)) {
+      throw new Error("Settlement Router requires an EVM signer");
+    }
+
+    // 2. Normalize network identifier (V1/V2 -> V1)
     // This ensures all network-related config lookups use the correct format
     const canonicalNetwork = getCanonicalNetwork(paymentRequirements.network);
     const network = getNetworkDisplayName(canonicalNetwork);
@@ -322,21 +332,23 @@ export async function settleWithRouter(
       "Settlement authorization details (before on-chain validation)",
     );
 
-    // 5.5. Validate payment using @x402x/facilitator-sdk (SECURITY: prevent any invalid payments from wasting gas)
-    // Import the RouterSettlementFacilitator for verification
-    const { createRouterSettlementFacilitator } = await import("@x402x/facilitator-sdk");
-
-    // Create a temporary facilitator for verification (no signer needed for verify)
-    const facilitator = createRouterSettlementFacilitator({
-      allowedRouters,
-      rpcUrls: dynamicGasPriceConfig?.rpcUrls,
-      signer: "0x0000000000000000000000000000000000000000", // Placeholder - not used for verification
-    });
-
-    const verifyResult = await facilitator.verify(paymentPayload, paymentRequirements);
+    // 5.5. Validate payment using x402 SDK (SECURITY: prevent any invalid payments from wasting gas)
+    // Create client with custom RPC URL support
+    const chain = evm.getChainFromNetwork(network);
+    const rpcUrl = dynamicGasPriceConfig?.rpcUrls[network] || chain.rpcUrls?.default?.http?.[0];
+    const client = createPublicClient({
+      chain,
+      transport: http(rpcUrl),
+    }).extend(publicActions);
+    const verifyResult = await verify(
+      client as any,
+      paymentPayload,
+      paymentRequirements,
+      x402Config,
+    );
 
     if (!verifyResult.isValid) {
-      // Facilitator SDK verification failed - return error to prevent gas waste on guaranteed-to-fail transactions
+      // x402 SDK verification failed - return error to prevent gas waste on guaranteed-to-fail transactions
       // This catches: invalid signatures, wrong recipients, insufficient balance, expired timestamps, etc.
       const invalidReason = verifyResult.invalidReason || "";
       const payer = verifyResult.payer || authorization.from;
@@ -351,35 +363,34 @@ export async function settleWithRouter(
           validBefore: authorization.validBefore,
           currentTime: Math.floor(Date.now() / 1000),
         },
-        "Facilitator SDK verification failed - preventing wasted gas transaction",
+        "x402 SDK verification failed - preventing wasted gas transaction",
       );
 
-      // Map facilitator SDK error reasons to our error reasons for better user experience
+      // Map x402 SDK error reasons to our error reasons for better user experience
       let errorReason = "PAYMENT_VERIFICATION_FAILED";
-      if (invalidReason.includes("authorization_valid_before") || invalidReason.includes("validBefore")) {
+      if (invalidReason.includes("authorization_valid_before")) {
         errorReason = "AUTHORIZATION_EXPIRED";
-      } else if (invalidReason.includes("authorization_valid_after") || invalidReason.includes("validAfter")) {
+      } else if (invalidReason.includes("authorization_valid_after")) {
         errorReason = "AUTHORIZATION_NOT_YET_VALID";
       } else if (invalidReason.includes("signature")) {
         errorReason = "INVALID_SIGNATURE";
-      } else if (invalidReason.includes("recipient") || invalidReason.includes("payTo")) {
+      } else if (invalidReason.includes("recipient")) {
         errorReason = "INVALID_RECIPIENT";
-      } else if (invalidReason.includes("insufficient") || invalidReason.includes("balance")) {
+      } else if (invalidReason.includes("insufficient_funds")) {
         errorReason = "INSUFFICIENT_FUNDS";
       }
 
       return {
         success: false,
-        errorReason: errorReason as any,
+        errorReason,
         transaction: "",
-        network: paymentRequirements.network,
+        network: paymentPayload.network,
         payer,
       };
     }
 
     // 5.6. Validate commitment hash (SECURITY: ensure nonce matches calculated commitment)
     // This prevents parameter tampering attacks where settlement parameters are modified after signing
-    const chain = getChain(network);
     const expectedCommitment = calculateCommitment({
       chainId: chain.id,
       hub: settlementParams.settlementRouter,
@@ -414,9 +425,9 @@ export async function settleWithRouter(
 
       return {
         success: false,
-        errorReason: "INVALID_COMMITMENT" as any,
+        errorReason: "INVALID_COMMITMENT",
         transaction: "",
-        network: paymentRequirements.network,
+        network: paymentPayload.network,
         payer: authorization.from,
       };
     }
@@ -546,9 +557,9 @@ export async function settleWithRouter(
 
           return {
             success: false,
-            errorReason: (estimation.errorReason || "SETTLEMENT_PREVALIDATION_FAILED") as any,
+            errorReason: estimation.errorReason || "SETTLEMENT_PREVALIDATION_FAILED",
             transaction: "",
-            network: paymentRequirements.network,
+            network: paymentPayload.network,
             payer: authorization.from,
           };
         }
@@ -626,9 +637,9 @@ export async function settleWithRouter(
 
           return {
             success: false,
-            errorReason: "INSUFFICIENT_FUNDS" as any,
+            errorReason: "INSUFFICIENT_FUNDS",
             transaction: "",
-            network: paymentRequirements.network,
+            network: paymentPayload.network,
             payer: authorization.from,
           };
         } else {
@@ -694,7 +705,7 @@ export async function settleWithRouter(
         success: false,
         errorReason: "invalid_transaction_state",
         transaction: tx,
-        network: paymentRequirements.network,
+        network: paymentPayload.network,
         payer: authorization.from,
       };
     }
@@ -758,7 +769,7 @@ export async function settleWithRouter(
     return {
       success: true,
       transaction: tx,
-      network: paymentRequirements.network,
+      network: paymentPayload.network,
       payer: authorization.from,
       gasMetrics,
     };
@@ -791,7 +802,7 @@ export async function settleWithRouter(
           ? "invalid_payment_requirements"
           : "unexpected_settle_error",
       transaction: "",
-      network: paymentRequirements.network,
+      network: paymentPayload.network,
       payer,
     };
   }

@@ -14,7 +14,7 @@
  */
 
 import pLimit from "p-limit";
-import type { Signer } from "x402/types";
+import type { Signer } from "@x402/core/types";
 import { createWalletClient, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
