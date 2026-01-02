@@ -1,5 +1,5 @@
 /**
- * Mock x402 Core Functions
+ * Mock x402 Extensions Functions
  *
  * Mock implementations of @x402x/extensions functions for testing
  */
