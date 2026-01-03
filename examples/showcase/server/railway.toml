@@ -4,7 +4,8 @@ providers = ["node"]
 nixPkgs = ['nodejs']
 cmds = [
   "corepack enable",
-  "corepack prepare pnpm@10.7.0 --activate"
+  "corepack prepare pnpm@10.7.0 --activate",
+  "pnpm --version"
 ]
 
 [phases.install]

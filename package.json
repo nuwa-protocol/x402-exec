@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"description": "X402 Settlement Extension with Examples",
+	"packageManager": "pnpm@10.7.0",
 	"scripts": {
 		"install:web": "pnpm install -C web --ignore-workspace",
 		"install:all": "pnpm install",
