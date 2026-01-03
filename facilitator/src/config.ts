@@ -10,7 +10,7 @@
  */
 
 import { config as loadEnv } from "dotenv";
-import type { X402Config } from "x402/types";
+import type { X402Config } from "@x402/core/types";
 import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds } from "@x402x/extensions";
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;
