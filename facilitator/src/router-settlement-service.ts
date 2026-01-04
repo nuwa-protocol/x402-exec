@@ -273,8 +273,23 @@ export class RouterSettlementService {
     }
 
     // Extract payer address for duplicate detection
-    // V2 paymentPayload has payer field (unlike v1 which has nested structure)
-    const payerAddress = (paymentPayload as any).payer as string | undefined;
+    // V2 paymentPayload has payer field inside payload.authorization.from
+    const payerAddress = (() => {
+      try {
+        // Try V2 structure first: payload.authorization.from
+        const evmPayload = (paymentPayload as any).payload;
+        if (evmPayload?.authorization?.from) {
+          return evmPayload.authorization.from as string;
+        }
+        // Fallback: check for top-level payer field (for test fixtures/compatibility)
+        if ((paymentPayload as any).payer) {
+          return (paymentPayload as any).payer as string;
+        }
+        return undefined;
+      } catch {
+        return undefined;
+      }
+    })();
 
     // Execute in account pool (reuses queue, duplicate detection, etc.)
     return accountPool.execute(async (signer) => {
