@@ -506,15 +506,16 @@ function handleSettlement(request):
 ### Environment Variables
 
 ```bash
-# Standard Facilitator configuration
-RPC_URL_BASE_SEPOLIA=https://sepolia.base.org
-RPC_URL_BASE=https://mainnet.base.org
+# Standard Facilitator configuration (using CAIP-2 format for network identifiers)
+# CAIP-2 format: eip155:<chainId>
+RPC_URL_EIP155_84532=https://sepolia.base.org  # Base Sepolia (chain ID 84532)
+RPC_URL_EIP155_8453=https://mainnet.base.org    # Base Mainnet (chain ID 8453)
 PRIVATE_KEY=0x...
 
-# SettlementRouter addresses (per network)
-SETTLEMENT_ROUTER_BASE_SEPOLIA=0x...
-SETTLEMENT_ROUTER_BASE=0x...
-SETTLEMENT_ROUTER_ETHEREUM=0x...
+# SettlementRouter addresses (per network, using CAIP-2 format)
+SETTLEMENT_ROUTER_EIP155_84532=0x...  # Base Sepolia
+SETTLEMENT_ROUTER_EIP155_8453=0x...   # Base Mainnet
+SETTLEMENT_ROUTER_EIP155_1=0x...      # Ethereum Mainnet (chain ID 1)
 ```
 
 ### Network Configuration
@@ -522,15 +523,29 @@ SETTLEMENT_ROUTER_ETHEREUM=0x...
 ```json
 {
   "networks": {
-    "base": {
+    "eip155:8453": {
       "rpcUrl": "https://mainnet.base.org",
       "settlementRouter": "0x...",
-      "chainId": 8453
+      "chainId": 8453,
+      "name": "Base Mainnet"
     },
-    "base-sepolia": {
-      "rpcUrl": "https://sepolia.base.org", 
+    "eip155:84532": {
+      "rpcUrl": "https://sepolia.base.org",
       "settlementRouter": "0x...",
-      "chainId": 84532
+      "chainId": 84532,
+      "name": "Base Sepolia"
+    },
+    "eip155:196": {
+      "rpcUrl": "https://rpc.xlayer.tech",
+      "settlementRouter": "0x...",
+      "chainId": 196,
+      "name": "X-Layer Mainnet"
+    },
+    "eip155:1952": {
+      "rpcUrl": "https://testrpc.xlayer.tech",
+      "settlementRouter": "0x...",
+      "chainId": 1952,
+      "name": "X-Layer Testnet"
     }
   }
 }

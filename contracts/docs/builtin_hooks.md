@@ -70,7 +70,7 @@ function execute(
 ```json
 {
   "scheme": "exact",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "maxAmountRequired": "1010000",
   "payTo": "0xSettlementRouter...",
@@ -113,12 +113,12 @@ The additional ~8k gas provides:
 
 #### Deployment Addresses
 
-| Network | Address | Status |
-|---------|---------|--------|
-| Base Sepolia (Testnet) | [`0x6b486aF5A08D27153d0374BE56A1cB1676c460a8`](https://sepolia.basescan.org/address/0x6b486aF5A08D27153d0374BE56A1cB1676c460a8) | ✅ Active |
-| X-Layer Testnet | [`0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB`](https://www.oklink.com/xlayer-test/address/0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB) | ✅ Active |
-| Base Mainnet | TBD | 🚧 Pending Audit |
-| Ethereum Mainnet | TBD | 🚧 Pending Audit |
+| Network | CAIP-2 Identifier | Address | Status |
+|---------|------------------|---------|--------|
+| Base Sepolia (Testnet) | `eip155:84532` | [`0x6b486aF5A08D27153d0374BE56A1cB1676c460a8`](https://sepolia.basescan.org/address/0x6b486aF5A08D27153d0374BE56A1cB1676c460a8) | ✅ Active |
+| X-Layer Testnet | `eip155:1952` | [`0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB`](https://www.oklink.com/xlayer-test/address/0x3D07D4E03a2aDa2EC49D6937ab1B40a83F3946AB) | ✅ Active |
+| Base Mainnet | `eip155:8453` | TBD | 🚧 Pending Audit |
+| Ethereum Mainnet | `eip155:1` | TBD | 🚧 Pending Audit |
 
 ## Integration Guide
 

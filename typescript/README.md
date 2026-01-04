@@ -30,7 +30,7 @@ const app = express();
 
 app.post('/api/premium',
   x402Middleware({
-    network: 'base-sepolia',
+    network: 'eip155:84532', // Base Sepolia (CAIP-2 format)
     amount: '100000', // 0.1 USDC
     resource: '/api/premium',
     facilitatorFee: '10000',
@@ -57,7 +57,7 @@ const app = new Hono();
 
 app.post('/api/premium',
   x402Middleware({
-    network: 'base-sepolia',
+    network: 'eip155:84532', // Base Sepolia (CAIP-2 format)
     amount: '100000',
     resource: '/api/premium',
   }),
@@ -138,7 +138,11 @@ if (isSettlementMode(paymentRequirements)) {
 ### ✨ Core Features (@x402x/core)
 
 - 🔐 **Commitment Calculation**: Cryptographically bind settlement parameters
-- 🌐 **Network Support**: Pre-configured for Base Sepolia and X-Layer Testnet
+- 🌐 **Network Support**: Pre-configured for multiple networks using CAIP-2 format
+  - Base Sepolia: `eip155:84532`
+  - Base Mainnet: `eip155:8453`
+  - X-Layer Testnet: `eip155:1952`
+  - X-Layer Mainnet: `eip155:196`
 - 🪝 **Built-in Hooks**: TransferHook for basic payment splits
 - 🛠️ **Utility Functions**: Helper functions for common tasks
 - 📝 **Full TypeScript**: Complete type definitions

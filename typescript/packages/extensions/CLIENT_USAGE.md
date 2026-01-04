@@ -38,6 +38,7 @@ const signer = {
 };
 
 // One-line setup for x402x! 🎉
+// Note: 'eip155:84532' is CAIP-2 format for Base Sepolia testnet
 const client = new x402Client();
 registerX402xScheme(client, 'eip155:84532', signer);
 
@@ -61,7 +62,8 @@ Register x402x for multiple networks:
 
 ```typescript
 const client = new x402Client();
-registerX402xScheme(client, 'eip155:84532', signer); // Base Sepolia
+// CAIP-2 format: 'eip155:<chainId>' - see https://chainlist.org for chain IDs
+registerX402xScheme(client, 'eip155:84532', signer); // Base Sepolia testnet
 registerX402xScheme(client, 'eip155:8453', signer);  // Base Mainnet
 ```
 
@@ -89,6 +91,7 @@ const client = new x402Client();
 injectX402xExtensionHandler(client);
 
 // Step 2: Manually register scheme
+// CAIP-2 format: 'eip155:84532' for Base Sepolia testnet
 client.register('eip155:84532', new ExactEvmSchemeWithRouterSettlement(signer));
 
 // Now ready for x402x payments
@@ -125,9 +128,10 @@ export function usePaidApi() {
       };
 
       // Setup x402x client
+      // CAIP-2 format: 'eip155:<chainId>' - dynamically use current chain
       const client = new x402Client();
       registerX402xScheme(
-        client, 
+        client,
         `eip155:${walletClient.chain.id}`,
         signer
       );
@@ -200,7 +204,7 @@ The x402x extension adds settlement information to the PaymentRequired response:
   "resource": { "url": "...", "description": "...", "mimeType": "..." },
   "accepts": [{
     "scheme": "exact",
-    "network": "eip155:84532",
+    "network": "eip155:84532", // CAIP-2 format for Base Sepolia testnet
     "asset": "0x...",
     "amount": "100000",
     "payTo": "0x...",
@@ -250,13 +254,13 @@ const routes = {
     {
       accepts: {
         scheme: 'exact',
-        network: 'eip155:84532',
+        network: 'eip155:84532', // CAIP-2 format for Base Sepolia testnet
         payTo: merchantAddress,
         price: '$0.10'
       }
     },
     {
-      hook: TransferHook.getAddress('base-sepolia'),
+      hook: TransferHook.getAddress('eip155:84532'), // CAIP-2 format for Base Sepolia
       hookData: TransferHook.encode(),
       finalPayTo: merchantAddress,
       facilitatorFee: '0'

@@ -105,10 +105,10 @@ pnpm -C web/frontend check  # Web frontend uses Biome
 cd contracts
 ./deploy-contract.sh [NETWORK] [OPTIONS]
 
-# Examples:
-./deploy-contract.sh base-sepolia --all --verify    # Deploy all contracts
-./deploy-contract.sh base --settlement --verify     # SettlementRouter only
-./deploy-contract.sh xlayer --hooks --verify        # Built-in hooks
+# Examples (using CAIP-2 format):
+./deploy-contract.sh eip155:84532 --all --verify    # Deploy all contracts (Base Sepolia)
+./deploy-contract.sh eip155:8453 --settlement --verify     # SettlementRouter only (Base Mainnet)
+./deploy-contract.sh eip155:196 --hooks --verify        # Built-in hooks (X-Layer Mainnet)
 ```
 
 ## Key Architecture Concepts
@@ -162,7 +162,15 @@ Hooks receive **net value** (after facilitator fee) and implement arbitrary busi
 
 ### Dual-Stack Protocol Support
 
-The codebase supports both x402 v1 (human-readable network names like `base-sepolia`) and v2 (CAIP-2 identifiers like `eip155:84532`). Detection is automatic based on request format. Enable v2 with `FACILITATOR_ENABLE_V2=true`.
+The codebase supports both x402 v1 (human-readable network names like `base-sepolia`) and v2 (CAIP-2 identifiers like `eip155:84532`). Detection is automatic based on request format. CAIP-2 format is recommended for all new implementations.
+
+**CAIP-2 format examples:**
+- Base Sepolia: `eip155:84532` (chain ID 84532)
+- Base Mainnet: `eip155:8453` (chain ID 8453)
+- X-Layer Testnet: `eip155:1952` (chain ID 1952)
+- X-Layer Mainnet: `eip155:196` (chain ID 196)
+
+Enable v2 with `FACILITATOR_ENABLE_V2=true`.
 
 ## Important Development Rules
 
