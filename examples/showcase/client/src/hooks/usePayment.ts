@@ -48,7 +48,7 @@ interface PaymentRequirements {
 interface PaymentResponse {
   accepts?: PaymentRequirements[];
   error?: string;
-  x402Version?: number; // v2-only: must be 2
+  x402Version: number; // v2-only: must be 2
   extensions?: Record<string, any>;
 }
 
