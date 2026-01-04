@@ -67,7 +67,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Copy SDK packages with proper directory structure
 # We need to copy each package's package.json AND dist directory separately
 # to maintain the correct structure for facilitator dependencies
-COPY --from=builder /app/typescript/packages/core/package.json ./typescript/packages/core/
 COPY --from=builder /app/typescript/packages/extensions/package.json ./typescript/packages/extensions/
 COPY --from=builder /app/typescript/packages/facilitator-sdk/package.json ./typescript/packages/facilitator-sdk/
 
@@ -78,7 +77,6 @@ COPY facilitator/package.json ./facilitator/
 RUN pnpm install --frozen-lockfile --prod --filter "@x402x/*"
 
 # Copy built SDK packages from builder (with correct directory structure)
-COPY --from=builder /app/typescript/packages/core/dist ./typescript/packages/core/dist
 COPY --from=builder /app/typescript/packages/extensions/dist ./typescript/packages/extensions/dist
 COPY --from=builder /app/typescript/packages/facilitator-sdk/dist ./typescript/packages/facilitator-sdk/dist
 
