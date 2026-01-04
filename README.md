@@ -154,9 +154,9 @@ cd contracts
 ./deploy-contract.sh [NETWORK] [OPTIONS]  # Configure .env first
 
 # Examples:
-./deploy-contract.sh base-sepolia --all --verify    # Deploy everything on testnet
-./deploy-contract.sh base --settlement --verify     # Deploy SettlementRouter on mainnet
-./deploy-contract.sh xlayer --hooks --verify        # Deploy built-in hooks
+./deploy-contract.sh eip155:84532 --all --verify    # Deploy everything on testnet (Base Sepolia)
+./deploy-contract.sh eip155:8453 --settlement --verify     # Deploy SettlementRouter on mainnet (Base)
+./deploy-contract.sh eip155:196 --hooks --verify        # Deploy built-in hooks (X-Layer)
 ```
 
 ## 💡 Usage Examples

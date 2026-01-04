@@ -6,12 +6,14 @@ This guide explains how to deploy x402-exec contracts to different networks, wit
 
 ## 🌐 Supported Networks
 
-| Network | Chain ID | RPC Default | Block Explorer |
-|---------|----------|-------------|----------------|
-| Base Sepolia | 84532 | https://sepolia.base.org | https://sepolia.basescan.org |
-| Base Mainnet | 8453 | https://mainnet.base.org | https://basescan.org |
-| X-Layer Testnet | 1952 | https://testrpc.xlayer.tech | https://www.oklink.com/xlayer-test |
-| X-Layer Mainnet | 196 | https://rpc.xlayer.tech | https://www.oklink.com/xlayer |
+| Network | CAIP-2 Identifier | Chain ID | RPC Default | Block Explorer |
+|---------|------------------|----------|-------------|----------------|
+| Base Sepolia | `eip155:84532` | 84532 | https://sepolia.base.org | https://sepolia.basescan.org |
+| Base Mainnet | `eip155:8453` | 8453 | https://mainnet.base.org | https://basescan.org |
+| X-Layer Testnet | `eip155:1952` | 1952 | https://testrpc.xlayer.tech | https://www.oklink.com/xlayer-test |
+| X-Layer Mainnet | `eip155:196` | 196 | https://rpc.xlayer.tech | https://www.oklink.com/xlayer |
+
+**Note:** CAIP-2 identifiers use the format `eip155:<chainId>` and are the recommended format for network identification in x402 v2.
 
 ## 🚀 Quick Start: Deploy to X-Layer Testnet
 
@@ -65,8 +67,10 @@ Deploy both SettlementRouter and all showcase scenarios:
 
 ```bash
 cd contracts
-./deploy-contract.sh xlayer-testnet --all
+./deploy-contract.sh eip155:1952 --all
 ```
+
+**Note:** `eip155:1952` is the CAIP-2 identifier for X-Layer Testnet (chain ID 1952).
 
 This will:
 1. ✅ Deploy `SettlementRouter` (built-in TransferHook available)
@@ -87,6 +91,7 @@ X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
 **Showcase server `.env`** (`examples/showcase/server/.env`):
 ```bash
 # Copy from env.example first: cp env.example .env
+# Environment variables use CAIP-2 format for network identification
 X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0x...
 X_LAYER_TESTNET_REVENUE_SPLIT_HOOK_ADDRESS=0x...
 X_LAYER_TESTNET_NFT_MINT_HOOK_ADDRESS=0x...
@@ -111,7 +116,7 @@ If you have `OKLINK_API_KEY` set and used `--verify` flag:
 ### Deploy Only SettlementRouter
 
 ```bash
-./deploy-contract.sh xlayer-testnet --settlement
+./deploy-contract.sh eip155:1952 --settlement
 ```
 
 After deployment, save the address:
@@ -127,14 +132,14 @@ Built-in Hooks are protocol-level Hooks deployed once per network for universal 
 Requires `[NETWORK]_SETTLEMENT_ROUTER_ADDRESS` to be set first:
 
 ```bash
-# Deploy all built-in hooks to X-Layer Testnet
-./deploy-builtin-hooks.sh xlayer-testnet --all
+# Deploy all built-in hooks to X-Layer Testnet (CAIP-2: eip155:1952)
+./deploy-builtin-hooks.sh eip155:1952 --all
 
 # Deploy specific hooks
-./deploy-builtin-hooks.sh base-sepolia --transfer  # TransferHook only
+./deploy-builtin-hooks.sh eip155:84532 --transfer  # TransferHook only (Base Sepolia)
 
 # Deploy with verification
-./deploy-builtin-hooks.sh xlayer-testnet --all --verify
+./deploy-builtin-hooks.sh eip155:1952 --all --verify
 ```
 
 **Current Built-in Hooks:**
@@ -148,14 +153,14 @@ Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
 
 ```bash
 # Make sure X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS is set in .env
-./deploy-contract.sh xlayer-testnet --showcase
+./deploy-contract.sh eip155:1952 --showcase
 ```
 
 ### Deploy with Verification
 
 ```bash
 # Requires OKLINK_API_KEY in .env
-./deploy-contract.sh xlayer-testnet --all --verify
+./deploy-contract.sh eip155:1952 --all --verify
 ```
 
 ### Non-Interactive Deployment
@@ -163,7 +168,7 @@ Requires `SETTLEMENT_ROUTER_ADDRESS` to be set first:
 Skip confirmation prompts:
 
 ```bash
-./deploy-contract.sh xlayer-testnet --all --yes
+./deploy-contract.sh eip155:1952 --all --yes
 ```
 
 ## 🔧 Legacy Deployment Scripts
@@ -184,17 +189,17 @@ Skip confirmation prompts:
 
 ### Migration Guide
 
-**Before (Base Sepolia):**
+**Before (Base Sepolia - legacy):**
 ```bash
 export RPC_URL=https://sepolia.base.org
 ./deploy.sh
 ./deploy-showcase.sh --all
 ```
 
-**After (Multi-Network):**
+**After (Multi-Network with CAIP-2):**
 ```bash
-# Just specify the network!
-./deploy-contract.sh base-sepolia --all
+# Just specify the network using CAIP-2 format!
+./deploy-contract.sh eip155:84532 --all  # Base Sepolia
 ```
 
 ## 🌐 Deploy to Other Networks
@@ -206,8 +211,8 @@ export RPC_URL=https://sepolia.base.org
 BASE_RPC_URL=https://mainnet.base.org
 BASESCAN_API_KEY=your_api_key
 
-# Deploy
-./deploy-contract.sh base --all --verify
+# Deploy (using CAIP-2 format: eip155:8453)
+./deploy-contract.sh eip155:8453 --all --verify
 ```
 
 ### X-Layer Mainnet
@@ -217,8 +222,8 @@ BASESCAN_API_KEY=your_api_key
 X_LAYER_RPC_URL=https://rpc.xlayer.tech
 OKLINK_API_KEY=your_api_key
 
-# Deploy
-./deploy-contract.sh xlayer --all --verify
+# Deploy (using CAIP-2 format: eip155:196)
+./deploy-contract.sh eip155:196 --all --verify
 ```
 
 ## 🛠️ Troubleshooting
@@ -263,7 +268,7 @@ Cannot deploy showcase: SETTLEMENT_ROUTER_ADDRESS not set
 ```
 
 **Solution:** Either:
-1. Deploy SettlementRouter first: `./deploy-contract.sh xlayer-testnet --settlement`
+1. Deploy SettlementRouter first: `./deploy-contract.sh eip155:1952 --settlement`
 2. Or use `--all` to deploy everything at once
 
 ## 📝 Deployment Checklist
@@ -352,8 +357,8 @@ Always verify contracts on mainnet deployments:
 ### How to Redeploy
 
 ```bash
-# Redeploy everything
-./deploy-contract.sh xlayer-testnet --all
+# Redeploy everything (using CAIP-2 format)
+./deploy-contract.sh eip155:1952 --all
 
 ```
 

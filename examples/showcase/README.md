@@ -91,11 +91,12 @@ cp .env.example .env
 
 ```bash
 cd ../../contracts
-./deploy-contract.sh xlayer-testnet --all
+./deploy-contract.sh eip155:1952 --all
 
-# Or deploy to other networks:
-# ./deploy-contract.sh base-sepolia --all --verify
-# ./deploy-contract.sh xlayer --settlement
+# Or deploy to other networks (using CAIP-2 format):
+# ./deploy-contract.sh eip155:84532 --all --verify  # Base Sepolia
+# ./deploy-contract.sh eip155:196 --settlement       # X-Layer Mainnet
+# ./deploy-contract.sh eip155:8453 --settlement       # Base Mainnet
 ```
 
 After deployment, copy the output contract addresses and update `server/.env`:
@@ -360,12 +361,12 @@ These contracts need to be deployed for NFT Mint and Reward Points scenarios:
 For mainnet deployment, use the following commands and update the `client/.env` file with the deployed addresses:
 
 ```bash
-# Deploy to Base Mainnet
+# Deploy to Base Mainnet (CAIP-2: eip155:8453)
 cd contracts
-./deploy-contract.sh base --showcase --verify
+./deploy-contract.sh eip155:8453 --showcase --verify
 
-# Deploy to X Layer Mainnet
-./deploy-contract.sh xlayer --showcase --verify
+# Deploy to X Layer Mainnet (CAIP-2: eip155:196)
+./deploy-contract.sh eip155:196 --showcase --verify
 ```
 
 After deployment, update your `examples/showcase/client/.env`:

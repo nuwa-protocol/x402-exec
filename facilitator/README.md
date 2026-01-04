@@ -1,6 +1,6 @@
 # X402 Facilitator
 
-**Production-ready** implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. The facilitator supports both standard x402 payments and extended settlement flows with Hook-based business logic.
+**Production-ready** implementation of an x402 facilitator service with **SettlementRouter support** for the x402-exec settlement framework. The facilitator supports x402 v2 payments with extended settlement flows using Hook-based business logic.
 
 ## Installation
 
@@ -33,156 +33,32 @@ Or clone and run from source (see [Development](#development) section below).
 
 ### 🔄 Version Support
 
-#### Dual-Stack Mode (v1 + v2)
+#### v2-Only Mode
 
-The facilitator supports both x402 v1 and v2 standards simultaneously, enabling smooth migration and backward compatibility.
+The facilitator supports **x402 v2** with CAIP-2 network identifiers for standardized cross-chain compatibility.
 
-#### Version Detection
-
-The facilitator automatically detects the x402 version based on the request format and routes accordingly:
-
-- **v1 Requests**: Uses human-readable network names (`base-sepolia`, `x-layer-testnet`)
-- **v2 Requests**: Uses CAIP-2 network identifiers (`eip155:84532`, `eip155:1952`)
-
-#### Feature Flags
-
-Enable v2 support with environment variables:
-
-```env
-# Enable v2 stack support (default: false - v1 only)
-FACILITATOR_ENABLE_V2=true
-
-# Optional: Configure v2-specific settings
-FACILITATOR_V2_STRICT_MODE=false  # Allow both v1 and v2 formats
-```
+> **Note**: x402 v1 (human-readable network names) has been deprecated. All integrations should use v2 with CAIP-2 identifiers.
 
 #### Network Formats
 
-| Network         | v1 Format         | v2 Format (CAIP-2) |
-| --------------- | ----------------- | ------------------ |
-| Base Sepolia    | `base-sepolia`    | `eip155:84532`     |
-| Base Mainnet    | `base`            | `eip155:8453`      |
-| X-Layer Testnet | `x-layer-testnet` | `eip155:1952`      |
-| X-Layer Mainnet | `x-layer`         | `eip155:196`       |
-| BSC Testnet     | `bsc-testnet`     | `eip155:97`        |
-| BSC Mainnet     | `bsc`             | `eip155:56`        |
+| Network         | CAIP-2 Identifier   |
+| --------------- | ------------------- |
+| Base Sepolia    | `eip155:84532`      |
+| Base Mainnet    | `eip155:8453`       |
+| X-Layer Testnet | `eip155:1952`       |
+| X-Layer Mainnet | `eip155:196`        |
+| BSC Testnet     | `eip155:97`         |
+| BSC Mainnet     | `eip155:56`         |
 
-#### Version Dispatch Rules
-
-1. **Client Request Format Detection**:
-
-   - If `network` matches CAIP-2 pattern (`eip155:*`) → Route to v2 stack
-   - If `network` matches v1 pattern (human-readable) → Route to v1 stack
-
-2. **Response Format**:
-
-   - `/supported` endpoint returns supported kinds for both versions
-   - All other endpoints use the requested version's format
-
-3. **Backward Compatibility**:
-   - v1 clients continue working without changes
-   - v2 clients get CAIP-2 network support and latest features
-
-#### API Examples by Version
-
-##### v1 Examples
+#### API Examples
 
 ```bash
-# Get supported v1 networks
+# Get supported networks
 curl -X GET http://localhost:3000/supported
 
 # Response
 {
   "kinds": [
-    {
-      "x402Version": 1,
-      "scheme": "exact",
-      "network": "base-sepolia"
-    },
-    {
-      "x402Version": 1,
-      "scheme": "exact",
-      "network": "x-layer-testnet"
-    }
-  ]
-}
-
-# Verify payment (v1 format)
-curl -X POST http://localhost:3000/verify \
-  -H "Content-Type: application/json" \
-  -d '{
-    "paymentPayload": {
-      "scheme": "exact",
-      "network": "base-sepolia",
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      "maxAmountRequired": "1000000",
-      "payTo": "0x1234567890123456789012345678901234567890",
-      "nonce": "0xabcdef1234567890",
-      "validAfter": 1640995200,
-      "validBefore": 1641081600,
-      "authorization": "0x..."
-    },
-    "paymentRequirements": {
-      "scheme": "exact",
-      "network": "base-sepolia",
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      "maxAmountRequired": "1000000",
-      "payTo": "0x1234567890123456789012345678901234567890"
-    }
-  }'
-
-# Settle payment (v1 format with SettlementRouter)
-curl -X POST http://localhost:3000/settle \
-  -H "Content-Type: application/json" \
-  -d '{
-    "paymentPayload": {
-      "scheme": "exact",
-      "network": "base-sepolia",
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      "maxAmountRequired": "1000000",
-      "payTo": "0x1234567890123456789012345678901234567890",
-      "nonce": "0xabcdef1234567890",
-      "validAfter": 1640995200,
-      "validBefore": 1641081600,
-      "authorization": "0x..."
-    },
-    "paymentRequirements": {
-      "scheme": "exact",
-      "network": "base-sepolia",
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      "maxAmountRequired": "1000000",
-      "payTo": "0x1234567890123456789012345678901234567890",
-      "extra": {
-        "settlementRouter": "0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb",
-        "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        "payTo": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-        "facilitatorFee": "100000",
-        "hook": "0x4DE234059C6CcC94B8fE1eb1BD24804794083569",
-        "hookData": "0x"
-      }
-    }
-  }'
-```
-
-##### v2 Examples (Dual-Stack Mode)
-
-```bash
-# Get supported v2 networks (when FACILITATOR_ENABLE_V2=true)
-curl -X GET http://localhost:3000/supported
-
-# Response (includes both v1 and v2)
-{
-  "kinds": [
-    {
-      "x402Version": 1,
-      "scheme": "exact",
-      "network": "base-sepolia"
-    },
-    {
-      "x402Version": 1,
-      "scheme": "exact",
-      "network": "x-layer-testnet"
-    },
     {
       "x402Version": 2,
       "scheme": "exact",
@@ -196,7 +72,7 @@ curl -X GET http://localhost:3000/supported
   ]
 }
 
-# Verify payment (v2 format)
+# Verify payment
 curl -X POST http://localhost:3000/verify \
   -H "Content-Type: application/json" \
   -d '{
@@ -220,7 +96,7 @@ curl -X POST http://localhost:3000/verify \
     }
   }'
 
-# Settle payment (v2 format with SettlementRouter)
+# Settle payment with SettlementRouter
 curl -X POST http://localhost:3000/settle \
   -H "Content-Type: application/json" \
   -d '{
@@ -867,19 +743,19 @@ Returns the payment kinds that the facilitator supports.
 {
   "kinds": [
     {
-      "x402Version": 1,
+      "x402Version": 2,
       "scheme": "exact",
-      "network": "base-sepolia"
+      "network": "eip155:84532"
     },
     {
-      "x402Version": 1,
+      "x402Version": 2,
       "scheme": "exact",
-      "network": "x-layer"
+      "network": "eip155:8453"
     },
     {
-      "x402Version": 1,
+      "x402Version": 2,
       "scheme": "exact",
-      "network": "x-layer-testnet"
+      "network": "eip155:1952"
     }
   ]
 }
@@ -1017,7 +893,7 @@ The facilitator detects SettlementRouter mode by checking for `extra.settlementR
 ```json
 {
   "scheme": "exact",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "asset": "0x...",
   "maxAmountRequired": "1000000",
   "payTo": "0x...",
@@ -1585,178 +1461,6 @@ If you're extending an existing facilitator in another language:
 
 - See the [Facilitator Developer Guide](../../contracts/docs/facilitator_guide.md) for step-by-step integration instructions
 - This TypeScript implementation serves as a reference for any language
-
-## Rollout Checklist
-
-### Dual-Stack Deployment Guide
-
-This checklist helps you safely roll out v2 support while maintaining v1 compatibility.
-
-#### Pre-Deployment Checklist
-
-**☐ Staging Environment Testing**
-
-1. **Enable Dual-Stack Mode**:
-
-   ```env
-   FACILITATOR_ENABLE_V2=true
-   FACILITATOR_V2_STRICT_MODE=false
-   ```
-
-2. **Verify v1 Functionality**:
-
-   - Test all existing v1 clients work without changes
-   - Verify `/supported` returns both v1 and v2 kinds
-   - Test `/verify` and `/settle` with v1 network names
-   - Confirm SettlementRouter v1 flows work
-
-3. **Test v2 Functionality**:
-
-   - Test `/supported` includes CAIP-2 networks
-   - Verify `/verify` and `/settle` with v2 CAIP-2 network identifiers
-   - Test SettlementRouter v2 flows
-   - Validate network format conversion works
-
-4. **Load Testing**:
-   - Test mixed v1/v2 traffic
-   - Verify version detection accuracy
-   - Monitor performance impact
-   - Test error handling for both versions
-
-**☐ Configuration Validation**
-
-5. **Environment Variables**:
-
-   ```env
-   # Dual-stack configuration
-   FACILITATOR_ENABLE_V2=true
-   FACILITATOR_V2_STRICT_MODE=false
-
-   # v1-specific (existing)
-   BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
-   X_LAYER_TESTNET_SETTLEMENT_ROUTER_ADDRESS=0xba9980fb08771e2fd10c17450f52d39bcb9ed576
-
-   # v2-specific (new) - optional, uses defaults from @x402x/extensions
-   # FACILITATOR_V2_ROUTERS_eip155:84532=0x817e4f0ee2fbdaac426f1178e149f7dc98873ecb
-   ```
-
-6. **Network Configuration**:
-   - Verify all supported networks have v1 → v2 mappings
-   - Test network format conversion edge cases
-   - Validate SettlementRouter address consistency
-
-**☐ Client Compatibility**
-
-7. **Update Client SDKs**:
-
-   - Update `@x402x/client` to latest version
-   - Test v1 client with dual-stack facilitator
-   - Test v2 client with dual-stack facilitator
-   - Verify client fallback mechanisms
-
-8. **Documentation**:
-   - Update API documentation for dual-stack mode
-   - Communicate network format changes to partners
-   - Provide migration guides for v1 → v2
-
-#### Production Deployment
-
-**☐ Blue-Green Deployment**
-
-9. **Deploy with v1 Only**:
-
-   ```env
-   FACILITATOR_ENABLE_V2=false  # Start with v1 only
-   ```
-
-   - Deploy new version with v2 code but disabled
-   - Monitor v1 functionality for regressions
-   - Verify all existing integrations work
-
-10. **Enable Dual-Stack Mode**:
-
-    ```env
-    FACILITATOR_ENABLE_V2=true
-    FACILITATOR_V2_STRICT_MODE=false
-    ```
-
-    - Update environment to enable v2 support
-    - Monitor `/supported` endpoint includes both versions
-    - Test v2 functionality with canary clients
-
-11. **Monitor Health**:
-    - Track v1 vs v2 request metrics
-    - Monitor error rates by version
-    - Watch for version detection issues
-    - Verify performance remains stable
-
-**☐ Validation**
-
-12. **End-to-End Testing**:
-
-    - Test complete payment flows for both versions
-    - Verify SettlementRouter works for both versions
-    - Test error scenarios and recovery
-    - Validate network format handling
-
-13. **Client Rollout**:
-    - Gradually migrate clients to v2
-    - Monitor v1 → v2 transition metrics
-    - Provide support during migration period
-    - Keep v1 support until all clients migrated
-
-#### Post-Deployment
-
-**☐ Monitoring & Maintenance**
-
-14. **Metrics Dashboard**:
-
-    - Track v1 vs v2 usage over time
-    - Monitor error rates by version
-    - Alert on version detection failures
-    - Track performance degradation
-
-15. **Decommission Planning**:
-    - Monitor v1 usage decline
-    - Plan v1 deprecation timeline
-    - Communicate deprecation schedule
-    - Prepare for v2-only operation
-
-#### Troubleshooting Guide
-
-**Version Detection Issues**:
-
-- Check network format matches expected patterns
-- Verify `FACILITATOR_ENABLE_V2` is set correctly
-- Review logs for version routing errors
-
-**Network Mapping Problems**:
-
-- Validate CAIP-2 identifiers are correct
-- Check SettlementRouter address consistency
-- Test both network formats work
-
-**Performance Degradation**:
-
-- Monitor request latency by version
-- Check for version detection overhead
-- Optimize dual-stack routing if needed
-
-**Rollback Procedure**:
-
-1. Set `FACILITATOR_ENABLE_V2=false` to disable v2
-2. Restart service with v1-only configuration
-3. Verify v1 functionality restored
-4. Investigate v2 issues before re-enabling
-
-#### Success Metrics
-
-- ✅ All v1 clients work without changes
-- ✅ v2 clients can use CAIP-2 network identifiers
-- ✅ `/supported` returns both v1 and v2 kinds
-- ✅ Zero performance degradation
-- ✅ No increase in error rates
-- ✅ Smooth client migration path
 
 ## License
 

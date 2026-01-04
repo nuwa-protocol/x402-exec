@@ -235,10 +235,10 @@ pnpm run build
 cd contracts
 ./deploy-contract.sh [NETWORK] [OPTIONS]
 
-# Examples:
-./deploy-contract.sh xlayer-testnet --all         # Deploy everything
-./deploy-contract.sh base-sepolia --settlement    # Deploy SettlementRouter only
-./deploy-contract.sh xlayer --hooks --verify      # Deploy hooks with verification
+# Examples (using CAIP-2 format):
+./deploy-contract.sh eip155:1952 --all         # Deploy everything (X-Layer Testnet)
+./deploy-contract.sh eip155:84532 --settlement  # Deploy SettlementRouter only (Base Sepolia)
+./deploy-contract.sh eip155:196 --hooks --verify    # Deploy hooks with verification (X-Layer)
 ```
 
 ### Cloud Deployment

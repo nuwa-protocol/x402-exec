@@ -117,10 +117,16 @@ The dashboard contains the following 6 main sections:
 
 The dashboard provides the following filter variables:
 
-- **$network**: Network filter (base-sepolia, x-layer-testnet, etc.)
+- **$network**: Network filter using CAIP-2 format (eip155:84532 for Base Sepolia, eip155:1952 for X-Layer Testnet, etc.)
 - **$hook**: Hook address filter
 - **$account**: Account address filter
 - **$interval**: Time interval (1m, 5m, 10m, 30m, 1h)
+
+**CAIP-2 Network Identifiers:**
+- Base Sepolia: `eip155:84532` (chain ID 84532)
+- Base Mainnet: `eip155:8453` (chain ID 8453)
+- X-Layer Testnet: `eip155:1952` (chain ID 1952)
+- X-Layer Mainnet: `eip155:196` (chain ID 196)
 
 Use these variables to quickly filter and view metrics for specific networks, hooks, or accounts.
 

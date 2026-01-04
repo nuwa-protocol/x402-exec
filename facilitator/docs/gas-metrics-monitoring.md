@@ -68,7 +68,7 @@ Extends standard `SettleResponse` with optional `gasMetrics` field.
 {
   "transaction": "0x...",
   "payer": "0x...",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "hook": "0x...",
   "gasMetrics": {
     "gasUsed": "85234",
@@ -89,7 +89,7 @@ Extends standard `SettleResponse` with optional `gasMetrics` field.
 ```json
 {
   "transaction": "0x...",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "hook": "0x...",
   "facilitatorFeeUSD": "0.003000",
   "actualGasCostUSD": "0.004500",
@@ -137,7 +137,7 @@ return {
 {
   "success": true,
   "transaction": "0xabc...123",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "payer": "0x1234...5678"
 }
 ```
@@ -149,7 +149,7 @@ return {
   "level": "info",
   "message": "SettlementRouter transaction confirmed with gas metrics",
   "transaction": "0xabc...123",
-  "network": "base-sepolia",
+  "network": "eip155:84532",
   "hook": "0xdef...456",
   "gasMetrics": {
     "gasUsed": "85234",
@@ -309,7 +309,7 @@ const result = await response.json();
 // result = {
 //   success: true,
 //   transaction: "0x...",
-//   network: "base-sepolia",
+//   network: "eip155:84532",
 //   payer: "0x..."
 // }
 // No gasMetrics field
@@ -392,13 +392,15 @@ const result = await response.json();
 GAS_COST_ENABLED=true
 GAS_COST_SAFETY_MULTIPLIER=1.2
 
-# Native Token Prices (USD)
-NATIVE_TOKEN_PRICE_BASE_SEPOLIA=3000
-NATIVE_TOKEN_PRICE_X_LAYER_TESTNET=50
+# Native Token Prices (USD) - using CAIP-2 format for network identification
+NATIVE_TOKEN_PRICE_EIP155_84532=3000    # Base Sepolia (chain ID 84532)
+NATIVE_TOKEN_PRICE_EIP155_1952=50       # X-Layer Testnet (chain ID 1952)
+NATIVE_TOKEN_PRICE_EIP155_8453=3500     # Base Mainnet (chain ID 8453)
+NATIVE_TOKEN_PRICE_EIP155_196=60        # X-Layer Mainnet (chain ID 196)
 
 # Dynamic Gas Price (Optional)
 DYNAMIC_GAS_PRICE_ENABLED=true
-DYNAMIC_GAS_PRICE_RPC_BASE_SEPOLIA=https://...
+DYNAMIC_GAS_PRICE_RPC_EIP155_84532=https://...
 ```
 
 ## Example Analysis Queries
