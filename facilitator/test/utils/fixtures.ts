@@ -26,7 +26,7 @@ export function createMockEvmSigner(
 }
 
 /**
- * Create mock payment requirements (standard mode)
+ * Create mock payment requirements (standard mode, v2)
  *
  * @param overrides
  */
@@ -34,9 +34,9 @@ export function createMockPaymentRequirements(
   overrides?: Partial<PaymentRequirements>,
 ): PaymentRequirements {
   return {
-    x402Version: 1,
+    x402Version: 2,
     scheme: "exact",
-    network: "base-sepolia",
+    network: "eip155:84532",
     asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
     receiver: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
     maxAmountRequired: "1000000",
@@ -46,7 +46,7 @@ export function createMockPaymentRequirements(
 }
 
 /**
- * Create mock payment requirements (settlement router mode)
+ * Create mock payment requirements (settlement router mode, v2)
  *
  * @param overrides
  */
@@ -54,18 +54,18 @@ export function createMockSettlementRouterPaymentRequirements(
   overrides?: Partial<PaymentRequirements>,
 ): PaymentRequirements {
   return {
-    x402Version: 1,
+    x402Version: 2,
     scheme: "exact",
-    network: "base-sepolia",
+    network: "eip155:84532",
     asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
     receiver: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
     maxAmountRequired: "1000000",
     extra: {
       settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
-      hook: "0x1234567890123456789012345678901234567890",
+      hook: "0x0000000000000000000000000000000000000000",
       hookData: "0x",
       payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-      facilitatorFee: "100000",
+      facilitatorFee: "0",
       salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
     },
     ...overrides,
@@ -73,15 +73,15 @@ export function createMockSettlementRouterPaymentRequirements(
 }
 
 /**
- * Create mock payment payload
+ * Create mock payment payload (v2)
  *
  * @param overrides
  */
 export function createMockPaymentPayload(overrides?: Partial<PaymentPayload>): PaymentPayload {
   return {
-    x402Version: 1,
+    x402Version: 2,
     scheme: "exact",
-    network: "base-sepolia",
+    network: "eip155:84532",
     resource: "/api/example",
     payload: {
       authorization: {

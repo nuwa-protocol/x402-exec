@@ -139,10 +139,10 @@ describe("routes/supported (v2-only)", () => {
       app = express();
       app.use(createSupportedRoutes(mockDeps));
 
-      // Query parameter should be ignored
-      const response = await request(app).get("/supported?x402Version=1");
+      // Query parameter should be ignored (endpoint is v2-only)
+      const response = await request(app).get("/supported?network=eip155:84532");
 
-      // Still returns v2 kinds (not filtered by query)
+      // Still returns all v2 kinds (not filtered by query)
       expect(response.body.kinds.length).toBe(2);
       response.body.kinds.forEach((kind: any) => {
         expect(kind.x402Version).toBe(2);
