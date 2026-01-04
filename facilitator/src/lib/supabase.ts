@@ -21,7 +21,9 @@ export async function recordHook(
     return;
   }
 
-  const { network, asset, maxAmountRequired, extra } = paymentRequirements;
+  const { network, asset, extra } = paymentRequirements;
+  // maxAmountRequired not available in @x402 v2, use 0 as placeholder
+  const maxAmountRequired = "0";
   const { payer } = settleResponse;
   const hookAddress = (extra as any)?.hook;
 
@@ -55,7 +57,9 @@ export async function recordTransaction(
     return;
   }
 
-  const { network, payTo, maxAmountRequired, extra } = paymentRequirements;
+  const { network, payTo, extra } = paymentRequirements;
+  // maxAmountRequired not available in @x402 v2, use 0 as placeholder
+  const maxAmountRequired = "0";
   const { payer } = settleResponse;
   const hookAddress = (extra as any)?.hook;
   const version = "2";

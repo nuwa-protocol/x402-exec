@@ -9,7 +9,6 @@
  * - Automatic network discovery
  */
 
-import { evm } from "@x402/core/types";
 import { getSupportedNetworkIds, getChain as getX402xChain } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;
@@ -154,7 +153,7 @@ export class NetworkChainResolver {
 
     // Fallback to x402 chains (legacy)
     try {
-      const x402Chain = evm.getChainFromNetwork(network);
+      const x402Chain = getX402xChain(network);
       if (x402Chain?.rpcUrls?.default?.http?.[0]) {
         const chainInfo: ChainInfo = {
           chain: x402Chain,
@@ -288,7 +287,7 @@ export class NetworkChainResolver {
 
     // Try x402 (legacy fallback)
     try {
-      return evm.getChainFromNetwork(network);
+      return getX402xChain(network);
     } catch {
       return null;
     }

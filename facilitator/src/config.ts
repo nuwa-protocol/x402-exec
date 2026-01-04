@@ -10,8 +10,10 @@
  */
 
 import { config as loadEnv } from "dotenv";
-import type { X402Config } from "@x402/core/types";
 import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds } from "@x402x/extensions";
+
+// X402Config type (currently unused, kept for backward compatibility)
+export type X402Config = Record<string, never>;
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;
 import type { GasCostConfig } from "./gas-cost.js";

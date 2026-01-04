@@ -17,7 +17,7 @@ import { getLogger } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
-import type { X402Config } from "@x402/core/types";
+import type { X402Config } from "../config.js";
 import {
   createVersionDispatcher,
   type VerifyRequest,

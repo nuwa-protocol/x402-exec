@@ -10,8 +10,14 @@
  */
 
 import { Router, Request, Response } from "express";
-import type { SupportedPaymentKind } from "@x402/core/types";
 import type { PoolManager } from "../pool-manager.js";
+
+// SupportedPaymentKind type (matches the structure pushed to the array)
+interface SupportedPaymentKind {
+  x402Version: number;
+  scheme: string;
+  network: string;
+}
 import { hasNetworkConfig } from "../network-id.js";
 import { getLogger } from "../telemetry.js";
 

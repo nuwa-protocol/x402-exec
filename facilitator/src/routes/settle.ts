@@ -11,7 +11,8 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { type PaymentRequirements, type PaymentPayload, type X402Config } from "@x402/core/types";
+import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
+import type { X402Config } from "../config.js";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";

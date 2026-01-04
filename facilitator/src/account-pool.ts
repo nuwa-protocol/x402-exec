@@ -14,11 +14,13 @@
  */
 
 import pLimit from "p-limit";
-import type { Signer } from "@x402/core/types";
 import { createWalletClient, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { Hex } from "viem";
+import type { Hex, WalletClient } from "viem";
 import { getChain as getX402xChain } from "@x402x/extensions";
+
+// Signer type is a viem WalletClient with public actions
+type Signer = WalletClient;
 import { getLogger, recordMetric } from "./telemetry.js";
 import { QueueOverloadError, DuplicatePayerError } from "./errors.js";
 import { DEFAULTS } from "./defaults.js";
@@ -507,4 +509,4 @@ export async function createAccountPoolFromEnv(
 }
 
 // Re-export Signer type for use in settlement.ts
-export type { Signer } from "x402/types";
+export type { Signer };
