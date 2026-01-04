@@ -7,7 +7,7 @@
  * Now uses @x402x/facilitator-sdk for settlement logic instead of direct @x402 integration.
  */
 
-import type { PaymentPayload, PaymentRequirements } from "x402/types";
+import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import type { Address, Hex } from "viem";
 import { parseErc6492Signature } from "viem/utils";
 import {
@@ -16,8 +16,9 @@ import {
   isSettlementMode as isSettlementModeCore,
   parseSettlementExtra as parseSettlementExtraCore,
   calculateCommitment,
-} from "@x402x/core";
-import { getNetworkConfig, getChain } from "@x402x/extensions";
+  getNetworkConfig,
+  getChain,
+} from "@x402x/extensions";
 import { getLogger } from "./telemetry.js";
 import { calculateGasMetrics } from "./gas-metrics.js";
 import type { SettleResponseWithMetrics } from "./settlement-types.js";

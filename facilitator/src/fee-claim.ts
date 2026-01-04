@@ -6,8 +6,7 @@
 
 import type { PoolManager } from "./pool-manager.js";
 import { getLogger } from "./telemetry.js";
-import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
-import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";
+import { getNetworkConfig, SETTLEMENT_ROUTER_ABI } from "@x402x/extensions";
 import type { Address, Hex } from "viem";
 import { getConfigForNetwork, normalizeNetwork } from "./network-id.js";
 
@@ -134,7 +133,7 @@ export async function getPendingFees(
         for (const tokenAddress of supportedTokens) {
           try {
             const amount = await pool.execute(async (signer) => {
-              // Signer from AccountPool is always a viem WalletClient with publicActions
+              // All signers are EVM signers in this implementation
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const publicClient = signer as any;
               if (!publicClient.readContract) {
@@ -280,7 +279,7 @@ export async function claimFees(
       // will work correctly - the fees will be transferred to whichever account executes the transaction.
 
       const txHash = await pool.execute(async (signer) => {
-        // Signer from AccountPool is always a viem WalletClient with writeContract
+        // All signers are EVM signers in this implementation
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const walletClient = signer as any;
         if (!walletClient.writeContract) {

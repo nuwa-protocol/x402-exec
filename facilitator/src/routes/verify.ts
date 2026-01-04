@@ -11,12 +11,13 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { type PaymentRequirements, type PaymentPayload } from "x402/types";
+import { type PaymentRequirements, type PaymentPayload } from "@x402/core/types";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
 import type { RequestHandler } from "express";
 import type { BalanceChecker } from "../balance-check.js";
+import type { X402Config } from "../config.js";
 import {
   createVersionDispatcher,
   type VerifyRequest,
@@ -30,6 +31,7 @@ const logger = getLogger();
  */
 export interface VerifyRouteDependencies {
   poolManager: PoolManager;
+  x402Config?: X402Config;
   balanceChecker?: BalanceChecker;
   /** RPC URLs per network (network name -> RPC URL) */
   rpcUrls?: Record<string, string>;
@@ -64,6 +66,7 @@ export function createVerifyRoutes(
     createVersionDispatcher(
       {
         poolManager: deps.poolManager,
+        x402Config: deps.x402Config,
         balanceChecker: deps.balanceChecker,
       },
       {

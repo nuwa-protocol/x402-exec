@@ -6,10 +6,14 @@
  * - Cache configuration
  * - Account selection strategy
  * - SettlementRouter whitelist
+ * - X402 configuration
  */
 
 import { config as loadEnv } from "dotenv";
 import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds } from "@x402x/extensions";
+
+// X402Config type (currently unused, kept for backward compatibility)
+export type X402Config = Record<string, never>;
 // Alias for backward compatibility
 const getSupportedNetworks = getSupportedNetworkIds;
 import type { GasCostConfig } from "./gas-cost.js";
@@ -96,6 +100,7 @@ export interface AppConfig {
   server: ServerConfig;
   rateLimit: RateLimitConfig;
   allowedSettlementRouters: Record<string, string[]>;
+  x402Config?: X402Config;
   evmPrivateKeys: string[];
   gasCost: GasCostConfig;
   dynamicGasPrice: DynamicGasPriceConfig;
@@ -267,6 +272,16 @@ function networkToEnvVar(network: string): string {
     }
   })();
   return `${base.toUpperCase().replace(/[-:]/g, "_")}_SETTLEMENT_ROUTER_ADDRESS`;
+}
+
+/**
+ * Parse X402 configuration from environment variables
+ *
+ * @returns X402 configuration object or undefined if not configured
+ */
+function parseX402Config(): X402Config | undefined {
+  // Currently no X402 config needed for EVM-only setup
+  return undefined;
 }
 
 /**
@@ -665,6 +680,7 @@ export async function loadConfig(): Promise<AppConfig> {
     server: parseServerConfig(),
     rateLimit: parseRateLimitConfig(),
     allowedSettlementRouters: parseAllowedSettlementRouters(),
+    x402Config: parseX402Config(),
     evmPrivateKeys: loadEvmPrivateKeys(),
     gasCost: parseGasCostConfig(),
     dynamicGasPrice: await parseDynamicGasPriceConfig(),

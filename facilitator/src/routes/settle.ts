@@ -11,7 +11,8 @@
 
 import { Router, Request, Response } from "express";
 import type { RateLimitRequestHandler } from "express-rate-limit";
-import { type PaymentRequirements, type PaymentPayload } from "x402/types";
+import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
+import type { X402Config } from "../config.js";
 import { validateBasicStructure, validateX402Version } from "./validation.js";
 import { getLogger, recordMetric, recordHistogram } from "../telemetry.js";
 import type { PoolManager } from "../pool-manager.js";
@@ -35,6 +36,7 @@ const logger = getLogger();
 export interface SettleRouteDependencies {
   poolManager: PoolManager;
   allowedSettlementRouters: Record<string, string[]>;
+  x402Config?: X402Config;
   gasCost?: GasCostConfig; // Gas cost config for fee validation and dynamic gas limit
   dynamicGasPrice?: DynamicGasPriceConfig; // Dynamic gas price config for gas limit calculation
   balanceChecker?: BalanceChecker;
@@ -72,6 +74,7 @@ export function createSettleRoutes(
     createVersionDispatcher(
       {
         poolManager: deps.poolManager,
+        x402Config: deps.x402Config,
         balanceChecker: deps.balanceChecker,
         allowedSettlementRouters: deps.allowedSettlementRouters,
       },

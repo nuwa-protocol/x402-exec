@@ -4,7 +4,7 @@
  * Extends core types with facilitator-specific monitoring and metrics
  */
 
-import type { SettleResponse } from "x402/types";
+import type { SettleResponse } from "@x402x/extensions";
 import type { GasMetrics } from "./gas-metrics.js";
 
 /**
@@ -37,6 +37,6 @@ export interface SettlementConfig {
 /**
  * Error thrown when settlement extra parameters are invalid
  *
- * Re-exported from @x402x/core for convenience
+ * Re-exported from @x402x/extensions for convenience
  */
-export { SettlementExtraError } from "@x402x/core";
+export { SettlementExtraError } from "@x402x/extensions";

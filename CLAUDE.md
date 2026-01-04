@@ -20,8 +20,7 @@ x402-exec/
 │   ├── script/                     # Deployment scripts
 │   └── test/                       # Foundry tests (*.t.sol)
 ├── typescript/packages/
-│   ├── core/           # Core utilities: commitment calculation, network configs, middleware
-│   ├── extensions/     # x402 v2 protocol extensions for settlement
+│   ├── extensions/     # x402 v2 protocol extensions for settlement (commitment calc, networks, middleware)
 │   ├── client/         # Client SDK (React/wagmi hooks for browser wallets)
 │   └── facilitator-sdk/   # Utilities for facilitator implementations
 ├── facilitator/        # Production facilitator service (Node/Express)
@@ -72,7 +71,7 @@ forge coverage                     # Coverage report
 
 # TypeScript packages (Vitest)
 pnpm --filter './typescript/packages/**' test       # All SDK tests
-pnpm --filter @x402x/core test                     # Specific package
+pnpm --filter @x402x/extensions test               # Specific package
 pnpm --filter @x402x/extensions test:coverage
 
 # Facilitator
@@ -190,12 +189,11 @@ The codebase supports both x402 v1 (human-readable network names like `base-sepo
 
 ### x402 Dependency
 
-The workspace uses an npm alias to patch the official x402 package: `x402: "npm:@x402x/x402@^0.6.6-patch.7"`. This allows x402x extensions to work with official x402 v2 while maintaining backward compatibility.
+The workspace uses the official x402 v2 packages: `@x402/core`, `@x402/evm`, etc.
 
 ## Package Relationships
 
 ```
-@x402x/core        → Foundation: commitment calc, networks, middleware
 @x402x/extensions  → x402 v2 protocol extensions (uses @x402/core)
 @x402x/client      → Browser SDK (uses extensions, wagmi/React optional peers)
 @x402x/facilitator-sdk → Utilities for facilitator devs

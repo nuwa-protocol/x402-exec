@@ -245,7 +245,7 @@ describe("Network Auto Discovery E2E", () => {
   });
 
   describe("Network Auto-Discovery", () => {
-    it("should automatically support networks from @x402x/core", async () => {
+    it("should automatically support networks from @x402x/extensions", async () => {
       const networkStatus = await networkChainResolver.getNetworkStatus();
       const validNetworks = Object.entries(networkStatus)
         .filter(([_, status]) => status.valid)
@@ -287,7 +287,7 @@ describe("Network Auto Discovery E2E", () => {
       // v1 is deprecated - endpoint now returns only v2 kinds with CAIP-2 network identifiers
       const supportedNetworks = response.body.kinds.map((kind: any) => kind.network);
 
-      // Should include all networks from @x402x/core in CAIP-2 format
+      // Should include all networks from @x402x/extensions in CAIP-2 format
       expect(supportedNetworks).toContain("eip155:8453"); // base
       expect(supportedNetworks).toContain("eip155:84532"); // base-sepolia
       expect(supportedNetworks).toContain("eip155:196"); // x-layer
