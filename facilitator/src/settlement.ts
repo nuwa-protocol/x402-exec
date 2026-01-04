@@ -27,7 +27,6 @@ import type { BalanceChecker } from "./balance-check.js";
 import { getCanonicalNetwork, getNetworkDisplayName } from "./network-utils.js";
 import { createGasEstimator, type GasEstimationConfig } from "./gas-estimation/index.js";
 import type { Signer } from "./account-pool.js";
-import { createPublicClient, http } from "viem";
 
 const logger = getLogger();
 
@@ -627,7 +626,7 @@ export async function settleWithRouter(
 
           return {
             success: false,
-            errorReason: "insufficient_funds" as any,
+            errorReason: "INSUFFICIENT_FUNDS" as any,
             transaction: "",
             network: paymentRequirements.network,
             payer: authorization.from,
