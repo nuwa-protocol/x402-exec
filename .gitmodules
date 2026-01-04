@@ -7,16 +7,9 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "deps/x402"]
-	path = deps/x402
-	url = https://github.com/nuwa-protocol/x402.git
-	branch = x402x
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std.git
 [submodule "contracts/x402x-mint/lib/prb-math"]
 	path = contracts/x402x-mint/lib/prb-math
 	url = https://github.com/PaulRBerg/prb-math.git
-[submodule "deps/x402_upstream_main"]
-	path = deps/x402_upstream_main
-	url = https://github.com/coinbase/x402.git
