@@ -20,11 +20,11 @@ Happy-path Flow
 Integration Paths (with snippets)
 - Client-only (serverless): use @x402x/client to talk directly to facilitator; it computes commitment, signs, and submits. @x402x/react provides useX402Payment hook. @x402x/fetch wraps fetch to auto-handle 402 and settlement.
   ```bash
-  npm install @x402x/client @x402x/core @x402x/react @x402x/fetch viem
+  npm install @x402x/client @x402x/extensions @x402x/react @x402x/fetch viem
   ```
   ```typescript
   import { X402Client } from "@x402x/client";
-  import { TransferHook } from "@x402x/core";
+  import { TransferHook } from "@x402x/extensions";
 
   const client = new X402Client({
     wallet, // viem wallet client
@@ -53,9 +53,9 @@ Integration Paths (with snippets)
     ),
   );
   ```
-- SDK utilities: @x402x/core for commitment calculation, network configs, TransferHook encoding, settlement-mode detection; @x402x/fetch for browser fetch wrapper; @x402x/client for low-level prepareSettlement/signAuthorization/settle.
+- SDK utilities: @x402x/extensions for commitment calculation, network configs, TransferHook encoding, settlement-mode detection; @x402x/fetch for browser fetch wrapper; @x402x/client for low-level prepareSettlement/signAuthorization/settle.
   ```typescript
-  import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/core";
+  import { addSettlementExtra, getNetworkConfig, TransferHook } from "@x402x/extensions";
 
   const base = {
     scheme: "exact",
@@ -86,8 +86,7 @@ Networks and Addresses
 - Reference: https://www.x402x.dev/facilitator for current facilitator endpoints and network/router/hook details.
 
 Quick Integration Checklist
-- Install aliased x402 to enable paymentRequirements: npm install x402@npm:@x402x/x402@0.6.6-patch.7 (or pnpm/yarn).
-- Generate PaymentRequirements with extra using @x402x/core (addSettlementExtra). Keep salt unique per quote. payTo in extra is the final recipient; base payTo (without extra) points to settlementRouter.
+- Generate PaymentRequirements with extra using @x402x/extensions (addSettlementExtra). Keep salt unique per quote. payTo in extra is the final recipient; base payTo (without extra) points to settlementRouter.
 - On client, compute commitment or use @x402x/client/@x402x/fetch to do it automatically.
 - Include paymentRequirements in X-PAYMENT header so facilitator can validate the same parameters.
 - Choose TransferHook by default; customize hookData for splits. For custom hooks, publish address and ABI to clients/facilitator.

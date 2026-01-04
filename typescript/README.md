@@ -6,81 +6,30 @@ TypeScript SDK for the x402x settlement framework - a programmable payment settl
 
 This repository contains the following packages:
 
-- **[@x402x/core](./packages/core)**: Core utilities, types, and helper functions
-- **[@x402x/fetch](./packages/fetch)**: Fetch wrapper for automatic 402 handling with settlement support
-- **[@x402x/express](./packages/express)**: Express middleware for creating 402 payment gates
-- **[@x402x/hono](./packages/hono)**: Hono middleware for creating 402 payment gates
-- **[@x402x/react](./packages/react)**: React hooks for payment integration
+- **[@x402x/extensions](./packages/extensions)**: Protocol extensions for settlement (commitment calculation, networks, middleware)
+- **[@x402x/client](./packages/client)**: Client SDK (React/wagmi hooks for browser wallets)
+- **[@x402x/facilitator-sdk](./packages/facilitator-sdk)**: Utilities for facilitator implementations
 
 ## Quick Start
 
 ### For Resource Servers
 
-#### With Express
-
-```bash
-npm install @x402x/express @x402x/core
-```
-
-```typescript
-import express from 'express';
-import { x402Middleware } from '@x402x/express';
-
-const app = express();
-
-app.post('/api/premium',
-  x402Middleware({
-    network: 'eip155:84532', // Base Sepolia (CAIP-2 format)
-    amount: '100000', // 0.1 USDC
-    resource: '/api/premium',
-    facilitatorFee: '10000',
-  }),
-  (req, res) => {
-    res.json({ content: 'Premium content!' });
-  }
-);
-
-app.listen(3000);
-```
-
-#### With Hono
-
-```bash
-npm install @x402x/hono @x402x/core
-```
-
-```typescript
-import { Hono } from 'hono';
-import { x402Middleware } from '@x402x/hono';
-
-const app = new Hono();
-
-app.post('/api/premium',
-  x402Middleware({
-    network: 'eip155:84532', // Base Sepolia (CAIP-2 format)
-    amount: '100000',
-    resource: '/api/premium',
-  }),
-  (c) => c.json({ content: 'Premium content!' })
-);
-
-export default app;
-```
+Resource servers typically use the official `x402` packages for payment gates. See the [x402 documentation](https://github.com/x402/x402) for details.
 
 ### For Client Applications
 
-#### With React Hooks
+#### Using @x402x/client (React + Wagmi)
 
 ```bash
-npm install @x402x/react
+npm install @x402x/client @x402x/extensions
 ```
 
 ```typescript
-import { useX402Payment } from '@x402x/react';
+import { usePayment } from '@x402x/client';
 
 function PaymentButton() {
-  const { pay, status, error } = useX402Payment();
-  
+  const { pay, status, error } = usePayment();
+
   const handlePay = async () => {
     try {
       const data = await pay('/api/premium');
@@ -89,7 +38,7 @@ function PaymentButton() {
       console.error('Failed:', err);
     }
   };
-  
+
   return (
     <button onClick={handlePay} disabled={status === 'paying'}>
       {status === 'paying' ? 'Processing...' : 'Pay & Fetch'}
@@ -98,44 +47,39 @@ function PaymentButton() {
 }
 ```
 
-#### With Fetch Wrapper
-
-```bash
-npm install @x402x/fetch @x402x/core
-```
-
-```typescript
-import { x402xFetch } from '@x402x/fetch';
-import { createWalletClient } from 'viem';
-
-const walletClient = createWalletClient({...});
-const fetchWithPay = x402xFetch(fetch, walletClient);
-
-// Automatically handles 402 responses
-const response = await fetchWithPay('/api/premium');
-const data = await response.json();
-```
-
 ### For Facilitators
 
+Facilitators use the facilitator-sdk for settlement utilities:
+
 ```bash
-npm install @x402x/core
+npm install @x402x/facilitator-sdk @x402x/extensions
 ```
 
 ```typescript
-import { isSettlementMode, settleWithRouter } from '@x402x/core';
+import { isSettlementMode, parseSettlementExtra } from '@x402x/extensions';
+import { createRouterSettlementFacilitator } from '@x402x/facilitator-sdk';
 
-// Detect settlement mode
+// Create facilitator instance
+const facilitator = createRouterSettlementFacilitator({
+  allowedRouters: {
+    'eip155:84532': ['0x...'], // Base Sepolia
+  },
+  rpcUrls: {
+    'eip155:84532': 'https://sepolia.base.org',
+  },
+});
+
+// Detect and execute settlement
 if (isSettlementMode(paymentRequirements)) {
-  // Execute settlement via SettlementRouter
-  const result = await settleWithRouter(client, paymentPayload);
-  console.log('Settlement hash:', result.hash);
+  const params = parseSettlementExtra(paymentRequirements.extra);
+  const result = await facilitator.settle(paymentPayload, paymentRequirements);
+  console.log('Settlement hash:', result.transaction);
 }
 ```
 
 ## Features
 
-### ✨ Core Features (@x402x/core)
+### ✨ Core Extensions (@x402x/extensions)
 
 - 🔐 **Commitment Calculation**: Cryptographically bind settlement parameters
 - 🌐 **Network Support**: Pre-configured for multiple networks using CAIP-2 format
@@ -143,76 +87,69 @@ if (isSettlementMode(paymentRequirements)) {
   - Base Mainnet: `eip155:8453`
   - X-Layer Testnet: `eip155:1952`
   - X-Layer Mainnet: `eip155:196`
-- 🪝 **Built-in Hooks**: TransferHook for basic payment splits
-- 🛠️ **Utility Functions**: Helper functions for common tasks
+- 🛠️ **Utility Functions**: Helper functions for settlement mode detection and parameter parsing
 - 📝 **Full TypeScript**: Complete type definitions
 
-### 🔄 Fetch Wrapper (@x402x/fetch)
+### 🔄 Facilitator SDK (@x402x/facilitator-sdk)
 
-- 🔄 **Automatic 402 Handling**: Transparent payment injection
-- 🎯 **Settlement Mode Detection**: Uses commitment-based nonce when needed
-- 🔙 **Fallback Support**: Works with standard x402 for non-settlement payments
-- 💰 **Configurable Limits**: Set maximum payment amounts
-- 🚀 **Zero Configuration**: Works out of the box
+- 🏦 **Settlement Execution**: Router settlement facilitation with wallet client
+- ✅ **Verification**: Payment verification for settlement mode
+- 🌐 **Network Configuration**: Multi-network support with CAIP-2 identifiers
+- 📝 **TypeScript**: Full type safety
 
-### 🌐 Server Middleware (@x402x/express, @x402x/hono)
+### ⚛️ Client SDK (@x402x/client)
 
-- 🚀 **Drop-in Middleware**: Easy integration with existing apps
-- 💰 **Facilitator Fees**: Built-in support for facilitator incentives
-- 🔌 **Hook Support**: Works with builtin or custom hooks
-- 🎯 **Zero Configuration**: Sensible defaults for common use cases
-- ⚡ **Edge Runtime**: @x402x/hono supports edge deployments
-
-### ⚛️ React Integration (@x402x/react)
-
-- 🪝 **React Hooks**: `useX402Payment` for easy integration
+- 🪝 **React Hooks**: `usePayment` for easy integration
 - 🔄 **State Management**: Automatic status and error tracking
 - 🎯 **Wagmi Integration**: Works seamlessly with Wagmi
 - 💡 **TypeScript**: Full type safety
-- 🚀 **Simple API**: Clean and intuitive interface
+- 🚀 **Commitment-based Security**: Automatic commitment calculation for settlement mode
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Client                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ @x402x/react │  │ @x402x/fetch │  │   Native     │      │
-│  │    Hooks     │─▶│    Wrapper   │─▶│    Fetch     │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│                           │                                  │
-│                           │ Uses                             │
-│                           ▼                                  │
-│                    ┌──────────────┐                          │
-│                    │ @x402x/core  │                          │
-│                    │  Utilities   │                          │
-│                    └──────────────┘                          │
+│  ┌──────────────┐                                          │
+│  │ @x402x/client│  React Hooks + Wallet Integration         │
+│  │              │──────────────┐                            │
+│  └──────────────┘              │                            │
+│                                 │ Uses                       │
+│                                 ▼                            │
+│                    ┌──────────────────────┐                 │
+│                    │ @x402x/extensions    │                 │
+│                    │  • calculateCommitment                 │
+│                    │  • isSettlementMode   │                 │
+│                    │  • parseSettlementExtra                │
+│                    └──────────────────────┘                 │
 └─────────────────────────────────────────────────────────────┘
                              │ X-PAYMENT header
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Resource Server                           │
-│  ┌────────────────────┐         ┌────────────────────┐      │
-│  │  @x402x/express    │   OR    │   @x402x/hono      │      │
-│  │    Middleware      │         │    Middleware      │      │
-│  └────────────────────┘         └────────────────────┘      │
-│           │                              │                   │
-│           │ Uses                         │ Uses              │
-│           ▼                              ▼                   │
-│                    ┌──────────────┐                          │
-│                    │ @x402x/core  │                          │
-│                    │  Utilities   │                          │
-│                    └──────────────┘                          │
+│                                                             │
+│  Uses official x402 packages for payment gates              │
+│  (See https://github.com/x402/x402)                         │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
                              │ Payment request
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       Facilitator                            │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │              @x402x/core Utilities                   │   │
-│  │  • isSettlementMode                                  │   │
-│  │  • settleWithRouter                                  │   │
-│  │  • validateSettlementRouter                          │   │
+│  │          @x402x/facilitator-sdk                      │   │
+│  │  • createRouterSettlementFacilitator                 │   │
+│  │  • executeSettlementWithWalletClient                 │   │
+│  │  • parseSettlementRouterParams                       │   │
+│  └──────────────────────────────────────────────────────┘   │
+│           │                                                  │
+│           │ Uses                                             │
+│           ▼                                                  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │          @x402x/extensions                            │   │
+│  │  • isSettlementMode                                   │   │
+│  │  • parseSettlementExtra                               │   │
+│  │  • getNetworkConfig                                   │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                              │
@@ -227,10 +164,10 @@ if (isSettlementMode(paymentRequirements)) {
 
 Following the official x402 library design, we split functionality into separate packages:
 
-1. **Separation of Concerns**: Server middleware, client fetch, and React hooks have different dependencies
-2. **Bundle Size**: Users only install what they need (e.g., React apps don't need Express)
-3. **Peer Dependencies**: Express and Hono are optional peer dependencies
-4. **Flexible Deployment**: Edge runtimes can use @x402x/hono without Node.js dependencies
+1. **Separation of Concerns**: Client, facilitator, and extensions have different use cases
+2. **Bundle Size**: Users only install what they need
+3. **Peer Dependencies**: Clear dependency management
+4. **Flexible Deployment**: Different environments can use only what they need
 5. **Maintainability**: Clear boundaries make the codebase easier to maintain
 
 ## Development
@@ -248,10 +185,7 @@ pnpm install
 From the **project root**:
 
 ```bash
-# Build all packages (including x402 and SDK)
-pnpm run build
-
-# Or build SDK only
+# Build all packages
 pnpm run build:sdk
 ```
 
@@ -259,26 +193,25 @@ pnpm run build:sdk
 
 ```bash
 # From project root
-pnpm --filter @x402x/core run build
-pnpm --filter @x402x/fetch run build
+pnpm --filter @x402x/extensions run build
+pnpm --filter @x402x/client run build
+pnpm --filter @x402x/facilitator-sdk run build
 
 # Or from package directory
-cd typescript/packages/core
+cd typescript/packages/extensions
 pnpm run build
 ```
 
 ## Documentation
 
-- **Core**: [packages/core/README.md](./packages/core/README.md)
-- **Fetch**: [packages/fetch/README.md](./packages/fetch/README.md)
-- **Express**: [packages/express/README.md](./packages/express/README.md)
-- **Hono**: [packages/hono/README.md](./packages/hono/README.md)
-- **React**: [packages/react/README.md](./packages/react/README.md)
+- **Extensions**: [packages/extensions/README.md](./packages/extensions/README.md)
+- **Client**: [packages/client/README.md](./packages/client/README.md)
+- **Facilitator SDK**: [packages/facilitator-sdk/README.md](./packages/facilitator-sdk/README.md)
 
 ## Examples
 
 See the main repository examples:
-- **Facilitator**: `../../examples/facilitator/`
+- **Facilitator**: `../../facilitator/`
 - **Showcase**: `../../examples/showcase/`
 
 ## Contributing
