@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { VersionDispatcher } from "../../src/version-dispatcher.js";
+import { RouterSettlementService } from "../../src/router-settlement-service.js";
 import type { PoolManager } from "../../src/pool-manager.js";
 import type { AccountPool } from "../../src/account-pool.js";
 
@@ -123,7 +123,7 @@ vi.mock("../../src/network-utils.js", () => ({
 describe("V2 AccountPool Integration", () => {
   let mockAccountPool: any;
   let mockPoolManager: PoolManager;
-  let dispatcher: VersionDispatcher;
+  let service: RouterSettlementService;
   let executeCallCount: number;
 
   beforeEach(() => {
@@ -164,8 +164,8 @@ describe("V2 AccountPool Integration", () => {
       getPool: vi.fn((network: string) => mockAccountPool),
     } as any;
 
-    // Create dispatcher with V2 enabled
-    dispatcher = new VersionDispatcher(
+    // Create Router Settlement Service with V2 enabled
+    service = new RouterSettlementService(
       {
         poolManager: mockPoolManager,
         x402Config: undefined,
@@ -211,7 +211,7 @@ describe("V2 AccountPool Integration", () => {
         },
       };
 
-      await dispatcher.settle({
+      await service.settle({
         paymentPayload: paymentPayload as any,
         paymentRequirements: paymentRequirements as any,
         x402Version: 2,
@@ -253,7 +253,7 @@ describe("V2 AccountPool Integration", () => {
 
       await Promise.all(
         settlements.map((data) =>
-          dispatcher.settle({
+          service.settle({
             paymentPayload: data.paymentPayload as any,
             paymentRequirements: data.paymentRequirements as any,
             x402Version: 2,
@@ -288,7 +288,7 @@ describe("V2 AccountPool Integration", () => {
         },
       };
 
-      await dispatcher.settle({
+      await service.settle({
         paymentPayload: paymentPayload as any,
         paymentRequirements: paymentRequirements as any,
         x402Version: 2,
@@ -327,7 +327,7 @@ describe("V2 AccountPool Integration", () => {
       };
 
       await expect(
-        dispatcher.settle({
+        service.settle({
           paymentPayload: paymentPayload as any,
           paymentRequirements: paymentRequirements as any,
           x402Version: 2,
@@ -352,7 +352,7 @@ describe("V2 AccountPool Integration", () => {
         maxAmountRequired: "1000000",
       };
 
-      await dispatcher.settle({
+      await service.settle({
         paymentPayload: v1Payload as any,
         paymentRequirements: v1Requirements as any,
         x402Version: 1,
@@ -380,7 +380,7 @@ describe("V2 AccountPool Integration", () => {
         },
       };
 
-      await dispatcher.settle({
+      await service.settle({
         paymentPayload: v2Payload as any,
         paymentRequirements: v2Requirements as any,
         x402Version: 2,
@@ -414,7 +414,7 @@ describe("V2 AccountPool Integration", () => {
         },
       };
 
-      const result = await dispatcher.verify({
+      const result = await service.verify({
         paymentPayload: paymentPayload as any,
         paymentRequirements: paymentRequirements as any,
         x402Version: 2,

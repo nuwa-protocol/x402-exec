@@ -23,10 +23,10 @@ import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { GasEstimationConfig } from "../gas-estimation/index.js";
 import { DuplicatePayerError, QueueOverloadError } from "../errors.js";
 import {
-  createVersionDispatcher,
+  createRouterSettlementService,
   type SettleRequest,
-  type VersionDispatcherDependencies,
-} from "../version-dispatcher.js";
+  type RouterSettlementServiceDependencies,
+} from "../router-settlement-service.js";
 
 const logger = getLogger();
 
@@ -56,7 +56,7 @@ export interface SettleRouteDependencies {
  * @param rateLimiter - Rate limiting middleware
  * @param hookValidation - Hook whitelist validation middleware
  * @param feeValidation - Fee validation middleware
- * @param dispatcher - Shared version dispatcher (optional, will create new if not provided)
+ * @param service - Shared Router Settlement Service (optional, will create new if not provided)
  * @returns Express Router with settle endpoints
  */
 export function createSettleRoutes(
@@ -64,14 +64,14 @@ export function createSettleRoutes(
   rateLimiter: RateLimitRequestHandler,
   hookValidation?: RequestHandler,
   feeValidation?: RequestHandler,
-  dispatcher?: ReturnType<typeof createVersionDispatcher>,
+  service?: ReturnType<typeof createRouterSettlementService>,
 ): Router {
   const router = Router();
 
-  // Use provided dispatcher or create new one
-  const versionDispatcher =
-    dispatcher ||
-    createVersionDispatcher(
+  // Use provided service or create new one
+  const routerSettlementService =
+    service ||
+    createRouterSettlementService(
       {
         poolManager: deps.poolManager,
         x402Config: deps.x402Config,
@@ -115,7 +115,7 @@ export function createSettleRoutes(
     try {
       const body: SettleRequest = req.body;
 
-      // Basic structure validation - let VersionDispatcher handle detailed validation
+      // Basic structure validation - let RouterSettlementService handle detailed validation
       const paymentRequirements = validateBasicStructure(
         body.paymentRequirements,
         "paymentRequirements",
@@ -129,7 +129,7 @@ export function createSettleRoutes(
       validateX402Version(body.x402Version);
 
       // Route to appropriate implementation based on version
-      const result = await versionDispatcher.settle({
+      const result = await routerSettlementService.settle({
         paymentPayload,
         paymentRequirements,
         x402Version: body.x402Version,
