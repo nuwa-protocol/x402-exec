@@ -23,7 +23,7 @@ export async function recordHook(
 
   const { network, asset, maxAmountRequired, extra } = paymentRequirements;
   const { payer } = settleResponse;
-  const hookAddress = extra?.hook;
+  const hookAddress = (extra as any)?.hook;
 
   if (!hookAddress || !payer) {
     logger.warn("Hook address or payer not found, skipping transaction logging.");
@@ -36,12 +36,12 @@ export async function recordHook(
     t_volume: maxAmountRequired,
     h_asset: asset,
     // Pass additional hook metadata for insertion on first record
-    h_name: extra?.name || "Untitled Hook", // Default name if not provided
-    h_description: extra?.description,
-    h_pay_to: extra?.payTo,
-    h_facilitator_fee: extra?.facilitatorFee,
-    h_settlement_router: extra?.settlementRouter,
-    h_data: extra?.data,
+    h_name: (extra as any)?.name || "Untitled Hook", // Default name if not provided
+    h_description: (extra as any)?.description,
+    h_pay_to: (extra as any)?.payTo,
+    h_facilitator_fee: (extra as any)?.facilitatorFee,
+    h_settlement_router: (extra as any)?.settlementRouter,
+    h_data: (extra as any)?.data,
   });
 
   return error;
@@ -57,9 +57,9 @@ export async function recordTransaction(
 
   const { network, payTo, maxAmountRequired, extra } = paymentRequirements;
   const { payer } = settleResponse;
-  const hookAddress = extra?.hook;
+  const hookAddress = (extra as any)?.hook;
   const version = "2";
-  const hookName = extra?.name || "Untitled Hook";
+  const hookName = (extra as any)?.name || "Untitled Hook";
   const { transaction } = settleResponse;
 
   const { error } = await supabase.from("x402_transactions").insert({
@@ -70,7 +70,7 @@ export async function recordTransaction(
     to_addr: payTo,
     hook: hookAddress,
     hook_name: hookName,
-    facilitator: Number(extra?.facilitatorFee),
+    facilitator: Number((extra as any)?.facilitatorFee || 0),
     amount: maxAmountRequired,
     version,
   });

@@ -5,7 +5,6 @@
  */
 
 import type { PoolManager } from "./pool-manager.js";
-import { isEvmSignerWallet } from "x402/types";
 import { getLogger } from "./telemetry.js";
 import { getNetworkConfig } from "@x402x/extensions"; // Use extensions version for v2 CAIP-2 support
 import { SETTLEMENT_ROUTER_ABI } from "@x402x/core";
@@ -135,10 +134,7 @@ export async function getPendingFees(
         for (const tokenAddress of supportedTokens) {
           try {
             const amount = await pool.execute(async (signer) => {
-              if (!isEvmSignerWallet(signer)) {
-                throw new Error("Fee claiming requires EVM signer");
-              }
-
+              // Signer from AccountPool is always a viem WalletClient with publicActions
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const publicClient = signer as any;
               if (!publicClient.readContract) {
@@ -284,10 +280,7 @@ export async function claimFees(
       // will work correctly - the fees will be transferred to whichever account executes the transaction.
 
       const txHash = await pool.execute(async (signer) => {
-        if (!isEvmSignerWallet(signer)) {
-          throw new Error("Fee claiming requires EVM signer");
-        }
-
+        // Signer from AccountPool is always a viem WalletClient with writeContract
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const walletClient = signer as any;
         if (!walletClient.writeContract) {
