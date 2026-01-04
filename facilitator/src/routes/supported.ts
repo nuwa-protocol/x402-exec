@@ -23,16 +23,15 @@ import { getLogger } from "../telemetry.js";
 
 /**
  * Dependencies required by supported routes
+ * v2-only - v1 has been deprecated
  */
 export interface SupportedRouteDependencies {
   poolManager: PoolManager;
-  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
-  enableV2?: boolean;
   /** Facilitator signer address for v2 (optional, will be derived from privateKey if not provided) */
   v2Signer?: string;
-  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY from v1) */
+  /** Private key for v2 local signing (reuses EVM_PRIVATE_KEY) */
   v2PrivateKey?: string;
-  /** Allowed routers per network for v2 (for availability check) */
+  /** Allowed routers per network (CAIP-2 network IDs, for availability check) */
   allowedRouters?: Record<string, string[]>;
   /** RPC URLs per network (for availability check) */
   rpcUrls?: Record<string, string>;
@@ -115,8 +114,8 @@ export function createSupportedRoutes(deps: SupportedRouteDependencies): Router 
       "Filtered networks for /supported"
     );
 
-    // Check if v2 is available for advertisement
-    const v2Available = !!(deps.enableV2 && (deps.v2Signer || deps.v2PrivateKey));
+    // v2 is always available
+    const v2Available = !!(deps.v2Signer || deps.v2PrivateKey);
 
     // Only generate v2 kinds with CAIP-2 canonical network names
     // v1 is deprecated and no longer returned

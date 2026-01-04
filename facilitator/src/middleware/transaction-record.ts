@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { PaymentRequirements, SettleResponse } from "@x402/core/types";
+import type { PaymentPayload } from "@x402/core/types";
 import { getLogger } from "../telemetry.js";
 import { recordHook, recordTransaction } from "../lib/supabase.js";
 
@@ -20,6 +21,7 @@ export function createTransactionRecordMiddleware() {
     res.json = function (body) {
       try {
         const paymentRequirements: PaymentRequirements | undefined = req.body?.paymentRequirements;
+        const paymentPayload: PaymentPayload | undefined = req.body?.paymentPayload;
         const settleResponse: SettleResponse = body;
 
         if (paymentRequirements && settleResponse?.transaction) {
@@ -31,7 +33,7 @@ export function createTransactionRecordMiddleware() {
             "Transaction information captured",
           );
 
-          recodeTransaction(paymentRequirements, settleResponse).catch((error) => {
+          recodeTransaction(paymentRequirements, settleResponse, paymentPayload).catch((error) => {
             logger.error({ error, transaction }, "Failed to record transaction (unhandled)");
           });
         }
@@ -49,15 +51,16 @@ export function createTransactionRecordMiddleware() {
 export async function recodeTransaction(
   paymentRequirements: PaymentRequirements,
   settleResponse: SettleResponse,
+  paymentPayload?: PaymentPayload,
 ) {
   const { transaction } = settleResponse;
 
   try {
-    const error = await recordHook(paymentRequirements, settleResponse);
+    const error = await recordHook(paymentRequirements, settleResponse, paymentPayload);
     if (error) {
       throw error;
     }
-    const error1 = await recordTransaction(paymentRequirements, settleResponse);
+    const error1 = await recordTransaction(paymentRequirements, settleResponse, paymentPayload);
     if (error1) {
       throw error1;
     }

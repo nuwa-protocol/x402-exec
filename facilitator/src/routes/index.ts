@@ -72,7 +72,6 @@ export function registerRoutes(
       allowedSettlementRouters: deps.allowedSettlementRouters,
     },
     {
-      enableV2: deps.enableV2,
       allowedRouters: deps.allowedRouters,
       rpcUrls: deps.rpcUrls,
     },
@@ -110,7 +109,6 @@ export function registerRoutes(
   // Create /supported routes
   const supportedRoutes = createSupportedRoutes({
     poolManager: deps.poolManager,
-    enableV2: deps.enableV2,
     v2Signer: deps.v2Signer,
     v2PrivateKey: deps.v2PrivateKey,
     allowedRouters: deps.allowedSettlementRouters, // Pass for availability check

@@ -5,8 +5,8 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["**/*.test.ts"],
-    exclude: ["**/dist/**", "**/node_modules/**"],
-    testTimeout: 30000, // Increased timeout for E2E tests
+    exclude: ["**/dist/**", "**/node_modules/**", "**/e2e/**"], // Exclude e2e from default test run
+    testTimeout: 30000, // Increased timeout for long-running tests (e.g., integration tests with gas estimation simulations)
     hookTimeout: 30000,
     coverage: {
       provider: "v8",
