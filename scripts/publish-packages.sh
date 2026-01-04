@@ -207,11 +207,12 @@ echo ""
 
 # Run tests if not skipped
 if [ "$SKIP_TESTS" != "true" ]; then
-    print_step "Running tests for all packages..."
+    print_step "Running tests for all SDK packages..."
+    # Only test packages being published (exclude facilitator which has slow e2e tests)
     if pnpm --filter='./typescript/packages/**' run test; then
-        print_info "✅ All tests passed"
+        print_info "✅ All SDK package tests passed"
     else
-        print_error "❌ Some tests failed"
+        print_error "❌ Some SDK package tests failed"
         if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
             print_error "CI environment detected, continuing anyway..."
         else
