@@ -10,10 +10,19 @@
  */
 
 import { Router, Request, Response } from "express";
-import type { SupportedPaymentKind } from "x402/types";
 import type { PoolManager } from "../pool-manager.js";
 import { hasNetworkConfig } from "../network-id.js";
 import { getLogger } from "../telemetry.js";
+
+/**
+ * Supported payment kind structure
+ * Local definition since SupportedPaymentKind doesn't exist in x402 v2
+ */
+export interface SupportedPaymentKind {
+  x402Version: 2;
+  scheme: string;
+  network: string;
+}
 
 /**
  * Dependencies required by supported routes

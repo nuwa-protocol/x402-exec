@@ -7,7 +7,7 @@
 
 /// <reference path="./types.d.ts" />
 
-import type { PaymentPayload, PaymentRequirements, X402Config } from "x402/types";
+import type { PaymentPayload, PaymentRequirements } from "x402/types";
 import type { PaymentRequirements as V2PaymentRequirements } from "@x402x/extensions";
 import type { VerifyResponse, SettleResponse } from "x402/types";
 import { getLogger, recordMetric, recordHistogram } from "./telemetry.js";
@@ -34,7 +34,6 @@ export interface VersionDispatcherConfig {
  */
 export interface VersionDispatcherDependencies {
   poolManager: PoolManager;
-  x402Config?: X402Config;
   balanceChecker?: BalanceChecker;
   allowedSettlementRouters?: Record<string, string[]>;
 }

@@ -4,7 +4,7 @@
  * Extends core types with facilitator-specific monitoring and metrics
  */
 
-import type { SettleResponse } from "@x402x/core";
+import type { SettleResponse } from "x402/types";
 import type { GasMetrics } from "./gas-metrics.js";
 
 /**

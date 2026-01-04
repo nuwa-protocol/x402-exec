@@ -68,7 +68,6 @@ export function registerRoutes(
   const versionDispatcher = createVersionDispatcher(
     {
       poolManager: deps.poolManager,
-      x402Config: deps.x402Config,
       balanceChecker: deps.balanceChecker,
       allowedSettlementRouters: deps.allowedSettlementRouters,
     },

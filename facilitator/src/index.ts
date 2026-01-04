@@ -179,7 +179,6 @@ async function main() {
         tokenCache,
         balanceChecker,
         allowedSettlementRouters: config.allowedSettlementRouters,
-        x402Config: config.x402Config,
         gasCost: config.gasCost,
         dynamicGasPrice: config.dynamicGasPrice,
         tokenPrice: config.tokenPrice,

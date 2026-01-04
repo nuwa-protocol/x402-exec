@@ -505,3 +505,6 @@ export async function createAccountPoolFromEnv(
   const evmKeys = loadEvmPrivateKeys();
   return AccountPool.create(evmKeys, network, config);
 }
+
+// Re-export Signer type for use in settlement.ts
+export type { Signer } from "x402/types";
