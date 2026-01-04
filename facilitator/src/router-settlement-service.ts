@@ -1,5 +1,5 @@
 /**
- * Version Dispatcher for x402 Facilitator
+ * Router Settlement Service for x402 Facilitator
  *
  * v1 is deprecated - only x402Version=2 is supported.
  * All requests are routed to v2 implementation.
@@ -19,9 +19,9 @@ import { determineX402Version, isVersionSupported, getCanonicalNetwork } from ".
 const logger = getLogger();
 
 /**
- * Configuration for version dispatcher
+ * Configuration for Router Settlement Service
  */
-export interface VersionDispatcherConfig {
+export interface RouterSettlementServiceConfig {
   /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
   enableV2?: boolean;
   /** Allowed routers per network for v2 */
@@ -31,9 +31,9 @@ export interface VersionDispatcherConfig {
 }
 
 /**
- * Dependencies for version dispatcher
+ * Dependencies for Router Settlement Service
  */
-export interface VersionDispatcherDependencies {
+export interface RouterSettlementServiceDependencies {
   poolManager: PoolManager;
   x402Config?: X402Config;
   balanceChecker?: BalanceChecker;
@@ -59,12 +59,12 @@ export interface SettleRequest {
 }
 
 /**
- * Version dispatcher that routes to appropriate implementation
+ * Router Settlement Service that handles settlement via SettlementRouter
  */
-export class VersionDispatcher {
+export class RouterSettlementService {
   constructor(
-    private deps: VersionDispatcherDependencies,
-    private config: VersionDispatcherConfig = {},
+    private deps: RouterSettlementServiceDependencies,
+    private config: RouterSettlementServiceConfig = {},
   ) {
     if (this.config.enableV2) {
       logger.info(
@@ -72,10 +72,10 @@ export class VersionDispatcher {
           hasAllowedRouters: !!this.config.allowedRouters,
           hasRpcUrls: !!this.config.rpcUrls,
         },
-        "Version dispatcher: v2 support enabled (using shared AccountPool)",
+        "Router Settlement Service: v2 support enabled (using shared AccountPool)",
       );
     } else {
-      logger.info("Version dispatcher: v1 only mode");
+      logger.info("Router Settlement Service: v1 only mode");
     }
   }
 
@@ -336,11 +336,11 @@ export class VersionDispatcher {
 }
 
 /**
- * Create version dispatcher
+ * Create Router Settlement Service
  */
-export function createVersionDispatcher(
-  deps: VersionDispatcherDependencies,
-  config: VersionDispatcherConfig = {},
-): VersionDispatcher {
-  return new VersionDispatcher(deps, config);
+export function createRouterSettlementService(
+  deps: RouterSettlementServiceDependencies,
+  config: RouterSettlementServiceConfig = {},
+): RouterSettlementService {
+  return new RouterSettlementService(deps, config);
 }

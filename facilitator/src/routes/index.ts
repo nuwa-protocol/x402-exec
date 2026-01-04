@@ -15,7 +15,7 @@ import { createFeeRoutes, FeeRouteDependencies } from "./fee.js";
 import { createStatsRoutes, type StatsRouteDependencies } from "./stats.js";
 import { createHookValidationMiddleware } from "../middleware/hook-validation.js";
 import { createFeeValidationMiddleware } from "../middleware/fee-validation.js";
-import { createVersionDispatcher } from "../version-dispatcher.js";
+import { createRouterSettlementService } from "../router-settlement-service.js";
 import type { GasCostConfig } from "../gas-cost.js";
 import type { DynamicGasPriceConfig } from "../dynamic-gas-price.js";
 import type { TokenPriceConfig } from "../token-price.js";
@@ -64,8 +64,8 @@ export function registerRoutes(
     deps.tokenPrice,
   );
 
-  // Create shared version dispatcher for both verify and settle routes
-  const versionDispatcher = createVersionDispatcher(
+  // Create shared Router Settlement Service for both verify and settle routes
+  const routerSettlementService = createRouterSettlementService(
     {
       poolManager: deps.poolManager,
       balanceChecker: deps.balanceChecker,
@@ -88,7 +88,7 @@ export function registerRoutes(
     rateLimiters.verifyRateLimiter,
     hookValidation,
     feeValidation,
-    versionDispatcher, // Pass shared dispatcher
+    routerSettlementService, // Pass shared service
   );
   app.use(verifyRoutes);
 
@@ -98,7 +98,7 @@ export function registerRoutes(
     rateLimiters.settleRateLimiter,
     hookValidation,
     feeValidation,
-    versionDispatcher, // Pass shared dispatcher
+    routerSettlementService, // Pass shared service
   );
   app.use(settleRoutes);
 

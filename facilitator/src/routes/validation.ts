@@ -9,7 +9,7 @@ import type { PaymentRequirements, PaymentPayload } from "@x402/core/types";
 
 /**
  * Basic structure validation to ensure required fields exist
- * Detailed validation is handled by VersionDispatcher
+ * Detailed validation is handled by RouterSettlementService
  *
  * @param data - The data to validate
  * @param fieldName - The field name for error messages
