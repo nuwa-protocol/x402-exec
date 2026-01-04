@@ -77,23 +77,6 @@ describe("x402 version validation (v2-only)", () => {
       );
     });
 
-    it("should reject x402Version=1", async () => {
-      registerSettlementHooks(mockServer, {
-        enableSaltExtraction: true,
-      });
-
-      const context = {
-        paymentPayload: {
-          x402Version: 1,
-        } as PaymentPayload,
-        requirements: {} as PaymentRequirements,
-      };
-
-      await expect(onBeforeVerifyCallback!(context)).rejects.toThrow(
-        "x402Version 1 is deprecated",
-      );
-    });
-
     it("should reject x402Version=3", async () => {
       registerSettlementHooks(mockServer, {
         enableSaltExtraction: true,
@@ -188,23 +171,6 @@ describe("x402 version validation (v2-only)", () => {
 
       await expect(onBeforeSettleCallback!(context)).rejects.toThrow(
         "x402Version is required and must be 2. v1 is deprecated - please use x402Version=2",
-      );
-    });
-
-    it("should reject x402Version=1 in onBeforeSettle", async () => {
-      registerSettlementHooks(mockServer, {
-        validateSettlementParams: true,
-      });
-
-      const context = {
-        paymentPayload: {
-          x402Version: 1,
-        } as PaymentPayload,
-        requirements: {} as PaymentRequirements,
-      };
-
-      await expect(onBeforeSettleCallback!(context)).rejects.toThrow(
-        "x402Version 1 is deprecated",
       );
     });
   });

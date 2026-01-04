@@ -164,16 +164,28 @@ describe("E2E: Facilitator Server", () => {
   });
 
   describe("Payment Verification Flow", () => {
-    it("should verify valid payment payload", async () => {
+    it("should verify valid payment payload (v2)", async () => {
       const payload = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         resource: "/api/example",
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+              hook: "0x0000000000000000000000000000000000000000",
+              hookData: "0x",
+              finalPayTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+              facilitatorFee: "0",
+            },
+          },
+        },
         payload: {
           authorization: {
             from: "0x1234567890123456789012345678901234567890",
-            to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            to: "0x32431D4511e061F1133520461B07eC42afF157D6",
             value: "1000000",
             validAfter: 0,
             validBefore: Math.floor(Date.now() / 1000) + 3600,
@@ -188,12 +200,20 @@ describe("E2E: Facilitator Server", () => {
       };
 
       const requirements = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         receiver: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
         maxAmountRequired: "1000000",
+        extra: {
+          settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+          hook: "0x0000000000000000000000000000000000000000",
+          hookData: "0x",
+          payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+          facilitatorFee: "0",
+          salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+        },
       };
 
       const response = await request(app).post("/verify").send({
@@ -210,16 +230,28 @@ describe("E2E: Facilitator Server", () => {
   });
 
   describe("Standard Settlement Flow", () => {
-    it("should settle payment in standard mode", async () => {
+    it("should settle payment in standard mode (v2)", async () => {
       const payload = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         resource: "/api/example",
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+              hook: "0x0000000000000000000000000000000000000000",
+              hookData: "0x",
+              finalPayTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+              facilitatorFee: "0",
+            },
+          },
+        },
         payload: {
           authorization: {
             from: "0x1234567890123456789012345678901234567890",
-            to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            to: "0x32431D4511e061F1133520461B07eC42afF157D6",
             value: "1000000",
             validAfter: 0,
             validBefore: Math.floor(Date.now() / 1000) + 3600,
@@ -234,12 +266,20 @@ describe("E2E: Facilitator Server", () => {
       };
 
       const requirements = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         receiver: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
         maxAmountRequired: "1000000",
+        extra: {
+          settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+          hook: "0x0000000000000000000000000000000000000000",
+          hookData: "0x",
+          payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+          facilitatorFee: "0",
+          salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+        },
       };
 
       const response = await request(app).post("/settle").send({
@@ -255,16 +295,28 @@ describe("E2E: Facilitator Server", () => {
   });
 
   describe("Settlement Router Flow", () => {
-    it("should settle payment with settlement router", async () => {
+    it("should settle payment with settlement router (v2)", async () => {
       const payload = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         resource: "/api/example",
+        extensions: {
+          "x402x-router-settlement": {
+            info: {
+              settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+              hook: "0x1234567890123456789012345678901234567890",
+              hookData: "0x",
+              finalPayTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+              facilitatorFee: "100000",
+            },
+          },
+        },
         payload: {
           authorization: {
             from: "0x1234567890123456789012345678901234567890",
-            to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            to: "0x32431D4511e061F1133520461B07eC42afF157D6",
             value: "1000000",
             validAfter: 0,
             validBefore: Math.floor(Date.now() / 1000) + 3600,
@@ -279,9 +331,9 @@ describe("E2E: Facilitator Server", () => {
       };
 
       const requirements = {
-        x402Version: 1,
+        x402Version: 2,
         scheme: "exact",
-        network: "base-sepolia",
+        network: "eip155:84532",
         asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         receiver: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
         maxAmountRequired: "1000000",

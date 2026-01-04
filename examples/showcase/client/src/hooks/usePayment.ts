@@ -48,8 +48,8 @@ interface PaymentRequirements {
 interface PaymentResponse {
   accepts?: PaymentRequirements[];
   error?: string;
-  x402Version?: number;
-  extensions?: Record<string, any>; // Add extensions field for v2
+  x402Version?: number; // v2-only: must be 2
+  extensions?: Record<string, any>;
 }
 
 export interface DebugInfo {
@@ -219,60 +219,34 @@ export function usePayment() {
       }
       console.log("[Payment] Selected payment requirements for network:", network);
 
-      const x402Version = paymentResponse.x402Version || 1;
+      // v2-only: x402Version must be 2
+      const x402Version = paymentResponse.x402Version;
+      if (x402Version === undefined) {
+        throw new Error("x402Version is required (v2-only). The server response must include x402Version: 2");
+      }
+      if (x402Version !== 2) {
+        throw new Error(`x402Version must be 2 (v2-only), got: ${x402Version}`);
+      }
 
       // Store payment requirements for debugging
       setDebugInfo((prev) => ({ ...prev, paymentRequirements: paymentReq }));
 
-      // Step 3: Extract settlement parameters
-      // NEW v2 standard: ALL settlement params from extensions
-      // Fallback: v1/old format reads from extra
-      
+      // Step 3: Extract settlement parameters from extensions (v2 standard)
       // Extract EIP-712 domain parameters from extra (scheme-specific)
       const { name, version } = paymentReq.extra || {};
-      
-      // Extract ALL settlement parameters from extensions (if v2 with x402x extension)
-      let settlementParams: {
-        salt?: string;
-        settlementRouter?: string;
-        hook?: string;
-        hookData?: string;
-        finalPayTo?: string;
-        facilitatorFee?: string;
-      } = {};
 
-      if (x402Version === 2 && paymentResponse.extensions?.["x402x-router-settlement"]?.info) {
-        const extensionInfo = paymentResponse.extensions["x402x-router-settlement"].info;
-        settlementParams = {
-          salt: extensionInfo.salt,
-          settlementRouter: extensionInfo.settlementRouter,
-          hook: extensionInfo.hook,
-          hookData: extensionInfo.hookData,
-          finalPayTo: extensionInfo.finalPayTo,
-          facilitatorFee: extensionInfo.facilitatorFee || "0",
-        };
-        console.log("[Payment] Step 3: Extracted settlement params from x402x extension (v2 standard):", settlementParams);
-      } else {
-        // Fallback for v1 or old format: read from extra
-        const {
-          settlementRouter,
-          salt,
-          payTo: finalPayTo,
-          facilitatorFee,
-          hook,
-          hookData,
-        } = paymentReq.extra || {};
-        
-        settlementParams = {
-          salt,
-          settlementRouter,
-          hook,
-          hookData,
-          finalPayTo,
-          facilitatorFee: facilitatorFee || "0",
-        };
-        console.log("[Payment] Step 3: Using fallback - extracted params from extra (v1 compat):", settlementParams);
-      }
+      // Extract ALL settlement parameters from extensions (v2 with x402x extension)
+      const extensionInfo = paymentResponse.extensions?.["x402x-router-settlement"]?.info;
+      const settlementParams = {
+        salt: extensionInfo?.salt,
+        settlementRouter: extensionInfo?.settlementRouter,
+        hook: extensionInfo?.hook,
+        hookData: extensionInfo?.hookData,
+        finalPayTo: extensionInfo?.finalPayTo,
+        facilitatorFee: extensionInfo?.facilitatorFee || "0",
+      };
+
+      console.log("[Payment] Step 3: Extracted settlement params from x402x extension (v2):", settlementParams);
 
       // Destructure for use
       const { salt, settlementRouter, hook, hookData, finalPayTo, facilitatorFee } = settlementParams;

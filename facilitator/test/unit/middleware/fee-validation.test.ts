@@ -28,16 +28,6 @@ vi.mock("../../../src/settlement.js", () => ({
   validateTokenAddress: vi.fn(), // Mock the new function
 }));
 
-vi.mock("@x402x/core", () => ({
-  getNetworkConfig: vi.fn(() => ({
-    defaultAsset: {
-      address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      symbol: "USDC",
-      decimals: 6,
-    },
-  })),
-}));
-
 describe("Fee Validation Middleware", () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;

@@ -110,13 +110,9 @@ vi.mock("viem", () => ({
 
 // Mock network-utils to enable V2 support
 vi.mock("../../src/network-utils.js", () => ({
-  determineX402Version: vi.fn((payload, request) => request?.x402Version || 1),
-  isVersionSupported: vi.fn((version) => version === 1 || version === 2), // Always support V2
-  getCanonicalNetwork: vi.fn((network) => {
-    // Convert v1 format to v2 format
-    if (network === "base-sepolia") return "eip155:84532";
-    return network;
-  }),
+  determineX402Version: vi.fn((payload, request) => request?.x402Version || 2),
+  isVersionSupported: vi.fn((version) => version === 2), // Only support V2
+  getCanonicalNetwork: vi.fn((network) => network),
   getNetworkDisplayName: vi.fn((network) => network),
 }));
 
@@ -333,61 +329,6 @@ describe("V2 AccountPool Integration", () => {
           x402Version: 2,
         }),
       ).rejects.toThrow("Account pool error");
-    });
-
-    it("should work with V1 and V2 using same AccountPool", async () => {
-      // V1 settlement
-      const v1Payload = {
-        payload: {
-          authorization: {
-            from: "0xv1payer",
-          },
-        },
-      };
-
-      const v1Requirements = {
-        network: "base-sepolia",
-        asset: "0xtoken",
-        payTo: "0xpayto",
-        maxAmountRequired: "1000000",
-      };
-
-      await service.settle({
-        paymentPayload: v1Payload as any,
-        paymentRequirements: v1Requirements as any,
-        x402Version: 1,
-      });
-
-      // V2 settlement
-      const v2Payload = {
-        scheme: "exact",
-        payer: "0xv2payer",
-        nonce: "0xnonce",
-        signature: "0xsig",
-      };
-
-      const v2Requirements = {
-        network: "eip155:84532",
-        asset: "0xtoken",
-        payTo: "0xpayto",
-        maxAmountRequired: "1000000",
-        extra: {
-          settlementRouter: "0xrouter",
-          salt: "0xsalt",
-          facilitatorFee: "0",
-          hook: "0x0000000000000000000000000000000000000000",
-          hookData: "0x",
-        },
-      };
-
-      await service.settle({
-        paymentPayload: v2Payload as any,
-        paymentRequirements: v2Requirements as any,
-        x402Version: 2,
-      });
-
-      // Both should have used AccountPool.execute
-      expect(mockAccountPool.execute).toHaveBeenCalledTimes(2);
     });
   });
 
