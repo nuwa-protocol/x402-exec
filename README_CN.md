@@ -105,28 +105,30 @@ x402-exec/
 
 ### 第三方开发者集成
 
-如果你想在自己的项目中使用 x402-exec，我们提供了一个增强版的 x402 包。详细说明请查看 [第三方集成指南](./docs/third-party-integration.md)。
+如果你想在自己的项目中使用 x402-exec，请使用官方 x402 v2 包。详细说明请查看 [第三方集成指南](./docs/third-party-integration.md)。
 
 **快速安装：**
 
 ```bash
-# 使用 npm alias（推荐）
-npm install x402@npm:@x402x/x402@0.6.6-patch.7
+# 使用官方 x402 v2 包
+npm install @x402/core @x402/evm @x402x/extensions
 
 # 或使用 pnpm
-pnpm add x402@npm:@x402x/x402@0.6.6-patch.7
+pnpm add @x402/core @x402/evm @x402x/extensions
 ```
 
 在 `package.json` 中：
 ```json
 {
   "dependencies": {
-    "x402": "npm:@x402x/x402@0.6.6-patch.7"
+    "@x402/core": "latest",
+    "@x402/evm": "latest",
+    "@x402x/extensions": "latest"
   }
 }
 ```
 
-> 💡 **为什么使用修改版？** 我们对 x402 添加了 `paymentRequirements` 字段支持（[PR #578](https://github.com/coinbase/x402/pull/578)），但该改进被官方推迟到 v2。`@x402x/x402` 让你现在就能使用这些功能，且完全向后兼容。
+> ⚠️ **注意**：x402 v1 已废弃。请使用官方 x402 v2 包配合 `@x402x/extensions` 进行集成。
 
 ### 开发者快速开始
 
@@ -156,10 +158,10 @@ forge test
 cd contracts
 ./deploy-contract.sh [网络] [选项]  # 先配置 .env 文件
 
-# 示例：
-./deploy-contract.sh base-sepolia --all --verify    # 在测试网部署所有内容
-./deploy-contract.sh base --settlement --verify     # 在主网部署 SettlementRouter
-./deploy-contract.sh xlayer --hooks --verify        # 部署内置 hooks
+# 示例（使用 CAIP-2 网络标识符）：
+./deploy-contract.sh eip155:84532 --all --verify    # 在测试网部署所有内容 (Base Sepolia)
+./deploy-contract.sh eip155:8453 --settlement --verify     # 在主网部署 SettlementRouter (Base)
+./deploy-contract.sh eip155:196 --hooks --verify        # 部署内置 hooks (X-Layer)
 ```
 
 ## 💡 使用示例

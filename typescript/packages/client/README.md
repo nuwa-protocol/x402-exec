@@ -87,16 +87,17 @@ function PayButton() {
     const extendedWallet = wallet.extend(publicActions);
 
     // Uses default facilitator at https://facilitator.x402x.dev/
+    // CAIP-2 network identifiers: https://chainlist.org/?testnets=true
     const client = new x402xClient({
       wallet: extendedWallet,
-      network: 'base-sepolia'
+      network: 'eip155:84532' // Base Sepolia testnet
     });
 
     // Convert USD amount to atomic units
-    const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+    const atomicAmount = parseDefaultAssetAmount('1', 'eip155:84532'); // '1000000'
 
     const result = await client.execute({
-      hook: TransferHook.getAddress('base-sepolia'),
+      hook: TransferHook.getAddress('eip155:84532'),
       hookData: TransferHook.encode(),
       amount: atomicAmount, // Must be atomic units
       payTo: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1'
@@ -125,11 +126,12 @@ Use `parseDefaultAssetAmount()` from `@x402x/extensions` to convert USD amounts:
 import { parseDefaultAssetAmount, formatDefaultAssetAmount } from "@x402x/extensions";
 
 // Convert USD to atomic units
-const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000' (1 USDC)
-const largeAmount = parseDefaultAssetAmount("100", "base-sepolia"); // '100000000' (100 USDC)
+// CAIP-2 format: eip155:<chainId> (e.g., eip155:84532 = Base Sepolia)
+const atomicAmount = parseDefaultAssetAmount("1", "eip155:84532"); // '1000000' (1 USDC)
+const largeAmount = parseDefaultAssetAmount("100", "eip155:84532"); // '100000000' (100 USDC)
 
 // Convert atomic units back to USD (for display)
-const displayAmount = formatDefaultAssetAmount("1000000", "base-sepolia"); // '1'
+const displayAmount = formatDefaultAssetAmount("1000000", "eip155:84532"); // '1'
 ```
 
 ### Why Atomic Units?
@@ -145,10 +147,11 @@ const displayAmount = formatDefaultAssetAmount("1000000", "base-sepolia"); // '1
 import { x402xClient } from "@x402x/client";
 import { parseDefaultAssetAmount } from "@x402x/extensions";
 
-const client = new x402xClient({ wallet, network: "base-sepolia" });
+// CAIP-2 network identifier for Base Sepolia testnet
+const client = new x402xClient({ wallet, network: "eip155:84532" });
 
 // ✅ Correct: Convert first, then pass atomic units
-const atomicAmount = parseDefaultAssetAmount("5", "base-sepolia");
+const atomicAmount = parseDefaultAssetAmount("5", "eip155:84532");
 await client.execute({ amount: atomicAmount, payTo: "0x..." });
 
 // ❌ Wrong: Don't pass USD amounts directly
@@ -180,15 +183,16 @@ class x402xClient {
 import { x402xClient } from "@x402x/client";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
+// CAIP-2 network identifier: eip155:84532 (Base Sepolia testnet)
 const client = new x402xClient({
   wallet: walletClient,
-  network: "base-sepolia",
+  network: "eip155:84532",
 });
 
 // Or specify custom facilitator
 const client = new x402xClient({
   wallet: walletClient,
-  network: "base-sepolia",
+  network: "eip155:84532",
   facilitatorUrl: "https://custom-facilitator.example.com",
   timeout: 30000, // optional
   confirmationTimeout: 60000, // optional
@@ -196,7 +200,7 @@ const client = new x402xClient({
 
 // Convert USD amount to atomic units
 import { parseDefaultAssetAmount } from "@x402x/extensions";
-const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+const atomicAmount = parseDefaultAssetAmount("1", "eip155:84532"); // '1000000'
 
 const result = await client.execute({
   hook: "0x...",
@@ -253,7 +257,8 @@ function PayButton() {
 
   const handlePay = async () => {
     // Convert USD amount to atomic units
-    const atomicAmount = parseDefaultAssetAmount('1', 'base-sepolia'); // '1000000'
+    // CAIP-2 format: eip155:84532 (Base Sepolia testnet)
+    const atomicAmount = parseDefaultAssetAmount('1', 'eip155:84532'); // '1000000'
 
     await execute({
       hook: '0x...',
@@ -336,11 +341,12 @@ import { prepareSettlement } from "@x402x/client";
 import { parseDefaultAssetAmount } from "@x402x/extensions";
 
 // Convert USD amount to atomic units
-const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+// CAIP-2 network identifier: eip155:84532 (Base Sepolia testnet)
+const atomicAmount = parseDefaultAssetAmount("1", "eip155:84532"); // '1000000'
 
 const settlement = await prepareSettlement({
   wallet: walletClient,
-  network: "base-sepolia",
+  network: "eip155:84532",
   hook: "0x...",
   hookData: "0x...",
   amount: atomicAmount, // Must be atomic units
@@ -380,16 +386,17 @@ import { x402xClient } from "@x402x/client";
 import { TransferHook, parseDefaultAssetAmount } from "@x402x/extensions";
 
 // Uses default facilitator at https://facilitator.x402x.dev/
+// CAIP-2 network identifier: eip155:84532 (Base Sepolia testnet)
 const client = new x402xClient({
   wallet: walletClient,
-  network: "base-sepolia",
+  network: "eip155:84532",
 });
 
 // Convert USD amount to atomic units
-const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+const atomicAmount = parseDefaultAssetAmount("1", "eip155:84532"); // '1000000'
 
 const result = await client.execute({
-  hook: TransferHook.getAddress("base-sepolia"),
+  hook: TransferHook.getAddress("eip155:84532"),
   hookData: TransferHook.encode(), // Simple transfer mode
   amount: atomicAmount, // Must be atomic units
   payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
@@ -406,15 +413,16 @@ TransferHook supports distributing funds to multiple recipients by percentage:
 import { x402xClient } from "@x402x/client";
 import { TransferHook, parseDefaultAssetAmount, type Split } from "@x402x/extensions";
 
+// CAIP-2 network identifier: eip155:84532 (Base Sepolia testnet)
 const client = new x402xClient({
   wallet: walletClient,
-  network: "base-sepolia",
+  network: "eip155:84532",
 });
 
 // Payroll example: Pay 3 employees with different shares
-const payrollAmount = parseDefaultAssetAmount("10", "base-sepolia"); // '10000000' (10 USDC)
+const payrollAmount = parseDefaultAssetAmount("10", "eip155:84532"); // '10000000' (10 USDC)
 const result = await client.execute({
-  hook: TransferHook.getAddress("base-sepolia"),
+  hook: TransferHook.getAddress("eip155:84532"),
   hookData: TransferHook.encode([
     { recipient: "0xEmployee1...", bips: 3000 }, // 30%
     { recipient: "0xEmployee2...", bips: 4000 }, // 40%
@@ -425,9 +433,9 @@ const result = await client.execute({
 });
 
 // Revenue split example: Platform takes 30%, creator gets 70%
-const revenueAmount = parseDefaultAssetAmount("100", "base-sepolia"); // '100000000' (100 USDC)
+const revenueAmount = parseDefaultAssetAmount("100", "eip155:84532"); // '100000000' (100 USDC)
 const result2 = await client.execute({
-  hook: TransferHook.getAddress("base-sepolia"),
+  hook: TransferHook.getAddress("eip155:84532"),
   hookData: TransferHook.encode([
     { recipient: "0xPlatform...", bips: 3000 }, // 30%
   ]),
@@ -457,10 +465,11 @@ function MintNFT() {
 
   const handleMint = async () => {
     // Convert USD amount to atomic units
-    const atomicAmount = parseDefaultAssetAmount('5', 'base-sepolia'); // '5000000'
+    // CAIP-2 format: eip155:84532 (Base Sepolia testnet)
+    const atomicAmount = parseDefaultAssetAmount('5', 'eip155:84532'); // '5000000'
 
     const result = await execute({
-      hook: NFTMintHook.getAddress('base-sepolia'),
+      hook: NFTMintHook.getAddress('eip155:84532'),
       hookData: NFTMintHook.encode({
         collection: '0x...',
         tokenId: 1
@@ -492,21 +501,22 @@ const hookData = TransferHook.encode([
   { recipient: "0xBob...", bips: 4000 }, // 40% to Bob
 ]);
 
+// CAIP-2 network identifier: eip155:84532 (Base Sepolia testnet)
 const feeEstimate = await calculateFacilitatorFee(
   "https://facilitator.x402x.dev",
-  "base-sepolia",
-  TransferHook.getAddress("base-sepolia"),
+  "eip155:84532",
+  TransferHook.getAddress("eip155:84532"),
   hookData,
 );
 
 // 2. Convert USD amount to atomic units
-const atomicAmount = parseDefaultAssetAmount("10", "base-sepolia"); // '10000000'
+const atomicAmount = parseDefaultAssetAmount("10", "eip155:84532"); // '10000000'
 
 // 3. Prepare settlement
 const settlement = await prepareSettlement({
   wallet: walletClient,
-  network: "base-sepolia",
-  hook: TransferHook.getAddress("base-sepolia"),
+  network: "eip155:84532",
+  hook: TransferHook.getAddress("eip155:84532"),
   hookData,
   amount: atomicAmount, // Must be atomic units
   payTo: "0xCharity...", // Receives 0% (full split)
@@ -533,7 +543,8 @@ export function usePayment() {
   const status = ref("idle");
   const error = ref(null);
 
-  const pay = async (walletClient, usdAmount, recipient, network = "base-sepolia") => {
+  // Default to Base Sepolia testnet (CAIP-2 format)
+  const pay = async (walletClient, usdAmount, recipient, network = "eip155:84532") => {
     status.value = "processing";
     error.value = null;
 
@@ -622,10 +633,19 @@ import type {
 
 ## Supported Networks
 
-- Base Sepolia (testnet): `base-sepolia`
-- Base (mainnet): `base`
-- X-Layer (mainnet): `x-layer`
-- X-Layer Testnet: `x-layer-testnet`
+x402x uses CAIP-2 network identifiers (format: `eip155:<chainId>`):
+
+### Mainnet
+- **Base**: `eip155:8453`
+- **X-Layer**: `eip155:196`
+- **BSC**: `eip155:56`
+
+### Testnet
+- **Base Sepolia**: `eip155:84532`
+- **X-Layer Testnet**: `eip155:1952`
+- **BSC Testnet**: `eip155:97`
+
+**Reference**: See [CAIP-2](https://chainlist.org/?testnets=true) for a complete list of chain IDs.
 
 ---
 
@@ -650,6 +670,7 @@ function Component() {
   const { pay, status, error } = usePayment();
 
   const handlePay = () => {
+    // Old v1 format - deprecated
     pay("/api/transfer", "base-sepolia", { amount: "1000000" });
   };
 }
@@ -668,7 +689,8 @@ function Component() {
 
   const handlePay = async () => {
     // Convert USD amount to atomic units
-    const atomicAmount = parseDefaultAssetAmount("1", "base-sepolia"); // '1000000'
+    // CAIP-2 format: eip155:84532 (Base Sepolia testnet)
+    const atomicAmount = parseDefaultAssetAmount("1", "eip155:84532"); // '1000000'
 
     await execute({
       hook: TransferHook.address,

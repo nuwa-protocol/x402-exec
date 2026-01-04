@@ -291,9 +291,9 @@ Helper utilities for working with NFTMintHook contract.
 ```typescript
 import { NFTMintHook } from "../hooks/NFTMintHook";
 
-// Get contract addresses
-const hookAddress = NFTMintHook.getAddress("base-sepolia");
-const nftContract = NFTMintHook.getNFTContractAddress("base-sepolia");
+// Get contract addresses (using CAIP-2 format)
+const hookAddress = NFTMintHook.getAddress("eip155:84532"); // Base Sepolia
+const nftContract = NFTMintHook.getNFTContractAddress("eip155:84532");
 
 // Encode hook data
 const hookData = NFTMintHook.encode({
@@ -326,9 +326,9 @@ Helper utilities for working with RewardHook contract.
 ```typescript
 import { RewardHook } from "../hooks/RewardHook";
 
-// Get contract addresses
-const hookAddress = RewardHook.getAddress("base-sepolia");
-const rewardToken = RewardHook.getTokenAddress("base-sepolia");
+// Get contract addresses (using CAIP-2 format)
+const hookAddress = RewardHook.getAddress("eip155:84532"); // Base Sepolia
+const rewardToken = RewardHook.getTokenAddress("eip155:84532");
 
 // Encode hook data
 const hookData = RewardHook.encode({

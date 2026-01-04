@@ -59,16 +59,22 @@ Set the following in Railway dashboard → Variables:
 **Required**:
 
 - `FACILITATOR_URL` - URL of your facilitator service (e.g., `https://your-facilitator.railway.app`)
-- `DEFAULT_NETWORK` - Default blockchain network (e.g., `base-sepolia`, `xlayer-testnet`)
+- `DEFAULT_NETWORK` - Default blockchain network using CAIP-2 format (e.g., `eip155:84532` for Base Sepolia, `eip155:1952` for X-Layer Testnet)
 - `RESOURCE_SERVER_ADDRESS` - Your resource server wallet address
 - `RESOURCE_SERVER_PRIVATE_KEY` - Private key for signing payment requirements
 
-**Network-Specific** (at least one network required):
+**Network-Specific** (at least one network required, using CAIP-2 format):
 
-- `BASE_SEPOLIA_RPC_URL` - RPC endpoint for Base Sepolia
+- `BASE_SEPOLIA_RPC_URL` - RPC endpoint for Base Sepolia (chain ID 84532, CAIP-2: `eip155:84532`)
 - `BASE_SEPOLIA_USDC_ADDRESS` - USDC token address
 - `BASE_SEPOLIA_SETTLEMENT_ROUTER_ADDRESS` - Settlement router address
 - `BASE_SEPOLIA_TRANSFER_HOOK_ADDRESS` - Transfer hook address
+
+**Note:** CAIP-2 format uses the pattern `eip155:<chainId>`. For example:
+- Base Sepolia: `eip155:84532`
+- Base Mainnet: `eip155:8453`
+- X-Layer Testnet: `eip155:1952`
+- X-Layer Mainnet: `eip155:196`
 
 **Optional**:
 
