@@ -85,8 +85,8 @@ export interface FeeClaimConfig {
  * v2 is now the default and only supported version
  */
 export interface V2Config {
-  /** v2 is always enabled */
-  enabled: true;
+  /** v2 is always enabled (this should always be true at runtime) */
+  enabled: boolean;
   /** Allowed routers per network (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
 }

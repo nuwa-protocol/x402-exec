@@ -124,10 +124,17 @@ export function createSettleRoutes(
         "paymentPayload",
       ) as PaymentPayload;
 
-      // Validate x402Version with backward compatibility
+      // Extract x402Version with backward compatibility
       // Priority: body.x402Version > paymentPayload.x402Version > default to 2
-      const x402Version = body.x402Version ?? (paymentPayload as any).x402Version ?? 2;
-      validateX402Version(x402Version);
+      let x402Version = body.x402Version ?? (paymentPayload as any).x402Version;
+
+      if (x402Version == null) {
+        // No version provided anywhere: use default v2 (v1 is deprecated)
+        x402Version = 2;
+      } else {
+        // Version was explicitly provided: validate it
+        validateX402Version(x402Version);
+      }
 
       // Route to appropriate implementation based on version
       const result = await routerSettlementService.settle({

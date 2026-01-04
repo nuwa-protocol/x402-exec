@@ -343,7 +343,7 @@ export async function verify(
       body: JSON.stringify({
         paymentPayload,
         paymentRequirements,
-        x402Version: paymentPayload.x402Version, // Include x402Version at top level
+        x402Version: paymentPayload.x402Version ?? 2, // Include x402Version at top level, default to 2
       }),
       // Add timeout
       signal: AbortSignal.timeout(10000),
@@ -433,7 +433,7 @@ export async function settle(
       body: JSON.stringify({
         paymentPayload,
         paymentRequirements,
-        x402Version: paymentPayload.x402Version, // Include x402Version at top level
+        x402Version: paymentPayload.x402Version ?? 2, // Include x402Version at top level, default to 2
       }),
       signal: controller.signal,
     });
