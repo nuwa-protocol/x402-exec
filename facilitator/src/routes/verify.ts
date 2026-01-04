@@ -35,9 +35,7 @@ export interface VerifyRouteDependencies {
   balanceChecker?: BalanceChecker;
   /** RPC URLs per network (network name -> RPC URL) */
   rpcUrls?: Record<string, string>;
-  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
-  enableV2?: boolean;
-  /** Allowed routers per network for v2 */
+  /** Allowed routers per network (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
 }
 
@@ -70,7 +68,6 @@ export function createVerifyRoutes(
         balanceChecker: deps.balanceChecker,
       },
       {
-        enableV2: deps.enableV2,
         allowedRouters: deps.allowedRouters,
         rpcUrls: deps.rpcUrls,
       },
@@ -84,12 +81,13 @@ export function createVerifyRoutes(
       endpoint: "/verify",
       description: "POST to verify x402 payments (v2-only)",
       supportedVersions: [2],
-      versionDetection: "x402Version field is required and must be 2",
+      versionDetection: "x402Version is optional (defaults to 2 for backward compatibility)",
       deprecationNotice: "v1 is deprecated - please use x402Version=2",
+      backwardCompatibility: "If x402Version is not provided, defaults to 2",
       body: {
         paymentPayload: "PaymentPayload (with x402Version=2)",
         paymentRequirements: "PaymentRequirements",
-        x402Version: "number (required, must be 2)",
+        x402Version: "number (optional, defaults to 2, must be 2 if provided)",
       },
     });
   });
@@ -115,14 +113,16 @@ export function createVerifyRoutes(
         "paymentPayload",
       ) as PaymentPayload;
 
-      // Validate x402Version if provided
-      validateX402Version(body.x402Version);
+      // Validate x402Version with backward compatibility
+      // Priority: body.x402Version > paymentPayload.x402Version > default to 2
+      const x402Version = body.x402Version ?? (paymentPayload as any).x402Version ?? 2;
+      validateX402Version(x402Version);
 
       // Route to appropriate implementation based on version
       const result = await routerSettlementService.verify({
         paymentPayload,
         paymentRequirements,
-        x402Version: body.x402Version,
+        x402Version,
       });
 
       res.json(result);

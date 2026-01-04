@@ -20,13 +20,12 @@ const logger = getLogger();
 
 /**
  * Configuration for Router Settlement Service
+ * v2-only - v1 has been deprecated
  */
 export interface RouterSettlementServiceConfig {
-  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
-  enableV2?: boolean;
-  /** Allowed routers per network for v2 */
+  /** Allowed routers per network (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
-  /** RPC URLs per network for both v1 and v2 */
+  /** RPC URLs per network */
   rpcUrls?: Record<string, string>;
 }
 
@@ -66,17 +65,13 @@ export class RouterSettlementService {
     private deps: RouterSettlementServiceDependencies,
     private config: RouterSettlementServiceConfig = {},
   ) {
-    if (this.config.enableV2) {
-      logger.info(
-        {
-          hasAllowedRouters: !!this.config.allowedRouters,
-          hasRpcUrls: !!this.config.rpcUrls,
-        },
-        "Router Settlement Service: v2 support enabled (using shared AccountPool)",
-      );
-    } else {
-      logger.info("Router Settlement Service: v1 only mode");
-    }
+    logger.info(
+      {
+        hasAllowedRouters: !!this.config.allowedRouters,
+        hasRpcUrls: !!this.config.rpcUrls,
+      },
+      "Router Settlement Service: v2-only mode (v1 deprecated)",
+    );
   }
 
   /**
@@ -92,16 +87,16 @@ export class RouterSettlementService {
       // Determine version (must be 2)
       const version = determineX402Version(paymentPayload, request);
 
-      // Check if version is supported (v2 must be enabled)
+      // Check if version is supported (only v2 is supported)
       if (!isVersionSupported(version)) {
-        const error = "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable.";
+        const error = `Version ${version} is not supported. Only v2 is supported (v1 is deprecated).`;
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.verify.version_not_supported", 1, { version: String(version) });
 
         return {
           isValid: false,
-          invalidReason: error as any, // Type assertion to handle v2 error format
+          invalidReason: error,
         };
       }
 
@@ -167,9 +162,9 @@ export class RouterSettlementService {
       // Determine version (must be 2)
       const version = determineX402Version(paymentPayload, request);
 
-      // Check if version is supported (v2 must be enabled)
+      // Check if version is supported (only v2 is supported)
       if (!isVersionSupported(version)) {
-        const error = "V2 support is not enabled. Set FACILITATOR_ENABLE_V2=true to enable.";
+        const error = `Version ${version} is not supported. Only v2 is supported (v1 is deprecated).`;
 
         logger.warn({ version, error }, "Version not supported");
         recordMetric("facilitator.settle.version_not_supported", 1, { version: String(version) });

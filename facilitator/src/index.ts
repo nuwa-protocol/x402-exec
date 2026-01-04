@@ -185,8 +185,7 @@ async function main() {
         feeClaim: config.feeClaim,
         gasEstimation: config.gasEstimation,
         rpcUrls: config.dynamicGasPrice.rpcUrls,
-        enableV2: config.v2.enabled,
-        v2Signer: poolManager.getFacilitatorSignerAddress(), // Add signer for v2 /supported
+        v2Signer: poolManager.getFacilitatorSignerAddress(), // Signer for /supported
         allowedRouters: config.v2.allowedRouters,
       },
       requestBodyLimit: config.server.requestBodyLimit,

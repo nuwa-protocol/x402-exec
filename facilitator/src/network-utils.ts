@@ -16,11 +16,6 @@ import type { Network as X402Network } from "@x402/core/types";
 export type CanonicalNetwork = string;
 
 /**
- * Feature flag for enabling v2 support
- */
-export const FACILITATOR_ENABLE_V2 = process.env.FACILITATOR_ENABLE_V2 === "true";
-
-/**
  * Get canonical network key from any network identifier
  *
  * @param network - Network identifier (v1 name or v2 CAIP-2)
@@ -169,15 +164,15 @@ export function determineX402Version(
 }
 
 /**
- * Check if v2 features are enabled and version is supported
+ * Check if version is supported
  *
  * v1 is deprecated - only version 2 is supported.
+ * v2 is always enabled.
+ *
+ * @param version - x402 version number
+ * @returns true if version 2, false otherwise
  */
 export function isVersionSupported(version: number): boolean {
-  if (version === 2) {
-    return FACILITATOR_ENABLE_V2;
-  }
-
-  // v1 is deprecated and no longer supported
-  return false;
+  // Only version 2 is supported (v1 is deprecated)
+  return version === 2;
 }

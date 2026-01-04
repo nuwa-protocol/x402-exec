@@ -82,11 +82,12 @@ export interface FeeClaimConfig {
 
 /**
  * Version 2 configuration
+ * v2 is now the default and only supported version
  */
 export interface V2Config {
-  /** Enable v2 support (requires FACILITATOR_ENABLE_V2=true) */
-  enabled: boolean;
-  /** Allowed routers per network for v2 (CAIP-2 network IDs) */
+  /** v2 is always enabled */
+  enabled: true;
+  /** Allowed routers per network (CAIP-2 network IDs) */
   allowedRouters?: Record<string, string[]>;
 }
 
@@ -627,17 +628,11 @@ function parseGasEstimationConfig(): GasEstimationConfig {
 
 /**
  * Parse v2 configuration from environment variables
- * V2 now uses the shared AccountPool (evmPrivateKeys), so no separate keys needed
+ * v2 is always enabled - v1 has been deprecated
  *
  * @returns V2 configuration object
  */
 function parseV2Config(): V2Config {
-  const enabled = process.env.FACILITATOR_ENABLE_V2 === "true";
-
-  if (!enabled) {
-    return { enabled: false };
-  }
-
   // Parse v2 allowed routers (optional)
   let allowedRouters: Record<string, string[]> | undefined;
   if (process.env.FACILITATOR_V2_ALLOWED_ROUTERS) {
@@ -667,7 +662,7 @@ function parseV2Config(): V2Config {
   }
 
   return {
-    enabled: true,
+    enabled: true, // v2 is always enabled
     allowedRouters,
   };
 }
