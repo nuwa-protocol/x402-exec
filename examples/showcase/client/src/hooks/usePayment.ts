@@ -48,7 +48,7 @@ interface PaymentRequirements {
 interface PaymentResponse {
   accepts?: PaymentRequirements[];
   error?: string;
-  x402Version: number; // v2-only: must be 2
+  x402Version?: number; // v2-only: must be 2
   extensions?: Record<string, any>;
 }
 
@@ -221,6 +221,9 @@ export function usePayment() {
 
       // v2-only: x402Version must be 2
       const x402Version = paymentResponse.x402Version;
+      if (x402Version === undefined) {
+        throw new Error("x402Version is required (v2-only). The server response must include x402Version: 2");
+      }
       if (x402Version !== 2) {
         throw new Error(`x402Version must be 2 (v2-only), got: ${x402Version}`);
       }
