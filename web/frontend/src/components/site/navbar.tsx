@@ -47,7 +47,7 @@ export function Navbar() {
                   to="/token"
                   className="relative inline-flex items-center rounded-sm px-3 py-1.5 text-sm"
                 >
-                  <span className="font-medium">$X402X</span>
+                  <span>Tokenomics</span>
                 </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
