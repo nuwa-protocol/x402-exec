@@ -30,7 +30,7 @@ export interface TokenPriceConfig {
   cacheTTL: number; // Cache TTL in seconds
   updateInterval: number; // Background update interval in seconds
   apiKey?: string; // Optional CoinGecko Pro API key
-  coinIds: Record<string, string>; // network -> CoinGecko coin ID mapping
+  coinIds?: Record<string, string>; // Optional network -> CoinGecko coin ID mapping
 }
 
 /**
@@ -96,7 +96,7 @@ export async function getTokenPrice(
   // Fetch from CoinGecko API
   try {
     // Try custom coin IDs from config first (supports both v1 and v2 keys)
-    let coinId = config?.coinIds[network];
+    let coinId = config?.coinIds?.[network];
 
     // If not in custom config, look up in default mapping
     if (!coinId) {
@@ -104,12 +104,19 @@ export async function getTokenPrice(
         // Normalize to CAIP-2 canonical format
         const normalized = normalizeNetwork(network);
 
-        // Try canonical CAIP-2 key first
-        coinId = DEFAULT_NETWORK_COIN_IDS[normalized.canonical];
+        // Try canonical CAIP-2 key in custom config
+        if (!coinId && config?.coinIds) {
+          coinId = config.coinIds[normalized.canonical];
+        }
 
-        // Fallback to v1 alias for backward compatibility with existing configs
+        // Try v1 alias in custom config for backward compatibility
         if (!coinId && config?.coinIds) {
           coinId = config.coinIds[normalized.aliasV1];
+        }
+
+        // Finally, fall back to default network coin ID mapping
+        if (!coinId) {
+          coinId = DEFAULT_NETWORK_COIN_IDS[normalized.canonical];
         }
       } catch {
         // Network normalization failed (unsupported network), will use static fallback

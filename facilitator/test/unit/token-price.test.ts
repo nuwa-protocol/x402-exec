@@ -21,19 +21,22 @@ import {
 } from "../../src/token-price.js";
 
 // Mock the global fetch for CoinGecko API
-global.fetch = vi.fn();
+// Use stubGlobal to properly override the global fetch in Node.js environment
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 
 describe("token-price module", () => {
   beforeEach(() => {
     // Clear cache before each test
     clearTokenPriceCache();
     vi.clearAllMocks();
+    mockFetch.mockReset();
   });
 
   describe("getTokenPrice with CAIP-2 network IDs", () => {
     it("should map Base Sepolia (eip155:84532) to ethereum", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -48,7 +51,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=ethereum"),
         expect.any(Object)
       );
@@ -56,7 +59,7 @@ describe("token-price module", () => {
 
     it("should map Base mainnet (eip155:8453) to ethereum", async () => {
       const mockPrice = 3500.75;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -71,7 +74,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:8453", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=ethereum"),
         expect.any(Object)
       );
@@ -79,7 +82,7 @@ describe("token-price module", () => {
 
     it("should map X-Layer testnet (eip155:1952) to okb", async () => {
       const mockPrice = 50.25;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ okb: { usd: mockPrice } }),
       });
@@ -94,7 +97,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:1952", 10, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=okb"),
         expect.any(Object)
       );
@@ -102,7 +105,7 @@ describe("token-price module", () => {
 
     it("should map X-Layer mainnet (eip155:196) to okb", async () => {
       const mockPrice = 55.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ okb: { usd: mockPrice } }),
       });
@@ -117,7 +120,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:196", 10, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=okb"),
         expect.any(Object)
       );
@@ -125,7 +128,7 @@ describe("token-price module", () => {
 
     it("should map BSC testnet (eip155:97) to binancecoin", async () => {
       const mockPrice = 650.75;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ binancecoin: { usd: mockPrice } }),
       });
@@ -140,7 +143,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:97", 500, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=binancecoin"),
         expect.any(Object)
       );
@@ -148,7 +151,7 @@ describe("token-price module", () => {
 
     it("should map BSC mainnet (eip155:56) to binancecoin", async () => {
       const mockPrice = 700.25;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ binancecoin: { usd: mockPrice } }),
       });
@@ -163,7 +166,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:56", 600, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=binancecoin"),
         expect.any(Object)
       );
@@ -173,7 +176,7 @@ describe("token-price module", () => {
   describe("getTokenPrice with V1 alias backward compatibility", () => {
     it("should work with V1 alias 'base-sepolia'", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -188,7 +191,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("base-sepolia", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=ethereum"),
         expect.any(Object)
       );
@@ -196,7 +199,7 @@ describe("token-price module", () => {
 
     it("should work with V1 alias 'base'", async () => {
       const mockPrice = 3500.75;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -215,7 +218,7 @@ describe("token-price module", () => {
 
     it("should work with V1 alias 'x-layer-testnet'", async () => {
       const mockPrice = 50.25;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ okb: { usd: mockPrice } }),
       });
@@ -234,7 +237,7 @@ describe("token-price module", () => {
 
     it("should work with V1 alias 'x-layer'", async () => {
       const mockPrice = 55.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ okb: { usd: mockPrice } }),
       });
@@ -253,7 +256,7 @@ describe("token-price module", () => {
 
     it("should work with V1 alias 'bsc' for BSC mainnet", async () => {
       const mockPrice = 700.25;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ binancecoin: { usd: mockPrice } }),
       });
@@ -274,7 +277,7 @@ describe("token-price module", () => {
   describe("Config override behavior", () => {
     it("should use custom coin ID from config when provided (v2 key)", async () => {
       const mockPrice = 999.99;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ customcoin: { usd: mockPrice } }),
       });
@@ -291,7 +294,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=customcoin"),
         expect.any(Object)
       );
@@ -299,7 +302,7 @@ describe("token-price module", () => {
 
     it("should use custom coin ID from config when provided (v1 key)", async () => {
       const mockPrice = 888.88;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ customv1: { usd: mockPrice } }),
       });
@@ -316,7 +319,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("base-sepolia", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=customv1"),
         expect.any(Object)
       );
@@ -324,7 +327,7 @@ describe("token-price module", () => {
 
     it("should fall back to default mapping when custom config has different v2 key", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -341,7 +344,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=ethereum"),
         expect.any(Object)
       );
@@ -349,7 +352,7 @@ describe("token-price module", () => {
 
     it("should fall back to v1 alias in custom config when v2 canonical key not found", async () => {
       const mockPrice = 777.77;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ v1custom: { usd: mockPrice } }),
       });
@@ -367,7 +370,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", 1000, config);
 
       expect(price).toBe(mockPrice);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("ids=v1custom"),
         expect.any(Object)
       );
@@ -389,7 +392,7 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:1273221638", staticPrice, config);
 
       expect(price).toBe(staticPrice);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("should return static price when network normalization fails", async () => {
@@ -406,12 +409,12 @@ describe("token-price module", () => {
       const price = await getTokenPrice("invalid-network-format", staticPrice, config);
 
       expect(price).toBe(staticPrice);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("should return static price when CoinGecko API fails", async () => {
       const staticPrice = 789.01;
-      (global.fetch as any).mockRejectedValue(new Error("Network error"));
+      mockFetch.mockRejectedValue(new Error("Network error"));
 
       const config: TokenPriceConfig = {
         enabled: true,
@@ -427,7 +430,7 @@ describe("token-price module", () => {
 
     it("should return static price when CoinGecko API returns error", async () => {
       const staticPrice = 234.56;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 429,
         statusText: "Too Many Requests",
@@ -447,7 +450,7 @@ describe("token-price module", () => {
 
     it("should return static price when CoinGecko response is missing price data", async () => {
       const staticPrice = 345.67;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: {} }), // Missing usd field
       });
@@ -477,14 +480,14 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", staticPrice, config);
 
       expect(price).toBe(staticPrice);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
   describe("Cache behavior", () => {
     it("should cache fetched prices", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -498,19 +501,19 @@ describe("token-price module", () => {
 
       // First call - should fetch
       const price1 = await getTokenPrice("eip155:84532", 1000, config);
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(price1).toBe(mockPrice);
 
       // Second call - should use cache
       const price2 = await getTokenPrice("eip155:84532", 1000, config);
-      expect(global.fetch).toHaveBeenCalledTimes(1); // No additional fetch
+      expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
       expect(price2).toBe(mockPrice);
     });
 
     it("should respect cache TTL", async () => {
       const mockPrice1 = 3000.5;
       const mockPrice2 = 3100.0;
-      (global.fetch as any)
+      mockFetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ ethereum: { usd: mockPrice1 } }),
@@ -533,13 +536,13 @@ describe("token-price module", () => {
 
       // Second call - cache expired, should fetch again
       const price2 = await getTokenPrice("eip155:84532", 1000, config);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(price2).toBe(mockPrice2);
     });
 
     it("should provide cache statistics", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -564,7 +567,7 @@ describe("token-price module", () => {
 
     it("should clear cache for specific network", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -578,19 +581,19 @@ describe("token-price module", () => {
 
       // Fetch a price
       await getTokenPrice("eip155:84532", 1000, config);
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Clear cache for this network
       clearTokenPriceCache("eip155:84532");
 
       // Fetch again - should call API again
       await getTokenPrice("eip155:84532", 1000, config);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it("should clear all cache", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -605,7 +608,7 @@ describe("token-price module", () => {
       // Fetch prices for multiple networks
       await getTokenPrice("eip155:84532", 1000, config);
       await getTokenPrice("eip155:56", 600, config);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
 
       // Clear all cache
       clearTokenPriceCache();
@@ -613,14 +616,14 @@ describe("token-price module", () => {
       // Fetch again - should call API again
       await getTokenPrice("eip155:84532", 1000, config);
       await getTokenPrice("eip155:56", 600, config);
-      expect(global.fetch).toHaveBeenCalledTimes(4);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
   });
 
   describe("API key support", () => {
     it("should use Pro API URL when API key is provided", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -635,7 +638,7 @@ describe("token-price module", () => {
 
       await getTokenPrice("eip155:84532", 1000, config);
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("pro-api.coingecko.com"),
         expect.objectContaining({
           headers: expect.objectContaining({
@@ -647,7 +650,7 @@ describe("token-price module", () => {
 
     it("should use free API URL when no API key is provided", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -661,7 +664,7 @@ describe("token-price module", () => {
 
       await getTokenPrice("eip155:84532", 1000, config);
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("api.coingecko.com"),
         expect.any(Object)
       );
@@ -671,7 +674,7 @@ describe("token-price module", () => {
   describe("Background updater", () => {
     it("should start background updater and return cleanup function", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
@@ -701,11 +704,11 @@ describe("token-price module", () => {
       await new Promise((resolve) => setTimeout(resolve, 1100));
 
       // Should have been called at least once for initial update
-      expect(global.fetch).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalled();
     });
 
     it("should handle errors in background updates gracefully", async () => {
-      (global.fetch as any).mockRejectedValue(new Error("API error"));
+      mockFetch.mockRejectedValue(new Error("API error"));
 
       const config: TokenPriceConfig = {
         enabled: true,
@@ -724,7 +727,7 @@ describe("token-price module", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should not throw despite API error
-      expect(global.fetch).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalled();
 
       cleanup();
     });
@@ -738,12 +741,12 @@ describe("token-price module", () => {
       const price = await getTokenPrice("eip155:84532", staticPrice);
 
       expect(price).toBe(staticPrice);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("should handle config with missing coinIds gracefully", async () => {
       const mockPrice = 3000.5;
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ ethereum: { usd: mockPrice } }),
       });
