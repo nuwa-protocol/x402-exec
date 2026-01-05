@@ -208,6 +208,19 @@ export async function checkIfSettled(
 }
 
 /**
+ * ERC20 ABI for balance checks
+ */
+const ERC20_ABI = [
+  {
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ type: "uint256" }],
+  },
+] as const;
+
+/**
  * Execute settlement via SettlementRouter
  */
 export async function executeSettlementWithRouter(
@@ -216,6 +229,7 @@ export async function executeSettlementWithRouter(
   config: {
     gasLimit?: bigint;
     gasMultiplier?: number;
+    publicClient?: PublicClient;
   } = {},
 ): Promise<Hex> {
   const gasLimit =
@@ -237,6 +251,35 @@ export async function executeSettlementWithRouter(
     hookData: params.hookData,
     settlementRouter: params.settlementRouter,
   });
+
+  // Check user balance before sending transaction to avoid wasting gas
+  if (config.publicClient) {
+    try {
+      const balance = await config.publicClient.readContract({
+        address: params.token,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [params.from],
+      });
+
+      const requiredAmount = BigInt(params.value) + BigInt(params.facilitatorFee);
+      if (balance < requiredAmount) {
+        throw new Error(
+          `Insufficient balance: user has ${balance} tokens, but needs ${requiredAmount} ` +
+          `(payment: ${params.value} + facilitator fee: ${params.facilitatorFee})`
+        );
+      }
+    } catch (error) {
+      // If balance check fails, log the error but continue with transaction
+      // The transaction will fail on-chain with a more specific error if balance is truly insufficient
+      if (error instanceof Error && !error.message.includes("Insufficient balance")) {
+        console.warn("[executeSettlementWithRouter] Balance check failed, proceeding with transaction:", error.message);
+      } else {
+        // Re-throw the insufficient balance error
+        throw error;
+      }
+    }
+  }
 
   try {
     const txHash = await walletClient.writeContract({
@@ -503,6 +546,7 @@ export async function executeSettlementWithWalletClient(
     const txHash = await executeSettlementWithRouter(walletClient, params, {
       gasLimit: config.gasLimit,
       gasMultiplier: config.gasMultiplier,
+      publicClient,
     });
 
     // Wait for receipt
@@ -594,6 +638,7 @@ export async function settleWithSettlementRouter(
     const txHash = await executeSettlementWithRouter(walletClient, params, {
       gasLimit: options.gasLimit,
       gasMultiplier: options.gasMultiplier,
+      publicClient,
     });
 
     // Wait for receipt

@@ -317,6 +317,137 @@ describe("SettlementRouter integration", () => {
       );
     });
 
+    it("should validate user balance before sending transaction when publicClient is provided", async () => {
+      const params = {
+        token: MOCK_ADDRESSES.token,
+        from: MOCK_ADDRESSES.payer,
+        value: MOCK_VALUES.paymentAmount,
+        validAfter: MOCK_VALUES.validAfter,
+        validBefore: MOCK_VALUES.validBefore,
+        nonce: MOCK_VALUES.nonce,
+        signature: MOCK_VALUES.signature,
+        salt: MOCK_VALUES.salt,
+        payTo: MOCK_ADDRESSES.merchant,
+        facilitatorFee: MOCK_VALUES.facilitatorFee,
+        hook: MOCK_ADDRESSES.hook,
+        hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+      };
+
+      // Mock balance check - user has sufficient balance (2,000,000 is greater than payment 1,000,000 + fee 100,000)
+      const sufficientBalance = BigInt(2000000);
+      mockPublicClient.readContract.mockResolvedValue(sufficientBalance);
+
+      const txHash = await executeSettlementWithRouter(mockWalletClient, params, {
+        publicClient: mockPublicClient,
+      });
+
+      expect(txHash).toBe(mockSettleResponse.transaction);
+      expect(mockPublicClient.readContract).toHaveBeenCalledWith({
+        address: MOCK_ADDRESSES.token,
+        abi: expect.arrayContaining([
+          expect.objectContaining({
+            name: "balanceOf",
+            type: "function",
+          }),
+        ]),
+        functionName: "balanceOf",
+        args: [MOCK_ADDRESSES.payer],
+      });
+      expect(mockWalletClient.writeContract).toHaveBeenCalled();
+    });
+
+    it("should throw error when user has insufficient balance", async () => {
+      const params = {
+        token: MOCK_ADDRESSES.token,
+        from: MOCK_ADDRESSES.payer,
+        value: MOCK_VALUES.paymentAmount,
+        validAfter: MOCK_VALUES.validAfter,
+        validBefore: MOCK_VALUES.validBefore,
+        nonce: MOCK_VALUES.nonce,
+        signature: MOCK_VALUES.signature,
+        salt: MOCK_VALUES.salt,
+        payTo: MOCK_ADDRESSES.merchant,
+        facilitatorFee: MOCK_VALUES.facilitatorFee,
+        hook: MOCK_ADDRESSES.hook,
+        hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+      };
+
+      // Mock insufficient balance (1000 is less than payment amount + facilitator fee)
+      const paymentAmount = BigInt(MOCK_VALUES.paymentAmount);
+      const facilitatorFee = BigInt(MOCK_VALUES.facilitatorFee);
+      const requiredAmount = paymentAmount + facilitatorFee;
+      const insufficientBalance = requiredAmount - 1n;
+
+      mockPublicClient.readContract.mockResolvedValue(insufficientBalance);
+
+      await expect(
+        executeSettlementWithRouter(mockWalletClient, params, {
+          publicClient: mockPublicClient,
+        }),
+      ).rejects.toThrow(`Insufficient balance: user has ${insufficientBalance} tokens, but needs ${requiredAmount}`);
+
+      // Verify transaction was NOT sent
+      expect(mockWalletClient.writeContract).not.toHaveBeenCalled();
+    });
+
+    it("should skip balance check when publicClient is not provided", async () => {
+      const params = {
+        token: MOCK_ADDRESSES.token,
+        from: MOCK_ADDRESSES.payer,
+        value: MOCK_VALUES.paymentAmount,
+        validAfter: MOCK_VALUES.validAfter,
+        validBefore: MOCK_VALUES.validBefore,
+        nonce: MOCK_VALUES.nonce,
+        signature: MOCK_VALUES.signature,
+        salt: MOCK_VALUES.salt,
+        payTo: MOCK_ADDRESSES.merchant,
+        facilitatorFee: MOCK_VALUES.facilitatorFee,
+        hook: MOCK_ADDRESSES.hook,
+        hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+      };
+
+      // Call without publicClient
+      const txHash = await executeSettlementWithRouter(mockWalletClient, params);
+
+      expect(txHash).toBe(mockSettleResponse.transaction);
+      // Balance check should not be performed
+      expect(mockPublicClient.readContract).not.toHaveBeenCalled();
+      // But transaction should still be sent
+      expect(mockWalletClient.writeContract).toHaveBeenCalled();
+    });
+
+    it("should handle balance check errors gracefully and proceed with transaction", async () => {
+      const params = {
+        token: MOCK_ADDRESSES.token,
+        from: MOCK_ADDRESSES.payer,
+        value: MOCK_VALUES.paymentAmount,
+        validAfter: MOCK_VALUES.validAfter,
+        validBefore: MOCK_VALUES.validBefore,
+        nonce: MOCK_VALUES.nonce,
+        signature: MOCK_VALUES.signature,
+        salt: MOCK_VALUES.salt,
+        payTo: MOCK_ADDRESSES.merchant,
+        facilitatorFee: MOCK_VALUES.facilitatorFee,
+        hook: MOCK_ADDRESSES.hook,
+        hookData: MOCK_VALUES.hookData,
+        settlementRouter: MOCK_ADDRESSES.settlementRouter,
+      };
+
+      // Mock balance check failure (e.g., RPC error)
+      mockPublicClient.readContract.mockRejectedValue(new Error("RPC timeout"));
+
+      const txHash = await executeSettlementWithRouter(mockWalletClient, params, {
+        publicClient: mockPublicClient,
+      });
+
+      // Should still proceed with transaction despite balance check failure
+      expect(txHash).toBe(mockSettleResponse.transaction);
+      expect(mockWalletClient.writeContract).toHaveBeenCalled();
+    });
+
     it("should use custom gas limit", async () => {
       const params = {
         token: MOCK_ADDRESSES.token,
