@@ -5,6 +5,7 @@
  */
 
 import { getLogger } from "./telemetry.js";
+import { normalizeNetwork } from "./network-id.js";
 
 const logger = getLogger();
 
@@ -29,23 +30,45 @@ export interface TokenPriceConfig {
   cacheTTL: number; // Cache TTL in seconds
   updateInterval: number; // Background update interval in seconds
   apiKey?: string; // Optional CoinGecko Pro API key
-  coinIds: Record<string, string>; // network -> CoinGecko coin ID mapping
+  coinIds?: Record<string, string>; // Optional network -> CoinGecko coin ID mapping
 }
 
 /**
- * Default CoinGecko coin ID mapping
+ * Default native token CoinGecko coin ID mapping by CAIP-2 network ID
+ *
+ * Maps CAIP-2 network identifiers to CoinGecko coin IDs for fetching native token prices.
+ * Used when no custom coin ID is provided via TOKEN_PRICE_CONFIG.coinIds.
+ *
+ * @example
+ * ```typescript
+ * // Get CoinGecko ID for Base Sepolia
+ * const coinId = DEFAULT_NETWORK_COIN_IDS["eip155:84532"]; // "ethereum"
+ *
+ * // Get CoinGecko ID for BSC mainnet
+ * const coinId = DEFAULT_NETWORK_COIN_IDS["eip155:56"]; // "binancecoin"
+ * ```
  */
-const DEFAULT_COIN_IDS: Record<string, string> = {
-  "base-sepolia": "ethereum",
-  base: "ethereum",
-  "x-layer-testnet": "okb",
-  "x-layer": "okb",
+const DEFAULT_NETWORK_COIN_IDS: Record<string, string> = {
+  // Base networks (ETH)
+  "eip155:84532": "ethereum", // Base Sepolia testnet
+  "eip155:8453": "ethereum", // Base mainnet
+
+  // X-Layer networks (OKB)
+  "eip155:1952": "okb", // X-Layer testnet
+  "eip155:196": "okb", // X-Layer mainnet
+
+  // BSC networks (BNB)
+  "eip155:97": "binancecoin", // BSC testnet
+  "eip155:56": "binancecoin", // BSC mainnet
 };
 
 /**
  * Get token price with caching and fallback
  *
- * @param network - Network name
+ * Accepts both v1 aliases (e.g., "base-sepolia") and v2 CAIP-2 IDs (e.g., "eip155:84532").
+ * Internally normalizes to CAIP-2 for looking up in DEFAULT_NETWORK_COIN_IDS.
+ *
+ * @param network - Network name (v1 alias or v2 CAIP-2)
  * @param staticPrice - Static fallback price
  * @param config - Optional token price configuration
  * @returns Token price in USD
@@ -72,7 +95,34 @@ export async function getTokenPrice(
 
   // Fetch from CoinGecko API
   try {
-    const coinId = config.coinIds[network] || DEFAULT_COIN_IDS[network];
+    // Try custom coin IDs from config first (supports both v1 and v2 keys)
+    let coinId = config?.coinIds?.[network];
+
+    // If not in custom config, look up in default mapping
+    if (!coinId) {
+      try {
+        // Normalize to CAIP-2 canonical format
+        const normalized = normalizeNetwork(network);
+
+        // Try canonical CAIP-2 key in custom config
+        if (!coinId && config?.coinIds) {
+          coinId = config.coinIds[normalized.canonical];
+        }
+
+        // Try v1 alias in custom config for backward compatibility
+        if (!coinId && config?.coinIds) {
+          coinId = config.coinIds[normalized.aliasV1];
+        }
+
+        // Finally, fall back to default network coin ID mapping
+        if (!coinId) {
+          coinId = DEFAULT_NETWORK_COIN_IDS[normalized.canonical];
+        }
+      } catch {
+        // Network normalization failed (unsupported network), will use static fallback
+      }
+    }
+
     if (!coinId) {
       logger.warn({ network }, "No CoinGecko ID for network, using static price");
       return staticPrice;
