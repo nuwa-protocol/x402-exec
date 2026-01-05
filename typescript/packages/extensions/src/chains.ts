@@ -36,13 +36,13 @@ const customChains: Record<number, Chain> = {
     nativeCurrency: { name: "CREDIT", symbol: "CREDIT", decimals: 18 },
     rpcUrls: {
       default: {
-        http: ["https://testnet.skalenodes.com/v1/lanky-ill-funny-testnet"],
+        http: ["https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha"],
       },
     },
     blockExplorers: {
       default: {
         name: "SKALE Explorer",
-        url: "https://lanky-ill-funny-testnet.explorer.testnet.skalenodes.com",
+        url: "https://base-sepolia-testnet-explorer.skalenodes.com",
       },
     },
     testnet: true,

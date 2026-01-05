@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-01-05T05:23:50.508Z",
+  "generated": "2026-01-05T06:05:49.634Z",
   "networks": [
     {
       "caip2": "eip155:56",
@@ -80,7 +80,7 @@
       "envPrefix": "SKALE_BASE_SEPOLIA",
       "chainId": 324705682,
       "name": "SKALE Base Sepolia",
-      "rpcUrl": "https://testnet.skalenodes.com/v1/lanky-ill-funny-testnet",
+      "rpcUrl": "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha",
       "explorerUrl": "https://base-sepolia-testnet-explorer.skalenodes.com",
       "gasModel": "legacy",
       "type": "testnet",
