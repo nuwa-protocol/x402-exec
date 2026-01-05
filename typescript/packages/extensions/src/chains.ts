@@ -33,7 +33,7 @@ const customChains: Record<number, Chain> = {
   324705682: defineChain({
     id: 324705682,
     name: "SKALE Nebula Testnet",
-    nativeCurrency: { name: "sFUEL", symbol: "sFUEL", decimals: 18 },
+    nativeCurrency: { name: "CREDIT", symbol: "CREDIT", decimals: 18 },
     rpcUrls: {
       default: {
         http: ["https://testnet.skalenodes.com/v1/lanky-ill-funny-testnet"],

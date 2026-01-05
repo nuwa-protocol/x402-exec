@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-01-05T03:31:34.345Z",
+  "generated": "2026-01-05T05:23:50.508Z",
   "networks": [
     {
       "caip2": "eip155:56",
@@ -28,8 +28,8 @@
     },
     {
       "caip2": "eip155:196",
-      "v1Alias": "xlayer",
-      "envPrefix": "XLAYER",
+      "v1Alias": "x-layer",
+      "envPrefix": "X_LAYER",
       "chainId": 196,
       "name": "X Layer Mainnet",
       "rpcUrl": "https://rpc.xlayer.tech",
@@ -40,8 +40,8 @@
     },
     {
       "caip2": "eip155:1952",
-      "v1Alias": "xlayer-testnet",
-      "envPrefix": "XLAYER_TESTNET",
+      "v1Alias": "x-layer-testnet",
+      "envPrefix": "X_LAYER_TESTNET",
       "chainId": 1952,
       "name": "X Layer Testnet",
       "rpcUrl": "https://testrpc.xlayer.tech",
@@ -84,7 +84,7 @@
       "explorerUrl": "https://base-sepolia-testnet-explorer.skalenodes.com",
       "gasModel": "legacy",
       "type": "testnet",
-      "nativeToken": "Credits"
+      "nativeToken": "CREDIT"
     },
     {
       "caip2": "eip155:1187947933",

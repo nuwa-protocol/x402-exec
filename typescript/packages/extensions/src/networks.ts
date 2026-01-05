@@ -136,7 +136,7 @@ export const networks: Record<Network, NetworkConfig> = {
     },
     metadata: {
       gasModel: "legacy",
-      nativeToken: "Credits",
+      nativeToken: "CREDIT",
     },
   },
   "eip155:97": {
