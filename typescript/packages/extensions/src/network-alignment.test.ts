@@ -22,10 +22,23 @@ const EXPECTED_V1_NETWORKS = [
   "base-sepolia",
   "x-layer-testnet",
   "skale-base-sepolia",
+  "skale-base",
   "base",
   "x-layer",
   "bsc-testnet",
   "bsc",
+] as const;
+
+// Legacy aliases for backward compatibility (non-canonical, but still supported)
+const LEGACY_V1_ALIASES = [
+  "xlayer-testnet", // Maps to same CAIP-2 as "x-layer-testnet"
+  "xlayer", // Maps to same CAIP-2 as "x-layer"
+] as const;
+
+// All expected aliases (canonical + legacy)
+const ALL_EXPECTED_ALIASES = [
+  ...EXPECTED_V1_NETWORKS,
+  ...LEGACY_V1_ALIASES,
 ] as const;
 
 describe("Network Alignment (v1 ↔ v2)", () => {
@@ -39,8 +52,14 @@ describe("Network Alignment (v1 ↔ v2)", () => {
         expect(v2Aliases[v1Network]).toMatch(/^eip155:\d+$/);
       });
 
-      // Should have the same number of networks
-      expect(Object.keys(v2Aliases).length).toBe(EXPECTED_V1_NETWORKS.length);
+      // Legacy aliases should also be supported
+      LEGACY_V1_ALIASES.forEach((v1Network) => {
+        expect(v2Aliases[v1Network]).toBeDefined();
+        expect(v2Aliases[v1Network]).toMatch(/^eip155:\d+$/);
+      });
+
+      // Total aliases should include legacy ones
+      expect(Object.keys(v2Aliases).length).toBe(ALL_EXPECTED_ALIASES.length);
     });
 
     it("should include all CAIP-2 networks in v2 supported list", () => {
@@ -58,18 +77,21 @@ describe("Network Alignment (v1 ↔ v2)", () => {
     });
 
     it("should have no duplicate or missing network mappings", () => {
-      const v1Networks = EXPECTED_V1_NETWORKS;
+      const v1Networks = ALL_EXPECTED_ALIASES;
       const v2Aliases = getNetworkAliasesV1ToV2();
       const v2Networks = getSupportedNetworkIds();
 
-      // Check for duplicates in v1 networks
+      // Check for duplicates in v1 networks (all aliases should be unique)
       const v1NetworkSet = new Set(v1Networks);
       expect(v1NetworkSet.size).toBe(v1Networks.length);
 
-      // Check for duplicates in CAIP-2 mappings
+      // CAIP-2 mappings can have duplicates due to legacy aliases
+      // This is intentional for backward compatibility
       const caip2Mappings = Object.values(v2Aliases);
-      const caip2Set = new Set(caip2Mappings);
-      expect(caip2Set.size).toBe(caip2Mappings.length);
+      const uniqueCaip2Count = new Set(caip2Mappings).size;
+
+      // Number of unique CAIP-2 IDs should match supported networks count
+      expect(uniqueCaip2Count).toBe(v2Networks.length);
 
       // Check that all CAIP-2 networks are unique
       const v2NetworkSet = new Set(v2Networks);
@@ -130,6 +152,7 @@ describe("Network Alignment (v1 ↔ v2)", () => {
 
     describe("toCanonicalNetworkKey", () => {
       it("should handle v1 network names correctly", () => {
+        // Canonical aliases
         expect(toCanonicalNetworkKey("base-sepolia")).toBe("eip155:84532");
         expect(toCanonicalNetworkKey("x-layer-testnet")).toBe("eip155:1952");
         expect(toCanonicalNetworkKey("skale-base-sepolia")).toBe("eip155:324705682");
@@ -137,6 +160,10 @@ describe("Network Alignment (v1 ↔ v2)", () => {
         expect(toCanonicalNetworkKey("x-layer")).toBe("eip155:196");
         expect(toCanonicalNetworkKey("bsc-testnet")).toBe("eip155:97");
         expect(toCanonicalNetworkKey("bsc")).toBe("eip155:56");
+
+        // Legacy aliases should also work
+        expect(toCanonicalNetworkKey("xlayer-testnet")).toBe("eip155:1952");
+        expect(toCanonicalNetworkKey("xlayer")).toBe("eip155:196");
       });
 
       it("should handle v2 CAIP-2 identifiers correctly", () => {
@@ -175,20 +202,23 @@ describe("Network Alignment (v1 ↔ v2)", () => {
       expect(aliases1).toEqual(aliases2);
     });
 
-    it("should have bijective relationship between v1 names and CAIP-2 IDs", () => {
+    it("should have bijective relationship between canonical v1 names and CAIP-2 IDs", () => {
       const aliases = getNetworkAliasesV1ToV2();
-      const v1Networks = Object.keys(aliases);
-      const caip2Networks = Object.values(aliases);
 
-      // All v1 networks should be unique
+      // Only test canonical aliases (not legacy ones)
+      const canonicalAliases = EXPECTED_V1_NETWORKS;
+      const v1Networks = canonicalAliases;
+      const caip2Networks = canonicalAliases.map((v1) => aliases[v1]);
+
+      // All canonical v1 networks should be unique
       const v1Set = new Set(v1Networks);
       expect(v1Set.size).toBe(v1Networks.length);
 
-      // All CAIP-2 networks should be unique
+      // All CAIP-2 networks should be unique (for canonical aliases)
       const caip2Set = new Set(caip2Networks);
       expect(caip2Set.size).toBe(caip2Networks.length);
 
-      // Should have same number of mappings
+      // Should have same number of mappings for canonical aliases
       expect(v1Networks.length).toBe(caip2Networks.length);
     });
   });

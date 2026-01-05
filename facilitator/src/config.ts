@@ -10,7 +10,7 @@
  */
 
 import { config as loadEnv } from "dotenv";
-import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds } from "@x402x/extensions";
+import { getNetworkConfig, isNetworkSupported, getSupportedNetworkIds, getNetworkAlias } from "@x402x/extensions";
 
 // X402Config type (currently unused, kept for backward compatibility)
 export type X402Config = Record<string, never>;
@@ -440,10 +440,15 @@ function parseGasCostConfig(): GasCostConfig {
       nativeTokenPrice[network] = parseFloat(price);
     } else {
       // Default prices (conservative estimates)
+      // Convert CAIP-2 to human-readable alias for matching
+      const networkAlias = getNetworkAlias(network);
+
       // Check for most specific matches first
-      if (network.includes("x-layer")) {
+      if (networkAlias.includes("x-layer")) {
         nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.OKB;
-      } else if (network.includes("base")) {
+      } else if (networkAlias.includes("skale")) {
+        nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.CREDIT;
+      } else if (networkAlias.includes("base")) {
         nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.ETH;
       } else {
         nativeTokenPrice[network] = DEFAULTS.nativeTokenPrice.GENERIC;

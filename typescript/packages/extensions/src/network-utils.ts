@@ -29,10 +29,13 @@ export interface AssetInfo {
 export const NETWORK_ALIASES_V1_TO_V2: Record<string, Network> = {
   // V1 human-readable names -> V2 CAIP-2 canonical keys
   "base-sepolia": "eip155:84532",
-  "x-layer-testnet": "eip155:1952",
+  "xlayer-testnet": "eip155:1952", // Legacy alias for backward compatibility
+  "x-layer-testnet": "eip155:1952", // Canonical alias (must come after legacy to override)
   "skale-base-sepolia": "eip155:324705682",
+  "skale-base": "eip155:1187947933",
   base: "eip155:8453",
-  "x-layer": "eip155:196",
+  xlayer: "eip155:196", // Legacy alias for backward compatibility
+  "x-layer": "eip155:196", // Canonical alias (must come after legacy to override)
   "bsc-testnet": "eip155:97",
   bsc: "eip155:56",
 };
@@ -114,6 +117,14 @@ const DEFAULT_ASSETS: Record<Network, AssetInfo> = {
     eip712: {
       name: "x402 Wrapped USDT",
       version: "1",
+    },
+  },
+  "eip155:1187947933": {
+    address: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+    decimals: 6,
+    eip712: {
+      name: "Bridged USDC (SKALE Bridge)",
+      version: "2",
     },
   },
 };

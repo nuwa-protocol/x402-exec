@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "generated": "2026-01-05T05:23:50.508Z",
+  "networks": [
+    {
+      "caip2": "eip155:56",
+      "v1Alias": "bsc",
+      "envPrefix": "BSC",
+      "chainId": 56,
+      "name": "BSC Mainnet",
+      "rpcUrl": "https://56.rpc.thirdweb.com",
+      "explorerUrl": "https://bscscan.com",
+      "gasModel": "legacy",
+      "type": "mainnet",
+      "nativeToken": "BNB"
+    },
+    {
+      "caip2": "eip155:97",
+      "v1Alias": "bsc-testnet",
+      "envPrefix": "BSC_TESTNET",
+      "chainId": 97,
+      "name": "BSC Testnet",
+      "rpcUrl": "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+      "explorerUrl": "https://testnet.bscscan.com",
+      "gasModel": "legacy",
+      "type": "testnet",
+      "nativeToken": "BNB"
+    },
+    {
+      "caip2": "eip155:196",
+      "v1Alias": "x-layer",
+      "envPrefix": "X_LAYER",
+      "chainId": 196,
+      "name": "X Layer Mainnet",
+      "rpcUrl": "https://rpc.xlayer.tech",
+      "explorerUrl": "https://www.oklink.com/xlayer",
+      "gasModel": "eip1559",
+      "type": "mainnet",
+      "nativeToken": "OKB"
+    },
+    {
+      "caip2": "eip155:1952",
+      "v1Alias": "x-layer-testnet",
+      "envPrefix": "X_LAYER_TESTNET",
+      "chainId": 1952,
+      "name": "X Layer Testnet",
+      "rpcUrl": "https://testrpc.xlayer.tech",
+      "explorerUrl": "https://www.oklink.com/xlayer-test",
+      "gasModel": "eip1559",
+      "type": "testnet",
+      "nativeToken": "OKB"
+    },
+    {
+      "caip2": "eip155:8453",
+      "v1Alias": "base",
+      "envPrefix": "BASE",
+      "chainId": 8453,
+      "name": "Base Mainnet",
+      "rpcUrl": "https://mainnet.base.org",
+      "explorerUrl": "https://basescan.org",
+      "gasModel": "eip1559",
+      "type": "mainnet",
+      "nativeToken": "ETH"
+    },
+    {
+      "caip2": "eip155:84532",
+      "v1Alias": "base-sepolia",
+      "envPrefix": "BASE_SEPOLIA",
+      "chainId": 84532,
+      "name": "Base Sepolia",
+      "rpcUrl": "https://sepolia.base.org",
+      "explorerUrl": "https://sepolia.basescan.org",
+      "gasModel": "eip1559",
+      "type": "testnet",
+      "nativeToken": "ETH"
+    },
+    {
+      "caip2": "eip155:324705682",
+      "v1Alias": "skale-base-sepolia",
+      "envPrefix": "SKALE_BASE_SEPOLIA",
+      "chainId": 324705682,
+      "name": "SKALE Base Sepolia",
+      "rpcUrl": "https://testnet.skalenodes.com/v1/lanky-ill-funny-testnet",
+      "explorerUrl": "https://base-sepolia-testnet-explorer.skalenodes.com",
+      "gasModel": "legacy",
+      "type": "testnet",
+      "nativeToken": "CREDIT"
+    },
+    {
+      "caip2": "eip155:1187947933",
+      "v1Alias": "skale-base",
+      "envPrefix": "SKALE_BASE",
+      "chainId": 1187947933,
+      "name": "SKALE on Base",
+      "rpcUrl": "https://skale-base.skalenodes.com/v1/base",
+      "explorerUrl": "https://skale-base-explorer.skalenodes.com",
+      "gasModel": "legacy",
+      "type": "mainnet",
+      "nativeToken": "CREDIT"
+    }
+  ]
+}

@@ -33,7 +33,7 @@ const customChains: Record<number, Chain> = {
   324705682: defineChain({
     id: 324705682,
     name: "SKALE Nebula Testnet",
-    nativeCurrency: { name: "sFUEL", symbol: "sFUEL", decimals: 18 },
+    nativeCurrency: { name: "CREDIT", symbol: "CREDIT", decimals: 18 },
     rpcUrls: {
       default: {
         http: ["https://testnet.skalenodes.com/v1/lanky-ill-funny-testnet"],
@@ -58,6 +58,23 @@ const customChains: Record<number, Chain> = {
     },
     blockExplorers: {
       default: { name: "OKLink", url: "https://www.oklink.com/xlayer" },
+    },
+    testnet: false,
+  }),
+
+  // SKALE Base Mainnet
+  1187947933: defineChain({
+    id: 1187947933,
+    name: "SKALE Base",
+    nativeCurrency: { name: "CREDIT", symbol: "CREDIT", decimals: 18 },
+    rpcUrls: {
+      default: { http: ["https://skale-base.skalenodes.com/v1/base"] },
+    },
+    blockExplorers: {
+      default: {
+        name: "SKALE Explorer",
+        url: "https://skale-base-explorer.skalenodes.com",
+      },
     },
     testnet: false,
   }),

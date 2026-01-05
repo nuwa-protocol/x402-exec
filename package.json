@@ -22,7 +22,8 @@
 		"clean": "pnpm -r exec rm -rf node_modules dist",
 		"clean:build": "pnpm -r exec rm -rf dist",
 		"format": "pnpm --filter='./typescript/packages/**' run format",
-		"format:check": "pnpm --filter='./typescript/packages/**' run format:check"
+		"format:check": "pnpm --filter='./typescript/packages/**' run format:check",
+		"generate:networks": "pnpm --filter '@x402x/extensions' generate-networks-json"
 	},
 	"devDependencies": {
 		"prettier": "3.5.2",
