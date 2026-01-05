@@ -41,6 +41,7 @@ export {
   parseSettlementRouterParams,
   settleWithSettlementRouter,
   executeSettlementWithWalletClient,
+  InsufficientBalanceError,
 } from "./settlement.js";
 
 // Validation utilities

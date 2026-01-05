@@ -12,6 +12,7 @@ import {
   waitForSettlementReceipt,
   parseSettlementRouterParams,
   settleWithSettlementRouter,
+  InsufficientBalanceError,
 } from "../src/index.js";
 import { SettlementRouterError } from "../src/types.js";
 import {
@@ -386,7 +387,7 @@ describe("SettlementRouter integration", () => {
         executeSettlementWithRouter(mockWalletClient, params, {
           publicClient: mockPublicClient,
         }),
-      ).rejects.toThrow(`Insufficient balance: user has ${insufficientBalance} tokens, but needs ${requiredAmount}`);
+      ).rejects.toThrow(InsufficientBalanceError);
 
       // Verify transaction was NOT sent
       expect(mockWalletClient.writeContract).not.toHaveBeenCalled();

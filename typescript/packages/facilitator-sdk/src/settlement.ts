@@ -185,6 +185,38 @@ export function calculateGasLimit(
 }
 
 /**
+ * Custom error for insufficient balance errors
+ * Thrown when user's token balance is less than required amount for settlement
+ */
+export class InsufficientBalanceError extends Error {
+  /** User's current balance */
+  readonly balance: bigint;
+  /** Required amount (payment + facilitator fee) */
+  readonly required: bigint;
+  /** Payment amount */
+  readonly payment: bigint;
+  /** Facilitator fee amount */
+  readonly fee: bigint;
+
+  constructor(
+    balance: bigint,
+    required: bigint,
+    payment: bigint,
+    fee: bigint,
+  ) {
+    super(
+      `Insufficient balance: user has ${balance} tokens, but needs ${required} ` +
+      `(payment: ${payment} + facilitator fee: ${fee})`
+    );
+    this.name = "InsufficientBalanceError";
+    this.balance = balance;
+    this.required = required;
+    this.payment = payment;
+    this.fee = fee;
+  }
+}
+
+/**
  * Check if a settlement has already been executed
  */
 export async function checkIfSettled(
@@ -221,7 +253,21 @@ const ERC20_ABI = [
 ] as const;
 
 /**
- * Execute settlement via SettlementRouter
+ * Execute settlement via SettlementRouter.
+ *
+ * @param walletClient - The viem {@link WalletClient} used to send the settlement transaction.
+ * @param params - The {@link SettlementRouterParams} describing the settlement to execute.
+ * @param config - Optional configuration overrides.
+ * @param config.gasLimit - Explicit gas limit to use for the transaction. If omitted, it is derived
+ *   from {@link calculateGasLimit} based on the facilitator fee and `gasMultiplier`.
+ * @param config.gasMultiplier - Multiplier applied when estimating gas usage (for safety margin).
+ * @param config.publicClient - Optional viem {@link PublicClient} to use for read operations
+ *   (for example, balance checks). If provided, the user's token balance will be validated before
+ *   sending the transaction to avoid wasting gas on insufficient balance scenarios.
+ * @returns A promise that resolves to the transaction hash of the settlement as a hex string.
+ * @throws {InsufficientBalanceError} When `publicClient` is provided and the user's token balance
+ *   is less than the required amount (payment + facilitator fee).
+ * @throws {Error} When transaction execution fails (e.g., invalid signature, contract revert).
  */
 export async function executeSettlementWithRouter(
   walletClient: WalletClient,
@@ -262,21 +308,22 @@ export async function executeSettlementWithRouter(
         args: [params.from],
       });
 
-      const requiredAmount = BigInt(params.value) + BigInt(params.facilitatorFee);
+      const paymentAmount = BigInt(params.value);
+      const feeAmount = BigInt(params.facilitatorFee);
+      const requiredAmount = paymentAmount + feeAmount;
+
       if (balance < requiredAmount) {
-        throw new Error(
-          `Insufficient balance: user has ${balance} tokens, but needs ${requiredAmount} ` +
-          `(payment: ${params.value} + facilitator fee: ${params.facilitatorFee})`
-        );
+        throw new InsufficientBalanceError(balance, requiredAmount, paymentAmount, feeAmount);
       }
     } catch (error) {
       // If balance check fails, log the error but continue with transaction
       // The transaction will fail on-chain with a more specific error if balance is truly insufficient
-      if (error instanceof Error && !error.message.includes("Insufficient balance")) {
-        console.warn("[executeSettlementWithRouter] Balance check failed, proceeding with transaction:", error.message);
-      } else {
+      if (error instanceof InsufficientBalanceError) {
         // Re-throw the insufficient balance error
         throw error;
+      } else {
+        // Log RPC/other errors and proceed with transaction
+        console.warn("[executeSettlementWithRouter] Balance check failed, proceeding with transaction:", error instanceof Error ? error.message : error);
       }
     }
   }
