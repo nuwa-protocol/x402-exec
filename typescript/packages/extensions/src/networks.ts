@@ -228,6 +228,28 @@ export const networks: Record<Network, NetworkConfig> = {
       nativeToken: "BNB",
     },
   },
+  "eip155:1187947933": {
+    chainId: 1187947933,
+    name: "SKALE on Base",
+    type: "mainnet",
+    addressExplorerBaseUrl: "https://skale-base-explorer.skalenodes.com/address/",
+    txExplorerBaseUrl: "https://skale-base-explorer.skalenodes.com/tx/",
+    settlementRouter: "0x1Ae0E196dC18355aF3a19985faf67354213F833D",
+    defaultAsset: getDefaultAssetConfig("eip155:1187947933"),
+    hooks: {
+      transfer: "0x2f05fe5674aE756E25C26855258B4877E9e021Fd",
+    },
+    demoHooks: {
+      nftMint: "0x73fc659Cd5494E69852bE8D9D23FE05Aab14b29B",
+      randomNFT: "0x081258287F692D61575387ee2a4075f34dd7Aef7",
+      reward: "0xC20634ea518985901e32Fbc1bA27fa673D37601A",
+      rewardToken: "0x9Fc2c199170B039f093ABCd54008038F0C0a31d6",
+    },
+    metadata: {
+      gasModel: "legacy",
+      nativeToken: "CREDIT",
+    },
+  },
 };
 
 /**

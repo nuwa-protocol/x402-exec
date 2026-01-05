@@ -1,6 +1,7 @@
 #!/bin/bash
 # Multi-network deployment script for SettlementRouter and Showcase contracts
-# Supports: Base Sepolia, Base Mainnet, X-Layer Testnet, X-Layer Mainnet, SKALE Base Sepolia
+# Supports: Base Sepolia, Base Mainnet, X-Layer Testnet, X-Layer Mainnet, SKALE Base Sepolia, BSC
+# Network configuration is loaded from networks.json (shared with TypeScript)
 
 set -e
 
@@ -17,18 +18,68 @@ print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
 
+# ============================================
+# Network Configuration (from networks.json)
+# ============================================
+
+NETWORKS_FILE="networks.json"
+
+# Ensure networks.json exists
+if [ ! -f "$NETWORKS_FILE" ]; then
+    print_error "networks.json not found!"
+    echo ""
+    echo "Please generate it first:"
+    echo "  pnpm --filter '@x402x/extensions' generate-networks-json"
+    exit 1
+fi
+
+# Get network config by CAIP-2 ID or v1 alias
+get_network_config() {
+    local network=$1
+    local field=$2
+
+    # Try to find by caip2 or v1Alias
+    jq -r --arg network "$network" --arg field "$field" \
+        '.networks[] | select(.caip2 == $network or .v1Alias == $network) | .[$field]' \
+        "$NETWORKS_FILE" 2>/dev/null
+}
+
+# Check if network exists
+network_exists() {
+    local network=$1
+    local count=$(jq -r --arg network "$network" \
+        '.networks[] | select(.caip2 == $network or .v1Alias == $network) | .caip2' \
+        "$NETWORKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+    [ "$count" -gt 0 ]
+}
+
+# Get CAIP-2 ID from v1 alias or CAIP-2
+get_caip2_id() {
+    local network=$1
+    get_network_config "$network" "caip2"
+}
+
+# Normalize network to CAIP-2 format
+normalize_network() {
+    local network=$1
+    if [[ "$network" =~ ^eip155:[0-9]+$ ]]; then
+        echo "$network"
+    else
+        get_caip2_id "$network"
+    fi
+}
+
+# List all supported networks
+list_networks() {
+    jq -r '.networks[] | "\(.caip2) (\(.v1Alias)): \(.name)"' "$NETWORKS_FILE"
+}
+
 # Print usage
 usage() {
     echo "Usage: $0 [NETWORK] [OPTIONS]"
     echo ""
-    echo "Networks:"
-    echo "  base-sepolia      Base Sepolia Testnet (Chain ID: 84532)"
-    echo "  base              Base Mainnet (Chain ID: 8453)"
-    echo "  xlayer-testnet    X-Layer Testnet (Chain ID: 1952)"
-    echo "  xlayer            X-Layer Mainnet (Chain ID: 196)"
-    echo "  skale-base-sepolia SKALE Base Sepolia (Chain ID: 324705682)"
-    echo "  bsc-testnet       BSC Testnet (Chain ID: 97)"
-    echo "  bsc               BSC Mainnet (Chain ID: 56)"
+    echo "Networks (CAIP-2 format preferred, v1 aliases also supported):"
+    list_networks | sed 's/^/  /'
     echo ""
     echo "Options:"
     echo "  --settlement      Deploy only SettlementRouter"
@@ -45,14 +96,15 @@ usage() {
     echo "  -h, --help        Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 xlayer-testnet                    # Deploy everything on X-Layer Testnet"
-    echo "  $0 xlayer-testnet --settlement       # Deploy only SettlementRouter"
-    echo "  $0 xlayer-testnet --showcase         # Deploy all showcase scenarios"
-    echo "  $0 xlayer-testnet --hooks            # Deploy all built-in Hooks"
-    echo "  $0 xlayer-testnet --transfer         # Deploy only TransferHook"
-    echo "  $0 xlayer-testnet --nft              # Deploy only NFT scenario"
-    echo "  $0 base-sepolia --all --with-hooks   # Deploy everything including hooks"
-    echo "  $0 base-sepolia --all --verify       # Deploy and verify on Base Sepolia"
+    echo "  $0 eip155:1952                    # Deploy everything on X-Layer Testnet (CAIP-2)"
+    echo "  $0 xlayer-testnet                # Same as above (v1 alias)"
+    echo "  $0 eip155:1952 --settlement      # Deploy only SettlementRouter"
+    echo "  $0 eip155:1952 --showcase        # Deploy all showcase scenarios"
+    echo "  $0 eip155:1952 --hooks           # Deploy all built-in Hooks"
+    echo "  $0 eip155:1952 --transfer        # Deploy only TransferHook"
+    echo "  $0 eip155:1952 --nft             # Deploy only NFT scenario"
+    echo "  $0 eip155:84532 --all --with-hooks  # Deploy everything including hooks"
+    echo "  $0 eip155:84532 --all --verify      # Deploy and verify on Base Sepolia"
     echo ""
     echo "Environment Variables Required:"
     echo "  DEPLOYER_PRIVATE_KEY                 Deployer wallet private key"
@@ -76,10 +128,6 @@ WITH_HOOKS=false  # Flag for --with-hooks option
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        base-sepolia|base|xlayer-testnet|xlayer|skale-base-sepolia|bsc-testnet|bsc)
-            NETWORK=$1
-            shift
-            ;;
         --settlement)
             DEPLOY_MODE="settlement"
             shift
@@ -127,9 +175,14 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage
             ;;
-        *)
+        --*)
             print_error "Unknown option: $1"
             usage
+            ;;
+        *)
+            # Anything else is treated as network identifier (CAIP-2 or v1 alias)
+            NETWORK=$1
+            shift
             ;;
     esac
 done
@@ -141,97 +194,37 @@ if [ -z "$NETWORK" ]; then
     usage
 fi
 
+# Validate network is supported
+if ! network_exists "$NETWORK"; then
+    print_error "Unknown or unsupported network: $NETWORK"
+    echo ""
+    echo "Supported networks:"
+    list_networks | sed 's/^/  /'
+    echo ""
+    exit 1
+fi
+
+# Normalize to CAIP-2 format
+CAIP2_ID=$(normalize_network "$NETWORK")
+if [ -z "$CAIP2_ID" ]; then
+    print_error "Failed to get CAIP-2 ID for network: $NETWORK"
+    exit 1
+fi
+
 # Header
 echo "========================================="
 echo "  x402-exec Multi-Network Deployment"
 echo "========================================="
 echo ""
 
-# Map network to environment variable prefixes
-get_env_prefix() {
-    case $1 in
-        base-sepolia)
-            echo "BASE_SEPOLIA"
-            ;;
-        base)
-            echo "BASE"
-            ;;
-        xlayer-testnet)
-            echo "X_LAYER_TESTNET"
-            ;;
-        xlayer)
-            echo "X_LAYER"
-            ;;
-        skale-base-sepolia)
-            echo "SKALE_BASE_SEPOLIA"
-            ;;
-        bsc-testnet)
-            echo "BSC_TESTNET"
-            ;;
-        bsc)
-            echo "BSC"
-            ;;
-    esac
-}
-
-# Get network display name and chain ID
-get_network_info() {
-    case $1 in
-        base-sepolia)
-            echo "Base Sepolia Testnet|84532"
-            ;;
-        base)
-            echo "Base Mainnet|8453"
-            ;;
-        xlayer-testnet)
-            echo "X-Layer Testnet|1952"
-            ;;
-        xlayer)
-            echo "X-Layer Mainnet|196"
-            ;;
-        skale-base-sepolia)
-            echo "SKALE Base Sepolia|324705682"
-            ;;
-        bsc-testnet)
-            echo "BSC Testnet|97"
-            ;;
-        bsc)
-            echo "BSC Mainnet|56"
-            ;;
-    esac
-}
-
-# Get default RPC URL for network
-get_default_rpc_url() {
-    case $1 in
-        base-sepolia)
-            echo "https://sepolia.base.org"
-            ;;
-        base)
-            echo "https://mainnet.base.org"
-            ;;
-        xlayer-testnet)
-            echo "https://testrpc.xlayer.tech/terigon"
-            ;;
-        xlayer)
-            echo "https://rpc.xlayer.tech"
-            ;;
-        skale-base-sepolia)
-            echo "https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha"
-            ;;
-        bsc-testnet)
-            echo "https://data-seed-prebsc-1-s1.bnbchain.org:8545"
-            ;;
-        bsc)
-            echo "https://bsc-dataseed.binance.org"
-            ;;
-    esac
-}
-
-ENV_PREFIX=$(get_env_prefix $NETWORK)
-NETWORK_INFO=$(get_network_info $NETWORK)
-NETWORK_NAME=$(echo $NETWORK_INFO | cut -d'|' -f1)
-CHAIN_ID=$(echo $NETWORK_INFO | cut -d'|' -f2)
+# Load network configuration from networks.json
+ENV_PREFIX=$(get_network_config "$CAIP2_ID" "envPrefix")
+NETWORK_NAME=$(get_network_config "$CAIP2_ID" "name")
+CHAIN_ID=$(get_network_config "$CAIP2_ID" "chainId")
+DEFAULT_RPC_URL=$(get_network_config "$CAIP2_ID" "rpcUrl")
+EXPLORER_URL=$(get_network_config "$CAIP2_ID" "explorerUrl")
+GAS_MODEL=$(get_network_config "$CAIP2_ID" "gasModel")
+NETWORK_TYPE=$(get_network_config "$CAIP2_ID" "type")
 
 # Try to load .env from project root
 if [ -f "../.env" ]; then
@@ -243,13 +236,13 @@ else
     print_warning ".env file not found in project root, using shell environment variables"
 fi
 
-# Get RPC URL from environment or use default
+# Get RPC URL from environment or use default from networks.json
 RPC_URL_VAR="${ENV_PREFIX}_RPC_URL"
 RPC_URL="${!RPC_URL_VAR}"
 
-# Fallback to default RPC URL if not set in environment
+# Fallback to default RPC URL from networks.json if not set in environment
 if [ -z "$RPC_URL" ]; then
-    RPC_URL=$(get_default_rpc_url $NETWORK)
+    RPC_URL="$DEFAULT_RPC_URL"
     print_info "Using default RPC URL for $NETWORK_NAME"
 fi
 
@@ -342,11 +335,11 @@ if [ "$VERIFY" = true ]; then
     print_info "Contract verification enabled"
     print_warning "Note: Forge's built-in verification may timeout for complex contracts"
     print_warning "If verification fails, run: ./verify-contracts.sh $NETWORK"
-    
-    # Build verification flags based on network
-    # Use chain ID for --chain and explicitly specify API key and verifier URL
-    case $NETWORK in
-        base-sepolia)
+
+    # Build verification flags based on CAIP-2 ID
+    case $CAIP2_ID in
+        eip155:84532|eip155:8453)
+            # Base networks
             if [ -n "$BASESCAN_API_KEY" ]; then
                 VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BASESCAN_API_KEY"
             else
@@ -354,23 +347,13 @@ if [ "$VERIFY" = true ]; then
                 VERIFY_FLAG=""
             fi
             ;;
-        base)
-            if [ -n "$BASESCAN_API_KEY" ]; then
-                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BASESCAN_API_KEY"
-            else
-                print_error "BASESCAN_API_KEY not set, skipping verification"
-                VERIFY_FLAG=""
-            fi
-            ;;
-        xlayer-testnet)
-            OKLINK_KEY="${OKLINK_API_KEY:-not-required}"
-            VERIFY_FLAG="--verify --chain $CHAIN_ID --verifier-url https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET --etherscan-api-key $OKLINK_KEY"
-            ;;
-        xlayer)
+        eip155:1952|eip155:196)
+            # X-Layer networks
             OKLINK_KEY="${OKLINK_API_KEY:-not-required}"
             VERIFY_FLAG="--verify --chain $CHAIN_ID --verifier-url https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER --etherscan-api-key $OKLINK_KEY"
             ;;
-        bsc-testnet)
+        eip155:97|eip155:56)
+            # BSC networks
             if [ -n "$BSCSCAN_API_KEY" ]; then
                 VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BSCSCAN_API_KEY"
             else
@@ -378,18 +361,14 @@ if [ "$VERIFY" = true ]; then
                 VERIFY_FLAG=""
             fi
             ;;
-        bsc)
-            if [ -n "$BSCSCAN_API_KEY" ]; then
-                VERIFY_FLAG="--verify --chain $CHAIN_ID --etherscan-api-key $BSCSCAN_API_KEY"
-            else
-                print_error "BSCSCAN_API_KEY not set, skipping verification"
-                VERIFY_FLAG=""
-            fi
-            ;;
-        skale-base-sepolia)
-            # SKALE doesn't support automated verification via forge
+        eip155:324705682)
+            # SKALE - doesn't support automated verification via forge
             print_warning "SKALE Base Sepolia doesn't support automated verification"
             print_warning "You'll need to verify manually after deployment"
+            VERIFY_FLAG=""
+            ;;
+        *)
+            print_warning "No verification configuration for $CAIP2_ID"
             VERIFY_FLAG=""
             ;;
     esac
@@ -398,9 +377,9 @@ fi
 # Export environment variables for Forge scripts
 export SETTLEMENT_ROUTER_ADDRESS="$SETTLEMENT_ROUTER"
 
-# Determine additional flags based on network
+# Determine additional flags based on gas model
 LEGACY_FLAG=""
-if [ "$NETWORK" = "skale-base-sepolia" ] || [ "$NETWORK" = "bsc-testnet" ] || [ "$NETWORK" = "bsc" ]; then
+if [ "$GAS_MODEL" = "legacy" ]; then
     LEGACY_FLAG="--legacy"
     print_info "Using legacy gas pricing for $NETWORK_NAME"
 fi
@@ -561,28 +540,6 @@ fi
 echo ""
 
 # Display block explorer link
-case $NETWORK in
-    base-sepolia)
-        echo "View contracts: https://sepolia.basescan.org/"
-        ;;
-    base)
-        echo "View contracts: https://basescan.org/"
-        ;;
-    xlayer-testnet)
-        echo "View contracts: https://www.oklink.com/xlayer-test"
-        ;;
-    xlayer)
-        echo "View contracts: https://www.oklink.com/xlayer"
-        ;;
-    skale-base-sepolia)
-        echo "View contracts: https://base-sepolia-testnet-explorer.skalenodes.com/"
-        ;;
-    bsc-testnet)
-        echo "View contracts: https://testnet.bscscan.com/"
-        ;;
-    bsc)
-        echo "View contracts: https://bscscan.com/"
-        ;;
-esac
+echo "View contracts: $EXPLORER_URL"
 echo ""
 

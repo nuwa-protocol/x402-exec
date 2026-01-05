@@ -155,6 +155,9 @@ export const NATIVE_TOKEN_PRICE_DEFAULTS = {
   /** OKB price for X-Layer networks */
   OKB: 50,
 
+  /** CREDIT price for SKALE networks (1 USD = 4 CREDIT) */
+  CREDIT: 0.25,
+
   /** Generic fallback */
   GENERIC: 100,
 } as const;

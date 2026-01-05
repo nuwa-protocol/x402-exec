@@ -61,6 +61,23 @@ const customChains: Record<number, Chain> = {
     },
     testnet: false,
   }),
+
+  // SKALE Base Mainnet
+  1187947933: defineChain({
+    id: 1187947933,
+    name: "SKALE Base",
+    nativeCurrency: { name: "CREDIT", symbol: "CREDIT", decimals: 18 },
+    rpcUrls: {
+      default: { http: ["https://skale-base.skalenodes.com/v1/base"] },
+    },
+    blockExplorers: {
+      default: {
+        name: "SKALE Explorer",
+        url: "https://skale-base-explorer.skalenodes.com",
+      },
+    },
+    testnet: false,
+  }),
 };
 
 /**
