@@ -332,6 +332,18 @@ export async function settleWithRouter(
     const fee = BigInt(settlementParams.facilitatorFee || "0");
     const paymentValue = BigInt(authorization.value || "0");
 
+    logger.debug(
+      {
+        network,
+        facilitatorFee: settlementParams.facilitatorFee,
+        fee: fee.toString(),
+        value: authorization.value,
+        paymentValue: paymentValue.toString(),
+        feeGtValue: fee > paymentValue,
+      },
+      "Fee validation check (issue #200)",
+    );
+
     if (fee > paymentValue) {
       // Use BigInt arithmetic for ratio to avoid precision loss
       const ratioBps = paymentValue > 0n ? (fee * 10000n) / paymentValue : 0n; // Basis points
@@ -826,11 +838,16 @@ export async function settleWithRouter(
       gasMetrics,
     };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
     logger.error(
       {
-        error,
+        error: errorMsg,
+        errorStack,
         network: paymentRequirements.network,
         router: paymentRequirements.extra?.settlementRouter,
+        facilitatorFee: paymentRequirements.extra?.facilitatorFee,
       },
       "Error in settleWithRouter",
     );

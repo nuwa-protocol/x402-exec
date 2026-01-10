@@ -68,17 +68,57 @@ vi.mock("@x402x/extensions", () => {
     }
   }
 
-  return {
-    isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
-    SettlementExtraError: MockSettlementExtraError,
-    parseSettlementExtraCore: vi.fn((extra: any) => ({
+  const mockParseSettlementExtraCore = vi.fn((extra: any) => {
+    const result = {
       settlementRouter: extra.settlementRouter,
       salt: extra.salt,
       payTo: extra.payTo,
       facilitatorFee: extra.facilitatorFee || "0",
-      hook: extra.hook,
-      hookData: extra.hookData,
-    })),
+      hook: extra.hook || "0x0000000000000000000000000000000000000000",
+      hookData: extra.hookData || "0x",
+    };
+    return result;
+  });
+
+  return {
+    // Mock functions from network-utils.ts dependencies
+    toCanonicalNetworkKey: vi.fn((network: string) => {
+      // Convert v1 names to CAIP-2 format
+      const v1ToCaip2: Record<string, string> = {
+        "base-sepolia": "eip155:84532",
+        "base": "eip155:8453",
+        "x-layer-testnet": "eip155:1952",
+        "x-layer": "eip155:196",
+        "bsc-testnet": "eip155:97",
+        "bsc": "eip155:56",
+        "skale-base-sepolia": "eip155:324705682",
+        "skale-base": "eip155:1187947933",
+      };
+      // If already CAIP-2 format, return as-is
+      if (network.startsWith("eip155:")) {
+        return network;
+      }
+      // Otherwise convert from v1 name
+      return v1ToCaip2[network] || network;
+    }),
+    getNetworkAlias: vi.fn((caip2Network: string) => {
+      // Convert CAIP-2 to v1 name
+      const caip2ToV1: Record<string, string> = {
+        "eip155:84532": "base-sepolia",
+        "eip155:8453": "base",
+        "eip155:1952": "x-layer-testnet",
+        "eip155:196": "x-layer",
+        "eip155:97": "bsc-testnet",
+        "eip155:56": "bsc",
+        "eip155:324705682": "skale-base-sepolia",
+        "eip155:1187947933": "skale-base",
+      };
+      return caip2ToV1[caip2Network] || caip2Network;
+    }),
+    // Existing mocks
+    isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
+    SettlementExtraError: MockSettlementExtraError,
+    parseSettlementExtra: mockParseSettlementExtraCore, // The actual export name is parseSettlementExtra
     calculateCommitment: vi.fn(() => "0x0000000000000000000000000000000000000000000000000000000000000001"),
     getNetworkConfig: vi.fn(() => ({
       defaultAsset: {
@@ -99,6 +139,44 @@ vi.mock("@x402x/facilitator-sdk", () => ({
       payer: "0x1234567890123456789012345678901234567890",
     }),
   })),
+}));
+
+// Mock network-utils module
+vi.mock("../../src/network-utils.js", () => ({
+  getCanonicalNetwork: vi.fn((network: string) => {
+    // Convert CAIP-2 to v1 name
+    const caip2ToV1: Record<string, string> = {
+      "eip155:84532": "base-sepolia",
+      "eip155:8453": "base",
+      "eip155:1952": "x-layer-testnet",
+      "eip155:196": "x-layer",
+      "eip155:97": "bsc-testnet",
+      "eip155:56": "bsc",
+      "eip155:324705682": "skale-base-sepolia",
+      "eip155:1187947933": "skale-base",
+    };
+    // If already v1 format, return as-is
+    if (!network.startsWith("eip155:")) {
+      return network;
+    }
+    // Otherwise convert from CAIP-2 to v1
+    return caip2ToV1[network] || network;
+  }),
+  getNetworkDisplayName: vi.fn((network: string) => {
+    // For now, assume network is already in display name format
+    // This function may need adjustment based on actual implementation
+    const networkMap: Record<string, string> = {
+      "base-sepolia": "base-sepolia",
+      "base": "base",
+      "x-layer-testnet": "x-layer-testnet",
+      "x-layer": "x-layer",
+      "bsc-testnet": "bsc-testnet",
+      "bsc": "bsc",
+      "skale-base-sepolia": "skale-base-sepolia",
+      "skale-base": "skale-base",
+    };
+    return networkMap[network] || network;
+  }),
 }));
 
 describe("settlement", () => {
@@ -194,8 +272,18 @@ describe("settlement", () => {
       vi.clearAllMocks();
       signer = createMockEvmSigner();
       paymentPayload = createMockPaymentPayload({
-        signature:
-          "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        payload: {
+          authorization: {
+            from: "0x1234567890123456789012345678901234567890",
+            to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            value: "1000000",
+            validAfter: 0,
+            validBefore: Math.floor(Date.now() / 1000) + 3600,
+            nonce: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        } as any,
       });
       paymentRequirements = createMockSettlementRouterPaymentRequirements();
     });
@@ -335,11 +423,19 @@ describe("settlement", () => {
       it("should reject transaction when facilitatorFee exceeds value", async () => {
         // Create payment with fee > value (the bug scenario)
         const paymentWithHighFee = createMockPaymentPayload({
-          signature:
-            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          payload: {
+            authorization: {
+              from: "0x1234567890123456789012345678901234567890",
+              to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              value: "1000", // 0.001 USDC - LOW VALUE
+              validAfter: 0,
+              validBefore: Math.floor(Date.now() / 1000) + 3600,
+              nonce: "0x0000000000000000000000000000000000000000000000000000000000000001",
+            },
+            signature:
+              "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          } as any,
         });
-        // Override the authorization value
-        (paymentWithHighFee.payload as any).authorization.value = "1000"; // 0.001 USDC
 
         const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
           extra: {
@@ -352,6 +448,16 @@ describe("settlement", () => {
           },
         });
 
+        // Debug: verify the setup
+        const expectedFee = "10000";
+        const expectedValue = "1000";
+        const actualFee = requirementsWithHighFee.extra?.facilitatorFee;
+        const actualValue = (paymentWithHighFee.payload as any).authorization?.value;
+
+        // Verify test setup before running
+        expect(actualFee).toBe(expectedFee);
+        expect(actualValue).toBe(expectedValue);
+
         const result = await settleWithRouter(
           signer,
           paymentWithHighFee,
@@ -363,6 +469,7 @@ describe("settlement", () => {
           mockBalanceChecker,
         );
 
+        expect(result).toBeDefined();
         expect(result.success).toBe(false);
         expect(result.errorReason).toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
       });
@@ -439,10 +546,19 @@ describe("settlement", () => {
       it("should warn when fee ratio exceeds 50%", async () => {
         // Warning case: fee > 50% of value
         const paymentWithHighFee = createMockPaymentPayload({
-          signature:
-            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          payload: {
+            authorization: {
+              from: "0x1234567890123456789012345678901234567890",
+              to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              value: "10000", // 0.01 USDC
+              validAfter: 0,
+              validBefore: Math.floor(Date.now() / 1000) + 3600,
+              nonce: "0x0000000000000000000000000000000000000000000000000000000000000001",
+            },
+            signature:
+              "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          } as any,
         });
-        (paymentWithHighFee.payload as any).authorization.value = "10000"; // 0.01 USDC
 
         const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
           extra: {
@@ -494,10 +610,19 @@ describe("settlement", () => {
       it("should handle zero payment value safely", async () => {
         // Edge case: zero value payment
         const paymentWithZeroValue = createMockPaymentPayload({
-          signature:
-            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          payload: {
+            authorization: {
+              from: "0x1234567890123456789012345678901234567890",
+              to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              value: "0", // Zero value
+              validAfter: 0,
+              validBefore: Math.floor(Date.now() / 1000) + 3600,
+              nonce: "0x0000000000000000000000000000000000000000000000000000000000000001",
+            },
+            signature:
+              "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          } as any,
         });
-        (paymentWithZeroValue.payload as any).authorization.value = "0";
 
         const requirementsWithZeroValue = createMockSettlementRouterPaymentRequirements({
           extra: {
@@ -528,10 +653,19 @@ describe("settlement", () => {
       it("should reject transaction when value is 0 and facilitatorFee > 0", async () => {
         // Critical edge case: zero value with non-zero fee (fee > value)
         const paymentWithZeroValue = createMockPaymentPayload({
-          signature:
-            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          payload: {
+            authorization: {
+              from: "0x1234567890123456789012345678901234567890",
+              to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+              value: "0", // Zero value
+              validAfter: 0,
+              validBefore: Math.floor(Date.now() / 1000) + 3600,
+              nonce: "0x0000000000000000000000000000000000000000000000000000000000000001",
+            },
+            signature:
+              "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+          } as any,
         });
-        (paymentWithZeroValue.payload as any).authorization.value = "0";
 
         const requirementsWithFee = createMockSettlementRouterPaymentRequirements({
           extra: {

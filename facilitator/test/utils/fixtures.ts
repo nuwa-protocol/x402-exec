@@ -53,7 +53,7 @@ export function createMockPaymentRequirements(
 export function createMockSettlementRouterPaymentRequirements(
   overrides?: Partial<PaymentRequirements>,
 ): PaymentRequirements {
-  return {
+  const base: PaymentRequirements = {
     x402Version: 2,
     scheme: "exact",
     network: "eip155:84532",
@@ -68,6 +68,22 @@ export function createMockSettlementRouterPaymentRequirements(
       facilitatorFee: "0",
       salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
     },
+  };
+
+  // Deep merge extra if provided in overrides
+  if (overrides?.extra) {
+    return {
+      ...base,
+      ...overrides,
+      extra: {
+        ...base.extra,
+        ...overrides.extra,
+      },
+    };
+  }
+
+  return {
+    ...base,
     ...overrides,
   };
 }
