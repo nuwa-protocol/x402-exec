@@ -323,7 +323,56 @@ export async function settleWithRouter(
       "Settlement authorization details (before on-chain validation)",
     );
 
-    // 5.5. Validate payment using @x402x/facilitator-sdk (SECURITY: prevent any invalid payments from wasting gas)
+    // 5.5. CRITICAL: Validate facilitatorFee <= value BEFORE any validation or arithmetic operations
+    // This MUST run before:
+    // - Facilitator SDK verification (line 337) which may call commitment calculation
+    // - Gas estimation (line 499) which subtracts fee from value
+    // This validation is UNCONDITIONAL (applies to ALL networks, with or without balanceChecker)
+    const fee = BigInt(settlementParams.facilitatorFee);
+    const paymentValue = BigInt(authorization.value);
+
+    if (fee > paymentValue) {
+      // Use BigInt arithmetic for ratio to avoid precision loss
+      const ratioBps = paymentValue > 0n ? (fee * 10000n) / paymentValue : 0n; // Basis points
+      const ratioDisplay = Number(ratioBps) / 100; // Convert to percentage for display
+
+      logger.error(
+        {
+          payer: authorization.from,
+          network,
+          facilitatorFee: settlementParams.facilitatorFee,
+          value: authorization.value,
+          ratio: ratioDisplay.toFixed(2),
+        },
+        "Facilitator fee exceeds payment amount - rejecting transaction (applies to all networks)",
+      );
+
+      return {
+        success: false,
+        errorReason: "FACILITATOR_FEE_EXCEEDS_VALUE" as any,
+        transaction: "",
+        network: paymentRequirements.network,
+        payer: authorization.from,
+      };
+    }
+
+    // 5.6. Warn if fee ratio is suspicious (> 50% for any network)
+    const feeRatioBps = paymentValue > 0n ? (fee * 10000n) / paymentValue : 0n; // Basis points
+    const feeRatioPercent = Number(feeRatioBps) / 100; // Convert to percentage
+    if (feeRatioPercent > 50) {
+      logger.warn(
+        {
+          payer: authorization.from,
+          network,
+          facilitatorFee: settlementParams.facilitatorFee,
+          value: authorization.value,
+          feeRatio: `${feeRatioPercent.toFixed(1)}%`,
+        },
+        "High facilitator fee ratio detected - possible gas price issue (network-agnostic check)",
+      );
+    }
+
+    // 5.7. Validate payment using @x402x/facilitator-sdk (SECURITY: prevent any invalid payments from wasting gas)
     // Import the RouterSettlementFacilitator for verification
     const { createRouterSettlementFacilitator } = await import("@x402x/facilitator-sdk");
 
@@ -635,46 +684,8 @@ export async function settleWithRouter(
           };
         }
 
-        // 8.2 NEW: Validate facilitatorFee <= value (critical for ALL networks)
-        const fee = BigInt(settlementParams.facilitatorFee);
-        const paymentValue = BigInt(authorization.value);
-
-        if (fee > paymentValue) {
-          logger.error(
-            {
-              payer: authorization.from,
-              network,
-              facilitatorFee: settlementParams.facilitatorFee,
-              value: authorization.value,
-              ratio: (Number(fee) / Number(paymentValue)).toFixed(2),
-            },
-            "Facilitator fee exceeds payment amount - rejecting transaction (applies to all networks)",
-          );
-
-          return {
-            success: false,
-            errorReason: "FACILITATOR_FEE_EXCEEDS_VALUE" as any,
-            transaction: "",
-            network: paymentRequirements.network,
-            payer: authorization.from,
-          };
-        }
-
-        // 8.3 NEW: Warn if fee ratio is suspicious (> 50% for any network)
-        const feeRatio = paymentValue > 0n ? (Number(fee) / Number(paymentValue)) * 100 : 0;
-        if (feeRatio > 50) {
-          logger.warn(
-            {
-              payer: authorization.from,
-              network,
-              facilitatorFee: settlementParams.facilitatorFee,
-              value: authorization.value,
-              feeRatio: `${feeRatio.toFixed(1)}%`,
-            },
-            "High facilitator fee ratio detected - possible gas price issue (network-agnostic check)",
-          );
-        }
-
+        // 8.2 Fee validation already done unconditionally before gas estimation (line 487)
+        // This section only logs the balance check result
         logger.debug(
           {
             payer: authorization.from,
@@ -682,10 +693,10 @@ export async function settleWithRouter(
             balance: balanceCheck.balance,
             required: balanceCheck.required,
             facilitatorFee: settlementParams.facilitatorFee,
-            feeRatio: `${feeRatio.toFixed(2)}%`,
+            feeRatio: `${feeRatioPercent.toFixed(2)}%`,
             cached: balanceCheck.cached,
           },
-          "Balance check and fee validation passed",
+          "Balance check passed (fee validation already completed)",
         );
       } catch (error) {
         // FIXED: Don't proceed with transaction if validation fails (affects ALL networks)

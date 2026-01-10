@@ -32,8 +32,17 @@ vi.mock("viem", async () => {
         };
       } else {
         // Old format {v, r, s}
+        // Handle both numeric and string hex values for the v component
+        const vValue =
+          typeof sig.v === "string"
+            ? parseInt(sig.v, 16)
+            : Number(sig.v);
+        if (Number.isNaN(vValue)) {
+          throw new Error("Invalid v value in mock parseErc6492Signature");
+        }
+        const vHex = vValue.toString(16).padStart(2, "0");
         return {
-          signature: `0x${sig.r.slice(2)}${sig.s.slice(2)}${sig.v.toString(16).padStart(2, "0")}`,
+          signature: `0x${sig.r.slice(2)}${sig.s.slice(2)}${vHex}`,
           address: "0x0000000000000000000000000000000000000000",
           data: "0x",
         };
@@ -360,13 +369,13 @@ describe("settlement", () => {
 
       it("should accept transaction when facilitatorFee equals value", async () => {
         // Edge case: fee == value (100% fee)
-        const paymentWithHighFee = createMockPaymentPayload({
+        const paymentWithEqualFee = createMockPaymentPayload({
           signature:
             "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
         });
-        (paymentWithHighFee.payload as any).authorization.value = "1000";
+        (paymentWithEqualFee.payload as any).authorization.value = "1000";
 
-        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+        const requirementsWithEqualFee = createMockSettlementRouterPaymentRequirements({
           extra: {
             settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
             hook: "0x0000000000000000000000000000000000000000",
@@ -379,8 +388,8 @@ describe("settlement", () => {
 
         const result = await settleWithRouter(
           signer,
-          paymentWithHighFee,
-          requirementsWithHighFee,
+          paymentWithEqualFee,
+          requirementsWithEqualFee,
           allowedRouters,
           undefined,
           undefined,
@@ -395,13 +404,13 @@ describe("settlement", () => {
 
       it("should accept transaction when facilitatorFee is less than value", async () => {
         // Normal case: fee < value
-        const paymentWithHighFee = createMockPaymentPayload({
+        const paymentWithNormalFee = createMockPaymentPayload({
           signature:
             "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
         });
-        (paymentWithHighFee.payload as any).authorization.value = "1000000"; // 1 USDC
+        (paymentWithNormalFee.payload as any).authorization.value = "1000000"; // 1 USDC
 
-        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+        const requirementsWithNormalFee = createMockSettlementRouterPaymentRequirements({
           extra: {
             settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
             hook: "0x0000000000000000000000000000000000000000",
@@ -414,8 +423,8 @@ describe("settlement", () => {
 
         const result = await settleWithRouter(
           signer,
-          paymentWithHighFee,
-          requirementsWithHighFee,
+          paymentWithNormalFee,
+          requirementsWithNormalFee,
           allowedRouters,
           undefined,
           undefined,
@@ -514,6 +523,41 @@ describe("settlement", () => {
 
         // Should not fail with fee validation error
         expect(result.errorReason).not.toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+      });
+
+      it("should reject transaction when value is 0 and facilitatorFee > 0", async () => {
+        // Critical edge case: zero value with non-zero fee (fee > value)
+        const paymentWithZeroValue = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        (paymentWithZeroValue.payload as any).authorization.value = "0";
+
+        const requirementsWithFee = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "1000", // Non-zero fee with zero value
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithZeroValue,
+          requirementsWithFee,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        // Should reject with fee validation error
+        expect(result.success).toBe(false);
+        expect(result.errorReason).toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
       });
     });
   });
