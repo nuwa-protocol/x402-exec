@@ -22,11 +22,23 @@ vi.mock("viem", async () => {
   const actual = await vi.importActual("viem");
   return {
     ...actual,
-    parseErc6492Signature: vi.fn((sig: string) => ({
-      signature: sig,
-      address: "0x0000000000000000000000000000000000000000",
-      data: "0x",
-    })),
+    parseErc6492Signature: vi.fn((sig: string | any) => {
+      // Handle both hex string and old {v, r, s} format
+      if (typeof sig === "string") {
+        return {
+          signature: sig,
+          address: "0x0000000000000000000000000000000000000000",
+          data: "0x",
+        };
+      } else {
+        // Old format {v, r, s}
+        return {
+          signature: `0x${sig.r.slice(2)}${sig.s.slice(2)}${sig.v.toString(16).padStart(2, "0")}`,
+          address: "0x0000000000000000000000000000000000000000",
+          data: "0x",
+        };
+      }
+    }),
   };
 });
 
@@ -50,8 +62,35 @@ vi.mock("@x402x/extensions", () => {
   return {
     isSettlementMode: vi.fn((pr) => !!pr.extra?.settlementRouter),
     SettlementExtraError: MockSettlementExtraError,
+    parseSettlementExtraCore: vi.fn((extra: any) => ({
+      settlementRouter: extra.settlementRouter,
+      salt: extra.salt,
+      payTo: extra.payTo,
+      facilitatorFee: extra.facilitatorFee || "0",
+      hook: extra.hook,
+      hookData: extra.hookData,
+    })),
+    calculateCommitment: vi.fn(() => "0x0000000000000000000000000000000000000000000000000000000000000001"),
+    getNetworkConfig: vi.fn(() => ({
+      defaultAsset: {
+        address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        decimals: 6,
+      },
+    })),
+    getChain: vi.fn(() => ({ id: 84532 })),
   };
 });
+
+// Mock @x402x/facilitator-sdk
+vi.mock("@x402x/facilitator-sdk", () => ({
+  createRouterSettlementFacilitator: vi.fn(() => ({
+    verify: vi.fn().mockResolvedValue({
+      isValid: true,
+      invalidReason: "",
+      payer: "0x1234567890123456789012345678901234567890",
+    }),
+  })),
+}));
 
 describe("settlement", () => {
   describe("isSettlementMode", () => {
@@ -267,6 +306,215 @@ describe("settlement", () => {
       // the fact that this function integrates properly with the x402 verify function
 
       expect(true).toBe(true); // Integration test placeholder
+    });
+
+    describe("fee validation (issue #200)", () => {
+      let mockBalanceChecker: any;
+
+      beforeEach(() => {
+        // Create a mock balance checker
+        mockBalanceChecker = {
+          checkBalance: vi.fn().mockResolvedValue({
+            hasSufficient: true,
+            balance: "10000000",
+            required: "1000000",
+            cached: false,
+          }),
+        };
+      });
+
+      it("should reject transaction when facilitatorFee exceeds value", async () => {
+        // Create payment with fee > value (the bug scenario)
+        const paymentWithHighFee = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        // Override the authorization value
+        (paymentWithHighFee.payload as any).authorization.value = "1000"; // 0.001 USDC
+
+        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "10000", // 0.01 USDC - EXCEEDS payment value
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithHighFee,
+          requirementsWithHighFee,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errorReason).toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+      });
+
+      it("should accept transaction when facilitatorFee equals value", async () => {
+        // Edge case: fee == value (100% fee)
+        const paymentWithHighFee = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        (paymentWithHighFee.payload as any).authorization.value = "1000";
+
+        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "1000", // Fee equals value
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithHighFee,
+          requirementsWithHighFee,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        // Should pass validation (transaction may fail for other reasons but fee check passes)
+        // We just verify it doesn't return FACILITATOR_FEE_EXCEEDS_VALUE
+        expect(result.errorReason).not.toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+      });
+
+      it("should accept transaction when facilitatorFee is less than value", async () => {
+        // Normal case: fee < value
+        const paymentWithHighFee = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        (paymentWithHighFee.payload as any).authorization.value = "1000000"; // 1 USDC
+
+        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "10000", // 0.01 USDC - 1% fee
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithHighFee,
+          requirementsWithHighFee,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        // Should pass validation (transaction may fail for other reasons but fee check passes)
+        expect(result.errorReason).not.toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+      });
+
+      it("should warn when fee ratio exceeds 50%", async () => {
+        // Warning case: fee > 50% of value
+        const paymentWithHighFee = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        (paymentWithHighFee.payload as any).authorization.value = "10000"; // 0.01 USDC
+
+        const requirementsWithHighFee = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "6000", // 60% fee
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithHighFee,
+          requirementsWithHighFee,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        // Should pass validation (transaction may fail for other reasons but fee check passes)
+        expect(result.errorReason).not.toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+        // The warning is logged, so we just ensure it doesn't fail
+      });
+
+      it("should reject transaction on validation errors", async () => {
+        // Test that validation errors reject the transaction (not continue)
+        mockBalanceChecker.checkBalance = vi.fn().mockRejectedValue(new Error("RPC error"));
+
+        const result = await settleWithRouter(
+          signer,
+          paymentPayload,
+          paymentRequirements,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errorReason).toBe("VALIDATION_FAILED");
+        expect(mockBalanceChecker.checkBalance).toHaveBeenCalled();
+      });
+
+      it("should handle zero payment value safely", async () => {
+        // Edge case: zero value payment
+        const paymentWithZeroValue = createMockPaymentPayload({
+          signature:
+            "0x1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+        });
+        (paymentWithZeroValue.payload as any).authorization.value = "0";
+
+        const requirementsWithZeroValue = createMockSettlementRouterPaymentRequirements({
+          extra: {
+            settlementRouter: "0x32431D4511e061F1133520461B07eC42afF157D6",
+            hook: "0x0000000000000000000000000000000000000000",
+            hookData: "0x",
+            payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+            facilitatorFee: "0",
+            salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          },
+        });
+
+        const result = await settleWithRouter(
+          signer,
+          paymentWithZeroValue,
+          requirementsWithZeroValue,
+          allowedRouters,
+          undefined,
+          undefined,
+          undefined,
+          mockBalanceChecker,
+        );
+
+        // Should not fail with fee validation error
+        expect(result.errorReason).not.toBe("FACILITATOR_FEE_EXCEEDS_VALUE");
+      });
     });
   });
 });

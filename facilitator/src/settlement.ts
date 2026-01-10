@@ -602,9 +602,10 @@ export async function settleWithRouter(
       }
     }
 
-    // 8. Defensive balance check (verify stage should have already caught this)
+    // 8. Defensive balance check and fee validation (applies to ALL networks)
     if (balanceChecker) {
       try {
+        // 8.1 Check user balance
         const balanceCheck = await balanceChecker.checkBalance(
           signer as any, // Signer has readContract method needed for balance checks
           authorization.from as `0x${string}`,
@@ -632,29 +633,78 @@ export async function settleWithRouter(
             network: paymentRequirements.network,
             payer: authorization.from,
           };
-        } else {
-          logger.debug(
+        }
+
+        // 8.2 NEW: Validate facilitatorFee <= value (critical for ALL networks)
+        const fee = BigInt(settlementParams.facilitatorFee);
+        const paymentValue = BigInt(authorization.value);
+
+        if (fee > paymentValue) {
+          logger.error(
             {
               payer: authorization.from,
               network,
-              balance: balanceCheck.balance,
-              required: balanceCheck.required,
-              cached: balanceCheck.cached,
+              facilitatorFee: settlementParams.facilitatorFee,
+              value: authorization.value,
+              ratio: (Number(fee) / Number(paymentValue)).toFixed(2),
             },
-            "Balance check passed during settlement (defensive check)",
+            "Facilitator fee exceeds payment amount - rejecting transaction (applies to all networks)",
+          );
+
+          return {
+            success: false,
+            errorReason: "FACILITATOR_FEE_EXCEEDS_VALUE" as any,
+            transaction: "",
+            network: paymentRequirements.network,
+            payer: authorization.from,
+          };
+        }
+
+        // 8.3 NEW: Warn if fee ratio is suspicious (> 50% for any network)
+        const feeRatio = paymentValue > 0n ? (Number(fee) / Number(paymentValue)) * 100 : 0;
+        if (feeRatio > 50) {
+          logger.warn(
+            {
+              payer: authorization.from,
+              network,
+              facilitatorFee: settlementParams.facilitatorFee,
+              value: authorization.value,
+              feeRatio: `${feeRatio.toFixed(1)}%`,
+            },
+            "High facilitator fee ratio detected - possible gas price issue (network-agnostic check)",
           );
         }
+
+        logger.debug(
+          {
+            payer: authorization.from,
+            network,
+            balance: balanceCheck.balance,
+            required: balanceCheck.required,
+            facilitatorFee: settlementParams.facilitatorFee,
+            feeRatio: `${feeRatio.toFixed(2)}%`,
+            cached: balanceCheck.cached,
+          },
+          "Balance check and fee validation passed",
+        );
       } catch (error) {
+        // FIXED: Don't proceed with transaction if validation fails (affects ALL networks)
         logger.error(
           {
             error,
             payer: authorization.from,
             network,
           },
-          "Balance check failed during settlement, proceeding with transaction",
+          "Balance or fee validation failed - rejecting transaction (network-agnostic)",
         );
-        // If balance check fails, we continue with the transaction
-        // This ensures settlement can still work even if balance check has issues
+
+        return {
+          success: false,
+          errorReason: "VALIDATION_FAILED" as any,
+          transaction: "",
+          network: paymentRequirements.network,
+          payer: authorization.from,
+        };
       }
     }
 
