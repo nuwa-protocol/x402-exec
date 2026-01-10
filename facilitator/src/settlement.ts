@@ -328,8 +328,9 @@ export async function settleWithRouter(
     // - Facilitator SDK verification (line 337) which may call commitment calculation
     // - Gas estimation (line 499) which subtracts fee from value
     // This validation is UNCONDITIONAL (applies to ALL networks, with or without balanceChecker)
-    const fee = BigInt(settlementParams.facilitatorFee);
-    const paymentValue = BigInt(authorization.value);
+
+    const fee = BigInt(settlementParams.facilitatorFee || "0");
+    const paymentValue = BigInt(authorization.value || "0");
 
     if (fee > paymentValue) {
       // Use BigInt arithmetic for ratio to avoid precision loss
