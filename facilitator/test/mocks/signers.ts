@@ -51,6 +51,11 @@ export function createMockEvmSigner(options?: {
     writeContract.mockResolvedValue(options?.writeContractResolve || "0xtxhash");
   }
 
+  const waitForTransactionReceipt = vi.fn().mockResolvedValue({
+    status: "success",
+    transactionHash: options?.writeContractResolve || "0xtxhash",
+  });
+
   return {
     account: {
       address,
@@ -61,5 +66,6 @@ export function createMockEvmSigner(options?: {
     walletClient: {
       writeContract,
     },
+    waitForTransactionReceipt,
   } as any;
 }
