@@ -50,6 +50,7 @@ export {
   isValidHex,
   isValid32ByteHex,
   isValid256BitHex,
+  isValidFacilitatorFee,
   validateSettlementRouter,
   validateSettlementExtra,
   validateNetwork,

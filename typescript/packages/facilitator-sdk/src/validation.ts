@@ -36,6 +36,58 @@ export function isValid256BitHex(hex: string): boolean {
 }
 
 /**
+ * Check if a string is a valid facilitator fee amount.
+ * Accepts both decimal (atomic units) and hex formats for compatibility.
+ * Ensures the value is non-negative and fits within uint256.
+ *
+ * @param fee - The fee amount to validate (decimal or hex string)
+ * @returns true if the fee is valid, false otherwise
+ *
+ * @example
+ * ```typescript
+ * isValidFacilitatorFee("10000")        // true - decimal
+ * isValidFacilitatorFee("0x2710")      // true - hex (10000)
+ * isValidFacilitatorFee("0x0")         // true - zero
+ * isValidFacilitatorFee("-100")        // false - negative
+ * isValidFacilitatorFee("abc")         // false - non-numeric
+ * isValidFacilitatorFee("0xXYZ")       // false - invalid hex
+ * ```
+ */
+export function isValidFacilitatorFee(fee: string): boolean {
+  if (!fee || typeof fee !== "string") {
+    return false;
+  }
+
+  // Check if it's a hex string (0x prefix)
+  if (fee.startsWith("0x") || fee.startsWith("0X")) {
+    // Must be valid hex with 1-64 hex digits (uint256 max)
+    return /^0x[a-fA-F0-9]{1,64}$/.test(fee);
+  }
+
+  // Check if it's a decimal string (atomic units)
+  // Must be one or more digits, no sign or decimal point
+  if (!/^\d+$/.test(fee)) {
+    return false;
+  }
+
+  // Ensure it fits within uint256 (max value is 2^256 - 1)
+  try {
+    const value = BigInt(fee);
+    // Check if value can be represented in uint256
+    // Max uint256 is approximately 1.16e77
+    // A simple check is that the decimal string shouldn't be longer than 78 digits
+    if (fee.length > 78) {
+      return false;
+    }
+    // BigInt handles arbitrary precision, so we just need to ensure it's not negative
+    // and fits in a reasonable range for uint256
+    return value >= 0n;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Validate SettlementRouter address against allowed list
  */
 export function validateSettlementRouter(
@@ -105,8 +157,10 @@ export function validateSettlementExtra(extra: unknown): SettlementExtraCore {
   if (!e.facilitatorFee || typeof e.facilitatorFee !== "string") {
     throw new FacilitatorValidationError("Missing or invalid facilitatorFee");
   }
-  if (!isValid256BitHex(e.facilitatorFee)) {
-    throw new FacilitatorValidationError("Facilitator fee must be a valid hex number");
+  if (!isValidFacilitatorFee(e.facilitatorFee)) {
+    throw new FacilitatorValidationError(
+      "Facilitator fee must be a valid number (decimal atomic units or hex format)",
+    );
   }
 
   if (!e.hook || typeof e.hook !== "string") {
