@@ -36,6 +36,55 @@ export function isValid256BitHex(hex: string): boolean {
 }
 
 /**
+ * Check if a string is a valid facilitator fee amount.
+ * Accepts both decimal (atomic units) and hex formats for compatibility.
+ * Ensures the value is non-negative and fits within uint256.
+ *
+ * @param fee - The fee amount to validate (decimal or hex string)
+ * @returns true if the fee is valid, false otherwise
+ *
+ * @example
+ * ```typescript
+ * isValidFacilitatorFee("10000")        // true - decimal
+ * isValidFacilitatorFee("0x2710")      // true - hex (10000)
+ * isValidFacilitatorFee("0x0")         // true - zero
+ * isValidFacilitatorFee("-100")        // false - negative
+ * isValidFacilitatorFee("abc")         // false - non-numeric
+ * isValidFacilitatorFee("0xXYZ")       // false - invalid hex
+ * ```
+ */
+export function isValidFacilitatorFee(fee: string): boolean {
+  if (!fee || typeof fee !== "string") {
+    return false;
+  }
+
+  // Check if it's a hex string (0x prefix)
+  if (fee.startsWith("0x") || fee.startsWith("0X")) {
+    // Must be valid hex with 1-64 hex digits (uint256 max)
+    return /^0[xX][a-fA-F0-9]{1,64}$/.test(fee);
+  }
+
+  // Check if it's a decimal string (atomic units)
+  // Must be one or more digits, no sign or decimal point
+  if (!/^\d+$/.test(fee)) {
+    return false;
+  }
+
+  // Ensure it fits within uint256 (max value is 2^256 - 1)
+  try {
+    const value = BigInt(fee);
+    const MAX_UINT256 = BigInt(
+      "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+    );
+
+    // Value must be non-negative and must not exceed the uint256 maximum
+    return value >= 0n && value <= MAX_UINT256;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Validate SettlementRouter address against allowed list
  */
 export function validateSettlementRouter(
@@ -105,8 +154,10 @@ export function validateSettlementExtra(extra: unknown): SettlementExtraCore {
   if (!e.facilitatorFee || typeof e.facilitatorFee !== "string") {
     throw new FacilitatorValidationError("Missing or invalid facilitatorFee");
   }
-  if (!isValid256BitHex(e.facilitatorFee)) {
-    throw new FacilitatorValidationError("Facilitator fee must be a valid hex number");
+  if (!isValidFacilitatorFee(e.facilitatorFee)) {
+    throw new FacilitatorValidationError(
+      "Facilitator fee must be a valid number (decimal atomic units or hex format)",
+    );
   }
 
   if (!e.hook || typeof e.hook !== "string") {
