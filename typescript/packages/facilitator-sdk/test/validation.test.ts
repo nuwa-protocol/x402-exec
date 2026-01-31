@@ -134,7 +134,12 @@ describe("validation utilities", () => {
         expect(isValidFacilitatorFee("0x" + "FF".repeat(33))).toBe(false); // > 256 bits
         expect(isValidFacilitatorFee("0xGG")).toBe(false);
         expect(isValidFacilitatorFee("0x")).toBe(false); // empty hex
-        expect(isValidFacilitatorFee("0x123")).toBe(false); // odd length
+      });
+
+      it("should accept odd-length hex strings", () => {
+        expect(isValidFacilitatorFee("0x123")).toBe(true); // odd-length hex is valid numeric input
+        expect(isValidFacilitatorFee("0x1")).toBe(true); // single digit
+        expect(isValidFacilitatorFee("0xFFF")).toBe(true); // 4095
       });
     });
 

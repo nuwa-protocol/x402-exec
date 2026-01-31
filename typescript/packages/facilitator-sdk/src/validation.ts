@@ -61,7 +61,7 @@ export function isValidFacilitatorFee(fee: string): boolean {
   // Check if it's a hex string (0x prefix)
   if (fee.startsWith("0x") || fee.startsWith("0X")) {
     // Must be valid hex with 1-64 hex digits (uint256 max)
-    return /^0x[a-fA-F0-9]{1,64}$/.test(fee);
+    return /^0[xX][a-fA-F0-9]{1,64}$/.test(fee);
   }
 
   // Check if it's a decimal string (atomic units)
@@ -73,15 +73,12 @@ export function isValidFacilitatorFee(fee: string): boolean {
   // Ensure it fits within uint256 (max value is 2^256 - 1)
   try {
     const value = BigInt(fee);
-    // Check if value can be represented in uint256
-    // Max uint256 is approximately 1.16e77
-    // A simple check is that the decimal string shouldn't be longer than 78 digits
-    if (fee.length > 78) {
-      return false;
-    }
-    // BigInt handles arbitrary precision, so we just need to ensure it's not negative
-    // and fits in a reasonable range for uint256
-    return value >= 0n;
+    const MAX_UINT256 = BigInt(
+      "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+    );
+
+    // Value must be non-negative and must not exceed the uint256 maximum
+    return value >= 0n && value <= MAX_UINT256;
   } catch {
     return false;
   }
